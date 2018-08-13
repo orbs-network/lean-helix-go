@@ -1,4 +1,9 @@
 # lean-helix-go
+
+
+**--Work in progress - not yet functional--**
+
+
 Go implementation of Lean Helix consensus algorithm
 
 ## Installation
