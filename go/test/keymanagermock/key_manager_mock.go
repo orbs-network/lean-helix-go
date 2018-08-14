@@ -2,7 +2,7 @@ package keymanagermock
 
 import (
 	"fmt"
-	"strings"
+	"github.com/orbs-network/lean-helix-go/go/networkcommunication"
 )
 
 // TODO Keys should not be strings - convert to our primitives
@@ -15,8 +15,8 @@ type KeyManagerMock struct {
 }
 
 type KeyManager interface {
-	Sign(object []byte) string
-	Verify(object []byte, signature string, publicKey []byte) bool
+	Sign(ppd *networkcommunication.PrepreparePayloadData) string
+	Verify(ppd *networkcommunication.PrepreparePayloadData, signature string, publicKey []byte) bool
 	MyPublicKey() []byte
 }
 
@@ -31,36 +31,18 @@ func (km *KeyManagerMock) MyPublicKey() []byte {
 	return km.myPublicKey
 }
 
-func (km *KeyManagerMock) Sign(object []byte) string {
-	return fmt.Sprintf("%s-%s-%s", PRIVATE_KEY_PREFIX, km.MyPublicKey, string(object))
+func (km *KeyManagerMock) Sign(ppd *networkcommunication.PrepreparePayloadData) string {
+	return fmt.Sprintf("%s|%s|%s|%s|%s", PRIVATE_KEY_PREFIX, km.MyPublicKey(), string(ppd.Term), string(ppd.View), string(ppd.BlockHash))
 }
 
-func (km *KeyManagerMock) Verify(object []byte, signature string, publicKey []byte) bool {
+func (km *KeyManagerMock) Verify(ppd *networkcommunication.PrepreparePayloadData, signature string, publicKey []byte) bool {
 	if IndexOf(km.RejectedPublicKeys, publicKey) > -1 {
 		return false
 	}
 
-	if !strings.Contains(signature, PRIVATE_KEY_PREFIX) {
-		return false
-	}
+	expectedSignature := fmt.Sprintf("%s|%s|%s|%s|%s", PRIVATE_KEY_PREFIX, publicKey, string(ppd.Term), string(ppd.View), string(ppd.BlockHash))
 
-	withoutPrefix := signature[len(PRIVATE_KEY_PREFIX)+1:]
-	if !strings.Contains(withoutPrefix, string(publicKey)) {
-		return false
-	}
-
-	withoutPublicKey := withoutPrefix[len(string(publicKey))+1:]
-
-	if string(object) != withoutPublicKey {
-		return false
-	}
-
-	// TODO How to convert this to GO??
-	//if (JSON.stringify(object) !== withoutPublicKey) {
-	//	return false;
-	//}
-
-	return true
+	return expectedSignature == signature
 }
 
 //TODO Find a Go way to compare []byte's
