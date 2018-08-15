@@ -19,10 +19,30 @@ func CreatePrepreparePayload(km *keymanagermock.KeyManagerMock, term uint64, vie
 	result := &networkcommunication.PrepreparePayload{
 		Payload: networkcommunication.Payload{
 			PublicKey: km.MyPublicKey(),
-			Signature: km.Sign(prepreparePayloadData),
+			Signature: km.SignPrepreparePayloadData(prepreparePayloadData),
 		},
 		Data:  prepreparePayloadData,
 		Block: block,
 	}
 	return result
+}
+
+func CreatePreparePayload(km *keymanagermock.KeyManagerMock, term uint64, view uint64, block *block.Block) *networkcommunication.PreparePayload {
+	blockHash := blockutils.CalculateBlockHash(block)
+
+	preparePayloadData := &networkcommunication.PreparePayloadData{
+		BlockHash: blockHash,
+		View:      view,
+		Term:      term,
+	}
+
+	result := &networkcommunication.PreparePayload{
+		Payload: networkcommunication.Payload{
+			PublicKey: km.MyPublicKey(),
+			Signature: km.SignPreparePayloadData(preparePayloadData),
+		},
+		Data: preparePayloadData,
+	}
+	return result
+
 }

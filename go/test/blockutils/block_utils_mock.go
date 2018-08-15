@@ -7,5 +7,5 @@ import (
 // TODO impl from crypto
 
 func CalculateBlockHash(block *block.Block) []byte {
-	return []byte{1, 2, 3, 4}
+	return []byte("0123456789ABCDEF")
 }

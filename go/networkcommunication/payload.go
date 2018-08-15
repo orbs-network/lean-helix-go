@@ -8,7 +8,6 @@ type Payload struct {
 	PublicKey []byte
 	Signature string
 }
-
 type PrepreparePayload struct {
 	Payload
 	Data  *PrepreparePayloadData
@@ -22,7 +21,7 @@ type PrepreparePayloadData struct {
 
 type PreparePayload struct {
 	Payload
-	Data PreparePayloadData
+	Data *PreparePayloadData
 }
 type PreparePayloadData struct {
 	BlockHash []byte
@@ -52,10 +51,10 @@ type ViewChangePayloadData struct {
 
 type NewViewPayload struct {
 	Payload
-	Data newViewPayloadData
+	Data NewViewPayloadData
 }
 
-type newViewPayloadData struct {
+type NewViewPayloadData struct {
 	PrepreparePayload
 	ViewChangeProof []ViewChangePayload
 	Term            uint64
