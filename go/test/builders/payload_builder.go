@@ -2,6 +2,7 @@ package builders
 
 import (
 	"github.com/orbs-network/lean-helix-go/go/block"
+	"github.com/orbs-network/lean-helix-go/go/leanhelix"
 	"github.com/orbs-network/lean-helix-go/go/networkcommunication"
 	"github.com/orbs-network/lean-helix-go/go/test/blockutils"
 	"github.com/orbs-network/lean-helix-go/go/test/keymanagermock"
@@ -11,9 +12,10 @@ func CreatePrepreparePayload(km *keymanagermock.KeyManagerMock, term uint64, vie
 	blockHash := blockutils.CalculateBlockHash(block)
 
 	prepreparePayloadData := &networkcommunication.PrepreparePayloadData{
-		BlockHash: blockHash,
-		View:      view,
-		Term:      term,
+		MessageType: leanhelix.MESSAGE_TYPE_PREPREPARE,
+		BlockHash:   blockHash,
+		View:        view,
+		Term:        term,
 	}
 
 	result := &networkcommunication.PrepreparePayload{
@@ -31,9 +33,10 @@ func CreatePreparePayload(km *keymanagermock.KeyManagerMock, term uint64, view u
 	blockHash := blockutils.CalculateBlockHash(block)
 
 	preparePayloadData := &networkcommunication.PreparePayloadData{
-		BlockHash: blockHash,
-		View:      view,
-		Term:      term,
+		MessageType: leanhelix.MESSAGE_TYPE_PREPARE,
+		BlockHash:   blockHash,
+		View:        view,
+		Term:        term,
 	}
 
 	result := &networkcommunication.PreparePayload{
@@ -42,6 +45,27 @@ func CreatePreparePayload(km *keymanagermock.KeyManagerMock, term uint64, view u
 			Signature: km.SignPreparePayloadData(preparePayloadData),
 		},
 		Data: preparePayloadData,
+	}
+	return result
+
+}
+
+func CreateCommitPayload(km *keymanagermock.KeyManagerMock, term uint64, view uint64, block *block.Block) *networkcommunication.CommitPayload {
+	blockHash := blockutils.CalculateBlockHash(block)
+
+	commitPayloadData := &networkcommunication.CommitPayloadData{
+		MessageType: leanhelix.MESSAGE_TYPE_COMMIT,
+		BlockHash:   blockHash,
+		View:        view,
+		Term:        term,
+	}
+
+	result := &networkcommunication.CommitPayload{
+		Payload: networkcommunication.Payload{
+			PublicKey: km.MyPublicKey(),
+			Signature: km.SignCommitPayloadData(commitPayloadData),
+		},
+		Data: commitPayloadData,
 	}
 	return result
 

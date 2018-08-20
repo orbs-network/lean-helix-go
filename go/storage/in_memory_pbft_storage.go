@@ -9,6 +9,7 @@ type inMemoryPbftStorage struct {
 	// TODO Refactor this mess - in the least create some intermediate types
 	preprepareStorage map[uint64]map[uint64]*networkcommunication.PrepreparePayload
 	prepareStorage    map[uint64]map[uint64]map[string]map[string]*networkcommunication.PreparePayload
+	commitStorage     map[uint64]map[uint64]map[string]map[string]*networkcommunication.CommitPayload
 }
 
 func (storage *inMemoryPbftStorage) StorePreprepare(term uint64, view uint64, prepreparePayload *networkcommunication.PrepreparePayload) bool {
@@ -56,6 +57,37 @@ func (storage *inMemoryPbftStorage) StorePrepare(term uint64, view uint64, prepa
 	utils.Logger.Info("StorePrepare: term=%d view=%d, senderPk=%s, blockHash=%s", term, view, senderPublicKey, key)
 
 	return true
+}
+
+func (storage *inMemoryPbftStorage) StoreCommit(term uint64, view uint64, commitPayload *networkcommunication.CommitPayload) bool {
+	// pps -> views ->
+	views, ok := storage.commitStorage[term]
+	if !ok {
+		views = make(map[uint64]map[string]map[string]*networkcommunication.CommitPayload)
+		storage.commitStorage[term] = views
+	}
+
+	blockHashes, ok := views[view]
+	if !ok {
+		blockHashes = make(map[string]map[string]*networkcommunication.CommitPayload)
+		views[view] = blockHashes
+	}
+	key := string(commitPayload.Data.BlockHash)
+	senders, ok := blockHashes[key]
+	if !ok {
+		senders = make(map[string]*networkcommunication.CommitPayload)
+		blockHashes[key] = senders
+	}
+	senderPublicKey := string(commitPayload.PublicKey)
+	_, ok = senders[senderPublicKey]
+	if ok {
+		return false
+	}
+	senders[senderPublicKey] = commitPayload
+
+	utils.Logger.Info("StoreCommit: term=%d view=%d, senderPk=%s, blockHash=%s", term, view, senderPublicKey, key)
+
+	return true
 
 }
 
@@ -63,5 +95,6 @@ func NewInMemoryPBFTStorage() *inMemoryPbftStorage {
 	return &inMemoryPbftStorage{
 		preprepareStorage: make(map[uint64]map[uint64]*networkcommunication.PrepreparePayload),
 		prepareStorage:    make(map[uint64]map[uint64]map[string]map[string]*networkcommunication.PreparePayload),
+		commitStorage:     make(map[uint64]map[uint64]map[string]map[string]*networkcommunication.CommitPayload),
 	}
 }

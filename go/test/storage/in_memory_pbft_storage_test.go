@@ -10,6 +10,8 @@ import (
 	"testing"
 )
 
+// TODO TestClearAllStorageDataAfterCallingClearTermLogs
+
 /*
 func TestClearAllStorageDataAfterCallingClearTermLogs(t *testing.T) {
 
@@ -119,23 +121,45 @@ func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 
 	thirdTime := myStorage.StorePrepare(term, view, preparePayload2)
 	require.False(t, thirdTime, "StorePrepare() returns false if trying to store a value that already exists")
+}
 
-	/*
-		const storage = new InMemoryPBFTStorage(logger);
-	const term = Math.floor(Math.random() * 1000);
-	const view = Math.floor(Math.random() * 1000);
-	const senderId1 = Math.floor(Math.random() * 1000).toString();
-	const senderId2 = Math.floor(Math.random() * 1000).toString();
-	const sender1KeyManager: KeyManager = new KeyManagerMock(senderId1);
-	const sender2KeyManager: KeyManager = new KeyManagerMock(senderId2);
-	const block = aBlock(theGenesisBlock);
-	const firstTime = storage.storePrepare(term, view, aPreparePayload(sender1KeyManager, term, view, block));
-	expect(firstTime).to.be.true;
-	const secondstime = storage.storePrepare(term, view, aPreparePayload(sender2KeyManager, term, view, block));
-	expect(secondstime).to.be.true;
-	const thirdTime = storage.storePrepare(term, view, aPreparePayload(sender2KeyManager, term, view, block));
-	expect(thirdTime).to.be.false;
+// TODO TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists
 
-	*/
+func TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
+	myStorage := storage.NewInMemoryPBFTStorage()
+	term := uint64(math.Floor(rand.Float64() * 1000))
+	view := uint64(math.Floor(rand.Float64() * 1000))
+	senderId1 := string(uint64(math.Floor(rand.Float64() * 1000)))
+	senderId2 := string(uint64(math.Floor(rand.Float64() * 1000)))
+	sender1KeyManager := keymanagermock.NewKeyManagerMock([]byte(senderId1), [][]byte{})
+	sender2KeyManager := keymanagermock.NewKeyManagerMock([]byte(senderId2), [][]byte{})
+	block := builders.CreateBlock(builders.GenesisBlock)
+
+	commitPayload1 := builders.CreateCommitPayload(sender1KeyManager, term, view, block)
+	commitPayload2 := builders.CreateCommitPayload(sender2KeyManager, term, view, block)
+
+	firstTime := myStorage.StoreCommit(term, view, commitPayload1)
+	require.True(t, firstTime, "StoreCommit() returns true if storing a new value (1 of 2)")
+
+	secondTime := myStorage.StoreCommit(term, view, commitPayload2)
+	require.True(t, secondTime, "StoreCommit() returns true if storing a new value (2 of 2)")
+
+	thirdTime := myStorage.StoreCommit(term, view, commitPayload2)
+	require.False(t, thirdTime, "StoreCommit() returns false if trying to store a value that already exists")
 
 }
+
+// TODO TestStoreViewChangeReturnsTrueIfNewOrFalseIfAlreadyExists
+
+// TODO func TestStorePrepareInStorage
+
+// TODO func TestStoreCommitInStorage
+
+// Proofs
+
+// TODO func TestStoreAndGetViewChangeProof
+// TODO func TestStoreAndGetPrepareProof
+// TODO func TestReturnHighestPrepareProof
+// TODO func TestReturnUndefinedIfNoPreprepare
+// TODO func TestReturnUndefinedIfNoPrepares
+// TODO func TestReturnUndefinedIfNotEnoughPrepares

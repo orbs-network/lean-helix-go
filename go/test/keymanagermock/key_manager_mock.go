@@ -39,6 +39,9 @@ func (km *KeyManagerMock) SignPrepreparePayloadData(ppd *networkcommunication.Pr
 func (km *KeyManagerMock) SignPreparePayloadData(pd *networkcommunication.PreparePayloadData) string {
 	return fmt.Sprintf("%s|%s|%s|%s|%s", PRIVATE_KEY_PREFIX, km.MyPublicKey(), string(pd.Term), string(pd.View), string(pd.BlockHash))
 }
+func (km *KeyManagerMock) SignCommitPayloadData(cd *networkcommunication.CommitPayloadData) string {
+	return fmt.Sprintf("%s|%s|%s|%s|%s", PRIVATE_KEY_PREFIX, km.MyPublicKey(), string(cd.Term), string(cd.View), string(cd.BlockHash))
+}
 
 func (km *KeyManagerMock) Verify(ppd *networkcommunication.PrepreparePayloadData, signature string, publicKey []byte) bool {
 	if IndexOf(km.RejectedPublicKeys, publicKey) > -1 {
