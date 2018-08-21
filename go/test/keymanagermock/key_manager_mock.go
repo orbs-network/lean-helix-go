@@ -2,48 +2,40 @@ package keymanagermock
 
 import (
 	"fmt"
-	"github.com/orbs-network/lean-helix-go/go/networkcommunication"
+	"github.com/orbs-network/lean-helix-go/go/leanhelix"
 )
 
 // TODO Keys should not be strings - convert to our primitives
 
 const PRIVATE_KEY_PREFIX = "PRIVATE_KEY"
 
-type KeyManagerMock struct {
+type mockKeyManager struct {
 	myPublicKey        []byte
 	RejectedPublicKeys [][]byte
 }
 
-type KeyManager interface {
-	SignPrepreparePayloadData(ppd *networkcommunication.PrepreparePayloadData) string
-	SignPreparePayloadData(pd *networkcommunication.PreparePayloadData) string
-
-	Verify(ppd *networkcommunication.PrepreparePayloadData, signature string, publicKey []byte) bool
-	MyPublicKey() []byte
-}
-
-func NewKeyManagerMock(publicKey []byte, rejectedPublicKeys [][]byte) *KeyManagerMock {
-	return &KeyManagerMock{
+func NewMockKeyManager(publicKey []byte, rejectedPublicKeys [][]byte) *mockKeyManager {
+	return &mockKeyManager{
 		myPublicKey:        publicKey,
 		RejectedPublicKeys: rejectedPublicKeys,
 	}
 }
 
-func (km *KeyManagerMock) MyPublicKey() []byte {
+func (km *mockKeyManager) MyPublicKey() []byte {
 	return km.myPublicKey
 }
 
-func (km *KeyManagerMock) SignPrepreparePayloadData(ppd *networkcommunication.PrepreparePayloadData) string {
+func (km *mockKeyManager) SignPrepreparePayloadData(ppd *leanhelix.PrepreparePayloadData) string {
 	return fmt.Sprintf("%s|%s|%s|%s|%s", PRIVATE_KEY_PREFIX, km.MyPublicKey(), string(ppd.Term), string(ppd.View), string(ppd.BlockHash))
 }
-func (km *KeyManagerMock) SignPreparePayloadData(pd *networkcommunication.PreparePayloadData) string {
+func (km *mockKeyManager) SignPreparePayloadData(pd *leanhelix.PreparePayloadData) string {
 	return fmt.Sprintf("%s|%s|%s|%s|%s", PRIVATE_KEY_PREFIX, km.MyPublicKey(), string(pd.Term), string(pd.View), string(pd.BlockHash))
 }
-func (km *KeyManagerMock) SignCommitPayloadData(cd *networkcommunication.CommitPayloadData) string {
+func (km *mockKeyManager) SignCommitPayloadData(cd *leanhelix.CommitPayloadData) string {
 	return fmt.Sprintf("%s|%s|%s|%s|%s", PRIVATE_KEY_PREFIX, km.MyPublicKey(), string(cd.Term), string(cd.View), string(cd.BlockHash))
 }
 
-func (km *KeyManagerMock) Verify(ppd *networkcommunication.PrepreparePayloadData, signature string, publicKey []byte) bool {
+func (km *mockKeyManager) Verify(ppd *leanhelix.PrepreparePayloadData, signature string, publicKey []byte) bool {
 	if IndexOf(km.RejectedPublicKeys, publicKey) > -1 {
 		return false
 	}

@@ -3,23 +3,20 @@ package builders
 import (
 	"github.com/orbs-network/lean-helix-go/go/block"
 	"github.com/orbs-network/lean-helix-go/go/leanhelix"
-	"github.com/orbs-network/lean-helix-go/go/networkcommunication"
-	"github.com/orbs-network/lean-helix-go/go/test/blockutils"
-	"github.com/orbs-network/lean-helix-go/go/test/keymanagermock"
 )
 
-func CreatePrepreparePayload(km *keymanagermock.KeyManagerMock, term uint64, view uint64, block *block.Block) *networkcommunication.PrepreparePayload {
-	blockHash := blockutils.CalculateBlockHash(block)
+func CreatePrepreparePayload(km leanhelix.KeyManager, term uint64, view uint64, block *block.Block) *leanhelix.PrepreparePayload {
+	blockHash := blockUtils.CalculateBlockHash(block)
 
-	prepreparePayloadData := &networkcommunication.PrepreparePayloadData{
+	prepreparePayloadData := &leanhelix.PrepreparePayloadData{
 		MessageType: leanhelix.MESSAGE_TYPE_PREPREPARE,
 		BlockHash:   blockHash,
 		View:        view,
 		Term:        term,
 	}
 
-	result := &networkcommunication.PrepreparePayload{
-		Payload: networkcommunication.Payload{
+	result := &leanhelix.PrepreparePayload{
+		Payload: leanhelix.Payload{
 			PublicKey: km.MyPublicKey(),
 			Signature: km.SignPrepreparePayloadData(prepreparePayloadData),
 		},
@@ -29,18 +26,18 @@ func CreatePrepreparePayload(km *keymanagermock.KeyManagerMock, term uint64, vie
 	return result
 }
 
-func CreatePreparePayload(km *keymanagermock.KeyManagerMock, term uint64, view uint64, block *block.Block) *networkcommunication.PreparePayload {
-	blockHash := blockutils.CalculateBlockHash(block)
+func CreatePreparePayload(km leanhelix.KeyManager, term uint64, view uint64, block *block.Block) *leanhelix.PreparePayload {
+	blockHash := blockUtils.CalculateBlockHash(block)
 
-	preparePayloadData := &networkcommunication.PreparePayloadData{
+	preparePayloadData := &leanhelix.PreparePayloadData{
 		MessageType: leanhelix.MESSAGE_TYPE_PREPARE,
 		BlockHash:   blockHash,
 		View:        view,
 		Term:        term,
 	}
 
-	result := &networkcommunication.PreparePayload{
-		Payload: networkcommunication.Payload{
+	result := &leanhelix.PreparePayload{
+		Payload: leanhelix.Payload{
 			PublicKey: km.MyPublicKey(),
 			Signature: km.SignPreparePayloadData(preparePayloadData),
 		},
@@ -50,18 +47,18 @@ func CreatePreparePayload(km *keymanagermock.KeyManagerMock, term uint64, view u
 
 }
 
-func CreateCommitPayload(km *keymanagermock.KeyManagerMock, term uint64, view uint64, block *block.Block) *networkcommunication.CommitPayload {
-	blockHash := blockutils.CalculateBlockHash(block)
+func CreateCommitPayload(km leanhelix.KeyManager, term uint64, view uint64, block *block.Block) *leanhelix.CommitPayload {
+	blockHash := blockUtils.CalculateBlockHash(block)
 
-	commitPayloadData := &networkcommunication.CommitPayloadData{
+	commitPayloadData := &leanhelix.CommitPayloadData{
 		MessageType: leanhelix.MESSAGE_TYPE_COMMIT,
 		BlockHash:   blockHash,
 		View:        view,
 		Term:        term,
 	}
 
-	result := &networkcommunication.CommitPayload{
-		Payload: networkcommunication.Payload{
+	result := &leanhelix.CommitPayload{
+		Payload: leanhelix.Payload{
 			PublicKey: km.MyPublicKey(),
 			Signature: km.SignCommitPayloadData(commitPayloadData),
 		},

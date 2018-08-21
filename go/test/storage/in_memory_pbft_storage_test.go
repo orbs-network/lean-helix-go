@@ -24,7 +24,7 @@ func TestClearAllStorageDataAfterCallingClearTermLogs(t *testing.T) {
 
 	// TODO: This requires orbs-network-go/crypto which cannot be a dependency
 	blockHash := digest.CalcTransactionsBlockHash(block)
-	keyManager := keymanager.NewKeyManagerMock([]byte("PK"), [][]byte{})
+	keyManager := keymanager.NewMockKeyManager([]byte("PK"), [][]byte{})
 
 	prepreparePayload := CreatePrepreparePayload(keyManager, term, view, block)
 	preparePayload := CreatePreparePayload(keyManager, term, view, block)
@@ -55,7 +55,7 @@ func TestClearAllStorageDataAfterCallingClearTermLogs(t *testing.T) {
 	//const view = Math.floor(Math.random() * 1000);
 	//const block = aBlock(theGenesisBlock);
 	//const blockHash = calculateBlockHash(block);
-	//const keyManager: KeyManager = new KeyManagerMock("PK");
+	//const keyManager: KeyManager = new mockKeyManager("PK");
 	//const PPPayload = aPrePreparePayload(keyManager, term, view, block);
 	//const PPayload = aPreparePayload(keyManager, term, view, block);
 	//const CPayload = aCommitPayload(keyManager, term, view, block);
@@ -91,7 +91,7 @@ func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	term := uint64(math.Floor(rand.Float64() * 1000))
 	view := uint64(math.Floor(rand.Float64() * 1000))
 	block := builders.CreateBlock(builders.GenesisBlock)
-	keyManager := keymanagermock.NewKeyManagerMock([]byte("PK"), [][]byte{})
+	keyManager := keymanagermock.NewMockKeyManager([]byte("PK"), [][]byte{})
 	prepreparePayload := builders.CreatePrepreparePayload(keyManager, term, view, block)
 
 	firstTime := myStorage.StorePreprepare(term, view, prepreparePayload)
@@ -107,8 +107,8 @@ func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	view := uint64(math.Floor(rand.Float64() * 1000))
 	senderId1 := string(uint64(math.Floor(rand.Float64() * 1000)))
 	senderId2 := string(uint64(math.Floor(rand.Float64() * 1000)))
-	sender1KeyManager := keymanagermock.NewKeyManagerMock([]byte(senderId1), [][]byte{})
-	sender2KeyManager := keymanagermock.NewKeyManagerMock([]byte(senderId2), [][]byte{})
+	sender1KeyManager := keymanagermock.NewMockKeyManager([]byte(senderId1), [][]byte{})
+	sender2KeyManager := keymanagermock.NewMockKeyManager([]byte(senderId2), [][]byte{})
 	block := builders.CreateBlock(builders.GenesisBlock)
 	preparePayload1 := builders.CreatePreparePayload(sender1KeyManager, term, view, block)
 	preparePayload2 := builders.CreatePreparePayload(sender2KeyManager, term, view, block)
@@ -131,8 +131,8 @@ func TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	view := uint64(math.Floor(rand.Float64() * 1000))
 	senderId1 := string(uint64(math.Floor(rand.Float64() * 1000)))
 	senderId2 := string(uint64(math.Floor(rand.Float64() * 1000)))
-	sender1KeyManager := keymanagermock.NewKeyManagerMock([]byte(senderId1), [][]byte{})
-	sender2KeyManager := keymanagermock.NewKeyManagerMock([]byte(senderId2), [][]byte{})
+	sender1KeyManager := keymanagermock.NewMockKeyManager([]byte(senderId1), [][]byte{})
+	sender2KeyManager := keymanagermock.NewMockKeyManager([]byte(senderId2), [][]byte{})
 	block := builders.CreateBlock(builders.GenesisBlock)
 
 	commitPayload1 := builders.CreateCommitPayload(sender1KeyManager, term, view, block)

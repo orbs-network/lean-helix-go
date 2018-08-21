@@ -1,8 +1,7 @@
-package networkcommunication
+package leanhelix
 
 import (
 	"github.com/orbs-network/lean-helix-go/go/block"
-	"github.com/orbs-network/lean-helix-go/go/leanhelix"
 )
 
 type Payload struct {
@@ -15,7 +14,7 @@ type PrepreparePayload struct {
 	Block *block.Block
 }
 type PrepreparePayloadData struct {
-	MessageType leanhelix.MessageType
+	MessageType MessageType
 	BlockHash   []byte
 	View        uint64
 	Term        uint64
@@ -26,7 +25,7 @@ type PreparePayload struct {
 	Data *PreparePayloadData
 }
 type PreparePayloadData struct {
-	MessageType leanhelix.MessageType
+	MessageType MessageType
 	BlockHash   []byte
 	View        uint64
 	Term        uint64
@@ -37,7 +36,7 @@ type CommitPayload struct {
 	Data *CommitPayloadData
 }
 type CommitPayloadData struct {
-	MessageType leanhelix.MessageType
+	MessageType MessageType
 	BlockHash   []byte
 	View        uint64
 	Term        uint64
@@ -48,7 +47,7 @@ type ViewChangePayload struct {
 	Data ViewChangePayloadData
 }
 type ViewChangePayloadData struct {
-	MessageType leanhelix.MessageType
+	MessageType MessageType
 	Term        uint64
 	NewView     uint64
 	PreparedProof
@@ -61,7 +60,7 @@ type NewViewPayload struct {
 
 type NewViewPayloadData struct {
 	PrepreparePayload
-	MessageType     leanhelix.MessageType
+	MessageType     MessageType
 	ViewChangeProof []ViewChangePayload
 	Term            uint64
 	View            uint64
