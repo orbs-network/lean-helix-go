@@ -1,8 +1,8 @@
 package builders
 
 import (
+	"github.com/orbs-network/go-mock"
 	"github.com/orbs-network/lean-helix-go/go/leanhelix"
-	"github.com/stretchr/testify/mock"
 )
 
 type MockNetworkCommunication struct {

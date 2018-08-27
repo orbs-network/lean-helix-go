@@ -7,10 +7,10 @@ import (
 )
 
 type harness struct {
-	config *Config
-	network
-	blockUtils BlockUtils
-	keyManager KeyManager
+	config     *leanhelix.Config
+	network    leanhelix.NetworkCommunication
+	blockUtils leanhelix.BlockUtils
+	keyManager leanhelix.KeyManager
 	service    leanhelix.Service
 }
 

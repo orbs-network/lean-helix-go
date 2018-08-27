@@ -1,0 +1,3 @@
+[submodule "vendor/github.com/orbs-network/go-mock"]
+	path = vendor/github.com/orbs-network/go-mock
+	url = https://github.com/orbs-network/go-mock

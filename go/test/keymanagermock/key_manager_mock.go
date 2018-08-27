@@ -2,6 +2,7 @@ package keymanagermock
 
 import (
 	"fmt"
+	"github.com/orbs-network/go-mock"
 	"github.com/orbs-network/lean-helix-go/go/leanhelix"
 )
 
@@ -10,6 +11,7 @@ import (
 const PRIVATE_KEY_PREFIX = "PRIVATE_KEY"
 
 type mockKeyManager struct {
+	mock.Mock
 	myPublicKey        []byte
 	RejectedPublicKeys [][]byte
 }
