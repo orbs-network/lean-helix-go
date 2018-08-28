@@ -2,8 +2,8 @@ package leanhelix
 
 type BlockHeight uint64
 type ViewCounter uint64
-type BlockHash []byte
-type PublicKey []byte
+type BlockHash string
+type PublicKey string
 
 type BlockHeader struct {
 	Height    BlockHeight
@@ -20,7 +20,7 @@ type Node struct {
 }
 
 type BlockUtils interface {
-	CalculateBlockHash(block *Block) []byte
+	CalculateBlockHash(block *Block) *BlockHash
 }
 
 type NetworkCommunication interface {

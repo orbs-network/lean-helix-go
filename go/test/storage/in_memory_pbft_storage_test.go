@@ -1,13 +1,14 @@
 package storage
 
 import (
-	"github.com/orbs-network/lean-helix-go/go/leanhelix"
+	lh "github.com/orbs-network/lean-helix-go/go/leanhelix"
 	"github.com/orbs-network/lean-helix-go/go/storage"
 	"github.com/orbs-network/lean-helix-go/go/test/builders"
 	"github.com/orbs-network/lean-helix-go/go/test/keymanagermock"
 	"github.com/stretchr/testify/require"
 	"math"
 	"math/rand"
+	"strconv"
 	"testing"
 )
 
@@ -86,41 +87,95 @@ func TestClearAllStorageDataAfterCallingClearTermLogs(t *testing.T) {
 
 */
 
+func TestStorePrepareInStorage(t *testing.T) {
+	myStorage := storage.NewInMemoryPBFTStorage()
+	term1 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	term2 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	view1 := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	view2 := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId3 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1), []lh.PublicKey{})
+	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2), []lh.PublicKey{})
+	sender3KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId3), []lh.PublicKey{})
+	block1 := builders.CreateBlock(builders.GenesisBlock)
+	block2 := builders.CreateBlock(builders.GenesisBlock)
+	block1Hash := builders.CalculateBlockHash(block1)
+	myStorage.StorePrepare(builders.CreatePrepareMessage(sender1KeyManager, term1, view1, block1))
+	myStorage.StorePrepare(builders.CreatePrepareMessage(sender2KeyManager, term1, view1, block1))
+	myStorage.StorePrepare(builders.CreatePrepareMessage(sender2KeyManager, term1, view1, block2))
+	myStorage.StorePrepare(builders.CreatePrepareMessage(sender3KeyManager, term1, view2, block1))
+	myStorage.StorePrepare(builders.CreatePrepareMessage(sender3KeyManager, term2, view1, block2))
+
+	actual := myStorage.GetPrepareSendersPKs(term1, view1, block1Hash)
+	expected := []lh.PublicKey{senderId1, senderId2}
+	require.Equal(t, expected, actual, "Storage stores unique PrePrepare values")
+}
+
+// TODO Test is flaky because "actual" sometimes does not have the same order as "expected"
+// FIXME !!!
+func TestStoreCommitInStorage(t *testing.T) {
+	myStorage := storage.NewInMemoryPBFTStorage()
+	term1 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	term2 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	view1 := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	view2 := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId3 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1), []lh.PublicKey{})
+	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2), []lh.PublicKey{})
+	sender3KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId3), []lh.PublicKey{})
+	block1 := builders.CreateBlock(builders.GenesisBlock)
+	block2 := builders.CreateBlock(builders.GenesisBlock)
+	block1Hash := builders.CalculateBlockHash(block1)
+	myStorage.StoreCommit(builders.CreateCommitMessage(sender1KeyManager, term1, view1, block1))
+	myStorage.StoreCommit(builders.CreateCommitMessage(sender2KeyManager, term1, view1, block1))
+	myStorage.StoreCommit(builders.CreateCommitMessage(sender2KeyManager, term1, view1, block2))
+	myStorage.StoreCommit(builders.CreateCommitMessage(sender3KeyManager, term1, view2, block1))
+	myStorage.StoreCommit(builders.CreateCommitMessage(sender3KeyManager, term2, view1, block2))
+
+	actual := myStorage.GetCommitSendersPKs(term1, view1, block1Hash)
+	expected := []lh.PublicKey{senderId1, senderId2}
+	require.Equal(t, expected, actual, "Storage stores unique PrePrepare values")
+}
+
 func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 
 	myStorage := storage.NewInMemoryPBFTStorage()
-	term := leanhelix.BlockHeight(math.Floor(rand.Float64() * 1000))
-	view := leanhelix.ViewCounter(math.Floor(rand.Float64() * 1000))
+	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
 	block := builders.CreateBlock(builders.GenesisBlock)
-	keyManager := keymanagermock.NewMockKeyManager([]byte("PK"), []leanhelix.PublicKey{})
+	keyManager := keymanagermock.NewMockKeyManager(lh.PublicKey("PK"), []lh.PublicKey{})
 	ppContent := builders.CreatePrePrepareMessage(keyManager, term, view, block)
 
-	firstTime := myStorage.StorePrePrepare(term, view, ppContent)
+	firstTime := myStorage.StorePrePrepare(ppContent)
 	require.True(t, firstTime, "StorePrePrepare() returns true if storing a new value ")
 
-	secondTime := myStorage.StorePrePrepare(term, view, ppContent)
+	secondTime := myStorage.StorePrePrepare(ppContent)
 	require.False(t, secondTime, "StorePrePrepare() returns false if trying to store a value that already exists")
 }
 
 func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	myStorage := storage.NewInMemoryPBFTStorage()
-	term := leanhelix.BlockHeight(math.Floor(rand.Float64() * 1000))
-	view := leanhelix.ViewCounter(math.Floor(rand.Float64() * 1000))
-	senderId1 := string(uint64(math.Floor(rand.Float64() * 1000)))
-	senderId2 := string(uint64(math.Floor(rand.Float64() * 1000)))
-	sender1KeyManager := keymanagermock.NewMockKeyManager([]byte(senderId1), []leanhelix.PublicKey{})
-	sender2KeyManager := keymanagermock.NewMockKeyManager([]byte(senderId2), []leanhelix.PublicKey{})
+	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1), []lh.PublicKey{})
+	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2), []lh.PublicKey{})
 	block := builders.CreateBlock(builders.GenesisBlock)
-	preparePayload1 := builders.CreatePrepareMessage(sender1KeyManager, term, view, block)
-	preparePayload2 := builders.CreatePrepareMessage(sender2KeyManager, term, view, block)
+	prepareMessage1 := builders.CreatePrepareMessage(sender1KeyManager, term, view, block)
+	prepareMessage2 := builders.CreatePrepareMessage(sender2KeyManager, term, view, block)
 
-	firstTime := myStorage.StorePrepare(term, view, preparePayload1)
+	firstTime := myStorage.StorePrepare(prepareMessage1)
 	require.True(t, firstTime, "StorePrepare() returns true if storing a new value (1 of 2)")
 
-	secondTime := myStorage.StorePrepare(term, view, preparePayload2)
+	secondTime := myStorage.StorePrepare(prepareMessage2)
 	require.True(t, secondTime, "StorePrepare() returns true if storing a new value (2 of 2)")
 
-	thirdTime := myStorage.StorePrepare(term, view, preparePayload2)
+	thirdTime := myStorage.StorePrepare(prepareMessage2)
 	require.False(t, thirdTime, "StorePrepare() returns false if trying to store a value that already exists")
 }
 
@@ -128,29 +183,31 @@ func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 
 func TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	myStorage := storage.NewInMemoryPBFTStorage()
-	term := leanhelix.BlockHeight(math.Floor(rand.Float64() * 1000))
-	view := leanhelix.ViewCounter(math.Floor(rand.Float64() * 1000))
-	senderId1 := string(uint64(math.Floor(rand.Float64() * 1000)))
-	senderId2 := string(uint64(math.Floor(rand.Float64() * 1000)))
-	sender1KeyManager := keymanagermock.NewMockKeyManager([]byte(senderId1), []leanhelix.PublicKey{})
-	sender2KeyManager := keymanagermock.NewMockKeyManager([]byte(senderId2), []leanhelix.PublicKey{})
+	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1), []lh.PublicKey{})
+	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2), []lh.PublicKey{})
 	block := builders.CreateBlock(builders.GenesisBlock)
 
 	commitPayload1 := builders.CreateCommitMessage(sender1KeyManager, term, view, block)
 	commitPayload2 := builders.CreateCommitMessage(sender2KeyManager, term, view, block)
 
-	firstTime := myStorage.StoreCommit(term, view, commitPayload1)
+	firstTime := myStorage.StoreCommit(commitPayload1)
 	require.True(t, firstTime, "StoreCommit() returns true if storing a new value (1 of 2)")
 
-	secondTime := myStorage.StoreCommit(term, view, commitPayload2)
+	secondTime := myStorage.StoreCommit(commitPayload2)
 	require.True(t, secondTime, "StoreCommit() returns true if storing a new value (2 of 2)")
 
-	thirdTime := myStorage.StoreCommit(term, view, commitPayload2)
+	thirdTime := myStorage.StoreCommit(commitPayload2)
 	require.False(t, thirdTime, "StoreCommit() returns false if trying to store a value that already exists")
 
 }
 
 // TODO TestStoreViewChangeReturnsTrueIfNewOrFalseIfAlreadyExists
+
+// TODO func TestStorePrePrepareInStorage
 
 // TODO func TestStorePrepareInStorage
 
@@ -164,3 +221,5 @@ func TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 // TODO func TestReturnUndefinedIfNoPreprepare
 // TODO func TestReturnUndefinedIfNoPrepares
 // TODO func TestReturnUndefinedIfNotEnoughPrepares
+
+// TODO GetLatestPrepared() should initially be here as in TS code but later moved out, because it contains algo logic (it checks something with 2*f))

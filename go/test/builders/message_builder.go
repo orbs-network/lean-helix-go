@@ -21,8 +21,8 @@ func CreatePrePrepareMessage(km lh.KeyManager, term lh.BlockHeight, view lh.View
 
 	result := &lh.PrePrepareMessage{
 		BlockRefMessage: &lh.BlockRefMessage{
-			Content:       blockMessageContent,
-			SignaturePair: signaturePair,
+			BlockMessageContent: blockMessageContent,
+			SignaturePair:       signaturePair,
 		},
 		Block: block,
 	}
@@ -31,7 +31,7 @@ func CreatePrePrepareMessage(km lh.KeyManager, term lh.BlockHeight, view lh.View
 }
 
 func CreatePrepareMessage(km lh.KeyManager, term lh.BlockHeight, view lh.ViewCounter, block *lh.Block) *lh.PrepareMessage {
-	blockHash := blockUtils.CalculateBlockHash(block)
+	blockHash := CalculateBlockHash(block)
 
 	blockMessageContent := &lh.BlockMessageContent{
 		MessageType: lh.MESSAGE_TYPE_PREPARE,
@@ -46,15 +46,15 @@ func CreatePrepareMessage(km lh.KeyManager, term lh.BlockHeight, view lh.ViewCou
 	}
 
 	result := &lh.PrepareMessage{
-		Content:       blockMessageContent,
-		SignaturePair: signaturePair,
+		BlockMessageContent: blockMessageContent,
+		SignaturePair:       signaturePair,
 	}
 
 	return result
 }
 
 func CreateCommitMessage(km lh.KeyManager, term lh.BlockHeight, view lh.ViewCounter, block *lh.Block) *lh.CommitMessage {
-	blockHash := blockUtils.CalculateBlockHash(block)
+	blockHash := CalculateBlockHash(block)
 
 	blockMessageContent := &lh.BlockMessageContent{
 		MessageType: lh.MESSAGE_TYPE_COMMIT,
@@ -69,8 +69,8 @@ func CreateCommitMessage(km lh.KeyManager, term lh.BlockHeight, view lh.ViewCoun
 	}
 
 	result := &lh.CommitMessage{
-		Content:       blockMessageContent,
-		SignaturePair: signaturePair,
+		BlockMessageContent: blockMessageContent,
+		SignaturePair:       signaturePair,
 	}
 
 	return result

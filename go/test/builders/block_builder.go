@@ -10,12 +10,10 @@ var globalCounter = 0
 var GenesisBlock = &lh.Block{
 	Header: &lh.BlockHeader{
 		Height:    0,
-		BlockHash: []byte("The Genesis Block"),
+		BlockHash: lh.BlockHash("The Genesis Block"),
 	},
 	Body: []byte("The Genesis Block"),
 }
-
-var blockUtils = NewMockBlockUtils()
 
 func genBody() []byte {
 	globalCounter++
@@ -27,7 +25,7 @@ func CreateBlock(previousBlock *lh.Block) *lh.Block {
 	block := &lh.Block{
 		Header: &lh.BlockHeader{
 			Height:    previousBlock.Header.Height + 1,
-			BlockHash: blockUtils.CalculateBlockHash(previousBlock),
+			BlockHash: CalculateBlockHash(previousBlock),
 		},
 		Body: genBody(),
 	}

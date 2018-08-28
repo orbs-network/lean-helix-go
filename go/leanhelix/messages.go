@@ -11,7 +11,7 @@ const (
 )
 
 type BlockRefMessage struct {
-	Content       *BlockMessageContent
+	*BlockMessageContent
 	SignaturePair *SignaturePair
 }
 
