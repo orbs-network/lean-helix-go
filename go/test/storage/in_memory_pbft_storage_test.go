@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"github.com/orbs-network/lean-helix-go/go/leanhelix"
 	"github.com/orbs-network/lean-helix-go/go/storage"
 	"github.com/orbs-network/lean-helix-go/go/test/builders"
 	"github.com/orbs-network/lean-helix-go/go/test/keymanagermock"
@@ -26,12 +27,12 @@ func TestClearAllStorageDataAfterCallingClearTermLogs(t *testing.T) {
 	blockHash := digest.CalcTransactionsBlockHash(block)
 	keyManager := keymanager.NewMockKeyManager([]byte("PK"), [][]byte{})
 
-	prepreparePayload := CreatePrepreparePayload(keyManager, term, view, block)
-	preparePayload := CreatePreparePayload(keyManager, term, view, block)
-	commitPayload := CreateCommitPayload(keyManager, term, view, block)
+	prepreparePayload := CreatePrePrepareMessage(keyManager, term, view, block)
+	preparePayload := CreatePrepareMessage(keyManager, term, view, block)
+	commitPayload := CreateCommitMessage(keyManager, term, view, block)
 	viewChangePayload := CreatePayload(keyManager, nil)
 
-	myStorage.StorePreprepare(term, view, prepreparePayload)
+	myStorage.StorePrePrepare(term, view, prepreparePayload)
 	myStorage.StorePrepare(term, view, preparePayload)
 	myStorage.StoreCommit(term, view, commitPayload)
 	myStorage.StoreViewChange(term, view, viewChangePayload)
@@ -88,30 +89,30 @@ func TestClearAllStorageDataAfterCallingClearTermLogs(t *testing.T) {
 func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 
 	myStorage := storage.NewInMemoryPBFTStorage()
-	term := uint64(math.Floor(rand.Float64() * 1000))
-	view := uint64(math.Floor(rand.Float64() * 1000))
+	term := leanhelix.BlockHeight(math.Floor(rand.Float64() * 1000))
+	view := leanhelix.ViewCounter(math.Floor(rand.Float64() * 1000))
 	block := builders.CreateBlock(builders.GenesisBlock)
-	keyManager := keymanagermock.NewMockKeyManager([]byte("PK"), [][]byte{})
-	prepreparePayload := builders.CreatePrepreparePayload(keyManager, term, view, block)
+	keyManager := keymanagermock.NewMockKeyManager([]byte("PK"), []leanhelix.PublicKey{})
+	ppContent := builders.CreatePrePrepareMessage(keyManager, term, view, block)
 
-	firstTime := myStorage.StorePreprepare(term, view, prepreparePayload)
-	require.True(t, firstTime, "StorePreprepare() returns true if storing a new value ")
+	firstTime := myStorage.StorePrePrepare(term, view, ppContent)
+	require.True(t, firstTime, "StorePrePrepare() returns true if storing a new value ")
 
-	secondTime := myStorage.StorePreprepare(term, view, prepreparePayload)
-	require.False(t, secondTime, "StorePreprepare() returns false if trying to store a value that already exists")
+	secondTime := myStorage.StorePrePrepare(term, view, ppContent)
+	require.False(t, secondTime, "StorePrePrepare() returns false if trying to store a value that already exists")
 }
 
 func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	myStorage := storage.NewInMemoryPBFTStorage()
-	term := uint64(math.Floor(rand.Float64() * 1000))
-	view := uint64(math.Floor(rand.Float64() * 1000))
+	term := leanhelix.BlockHeight(math.Floor(rand.Float64() * 1000))
+	view := leanhelix.ViewCounter(math.Floor(rand.Float64() * 1000))
 	senderId1 := string(uint64(math.Floor(rand.Float64() * 1000)))
 	senderId2 := string(uint64(math.Floor(rand.Float64() * 1000)))
-	sender1KeyManager := keymanagermock.NewMockKeyManager([]byte(senderId1), [][]byte{})
-	sender2KeyManager := keymanagermock.NewMockKeyManager([]byte(senderId2), [][]byte{})
+	sender1KeyManager := keymanagermock.NewMockKeyManager([]byte(senderId1), []leanhelix.PublicKey{})
+	sender2KeyManager := keymanagermock.NewMockKeyManager([]byte(senderId2), []leanhelix.PublicKey{})
 	block := builders.CreateBlock(builders.GenesisBlock)
-	preparePayload1 := builders.CreatePreparePayload(sender1KeyManager, term, view, block)
-	preparePayload2 := builders.CreatePreparePayload(sender2KeyManager, term, view, block)
+	preparePayload1 := builders.CreatePrepareMessage(sender1KeyManager, term, view, block)
+	preparePayload2 := builders.CreatePrepareMessage(sender2KeyManager, term, view, block)
 
 	firstTime := myStorage.StorePrepare(term, view, preparePayload1)
 	require.True(t, firstTime, "StorePrepare() returns true if storing a new value (1 of 2)")
@@ -127,16 +128,16 @@ func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 
 func TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	myStorage := storage.NewInMemoryPBFTStorage()
-	term := uint64(math.Floor(rand.Float64() * 1000))
-	view := uint64(math.Floor(rand.Float64() * 1000))
+	term := leanhelix.BlockHeight(math.Floor(rand.Float64() * 1000))
+	view := leanhelix.ViewCounter(math.Floor(rand.Float64() * 1000))
 	senderId1 := string(uint64(math.Floor(rand.Float64() * 1000)))
 	senderId2 := string(uint64(math.Floor(rand.Float64() * 1000)))
-	sender1KeyManager := keymanagermock.NewMockKeyManager([]byte(senderId1), [][]byte{})
-	sender2KeyManager := keymanagermock.NewMockKeyManager([]byte(senderId2), [][]byte{})
+	sender1KeyManager := keymanagermock.NewMockKeyManager([]byte(senderId1), []leanhelix.PublicKey{})
+	sender2KeyManager := keymanagermock.NewMockKeyManager([]byte(senderId2), []leanhelix.PublicKey{})
 	block := builders.CreateBlock(builders.GenesisBlock)
 
-	commitPayload1 := builders.CreateCommitPayload(sender1KeyManager, term, view, block)
-	commitPayload2 := builders.CreateCommitPayload(sender2KeyManager, term, view, block)
+	commitPayload1 := builders.CreateCommitMessage(sender1KeyManager, term, view, block)
+	commitPayload2 := builders.CreateCommitMessage(sender2KeyManager, term, view, block)
 
 	firstTime := myStorage.StoreCommit(term, view, commitPayload1)
 	require.True(t, firstTime, "StoreCommit() returns true if storing a new value (1 of 2)")

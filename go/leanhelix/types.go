@@ -1,25 +1,26 @@
 package leanhelix
 
-import (
-	"github.com/orbs-network/lean-helix-go/go/block"
-)
+type BlockHeight uint64
+type ViewCounter uint64
+type BlockHash []byte
+type PublicKey []byte
 
-type MessageType string
+type BlockHeader struct {
+	Height    BlockHeight
+	BlockHash BlockHash
+}
 
-const (
-	MESSAGE_TYPE_PREPREPARE  MessageType = "preprepare"
-	MESSAGE_TYPE_PREPARE     MessageType = "prepare"
-	MESSAGE_TYPE_COMMIT      MessageType = "commit"
-	MESSAGE_TYPE_VIEW_CHANGE MessageType = "view-change"
-	MESSAGE_TYPE_NEW_VIEW    MessageType = "new-view"
-)
+type Block struct {
+	Header *BlockHeader
+	Body   []byte
+}
 
 type Node struct {
-	PublicKey []byte
+	MyPublicKey PublicKey
 }
 
 type BlockUtils interface {
-	CalculateBlockHash(block *block.Block) []byte
+	CalculateBlockHash(block *Block) []byte
 }
 
 type NetworkCommunication interface {

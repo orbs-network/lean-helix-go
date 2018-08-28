@@ -2,32 +2,32 @@ package builders
 
 import (
 	"fmt"
-	"github.com/orbs-network/lean-helix-go/go/block"
+	lh "github.com/orbs-network/lean-helix-go/go/leanhelix"
 )
 
 var globalCounter = 0
 
-var GenesisBlock = &block.Block{
-	Header: &block.BlockHeader{
-		Height:        0,
-		PrevBlockHash: []byte{0},
+var GenesisBlock = &lh.Block{
+	Header: &lh.BlockHeader{
+		Height:    0,
+		BlockHash: []byte("The Genesis Block"),
 	},
-	Body: "The Genesis Block",
+	Body: []byte("The Genesis Block"),
 }
 
 var blockUtils = NewMockBlockUtils()
 
-func genBody() string {
+func genBody() []byte {
 	globalCounter++
-	return fmt.Sprintf("Block %d", globalCounter)
+	return []byte(fmt.Sprintf("Block %d", globalCounter))
 }
 
-func CreateBlock(previousBlock *block.Block) *block.Block {
+func CreateBlock(previousBlock *lh.Block) *lh.Block {
 
-	block := &block.Block{
-		Header: &block.BlockHeader{
-			Height:        previousBlock.Header.Height + 1,
-			PrevBlockHash: blockUtils.CalculateBlockHash(previousBlock),
+	block := &lh.Block{
+		Header: &lh.BlockHeader{
+			Height:    previousBlock.Header.Height + 1,
+			BlockHash: blockUtils.CalculateBlockHash(previousBlock),
 		},
 		Body: genBody(),
 	}

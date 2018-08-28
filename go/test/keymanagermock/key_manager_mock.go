@@ -12,50 +12,21 @@ const PRIVATE_KEY_PREFIX = "PRIVATE_KEY"
 
 type mockKeyManager struct {
 	mock.Mock
-	myPublicKey        []byte
-	RejectedPublicKeys [][]byte
+	myPublicKey        leanhelix.PublicKey
+	RejectedPublicKeys []leanhelix.PublicKey
 }
 
-func NewMockKeyManager(publicKey []byte, rejectedPublicKeys [][]byte) *mockKeyManager {
+func NewMockKeyManager(publicKey leanhelix.PublicKey, rejectedPublicKeys []leanhelix.PublicKey) *mockKeyManager {
 	return &mockKeyManager{
 		myPublicKey:        publicKey,
 		RejectedPublicKeys: rejectedPublicKeys,
 	}
 }
 
-func (km *mockKeyManager) MyPublicKey() []byte {
+func (km *mockKeyManager) SignBlockMessageContent(bmc *leanhelix.BlockMessageContent) string {
+	return fmt.Sprintf("%s|%s|%s|%s|%s|%s", bmc.MessageType, PRIVATE_KEY_PREFIX, km.MyPublicKey(), string(bmc.Term), string(bmc.View), string(bmc.BlockHash))
+}
+
+func (km *mockKeyManager) MyPublicKey() leanhelix.PublicKey {
 	return km.myPublicKey
-}
-
-func (km *mockKeyManager) SignPrepreparePayloadData(ppd *leanhelix.PrepreparePayloadData) string {
-	return fmt.Sprintf("%s|%s|%s|%s|%s", PRIVATE_KEY_PREFIX, km.MyPublicKey(), string(ppd.Term), string(ppd.View), string(ppd.BlockHash))
-}
-func (km *mockKeyManager) SignPreparePayloadData(pd *leanhelix.PreparePayloadData) string {
-	return fmt.Sprintf("%s|%s|%s|%s|%s", PRIVATE_KEY_PREFIX, km.MyPublicKey(), string(pd.Term), string(pd.View), string(pd.BlockHash))
-}
-func (km *mockKeyManager) SignCommitPayloadData(cd *leanhelix.CommitPayloadData) string {
-	return fmt.Sprintf("%s|%s|%s|%s|%s", PRIVATE_KEY_PREFIX, km.MyPublicKey(), string(cd.Term), string(cd.View), string(cd.BlockHash))
-}
-
-func (km *mockKeyManager) Verify(ppd *leanhelix.PrepreparePayloadData, signature string, publicKey []byte) bool {
-	if IndexOf(km.RejectedPublicKeys, publicKey) > -1 {
-		return false
-	}
-
-	expectedSignature := fmt.Sprintf("%s|%s|%s|%s|%s", PRIVATE_KEY_PREFIX, publicKey, string(ppd.Term), string(ppd.View), string(ppd.BlockHash))
-
-	return expectedSignature == signature
-}
-
-//TODO Find a Go way to compare []byte's
-func IndexOf(publicKeys [][]byte, searchTerm []byte) int {
-	if publicKeys == nil {
-		return -1
-	}
-	for i := 0; i < len(publicKeys); i++ {
-		if string(searchTerm) == string(publicKeys[i]) {
-			return i
-		}
-	}
-	return -1
 }
