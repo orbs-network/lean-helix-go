@@ -10,6 +10,7 @@ type inMemoryPbftStorage struct {
 	preprepareStorage map[lh.BlockHeight]map[lh.ViewCounter]*lh.PrePrepareMessage
 	prepareStorage    map[lh.BlockHeight]map[lh.ViewCounter]map[lh.BlockHash]map[lh.PublicKey]*lh.PrepareMessage
 	commitStorage     map[lh.BlockHeight]map[lh.ViewCounter]map[lh.BlockHash]map[lh.PublicKey]*lh.CommitMessage
+	viewChangeStorage map[lh.BlockHeight]map[lh.ViewCounter]map[lh.PublicKey]*lh.ViewChangeMessage
 }
 
 func (storage *inMemoryPbftStorage) StorePrePrepare(ppm *lh.PrePrepareMessage) bool {
@@ -95,6 +96,32 @@ func (storage *inMemoryPbftStorage) StoreCommit(cm *lh.CommitMessage) bool {
 
 }
 
+func (storage *inMemoryPbftStorage) StoreViewChange(vcm *lh.ViewChangeMessage) bool {
+	term, view := vcm.Term, vcm.View
+	// pps -> views ->
+	views, ok := storage.viewChangeStorage[term]
+	if !ok {
+		views = make(map[lh.ViewCounter]map[lh.PublicKey]*lh.ViewChangeMessage)
+		storage.viewChangeStorage[term] = views
+	}
+	senders, ok := views[view]
+	if !ok {
+		senders = make(map[lh.PublicKey]*lh.ViewChangeMessage)
+		views[view] = senders
+	}
+	_, ok = senders[vcm.SignerPublicKey]
+	if ok {
+		return false
+	}
+	senders[vcm.SignerPublicKey] = vcm
+
+	utils.Logger.Info("StoreViewChange: term=%d view=%d, senderPk=%s",
+		term, view, vcm.SignerPublicKey)
+
+	return true
+
+}
+
 func (storage *inMemoryPbftStorage) getPrepare(term lh.BlockHeight, view lh.ViewCounter, blockHash lh.BlockHash) (map[lh.PublicKey]*lh.PrepareMessage, bool) {
 	views, ok := storage.prepareStorage[term]
 	if !ok {
@@ -105,7 +132,6 @@ func (storage *inMemoryPbftStorage) getPrepare(term lh.BlockHeight, view lh.View
 		return nil, false
 	}
 	return blockHashes[blockHash], true
-
 }
 
 func (storage *inMemoryPbftStorage) GetPrepareSendersPKs(term lh.BlockHeight, view lh.ViewCounter, blockHash lh.BlockHash) []lh.PublicKey {
@@ -132,7 +158,6 @@ func (storage *inMemoryPbftStorage) getCommit(term lh.BlockHeight, view lh.ViewC
 		return nil, false
 	}
 	return blockHashes[blockHash], true
-
 }
 
 func (storage *inMemoryPbftStorage) GetCommitSendersPKs(term lh.BlockHeight, view lh.ViewCounter, blockHash lh.BlockHash) []lh.PublicKey {
@@ -148,11 +173,37 @@ func (storage *inMemoryPbftStorage) GetCommitSendersPKs(term lh.BlockHeight, vie
 	}
 	return keys
 }
+func (storage *inMemoryPbftStorage) GetViewChangeMessages(term lh.BlockHeight, view lh.ViewCounter, f int) []*lh.ViewChangeMessage {
+	views, ok := storage.viewChangeStorage[term]
+	if !ok {
+		return nil
+	}
+	senders, ok := views[view]
+	if !ok {
+		return nil
+	}
+	minimumNodes := f*2 + 1
+	if len(senders) < minimumNodes {
+		return nil
+	}
+
+	result := make([]*lh.ViewChangeMessage, minimumNodes)
+	i := 0
+	for _, value := range senders {
+		if i >= minimumNodes {
+			break
+		}
+		result[i] = value
+		i++
+	}
+	return result
+}
 
 func NewInMemoryPBFTStorage() *inMemoryPbftStorage {
 	return &inMemoryPbftStorage{
 		preprepareStorage: make(map[lh.BlockHeight]map[lh.ViewCounter]*lh.PrePrepareMessage),
 		prepareStorage:    make(map[lh.BlockHeight]map[lh.ViewCounter]map[lh.BlockHash]map[lh.PublicKey]*lh.PrepareMessage),
 		commitStorage:     make(map[lh.BlockHeight]map[lh.ViewCounter]map[lh.BlockHash]map[lh.PublicKey]*lh.CommitMessage),
+		viewChangeStorage: make(map[lh.BlockHeight]map[lh.ViewCounter]map[lh.PublicKey]*lh.ViewChangeMessage),
 	}
 }

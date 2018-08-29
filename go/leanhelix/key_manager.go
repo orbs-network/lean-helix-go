@@ -2,7 +2,7 @@ package leanhelix
 
 type KeyManager interface {
 	SignBlockMessageContent(bmc *BlockMessageContent) string
-	//SignViewChangeMessage()
+	SignViewChangeMessage(vcmc *ViewChangeMessageContent) string
 	//SignNewViewMessage()
 	MyPublicKey() PublicKey
 	//

@@ -22,12 +22,20 @@ type PrePrepareMessage struct {
 
 type PrepareMessage BlockRefMessage
 
+type PreparedMessages struct {
+	PreprepareMessage *PrePrepareMessage
+	PrepareMessages   []PrepareMessage
+}
+
 type CommitMessage BlockRefMessage
 
+// TODO For now I want "Block" to be explicit - it's not as integral part
+// of ViewChangeMessage as the other fields are
+
 type ViewChangeMessage struct {
-	Content       *ViewChangeMessageContent
-	SignaturePair *SignaturePair
-	Block         *Block
+	*ViewChangeMessageContent
+	*SignaturePair
+	Block *Block
 }
 
 type NewViewMessage struct {
@@ -55,19 +63,19 @@ type SignaturePair struct {
 }
 
 type ViewChangeMessageContent struct {
-	MessageType   *MessageType
+	MessageType   MessageType
 	Term          BlockHeight
 	View          ViewCounter
 	PreparedProof *PreparedProof
 }
 
 type PreparedProof struct {
-	preprepareBlockRefMessage *BlockRefMessage
-	prepareBlockRefMessages   []BlockRefMessage
+	PreprepareBlockRefMessage *BlockRefMessage
+	PrepareBlockRefMessages   []*BlockRefMessage
 }
 
 type NewViewMessageContent struct {
-	MessageType *MessageType
+	MessageType MessageType
 	Term        BlockHeight
 	View        ViewCounter
 	Votes       []ViewChangeVote

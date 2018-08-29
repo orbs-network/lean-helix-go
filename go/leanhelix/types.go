@@ -27,3 +27,17 @@ type NetworkCommunication interface {
 	Nodes() []Node
 	SendToMembers(publicKeys []string, messageType string, message []byte)
 }
+
+type PublicKeys []PublicKey
+
+func (pks PublicKeys) Len() int {
+	return len(pks)
+}
+
+func (pks PublicKeys) Less(i, j int) bool {
+	return pks[i] < pks[j]
+}
+
+func (pks PublicKeys) Swap(i, j int) {
+	pks[i], pks[j] = pks[j], pks[i]
+}

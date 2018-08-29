@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"math"
 	"math/rand"
+	"sort"
 	"strconv"
 	"testing"
 )
@@ -87,6 +88,9 @@ func TestClearAllStorageDataAfterCallingClearTermLogs(t *testing.T) {
 
 */
 
+// TODO func TestStorePrePrepareInStorage
+// TODO Do we need TestStorePrePrepareInStorage(t *testing.T) ?
+
 func TestStorePrepareInStorage(t *testing.T) {
 	myStorage := storage.NewInMemoryPBFTStorage()
 	term1 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
@@ -108,13 +112,13 @@ func TestStorePrepareInStorage(t *testing.T) {
 	myStorage.StorePrepare(builders.CreatePrepareMessage(sender3KeyManager, term1, view2, block1))
 	myStorage.StorePrepare(builders.CreatePrepareMessage(sender3KeyManager, term2, view1, block2))
 
-	actual := myStorage.GetPrepareSendersPKs(term1, view1, block1Hash)
 	expected := []lh.PublicKey{senderId1, senderId2}
+	sort.Sort(lh.PublicKeys(expected))
+	actual := myStorage.GetPrepareSendersPKs(term1, view1, block1Hash)
+	sort.Sort(lh.PublicKeys(actual))
 	require.Equal(t, expected, actual, "Storage stores unique PrePrepare values")
 }
 
-// TODO Test is flaky because "actual" sometimes does not have the same order as "expected"
-// FIXME !!!
 func TestStoreCommitInStorage(t *testing.T) {
 	myStorage := storage.NewInMemoryPBFTStorage()
 	term1 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
@@ -136,8 +140,10 @@ func TestStoreCommitInStorage(t *testing.T) {
 	myStorage.StoreCommit(builders.CreateCommitMessage(sender3KeyManager, term1, view2, block1))
 	myStorage.StoreCommit(builders.CreateCommitMessage(sender3KeyManager, term2, view1, block2))
 
-	actual := myStorage.GetCommitSendersPKs(term1, view1, block1Hash)
 	expected := []lh.PublicKey{senderId1, senderId2}
+	sort.Sort(lh.PublicKeys(expected))
+	actual := myStorage.GetCommitSendersPKs(term1, view1, block1Hash)
+	sort.Sort(lh.PublicKeys(actual))
 	require.Equal(t, expected, actual, "Storage stores unique PrePrepare values")
 }
 
@@ -179,8 +185,6 @@ func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	require.False(t, thirdTime, "StorePrepare() returns false if trying to store a value that already exists")
 }
 
-// TODO TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists
-
 func TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	myStorage := storage.NewInMemoryPBFTStorage()
 	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
@@ -207,13 +211,32 @@ func TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 
 // TODO TestStoreViewChangeReturnsTrueIfNewOrFalseIfAlreadyExists
 
-// TODO func TestStorePrePrepareInStorage
-
-// TODO func TestStorePrepareInStorage
-
-// TODO func TestStoreCommitInStorage
-
 // Proofs
+
+func TestStoreAndGetViewChangeProof(t *testing.T) {
+	myStorage := storage.NewInMemoryPBFTStorage()
+	term1 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	term2 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	view1 := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId3 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1), []lh.PublicKey{})
+	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2), []lh.PublicKey{})
+	sender3KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId3), []lh.PublicKey{})
+	vcms := make([]*lh.ViewChangeMessage, 0, 4)
+	vcms = append(vcms, builders.CreateViewChangeMessage(sender1KeyManager, term1, view1, nil))
+	vcms = append(vcms, builders.CreateViewChangeMessage(sender2KeyManager, term1, view1, nil))
+	vcms = append(vcms, builders.CreateViewChangeMessage(sender3KeyManager, term1, view1, nil))
+	vcms = append(vcms, builders.CreateViewChangeMessage(sender3KeyManager, term2, view1, nil))
+	for _, k := range vcms {
+		myStorage.StoreViewChange(k)
+	}
+	f := 1
+	actual := myStorage.GetViewChangeMessages(term1, view1, f)
+	expected := 2*f + 1                                                     // TODO why this?
+	require.Equal(t, expected, len(actual), "return the view-change proof") // TODO bad explanation!
+}
 
 // TODO func TestStoreAndGetViewChangeProof
 // TODO func TestStoreAndGetPrepareProof

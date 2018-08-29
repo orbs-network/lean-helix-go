@@ -16,6 +16,10 @@ type mockKeyManager struct {
 	RejectedPublicKeys []leanhelix.PublicKey
 }
 
+func (km *mockKeyManager) SignViewChangeMessage(vcmc *leanhelix.ViewChangeMessageContent) string {
+	return fmt.Sprintf("%s|%s|%s|%s|%s", vcmc.MessageType, PRIVATE_KEY_PREFIX, km.MyPublicKey(), string(vcmc.Term), string(vcmc.View))
+}
+
 func NewMockKeyManager(publicKey leanhelix.PublicKey, rejectedPublicKeys []leanhelix.PublicKey) *mockKeyManager {
 	return &mockKeyManager{
 		myPublicKey:        publicKey,
