@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	lh "github.com/orbs-network/lean-helix-go/go/leanhelix"
 	"github.com/orbs-network/lean-helix-go/go/storage"
 	"github.com/orbs-network/lean-helix-go/go/test/builders"
@@ -8,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"math"
 	"math/rand"
-	"sort"
 	"strconv"
 	"testing"
 )
@@ -113,10 +113,8 @@ func TestStorePrepareInStorage(t *testing.T) {
 	myStorage.StorePrepare(builders.CreatePrepareMessage(sender3KeyManager, term2, view1, block2))
 
 	expected := []lh.PublicKey{senderId1, senderId2}
-	sort.Sort(lh.PublicKeys(expected))
 	actual := myStorage.GetPrepareSendersPKs(term1, view1, block1Hash)
-	sort.Sort(lh.PublicKeys(actual))
-	require.Equal(t, expected, actual, "Storage stores unique PrePrepare values")
+	require.ElementsMatch(t, expected, actual, "Storage stores unique PrePrepare values")
 }
 
 func TestStoreCommitInStorage(t *testing.T) {
@@ -141,10 +139,8 @@ func TestStoreCommitInStorage(t *testing.T) {
 	myStorage.StoreCommit(builders.CreateCommitMessage(sender3KeyManager, term2, view1, block2))
 
 	expected := []lh.PublicKey{senderId1, senderId2}
-	sort.Sort(lh.PublicKeys(expected))
 	actual := myStorage.GetCommitSendersPKs(term1, view1, block1Hash)
-	sort.Sort(lh.PublicKeys(actual))
-	require.Equal(t, expected, actual, "Storage stores unique PrePrepare values")
+	require.ElementsMatch(t, expected, actual, "Storage stores unique PrePrepare values")
 }
 
 func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
@@ -238,7 +234,96 @@ func TestStoreAndGetViewChangeProof(t *testing.T) {
 	require.Equal(t, expected, len(actual), "return the view-change proof") // TODO bad explanation!
 }
 
-// TODO func TestStoreAndGetViewChangeProof
+// from describe("Prepared")
+func TestPrepared(t *testing.T) {
+	// init here
+	fmt.Println("TestPrepared")
+	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	leaderId := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	leaderKeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(leaderId), []lh.PublicKey{})
+	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1), []lh.PublicKey{})
+	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2), []lh.PublicKey{})
+	block := builders.CreateBlock(builders.GenesisBlock)
+	ppm := builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block)
+	pm1 := builders.CreatePrepareMessage(sender1KeyManager, term, view, block)
+	pm2 := builders.CreatePrepareMessage(sender2KeyManager, term, view, block)
+	f := 1
+
+	t.Run("TestStoreAndGetPrepareProof", func(t *testing.T) {
+		myStorage := storage.NewInMemoryPBFTStorage()
+		myStorage.StorePrePrepare(ppm)
+		myStorage.StorePrepare(pm1)
+		myStorage.StorePrepare(pm2)
+		expectedProof := &lh.PreparedMessages{
+			PreprepareMessage: ppm,
+			PrepareMessages:   []*lh.PrepareMessage{pm1, pm2},
+		}
+
+		actualProof, _ := myStorage.GetLatestPrepared(term, f)
+		require.Equal(t, expectedProof, actualProof, "TestStoreAndGetPrepareProof(): return the prepared proof") // TODO bad explanation!
+	})
+
+	//t.Run("TestReturnPreparedProofWithHighestView", func(t *testing.T) {
+	//	myStorage := storage.NewInMemoryPBFTStorage()
+	//	prePrepareMessage10 := builders.CreatePrePrepareMessage(leaderKeyManager, 1, 10, block)
+	//	prepareMessage10_1 := builders.CreatePrepareMessage(sender1KeyManager, 1, 10, block)
+	//	prepareMessage10_2 := builders.CreatePrepareMessage(sender2KeyManager, 1, 10, block)
+	//
+	//	prePrepareMessage20 := builders.CreatePrePrepareMessage(leaderKeyManager, 1, 20, block)
+	//	prepareMessage20_1 := builders.CreatePrepareMessage(sender1KeyManager, 1, 20, block)
+	//	prepareMessage20_2 := builders.CreatePrepareMessage(sender2KeyManager, 1, 20, block)
+	//
+	//	prePrepareMessage30 := builders.CreatePrePrepareMessage(leaderKeyManager, 1, 30, block)
+	//	prepareMessage30_1 := builders.CreatePrepareMessage(sender1KeyManager, 1, 30, block)
+	//	prepareMessage30_2 := builders.CreatePrepareMessage(sender2KeyManager, 1, 30, block)
+	//
+	//	myStorage.StorePrePrepare(prePrepareMessage10)
+	//	myStorage.StorePrepare(prepareMessage10_1)
+	//	myStorage.StorePrepare(prepareMessage10_2)
+	//
+	//	myStorage.StorePrePrepare(prePrepareMessage20)
+	//	myStorage.StorePrepare(prepareMessage20_1)
+	//	myStorage.StorePrepare(prepareMessage20_2)
+	//
+	//	myStorage.StorePrePrepare(prePrepareMessage30)
+	//	myStorage.StorePrepare(prepareMessage30_1)
+	//	myStorage.StorePrepare(prepareMessage30_2)
+	//
+	//	expected := &lh.PreparedMessages{
+	//		PreprepareMessage: prePrepareMessage30,
+	//		PrepareMessages:   []*lh.PrepareMessage{prepareMessage30_1, prepareMessage30_2},
+	//	}
+	//	actual, _ := myStorage.GetLatestPrepared(1, 1)
+	//	require.ElementsMatch(t, expected, actual, "TestReturnPreparedProofWithHighestView")
+	//})
+
+	t.Run("TestReturnNothingIfNoPrePrepare", func(t *testing.T) {
+		myStorage := storage.NewInMemoryPBFTStorage()
+		myStorage.StorePrepare(pm1)
+		myStorage.StorePrepare(pm2)
+		_, ok := myStorage.GetLatestPrepared(term, f)
+		require.False(t, ok, "Don't return PreparedMessages from latest view if no PrePrepare in storage")
+	})
+
+	t.Run("TestReturnNothingIfNoPrepares", func(t *testing.T) {
+		myStorage := storage.NewInMemoryPBFTStorage()
+		myStorage.StorePrePrepare(ppm)
+		_, ok := myStorage.GetLatestPrepared(term, f)
+		require.False(t, ok, "Don't return PreparedMessages from latest view if no Prepare in storage")
+	})
+
+	t.Run("TestReturnNothingIfNotEnoughPrepares", func(t *testing.T) {
+		myStorage := storage.NewInMemoryPBFTStorage()
+		myStorage.StorePrePrepare(ppm)
+		myStorage.StorePrepare(pm1)
+		_, ok := myStorage.GetLatestPrepared(term, f)
+		require.False(t, ok, "Don't return PreparedMessages from latest view if not enough Prepares in storage (# Prepares < 2*f)")
+	})
+}
+
 // TODO func TestStoreAndGetPrepareProof
 // TODO func TestReturnHighestPrepareProof
 // TODO func TestReturnUndefinedIfNoPreprepare

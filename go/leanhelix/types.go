@@ -28,16 +28,9 @@ type NetworkCommunication interface {
 	SendToMembers(publicKeys []string, messageType string, message []byte)
 }
 
-type PublicKeys []PublicKey
+// Sorting ViewCounter arrays
+type ViewCounters []ViewCounter
 
-func (pks PublicKeys) Len() int {
-	return len(pks)
-}
-
-func (pks PublicKeys) Less(i, j int) bool {
-	return pks[i] < pks[j]
-}
-
-func (pks PublicKeys) Swap(i, j int) {
-	pks[i], pks[j] = pks[j], pks[i]
-}
+func (arr ViewCounters) Len() int           { return len(arr) }
+func (arr ViewCounters) Swap(i, j int)      { arr[i], arr[j] = arr[j], arr[i] }
+func (arr ViewCounters) Less(i, j int) bool { return arr[i] < arr[j] }

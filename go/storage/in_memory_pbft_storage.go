@@ -3,6 +3,7 @@ package storage
 import (
 	lh "github.com/orbs-network/lean-helix-go/go/leanhelix"
 	"github.com/orbs-network/lean-helix-go/go/utils"
+	"sort"
 )
 
 type inMemoryPbftStorage struct {
@@ -197,6 +198,58 @@ func (storage *inMemoryPbftStorage) GetViewChangeMessages(term lh.BlockHeight, v
 		i++
 	}
 	return result
+}
+
+func (storage *inMemoryPbftStorage) GetLatestPrepared(term lh.BlockHeight, f int) (*lh.PreparedMessages, bool) {
+	terms, ok := storage.preprepareStorage[term]
+	if !ok {
+		return nil, false
+	}
+	if len(terms) == 0 {
+		return nil, false
+	}
+	views := make([]lh.ViewCounter, 0, len(terms))
+	for key, _ := range terms {
+		views = append(views, key)
+	}
+	sort.Sort(lh.ViewCounters(views))
+	lastView := views[len(views)-1]
+
+	ppm, ok := storage.getPrePrepareMessage(term, lastView)
+	if !ok {
+		return nil, false
+	}
+	prepareMessages, ok := storage.getPrepareMessages(term, lastView, &ppm.BlockHash)
+	if len(prepareMessages) < f*2 {
+		return nil, false
+	}
+	return &lh.PreparedMessages{
+		PreprepareMessage: ppm,
+		PrepareMessages:   prepareMessages,
+	}, true
+
+}
+
+func (storage *inMemoryPbftStorage) getPrePrepareMessage(term lh.BlockHeight, view lh.ViewCounter) (*lh.PrePrepareMessage, bool) {
+	views, ok := storage.preprepareStorage[term]
+	if !ok {
+		return nil, false
+	}
+	result, ok := views[view]
+	return result, ok
+}
+
+// TODO Whether to use ptr for string (BlockHash)
+func (storage *inMemoryPbftStorage) getPrepareMessages(term lh.BlockHeight, view lh.ViewCounter, blockHash *lh.BlockHash) ([]*lh.PrepareMessage, bool) {
+	senders, ok := storage.getPrepare(term, view, *blockHash)
+	if !ok {
+		return nil, false
+	}
+	values := make([]*lh.PrepareMessage, 0, len(senders))
+	for _, v := range senders {
+		values = append(values, v)
+	}
+	return values, true
 }
 
 func NewInMemoryPBFTStorage() *inMemoryPbftStorage {

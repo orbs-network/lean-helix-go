@@ -76,6 +76,8 @@ func CreateCommitMessage(km lh.KeyManager, term lh.BlockHeight, view lh.ViewCoun
 	return result
 }
 
+// TODO km should be ptr
+
 func CreateViewChangeMessage(km lh.KeyManager, term lh.BlockHeight, view lh.ViewCounter, prepared *lh.PreparedMessages) *lh.ViewChangeMessage {
 	var (
 		preparedProof *lh.PreparedProof
