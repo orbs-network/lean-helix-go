@@ -259,7 +259,7 @@ func TestPrepared(t *testing.T) {
 		myStorage.StorePrepare(pm2)
 		expectedProof := &lh.PreparedMessages{
 			PreprepareMessage: ppm,
-			PrepareMessages:   []*lh.PrepareMessage{pm1, pm2},
+			PrepareMessages:   []*lh.BlockRefMessage{pm1, pm2},
 		}
 
 		actualProof, _ := myStorage.GetLatestPrepared(term, f)

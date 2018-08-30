@@ -24,7 +24,7 @@ type PrepareMessage BlockRefMessage
 
 type PreparedMessages struct {
 	PreprepareMessage *PrePrepareMessage
-	PrepareMessages   []*PrepareMessage
+	PrepareMessages   []*BlockRefMessage
 }
 
 type CommitMessage BlockRefMessage
