@@ -5,16 +5,27 @@ import lh "github.com/orbs-network/lean-helix-go/go/leanhelix"
 func ValidatePreparedProof(
 	targetTerm lh.BlockHeight,
 	targetView lh.ViewCounter,
+	keyManager lh.KeyManager,
 	preparedProof *lh.PreparedProof) bool {
 	if preparedProof == nil {
 		return true
 	}
 
-	if preparedProof.PreprepareBlockRefMessage == nil {
+	preprepareBlockRefMessage := preparedProof.PreprepareBlockRefMessage
+	if preprepareBlockRefMessage == nil {
 		return false
 	}
 
-	if preparedProof.PrepareBlockRefMessages == nil {
+	prepareBlockRefMessages := preparedProof.PrepareBlockRefMessages
+	if prepareBlockRefMessages == nil {
+		return false
+	}
+
+	expectedPrePrepareMessageContent := preprepareBlockRefMessage.BlockMessageContent
+	signaturePair := preprepareBlockRefMessage.SignaturePair
+	leaderPk := signaturePair.SignerPublicKey
+	contentSignature := signaturePair.ContentSignature
+	if keyManager.VerifyBlockMessageContent(expectedPrePrepareMessageContent, contentSignature, leaderPk) == false {
 		return false
 	}
 

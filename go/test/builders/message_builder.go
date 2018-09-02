@@ -109,10 +109,6 @@ func CreateViewChangeMessage(km lh.KeyManager, term lh.BlockHeight, view lh.View
 	return result
 }
 
-func BlockRefMessageFromPrePrepare(message *lh.PrePrepareMessage) *lh.BlockRefMessage {
-	return message.BlockRefMessage
-}
-
 func generatePreparedProof(prepared *lh.PreparedMessages) *lh.PreparedProof {
 
 	blockRefMessageFromPrePrepare := &lh.BlockRefMessage{
