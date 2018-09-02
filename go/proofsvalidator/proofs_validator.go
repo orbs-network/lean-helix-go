@@ -5,8 +5,9 @@ import lh "github.com/orbs-network/lean-helix-go/go/leanhelix"
 func ValidatePreparedProof(
 	targetTerm lh.BlockHeight,
 	targetView lh.ViewCounter,
-	keyManager lh.KeyManager,
-	preparedProof *lh.PreparedProof) bool {
+	preparedProof *lh.PreparedProof,
+	f int,
+	keyManager lh.KeyManager) bool {
 	if preparedProof == nil {
 		return true
 	}
@@ -18,6 +19,10 @@ func ValidatePreparedProof(
 
 	prepareBlockRefMessages := preparedProof.PrepareBlockRefMessages
 	if prepareBlockRefMessages == nil {
+		return false
+	}
+
+	if len(prepareBlockRefMessages) < 2*f {
 		return false
 	}
 
