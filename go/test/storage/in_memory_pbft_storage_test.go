@@ -2,6 +2,8 @@ package storage
 
 import (
 	"fmt"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	lh "github.com/orbs-network/lean-helix-go/go/leanhelix"
 	"github.com/orbs-network/lean-helix-go/go/storage"
 	"github.com/orbs-network/lean-helix-go/go/test/builders"
@@ -263,6 +265,9 @@ func TestPrepared(t *testing.T) {
 		}
 
 		actualProof, _ := myStorage.GetLatestPrepared(term, f)
+
+		cmp.Equal(expectedProof, actualProof, cmpopts.SortSlices())
+
 		require.Equal(t, expectedProof, actualProof, "TestStoreAndGetPrepareProof(): return the prepared proof") // TODO bad explanation!
 	})
 

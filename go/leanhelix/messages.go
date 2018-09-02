@@ -10,6 +10,14 @@ const (
 	MESSAGE_TYPE_NEW_VIEW    MessageType = "new-view"
 )
 
+// TODO how to impl this???
+type Message interface {
+	SignaturePair()
+	MessageType()
+	Term()
+	View()
+}
+
 type BlockRefMessage struct {
 	*BlockMessageContent
 	SignaturePair *SignaturePair
