@@ -53,10 +53,16 @@ func TestProofsValidator(t *testing.T) {
 		require.True(t, result, "Did not approve a nil proof")
 	})
 
-	t.Run("TestProofsValidatorWithNoBadPreprepareSignature", func(t *testing.T) {
+	t.Run("TestProofsValidatorWithBadPreprepareSignature", func(t *testing.T) {
 		keyManager := keymanagermock.NewMockKeyManager("Dummy PK", "Leader PK")
 		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, keyManager, preparedProof)
 		require.False(t, result, "Did not reject a proof that did not pass preprepare signature validation")
+	})
+
+	t.Run("TestProofsValidatorWithBadPrepareSignature", func(t *testing.T) {
+		keyManager := keymanagermock.NewMockKeyManager("Dummy PK", "Node 2")
+		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, keyManager, preparedProof)
+		require.False(t, result, "Did not reject a proof that did not pass prepare signature validation")
 	})
 
 	t.Run("TestProofsValidatorWithNoProof", func(t *testing.T) {

@@ -29,5 +29,14 @@ func ValidatePreparedProof(
 		return false
 	}
 
+	for _, msg := range prepareBlockRefMessages {
+		content := msg.BlockMessageContent
+		signature := msg.SignaturePair.ContentSignature
+		publicKey := msg.SignaturePair.SignerPublicKey
+		if keyManager.VerifyBlockMessageContent(content, signature, publicKey) == false {
+			return false
+		}
+	}
+
 	return true
 }
