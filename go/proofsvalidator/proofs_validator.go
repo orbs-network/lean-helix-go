@@ -22,6 +22,11 @@ func ValidatePreparedProof(
 		return false
 	}
 
+	term := preprepareBlockRefMessage.Term
+	if term != targetTerm {
+		return false
+	}
+
 	if len(prepareBlockRefMessages) < 2*f {
 		return false
 	}
