@@ -27,6 +27,11 @@ func ValidatePreparedProof(
 		return false
 	}
 
+	view := preprepareBlockRefMessage.View
+	if view >= targetView {
+		return false
+	}
+
 	if len(prepareBlockRefMessages) < 2*f {
 		return false
 	}

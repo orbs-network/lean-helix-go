@@ -80,6 +80,11 @@ func TestProofsValidator(t *testing.T) {
 		require.False(t, result, "Did not reject a proof with mismatching term")
 	})
 
+	t.Run("TestProofsValidatorWithTheSameView", func(t *testing.T) {
+		result := proofsvalidator.ValidatePreparedProof(targetTerm, view, preparedProof, f, keyManager)
+		require.False(t, result, "Did not reject a proof with equal targetView")
+	})
+
 	t.Run("TestProofsValidatorWithNoProof", func(t *testing.T) {
 		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager)
 		require.True(t, result, "Did not approve a valid proof")
