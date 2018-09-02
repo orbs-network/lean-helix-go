@@ -28,7 +28,7 @@ func NewMockKeyManager(publicKey leanhelix.PublicKey, rejectedPublicKeys ...lean
 }
 
 func (km *mockKeyManager) SignBlockMessageContent(bmc *leanhelix.BlockMessageContent) string {
-	return fmt.Sprintf("%s|%s|%s|%s|%s|%s", bmc.MessageType, PRIVATE_KEY_PREFIX, km.MyPublicKey(), string(bmc.Term), string(bmc.View), string(bmc.BlockHash))
+	return fmt.Sprintf("%s|%s|%s|%d|%d|%s", bmc.MessageType, PRIVATE_KEY_PREFIX, km.MyPublicKey(), bmc.Term, bmc.View, bmc.BlockHash)
 }
 
 func (km *mockKeyManager) VerifyBlockMessageContent(bmc *leanhelix.BlockMessageContent, signature string, publicKey leanhelix.PublicKey) bool {
@@ -38,7 +38,7 @@ func (km *mockKeyManager) VerifyBlockMessageContent(bmc *leanhelix.BlockMessageC
 		}
 	}
 
-	signedMessage := fmt.Sprintf("%s|%s|%s|%s|%s|%s", bmc.MessageType, PRIVATE_KEY_PREFIX, publicKey, string(bmc.Term), string(bmc.View), string(bmc.BlockHash))
+	signedMessage := fmt.Sprintf("%s|%s|%s|%d|%d|%s", bmc.MessageType, PRIVATE_KEY_PREFIX, publicKey, bmc.Term, bmc.View, bmc.BlockHash)
 	return signedMessage == signature
 }
 

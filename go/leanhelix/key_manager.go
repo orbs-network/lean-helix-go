@@ -5,7 +5,8 @@ type KeyManager interface {
 	SignViewChangeMessage(vcmc *ViewChangeMessageContent) string
 	//SignNewViewMessage()
 	MyPublicKey() PublicKey
-	//
+
+	VerifyBlockMessageContent(bmc *BlockMessageContent, signature string, publicKey PublicKey) bool
 	//VerifyPrepreparePayload()
 	//VerifyPreparePayload()
 	//VerifyCommitPayload()
