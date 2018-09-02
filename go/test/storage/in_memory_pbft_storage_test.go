@@ -234,6 +234,11 @@ func TestStoreAndGetViewChangeProof(t *testing.T) {
 	require.Equal(t, expected, len(actual), "return the view-change proof") // TODO bad explanation!
 }
 
+func compPrepareMessages(t *testing.T, a, b *lh.PreparedMessages, msg string) {
+	require.Equal(t, a.PreprepareMessage, b.PreprepareMessage, msg)
+	require.ElementsMatch(t, a.PrepareMessages, b.PrepareMessages, msg)
+}
+
 // from describe("Prepared")
 func TestPrepared(t *testing.T) {
 	// init here
@@ -255,15 +260,15 @@ func TestPrepared(t *testing.T) {
 	t.Run("TestStoreAndGetPrepareProof", func(t *testing.T) {
 		myStorage := storage.NewInMemoryPBFTStorage()
 		myStorage.StorePrePrepare(ppm)
-		myStorage.StorePrepare(pm1)
 		myStorage.StorePrepare(pm2)
+		myStorage.StorePrepare(pm1)
 		expectedProof := &lh.PreparedMessages{
 			PreprepareMessage: ppm,
-			PrepareMessages:   []*lh.BlockRefMessage{pm1, pm2},
+			PrepareMessages:   []*lh.PrepareMessage{pm1, pm2},
 		}
 
 		actualProof, _ := myStorage.GetLatestPrepared(term, f)
-		require.Equal(t, expectedProof, actualProof, "TestStoreAndGetPrepareProof(): return the prepared proof") // TODO bad explanation!
+		compPrepareMessages(t, actualProof, expectedProof, "TestStoreAndGetPrepareProof(): return the prepared proof") // TODO bad explanation!
 	})
 
 	//t.Run("TestReturnPreparedProofWithHighestView", func(t *testing.T) {
