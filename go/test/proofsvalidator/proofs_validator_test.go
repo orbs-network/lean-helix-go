@@ -23,14 +23,14 @@ func TestProofsValidator(t *testing.T) {
 	block := builders.CreateBlock(builders.GenesisBlock)
 
 	preprepareMessage := builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block)
-	preprepareBlockRefMessage := builders.BlockRefMessageFromPrePrepage(preprepareMessage)
+	preprepareBlockRefMessage := builders.BlockRefMessageFromPrePrepare(preprepareMessage)
 	prepareMessage1 := builders.CreatePrepareMessage(node1KeyManager, term, view, block)
 	prepareMessage2 := builders.CreatePrepareMessage(node2KeyManager, term, view, block)
 
 	t.Run("TestProofsValidatorWithNoPrePrepare", func(t *testing.T) {
 		preparedProof := &lh.PreparedProof{
 			PreprepareBlockRefMessage: nil,
-			PrepareBlockRefMessages:   []*lh.BlockRefMessage{prepareMessage1, prepareMessage2},
+			PrepareBlockRefMessages:   []*lh.PrepareMessage{prepareMessage1, prepareMessage2},
 		}
 		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, preparedProof)
 		require.False(t, result, "Did not reject a proof that did not have a preprepare message")
@@ -53,7 +53,7 @@ func TestProofsValidator(t *testing.T) {
 	t.Run("TestProofsValidatorWithNoProof", func(t *testing.T) {
 		preparedProof := &lh.PreparedProof{
 			PreprepareBlockRefMessage: preprepareBlockRefMessage,
-			PrepareBlockRefMessages:   []*lh.BlockRefMessage{prepareMessage1, prepareMessage2},
+			PrepareBlockRefMessages:   []*lh.PrepareMessage{prepareMessage1, prepareMessage2},
 		}
 		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, preparedProof)
 		require.True(t, result, "Did not approve a valid proof")

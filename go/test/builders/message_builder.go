@@ -30,7 +30,7 @@ func CreatePrePrepareMessage(km lh.KeyManager, term lh.BlockHeight, view lh.View
 	return result
 }
 
-func CreatePrepareMessage(km lh.KeyManager, term lh.BlockHeight, view lh.ViewCounter, block *lh.Block) *lh.BlockRefMessage {
+func CreatePrepareMessage(km lh.KeyManager, term lh.BlockHeight, view lh.ViewCounter, block *lh.Block) *lh.PrepareMessage {
 	blockHash := CalculateBlockHash(block)
 
 	blockMessageContent := &lh.BlockMessageContent{
@@ -45,7 +45,7 @@ func CreatePrepareMessage(km lh.KeyManager, term lh.BlockHeight, view lh.ViewCou
 		ContentSignature: km.SignBlockMessageContent(blockMessageContent),
 	}
 
-	result := &lh.BlockRefMessage{
+	result := &lh.PrepareMessage{
 		BlockMessageContent: blockMessageContent,
 		SignaturePair:       signaturePair,
 	}
@@ -53,7 +53,7 @@ func CreatePrepareMessage(km lh.KeyManager, term lh.BlockHeight, view lh.ViewCou
 	return result
 }
 
-func CreateCommitMessage(km lh.KeyManager, term lh.BlockHeight, view lh.ViewCounter, block *lh.Block) *lh.BlockRefMessage {
+func CreateCommitMessage(km lh.KeyManager, term lh.BlockHeight, view lh.ViewCounter, block *lh.Block) *lh.CommitMessage {
 	blockHash := CalculateBlockHash(block)
 
 	blockMessageContent := &lh.BlockMessageContent{
@@ -68,7 +68,7 @@ func CreateCommitMessage(km lh.KeyManager, term lh.BlockHeight, view lh.ViewCoun
 		ContentSignature: km.SignBlockMessageContent(blockMessageContent),
 	}
 
-	result := &lh.BlockRefMessage{
+	result := &lh.CommitMessage{
 		BlockMessageContent: blockMessageContent,
 		SignaturePair:       signaturePair,
 	}
@@ -109,7 +109,7 @@ func CreateViewChangeMessage(km lh.KeyManager, term lh.BlockHeight, view lh.View
 	return result
 }
 
-func BlockRefMessageFromPrePrepage(message *lh.PrePrepareMessage) *lh.BlockRefMessage {
+func BlockRefMessageFromPrePrepare(message *lh.PrePrepareMessage) *lh.BlockRefMessage {
 	return message.BlockRefMessage
 }
 
@@ -120,9 +120,9 @@ func generatePreparedProof(prepared *lh.PreparedMessages) *lh.PreparedProof {
 		SignaturePair:       prepared.PreprepareMessage.SignaturePair,
 	}
 
-	blockRefMessageFromPrepares := make([]*lh.BlockRefMessage, len(prepared.PrepareMessages))
+	blockRefMessageFromPrepares := make([]*lh.PrepareMessage, len(prepared.PrepareMessages))
 	for _, msg := range prepared.PrepareMessages {
-		blockRefMessageFromPrepare := &lh.BlockRefMessage{
+		blockRefMessageFromPrepare := &lh.PrepareMessage{
 			BlockMessageContent: msg.BlockMessageContent,
 			SignaturePair:       msg.SignaturePair,
 		}
