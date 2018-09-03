@@ -11,13 +11,16 @@ func isInMembers(membersPKs *[]lh.PublicKey, publicKey *lh.PublicKey) bool {
 	return false
 }
 
+type CalcLeaderPk = func(view lh.ViewCounter) lh.PublicKey
+
 func ValidatePreparedProof(
 	targetTerm lh.BlockHeight,
 	targetView lh.ViewCounter,
 	preparedProof *lh.PreparedProof,
 	f int,
 	keyManager lh.KeyManager,
-	membersPKs *[]lh.PublicKey) bool {
+	membersPKs *[]lh.PublicKey,
+	calcLeaderPk CalcLeaderPk) bool {
 	if preparedProof == nil {
 		return true
 	}
@@ -51,6 +54,10 @@ func ValidatePreparedProof(
 	leaderPk := signaturePair.SignerPublicKey
 	contentSignature := signaturePair.ContentSignature
 	if keyManager.VerifyBlockMessageContent(expectedPrePrepareMessageContent, contentSignature, leaderPk) == false {
+		return false
+	}
+
+	if calcLeaderPk(view) != leaderPk {
 		return false
 	}
 
