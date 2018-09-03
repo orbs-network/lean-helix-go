@@ -2,8 +2,6 @@ package storage
 
 import (
 	"fmt"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	lh "github.com/orbs-network/lean-helix-go/go/leanhelix"
 	"github.com/orbs-network/lean-helix-go/go/storage"
 	"github.com/orbs-network/lean-helix-go/go/test/builders"

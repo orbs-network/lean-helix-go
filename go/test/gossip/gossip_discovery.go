@@ -4,28 +4,34 @@ import (
 	lh "github.com/orbs-network/lean-helix-go/go/leanhelix"
 )
 
-type GossipDiscovery struct {
-	gossips map[lh.PublicKey]Gossip
+type discovery struct {
+	gossips map[lh.PublicKey]*Gossip
 }
 
-func (gd *GossipDiscovery) getGossipByPk(pk lh.PublicKey) Gossip {
-	return gd.gossips[pk]
+func NewGossipDiscovery() *discovery {
+	return &discovery{
+		gossips: make(map[lh.PublicKey]*Gossip),
+	}
 }
 
-func (gd *GossipDiscovery) registerGossip(pk lh.PublicKey, gossip Gossip) {
-	gd.gossips[pk] = gossip
+func (d *discovery) GetGossipByPK(pk lh.PublicKey) *Gossip {
+	return d.gossips[pk]
 }
 
-func (gd *GossipDiscovery) getGossips(pks []lh.PublicKey) []Gossip {
-	res := make([]Gossip, 1)
+func (d *discovery) RegisterGossip(pk lh.PublicKey, gossip *Gossip) {
+	d.gossips[pk] = gossip
+}
+
+func (d *discovery) GetGossips(pks []lh.PublicKey) []*Gossip {
+	res := make([]*Gossip, 1)
 	if pks != nil {
-		for _, key := range gd.getAllGossipsPks() {
+		for _, key := range d.getAllGossipsPKs() {
 			if indexOf(key, pks) {
-				res = append(res, gd.getGossipByPk(key))
+				res = append(res, d.GetGossipByPK(key))
 			}
 		}
 	} else {
-		for _, val := range gd.gossips {
+		for _, val := range d.gossips {
 			res = append(res, val)
 		}
 	}
@@ -41,9 +47,9 @@ func indexOf(pk lh.PublicKey, pks []lh.PublicKey) bool {
 	return false
 }
 
-func (gd *GossipDiscovery) getAllGossipsPks() []lh.PublicKey {
-	keys := make([]lh.PublicKey, len(gd.gossips))
-	for key, _ := range gd.gossips {
+func (d *discovery) getAllGossipsPKs() []lh.PublicKey {
+	keys := make([]lh.PublicKey, 0, len(d.gossips))
+	for key := range d.gossips {
 		keys = append(keys, key)
 	}
 	return keys

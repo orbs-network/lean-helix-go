@@ -12,38 +12,49 @@ const (
 
 // TODO how to impl this???
 type Message interface {
-	SignaturePair()
+	SignaturePair() SignaturePair
+	Content() MessageContent
+}
+
+type MessageContent interface {
 	MessageType()
 	Term()
 	View()
 }
 
-type BlockRefMessage struct {
-	*BlockMessageContent
-	SignaturePair *SignaturePair
+type BlockMessageContent interface {
+	BlockHash() BlockHash
+}
+
+type BlockRefMessage interface {
+	Message
+	BlockMessageContent
 }
 
 type PrePrepareMessage struct {
-	*BlockRefMessage
+	Message
 	Block *Block
 }
 
-type PrepareMessage BlockRefMessage
+type PrepareMessage struct {
+	Message
+	BlockHash BlockHash
+}
+
+type CommitMessage struct {
+	Message
+	BlockHash BlockHash
+}
 
 type PreparedMessages struct {
 	PreprepareMessage *PrePrepareMessage
 	PrepareMessages   []*PrepareMessage
 }
 
-type CommitMessage BlockRefMessage
-
-// TODO For now I want "Block" to be explicit - it's not as integral part
-// of ViewChangeMessage as the other fields are
-
 type ViewChangeMessage struct {
-	*ViewChangeMessageContent
-	*SignaturePair
-	Block *Block
+	Message
+	Block         *Block
+	PreparedProof *PreparedProof
 }
 
 type NewViewMessage struct {
@@ -52,6 +63,7 @@ type NewViewMessage struct {
 	PrePrepareMessage PrePrepareMessage
 }
 
+/*
 type MessageContent struct {
 	MessageType MessageType
 	Term        BlockHeight
@@ -64,7 +76,7 @@ type BlockMessageContent struct {
 	View        ViewCounter
 	BlockHash   BlockHash
 }
-
+*/
 type SignaturePair struct {
 	SignerPublicKey  PublicKey
 	ContentSignature string

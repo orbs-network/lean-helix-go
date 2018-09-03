@@ -4,21 +4,21 @@ import (
 	lh "github.com/orbs-network/lean-helix-go/go/leanhelix"
 )
 
-type GossipCallback func(Message)
+type Callback func(lh.Message)
 
 type SubscriptionValue struct {
-	cb GossipCallback
+	cb Callback
 }
 
 type Gossip struct {
-	discovery            *GossipDiscovery
+	discovery            *discovery
 	totalSubscriptions   int
 	subscriptions        map[int]*SubscriptionValue
 	outgoingWhiteListPKs []lh.PublicKey
 	incomingWhiteListPKs []lh.PublicKey
 }
 
-func NewGossip(gd *GossipDiscovery) *Gossip {
+func NewGossip(gd *discovery) *Gossip {
 	return &Gossip{
 		discovery:            gd,
 		totalSubscriptions:   0,
@@ -52,16 +52,16 @@ func (g *Gossip) inOutgoingWhitelist(pk lh.PublicKey) bool {
 	return false
 }
 
-func (g *Gossip) onRemoteMessage(message lh.MessageContent) {
+func (g *Gossip) onRemoteMessage(message lh.Message) {
 	for _, s := range g.subscriptions {
-		if !g.inIncomingWhitelist(message.SignaturePair.SignerPublicKey) {
+		if !g.inIncomingWhitelist(message.SignaturePair().SignerPublicKey) {
 			return
 		}
 		s.cb(message)
 	}
 }
 
-func (g *Gossip) subscribe(cb GossipCallback) int {
+func (g *Gossip) subscribe(cb Callback) int {
 	g.totalSubscriptions++
 	g.subscriptions[g.totalSubscriptions] = &SubscriptionValue{
 		cb,
@@ -73,17 +73,17 @@ func (g *Gossip) unsubscribe(subscriptionToken int) {
 	delete(g.subscriptions, subscriptionToken)
 }
 
-func (g *Gossip) unicast(pk lh.PublicKey, message Message) {
+func (g *Gossip) unicast(pk lh.PublicKey, message lh.Message) {
 	if !g.inOutgoingWhitelist(pk) {
 		return
 	}
-	if targetGossip := g.discovery.getGossipByPK(pk); targetGossip != nil {
+	if targetGossip := g.discovery.GetGossipByPK(pk); targetGossip != nil {
 		targetGossip.onRemoteMessage(message)
 	}
 }
 
-func (g *Gossip) multicast(targetIds []string, message Message) {
+func (g *Gossip) multicast(targetIds []lh.PublicKey, message lh.Message) {
 	for _, targetId := range targetIds {
-		unicast(targetId, message)
+		g.unicast(targetId, message)
 	}
 }
