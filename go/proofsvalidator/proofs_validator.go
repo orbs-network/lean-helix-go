@@ -2,12 +2,22 @@ package proofsvalidator
 
 import lh "github.com/orbs-network/lean-helix-go/go/leanhelix"
 
+func isInMembers(membersPKs *[]lh.PublicKey, publicKey *lh.PublicKey) bool {
+	for _, memberPK := range *membersPKs {
+		if memberPK == *publicKey {
+			return true
+		}
+	}
+	return false
+}
+
 func ValidatePreparedProof(
 	targetTerm lh.BlockHeight,
 	targetView lh.ViewCounter,
 	preparedProof *lh.PreparedProof,
 	f int,
-	keyManager lh.KeyManager) bool {
+	keyManager lh.KeyManager,
+	membersPKs *[]lh.PublicKey) bool {
 	if preparedProof == nil {
 		return true
 	}
@@ -49,6 +59,10 @@ func ValidatePreparedProof(
 		signature := msg.SignaturePair.ContentSignature
 		publicKey := msg.SignaturePair.SignerPublicKey
 		if keyManager.VerifyBlockMessageContent(content, signature, publicKey) == false {
+			return false
+		}
+
+		if isInMembers(membersPKs, &publicKey) == false {
 			return false
 		}
 	}

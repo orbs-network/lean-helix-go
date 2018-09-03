@@ -15,6 +15,7 @@ func TestProofsValidator(t *testing.T) {
 	node1KeyManager := keymanagermock.NewMockKeyManager("Node 1")
 	node2KeyManager := keymanagermock.NewMockKeyManager("Node 2")
 	//node3KeyManager := keymanagermock.NewMockKeyManager("Node 3")
+	membersPKs := []lh.PublicKey{"Leader PK", "Node 1", "Node 2", "Node 3"}
 
 	const f = 1
 	const term = 0
@@ -36,7 +37,7 @@ func TestProofsValidator(t *testing.T) {
 			PreprepareBlockRefMessage: nil,
 			PrepareBlockRefMessages:   []*lh.PrepareMessage{prepareMessage1, prepareMessage2},
 		}
-		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager)
+		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs)
 		require.False(t, result, "Did not reject a proof that did not have a preprepare message")
 	})
 
@@ -45,24 +46,24 @@ func TestProofsValidator(t *testing.T) {
 			PreprepareBlockRefMessage: preprepareMessage.BlockRefMessage,
 			PrepareBlockRefMessages:   nil,
 		}
-		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager)
+		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs)
 		require.False(t, result, "Did not reject a proof that did not have prepare messages")
 	})
 
 	t.Run("TestProofsValidatorWithNoProof", func(t *testing.T) {
-		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, nil, f, keyManager)
+		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, nil, f, keyManager, &membersPKs)
 		require.True(t, result, "Did not approve a nil proof")
 	})
 
 	t.Run("TestProofsValidatorWithBadPreprepareSignature", func(t *testing.T) {
 		keyManager := keymanagermock.NewMockKeyManager("Dummy PK", "Leader PK")
-		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager)
+		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs)
 		require.False(t, result, "Did not reject a proof that did not pass preprepare signature validation")
 	})
 
 	t.Run("TestProofsValidatorWithBadPrepareSignature", func(t *testing.T) {
 		keyManager := keymanagermock.NewMockKeyManager("Dummy PK", "Node 2")
-		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager)
+		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs)
 		require.False(t, result, "Did not reject a proof that did not pass prepare signature validation")
 	})
 
@@ -71,27 +72,38 @@ func TestProofsValidator(t *testing.T) {
 			PreprepareBlockRefMessage: preprepareMessage.BlockRefMessage,
 			PrepareBlockRefMessages:   []*lh.PrepareMessage{prepareMessage1},
 		}
-		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager)
+		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs)
 		require.False(t, result, "Did not reject a proof with not enough prepares")
 	})
 
 	t.Run("TestProofsValidatorWithTerm", func(t *testing.T) {
-		result := proofsvalidator.ValidatePreparedProof(666, targetView, preparedProof, f, keyManager)
+		result := proofsvalidator.ValidatePreparedProof(666, targetView, preparedProof, f, keyManager, &membersPKs)
 		require.False(t, result, "Did not reject a proof with mismatching term")
 	})
 
 	t.Run("TestProofsValidatorWithTheSameView", func(t *testing.T) {
-		result := proofsvalidator.ValidatePreparedProof(targetTerm, view, preparedProof, f, keyManager)
+		result := proofsvalidator.ValidatePreparedProof(targetTerm, view, preparedProof, f, keyManager, &membersPKs)
 		require.False(t, result, "Did not reject a proof with equal targetView")
 	})
 
 	t.Run("TestProofsValidatorWithTheSmallerView", func(t *testing.T) {
-		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView-1, preparedProof, f, keyManager)
+		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView-1, preparedProof, f, keyManager, &membersPKs)
 		require.False(t, result, "Did not reject a proof with smaller targetView")
 	})
 
+	t.Run("TestProofsValidatorWithANoneMember", func(t *testing.T) {
+		noneMemberKeyManager := keymanagermock.NewMockKeyManager("Not in members PK")
+		prepareMessage1 := builders.CreatePrepareMessage(noneMemberKeyManager, term, view, block)
+		preparedProof := &lh.PreparedProof{
+			PreprepareBlockRefMessage: preprepareMessage.BlockRefMessage,
+			PrepareBlockRefMessages:   []*lh.PrepareMessage{prepareMessage1, prepareMessage2},
+		}
+		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs)
+		require.False(t, result, "Did not reject a proof with a none member")
+	})
+
 	t.Run("TestProofsValidatorWithNoProof", func(t *testing.T) {
-		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager)
+		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs)
 		require.True(t, result, "Did not approve a valid proof")
 	})
 }
