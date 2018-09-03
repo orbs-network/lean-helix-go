@@ -61,6 +61,7 @@ func ValidatePreparedProof(
 		return false
 	}
 
+	seen := make(map[lh.PublicKey]bool, len(prepareBlockRefMessages))
 	for _, msg := range prepareBlockRefMessages {
 		content := msg.BlockMessageContent
 		signature := msg.SignaturePair.ContentSignature
@@ -88,6 +89,12 @@ func ValidatePreparedProof(
 		if content.BlockHash != preprepareBlockRefMessage.BlockHash {
 			return false
 		}
+
+		if _, ok := seen[publicKey]; ok {
+			return false
+		}
+
+		seen[publicKey] = true
 	}
 
 	return true

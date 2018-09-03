@@ -14,7 +14,7 @@ func TestProofsValidator(t *testing.T) {
 	leaderKeyManager := keymanagermock.NewMockKeyManager("Leader PK")
 	node1KeyManager := keymanagermock.NewMockKeyManager("Node 1")
 	node2KeyManager := keymanagermock.NewMockKeyManager("Node 2")
-	//node3KeyManager := keymanagermock.NewMockKeyManager("Node 3")
+
 	membersPKs := []lh.PublicKey{"Leader PK", "Node 1", "Node 2", "Node 3"}
 	calcLeaderPk := func(view lh.ViewCounter) lh.PublicKey {
 		return membersPKs[view]
@@ -127,7 +127,7 @@ func TestProofsValidator(t *testing.T) {
 		require.False(t, result, "Did not reject a proof with a mismatching view to leader")
 	})
 
-	t.Run("TestProofsValidatorWithMismatchingView", func(t *testing.T) {
+	t.Run("TestProofsValidatorWithMismatchingContent", func(t *testing.T) {
 		// Good proof //
 		const term = 5
 		const view = 0
@@ -139,7 +139,7 @@ func TestProofsValidator(t *testing.T) {
 			PreprepareBlockRefMessage: builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block).BlockRefMessage,
 			PrepareBlockRefMessages: []*lh.PrepareMessage{
 				builders.CreatePrepareMessage(node1KeyManager, term, view, block),
-				builders.CreatePrepareMessage(node1KeyManager, term, view, block),
+				builders.CreatePrepareMessage(node2KeyManager, term, view, block),
 			},
 		}
 		actualGood := pv.ValidatePreparedProof(targetTerm, targetView, goodPrepareProof, f, keyManager, &membersPKs, calcLeaderPk)
@@ -150,7 +150,7 @@ func TestProofsValidator(t *testing.T) {
 			PreprepareBlockRefMessage: builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block).BlockRefMessage,
 			PrepareBlockRefMessages: []*lh.PrepareMessage{
 				builders.CreatePrepareMessage(node1KeyManager, term, view, block),
-				builders.CreatePrepareMessage(node1KeyManager, 666, view, block),
+				builders.CreatePrepareMessage(node2KeyManager, 666, view, block),
 			},
 		}
 		actualBadTerm := pv.ValidatePreparedProof(targetTerm, targetView, badTermProof, f, keyManager, &membersPKs, calcLeaderPk)
@@ -161,7 +161,7 @@ func TestProofsValidator(t *testing.T) {
 			PreprepareBlockRefMessage: builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block).BlockRefMessage,
 			PrepareBlockRefMessages: []*lh.PrepareMessage{
 				builders.CreatePrepareMessage(node1KeyManager, term, view, block),
-				builders.CreatePrepareMessage(node1KeyManager, term, 666, block),
+				builders.CreatePrepareMessage(node2KeyManager, term, 666, block),
 			},
 		}
 		actualBadView := pv.ValidatePreparedProof(targetTerm, targetView, badViewProof, f, keyManager, &membersPKs, calcLeaderPk)
@@ -173,11 +173,24 @@ func TestProofsValidator(t *testing.T) {
 			PreprepareBlockRefMessage: builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block).BlockRefMessage,
 			PrepareBlockRefMessages: []*lh.PrepareMessage{
 				builders.CreatePrepareMessage(node1KeyManager, term, view, block),
-				builders.CreatePrepareMessage(node1KeyManager, term, view, otherBlock),
+				builders.CreatePrepareMessage(node2KeyManager, term, view, otherBlock),
 			},
 		}
 		actualBadBlockHash := pv.ValidatePreparedProof(targetTerm, targetView, badBlockHashProof, f, keyManager, &membersPKs, calcLeaderPk)
 		require.False(t, actualBadBlockHash, "Did not reject mismatching block hash")
+	})
+
+	t.Run("TestProofsValidatorWithDuplicate prepare sender PK", func(t *testing.T) {
+		preparedProof := &lh.PreparedProof{
+			PreprepareBlockRefMessage: builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block).BlockRefMessage,
+			PrepareBlockRefMessages: []*lh.PrepareMessage{
+				builders.CreatePrepareMessage(node1KeyManager, term, view, block),
+				builders.CreatePrepareMessage(node1KeyManager, term, view, block),
+			},
+		}
+
+		result := pv.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
+		require.False(t, result, "Did not reject a proof with duplicate sender PK")
 	})
 
 	t.Run("TestProofsValidatorWithNoProof", func(t *testing.T) {
