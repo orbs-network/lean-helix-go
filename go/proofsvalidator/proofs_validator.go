@@ -76,6 +76,18 @@ func ValidatePreparedProof(
 		if isInMembers(membersPKs, &publicKey) == false {
 			return false
 		}
+
+		if content.Term != term {
+			return false
+		}
+
+		if content.View != view {
+			return false
+		}
+
+		if content.BlockHash != preprepareBlockRefMessage.BlockHash {
+			return false
+		}
 	}
 
 	return true

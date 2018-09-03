@@ -127,6 +127,59 @@ func TestProofsValidator(t *testing.T) {
 		require.False(t, result, "Did not reject a proof with a mismatching view to leader")
 	})
 
+	t.Run("TestProofsValidatorWithMismatchingView", func(t *testing.T) {
+		// Good proof //
+		const term = 5
+		const view = 0
+		const targetTerm = term
+		const targetView = view + 1
+
+		// Good proof //
+		goodPrepareProof := &lh.PreparedProof{
+			PreprepareBlockRefMessage: builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block).BlockRefMessage,
+			PrepareBlockRefMessages: []*lh.PrepareMessage{
+				builders.CreatePrepareMessage(node1KeyManager, term, view, block),
+				builders.CreatePrepareMessage(node1KeyManager, term, view, block),
+			},
+		}
+		actualGood := pv.ValidatePreparedProof(targetTerm, targetView, goodPrepareProof, f, keyManager, &membersPKs, calcLeaderPk)
+		require.True(t, actualGood, "Did not approve a valid proof")
+
+		// Mismatching term //
+		badTermProof := &lh.PreparedProof{
+			PreprepareBlockRefMessage: builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block).BlockRefMessage,
+			PrepareBlockRefMessages: []*lh.PrepareMessage{
+				builders.CreatePrepareMessage(node1KeyManager, term, view, block),
+				builders.CreatePrepareMessage(node1KeyManager, 666, view, block),
+			},
+		}
+		actualBadTerm := pv.ValidatePreparedProof(targetTerm, targetView, badTermProof, f, keyManager, &membersPKs, calcLeaderPk)
+		require.False(t, actualBadTerm, "Did not reject mismatching term")
+
+		// Mismatching view //
+		badViewProof := &lh.PreparedProof{
+			PreprepareBlockRefMessage: builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block).BlockRefMessage,
+			PrepareBlockRefMessages: []*lh.PrepareMessage{
+				builders.CreatePrepareMessage(node1KeyManager, term, view, block),
+				builders.CreatePrepareMessage(node1KeyManager, term, 666, block),
+			},
+		}
+		actualBadView := pv.ValidatePreparedProof(targetTerm, targetView, badViewProof, f, keyManager, &membersPKs, calcLeaderPk)
+		require.False(t, actualBadView, "Did not reject mismatching view")
+
+		// Mismatching blockHash //
+		otherBlock := builders.CreateBlock(builders.GenesisBlock)
+		badBlockHashProof := &lh.PreparedProof{
+			PreprepareBlockRefMessage: builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block).BlockRefMessage,
+			PrepareBlockRefMessages: []*lh.PrepareMessage{
+				builders.CreatePrepareMessage(node1KeyManager, term, view, block),
+				builders.CreatePrepareMessage(node1KeyManager, term, view, otherBlock),
+			},
+		}
+		actualBadBlockHash := pv.ValidatePreparedProof(targetTerm, targetView, badBlockHashProof, f, keyManager, &membersPKs, calcLeaderPk)
+		require.False(t, actualBadBlockHash, "Did not reject mismatching block hash")
+	})
+
 	t.Run("TestProofsValidatorWithNoProof", func(t *testing.T) {
 		result := pv.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
 		require.True(t, result, "Did not approve a valid proof")
