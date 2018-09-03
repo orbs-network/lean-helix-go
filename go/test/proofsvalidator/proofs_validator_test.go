@@ -102,6 +102,16 @@ func TestProofsValidator(t *testing.T) {
 		require.False(t, result, "Did not reject a proof with a none member")
 	})
 
+	t.Run("TestProofsValidatorWithPrepareFromTheLeader", func(t *testing.T) {
+		prepareMessage1 := builders.CreatePrepareMessage(leaderKeyManager, term, view, block)
+		preparedProof := &lh.PreparedProof{
+			PreprepareBlockRefMessage: preprepareMessage.BlockRefMessage,
+			PrepareBlockRefMessages:   []*lh.PrepareMessage{prepareMessage1, prepareMessage2},
+		}
+		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs)
+		require.False(t, result, "Did not reject a proof with a prepare from the leader")
+	})
+
 	t.Run("TestProofsValidatorWithNoProof", func(t *testing.T) {
 		result := proofsvalidator.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs)
 		require.True(t, result, "Did not approve a valid proof")

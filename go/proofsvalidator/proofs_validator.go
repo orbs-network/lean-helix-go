@@ -62,6 +62,10 @@ func ValidatePreparedProof(
 			return false
 		}
 
+		if publicKey == leaderPk {
+			return false
+		}
+
 		if isInMembers(membersPKs, &publicKey) == false {
 			return false
 		}
