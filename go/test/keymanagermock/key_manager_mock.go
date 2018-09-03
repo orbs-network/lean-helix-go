@@ -16,19 +16,30 @@ type mockKeyManager struct {
 	RejectedPublicKeys []leanhelix.PublicKey
 }
 
-func (km *mockKeyManager) SignViewChangeMessage(vcmc *leanhelix.ViewChangeMessageContent) string {
-	return fmt.Sprintf("%s|%s|%s|%s|%s", vcmc.MessageType, PRIVATE_KEY_PREFIX, km.MyPublicKey(), string(vcmc.Term), string(vcmc.View))
-}
-
-func NewMockKeyManager(publicKey leanhelix.PublicKey, rejectedPublicKeys []leanhelix.PublicKey) *mockKeyManager {
+func NewMockKeyManager(publicKey leanhelix.PublicKey, rejectedPublicKeys ...leanhelix.PublicKey) *mockKeyManager {
 	return &mockKeyManager{
 		myPublicKey:        publicKey,
 		RejectedPublicKeys: rejectedPublicKeys,
 	}
 }
 
+func (km *mockKeyManager) SignViewChangeMessage(vcmc *leanhelix.ViewChangeMessageContent) string {
+	return fmt.Sprintf("%s|%s|%s|%s|%s", vcmc.MessageType, PRIVATE_KEY_PREFIX, km.MyPublicKey(), string(vcmc.Term), string(vcmc.View))
+}
+
 func (km *mockKeyManager) SignBlockMessageContent(bmc *leanhelix.BlockMessageContent) string {
-	return fmt.Sprintf("%s|%s|%s|%s|%s|%s", bmc.MessageType, PRIVATE_KEY_PREFIX, km.MyPublicKey(), string(bmc.Term), string(bmc.View), string(bmc.BlockHash))
+	return fmt.Sprintf("%s|%s|%s|%d|%d|%s", bmc.MessageType, PRIVATE_KEY_PREFIX, km.MyPublicKey(), bmc.Term, bmc.View, bmc.BlockHash)
+}
+
+func (km *mockKeyManager) VerifyBlockMessageContent(bmc *leanhelix.BlockMessageContent, signature string, publicKey leanhelix.PublicKey) bool {
+	for _, rejectedKey := range km.RejectedPublicKeys {
+		if rejectedKey == publicKey {
+			return false
+		}
+	}
+
+	signedMessage := fmt.Sprintf("%s|%s|%s|%d|%d|%s", bmc.MessageType, PRIVATE_KEY_PREFIX, publicKey, bmc.Term, bmc.View, bmc.BlockHash)
+	return signedMessage == signature
 }
 
 func (km *mockKeyManager) MyPublicKey() leanhelix.PublicKey {

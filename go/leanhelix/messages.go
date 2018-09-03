@@ -32,7 +32,7 @@ type PrepareMessage BlockRefMessage
 
 type PreparedMessages struct {
 	PreprepareMessage *PrePrepareMessage
-	PrepareMessages   []*BlockRefMessage
+	PrepareMessages   []*PrepareMessage
 }
 
 type CommitMessage BlockRefMessage
@@ -79,7 +79,7 @@ type ViewChangeMessageContent struct {
 
 type PreparedProof struct {
 	PreprepareBlockRefMessage *BlockRefMessage
-	PrepareBlockRefMessages   []*BlockRefMessage
+	PrepareBlockRefMessages   []*PrepareMessage
 }
 
 type NewViewMessageContent struct {

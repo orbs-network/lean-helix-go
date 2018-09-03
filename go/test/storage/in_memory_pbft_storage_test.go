@@ -102,9 +102,9 @@ func TestStorePrepareInStorage(t *testing.T) {
 	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId3 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1), []lh.PublicKey{})
-	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2), []lh.PublicKey{})
-	sender3KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId3), []lh.PublicKey{})
+	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1))
+	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2))
+	sender3KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId3))
 	block1 := builders.CreateBlock(builders.GenesisBlock)
 	block2 := builders.CreateBlock(builders.GenesisBlock)
 	block1Hash := builders.CalculateBlockHash(block1)
@@ -128,9 +128,9 @@ func TestStoreCommitInStorage(t *testing.T) {
 	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId3 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1), []lh.PublicKey{})
-	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2), []lh.PublicKey{})
-	sender3KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId3), []lh.PublicKey{})
+	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1))
+	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2))
+	sender3KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId3))
 	block1 := builders.CreateBlock(builders.GenesisBlock)
 	block2 := builders.CreateBlock(builders.GenesisBlock)
 	block1Hash := builders.CalculateBlockHash(block1)
@@ -151,7 +151,7 @@ func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
 	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
 	block := builders.CreateBlock(builders.GenesisBlock)
-	keyManager := keymanagermock.NewMockKeyManager(lh.PublicKey("PK"), []lh.PublicKey{})
+	keyManager := keymanagermock.NewMockKeyManager(lh.PublicKey("PK"))
 	ppContent := builders.CreatePrePrepareMessage(keyManager, term, view, block)
 
 	firstTime := myStorage.StorePrePrepare(ppContent)
@@ -167,8 +167,8 @@ func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
 	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1), []lh.PublicKey{})
-	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2), []lh.PublicKey{})
+	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1))
+	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	prepareMessage1 := builders.CreatePrepareMessage(sender1KeyManager, term, view, block)
 	prepareMessage2 := builders.CreatePrepareMessage(sender2KeyManager, term, view, block)
@@ -189,8 +189,8 @@ func TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
 	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1), []lh.PublicKey{})
-	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2), []lh.PublicKey{})
+	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1))
+	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2))
 	block := builders.CreateBlock(builders.GenesisBlock)
 
 	commitPayload1 := builders.CreateCommitMessage(sender1KeyManager, term, view, block)
@@ -219,9 +219,9 @@ func TestStoreAndGetViewChangeProof(t *testing.T) {
 	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId3 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1), []lh.PublicKey{})
-	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2), []lh.PublicKey{})
-	sender3KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId3), []lh.PublicKey{})
+	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1))
+	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2))
+	sender3KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId3))
 	vcms := make([]*lh.ViewChangeMessage, 0, 4)
 	vcms = append(vcms, builders.CreateViewChangeMessage(sender1KeyManager, term1, view1, nil))
 	vcms = append(vcms, builders.CreateViewChangeMessage(sender2KeyManager, term1, view1, nil))
@@ -236,6 +236,11 @@ func TestStoreAndGetViewChangeProof(t *testing.T) {
 	require.Equal(t, expected, len(actual), "return the view-change proof") // TODO bad explanation!
 }
 
+func compPrepareMessages(t *testing.T, a, b *lh.PreparedMessages, msg string) {
+	require.Equal(t, a.PreprepareMessage, b.PreprepareMessage, msg)
+	require.ElementsMatch(t, a.PrepareMessages, b.PrepareMessages, msg)
+}
+
 // from describe("Prepared")
 func TestPrepared(t *testing.T) {
 	// init here
@@ -245,9 +250,9 @@ func TestPrepared(t *testing.T) {
 	leaderId := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	leaderKeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(leaderId), []lh.PublicKey{})
-	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1), []lh.PublicKey{})
-	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2), []lh.PublicKey{})
+	leaderKeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(leaderId))
+	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1))
+	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	ppm := builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block)
 	pm1 := builders.CreatePrepareMessage(sender1KeyManager, term, view, block)
@@ -257,18 +262,15 @@ func TestPrepared(t *testing.T) {
 	t.Run("TestStoreAndGetPrepareProof", func(t *testing.T) {
 		myStorage := storage.NewInMemoryPBFTStorage()
 		myStorage.StorePrePrepare(ppm)
-		myStorage.StorePrepare(pm1)
 		myStorage.StorePrepare(pm2)
+		myStorage.StorePrepare(pm1)
 		expectedProof := &lh.PreparedMessages{
 			PreprepareMessage: ppm,
-			PrepareMessages:   []*lh.BlockRefMessage{pm1, pm2},
+			PrepareMessages:   []*lh.PrepareMessage{pm1, pm2},
 		}
 
 		actualProof, _ := myStorage.GetLatestPrepared(term, f)
-
-		cmp.Equal(expectedProof, actualProof, cmpopts.SortSlices())
-
-		require.Equal(t, expectedProof, actualProof, "TestStoreAndGetPrepareProof(): return the prepared proof") // TODO bad explanation!
+		compPrepareMessages(t, actualProof, expectedProof, "TestStoreAndGetPrepareProof(): return the prepared proof") // TODO bad explanation!
 	})
 
 	//t.Run("TestReturnPreparedProofWithHighestView", func(t *testing.T) {
