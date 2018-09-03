@@ -1,6 +1,7 @@
 package builders
 
 import (
+	"fmt"
 	"github.com/orbs-network/go-mock"
 	lh "github.com/orbs-network/lean-helix-go/go/leanhelix"
 )
@@ -14,9 +15,7 @@ func NewMockBlockUtils() *MockBlockUtils {
 }
 
 func CalculateBlockHash(block *lh.Block) lh.BlockHash {
-	// TODO Do a real hash here
-	// export const calculateBlockHash = (block: Block): Buffer => createHash("sha256").update(stringify(block.header)).digest(); // .digest("base64");
-	return lh.BlockHash("0123456789ABCDEF")
+	return lh.BlockHash(fmt.Sprintf("%s_%d_%s", block.Body, block.Header.Height, block.Header.BlockHash))
 }
 
 func (*MockBlockUtils) CalculateBlockHash(block *lh.Block) lh.BlockHash {
