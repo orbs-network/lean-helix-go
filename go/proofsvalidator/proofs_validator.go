@@ -11,6 +11,13 @@ func isInMembers(membersPKs *[]lh.PublicKey, publicKey *lh.PublicKey) bool {
 	return false
 }
 
+func verifyBlockRefMessage(msg *lh.BlockRefMessage, keyManager lh.KeyManager) bool {
+	content := msg.BlockMessageContent
+	publicKey := msg.SignaturePair.SignerPublicKey
+	signature := msg.SignaturePair.ContentSignature
+	return keyManager.VerifyBlockMessageContent(content, signature, publicKey)
+}
+
 type CalcLeaderPk = func(view lh.ViewCounter) lh.PublicKey
 
 func ValidatePreparedProof(
@@ -49,14 +56,11 @@ func ValidatePreparedProof(
 		return false
 	}
 
-	expectedPrePrepareMessageContent := preprepareBlockRefMessage.BlockMessageContent
-	signaturePair := preprepareBlockRefMessage.SignaturePair
-	leaderPk := signaturePair.SignerPublicKey
-	contentSignature := signaturePair.ContentSignature
-	if keyManager.VerifyBlockMessageContent(expectedPrePrepareMessageContent, contentSignature, leaderPk) == false {
+	if verifyBlockRefMessage(preprepareBlockRefMessage, keyManager) == false {
 		return false
 	}
 
+	leaderPk := preprepareBlockRefMessage.SignaturePair.SignerPublicKey
 	if calcLeaderPk(view) != leaderPk {
 		return false
 	}
@@ -66,6 +70,7 @@ func ValidatePreparedProof(
 		content := msg.BlockMessageContent
 		signature := msg.SignaturePair.ContentSignature
 		publicKey := msg.SignaturePair.SignerPublicKey
+
 		if keyManager.VerifyBlockMessageContent(content, signature, publicKey) == false {
 			return false
 		}
