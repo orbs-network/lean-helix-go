@@ -3,8 +3,6 @@ package electiontrigger
 import lh "github.com/orbs-network/lean-helix-go/go/leanhelix"
 
 type ElectionTrigger interface {
-	Start(cb func())
-	Stop()
+	RegisterOnTrigger(view lh.ViewCounter, cb func(view lh.ViewCounter))
+	UnregisterOnTrigger()
 }
-
-type NewElectionTrigger = func(view lh.ViewCounter) ElectionTrigger

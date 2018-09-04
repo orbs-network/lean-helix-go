@@ -2,6 +2,7 @@ package electiontrigger
 
 import (
 	"github.com/orbs-network/lean-helix-go/go/electiontrigger"
+	"github.com/orbs-network/lean-helix-go/go/leanhelix"
 	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
@@ -10,33 +11,82 @@ import (
 func TestCallbackTrigger(t *testing.T) {
 	et := electiontrigger.NewTimerBasedElectionTrigger(10)
 	wasCalled := false
-	cb := func() { wasCalled = true }
-	et.Start(cb)
+	cb := func(view leanhelix.ViewCounter) { wasCalled = true }
+	et.RegisterOnTrigger(0, cb)
 	time.Sleep(time.Duration(15) * time.Millisecond)
-	et.Stop()
 
 	require.True(t, wasCalled, "Did not call the timer callback")
+	et.UnregisterOnTrigger()
 }
 
-func TestCallbackTriggerTwice(t *testing.T) {
+func TestCallbackTriggerOnce(t *testing.T) {
 	et := electiontrigger.NewTimerBasedElectionTrigger(10)
 	callCount := 0
-	cb := func() { callCount++ }
-	et.Start(cb)
+	cb := func(view leanhelix.ViewCounter) { callCount++ }
+	et.RegisterOnTrigger(0, cb)
 	time.Sleep(time.Duration(25) * time.Millisecond)
-	et.Stop()
 
-	require.Exactly(t, 2, callCount, "Did not tigger the timer twice")
+	require.Exactly(t, 1, callCount, "Trigger callback called more than once")
+	et.UnregisterOnTrigger()
+}
+
+func TestIgnoreSameView(t *testing.T) {
+	et := electiontrigger.NewTimerBasedElectionTrigger(30)
+	callCount := 0
+	cb := func(view leanhelix.ViewCounter) { callCount++ }
+
+	et.RegisterOnTrigger(0, cb)
+	time.Sleep(time.Duration(10) * time.Millisecond)
+	et.RegisterOnTrigger(0, cb)
+	time.Sleep(time.Duration(10) * time.Millisecond)
+	et.RegisterOnTrigger(0, cb)
+	time.Sleep(time.Duration(20) * time.Millisecond)
+	et.RegisterOnTrigger(0, cb)
+
+	require.Exactly(t, 1, callCount, "Trigger callback called more than once")
+	et.UnregisterOnTrigger()
+}
+
+func TestSameView(t *testing.T) {
+	et := electiontrigger.NewTimerBasedElectionTrigger(10)
+	wasCalled := false
+	cb := func(view leanhelix.ViewCounter) { wasCalled = true }
+
+	et.RegisterOnTrigger(0, cb) // 2 ** 0 * 10 = 10
+	time.Sleep(time.Duration(5) * time.Millisecond)
+	et.RegisterOnTrigger(1, cb) // 2 ** 1 * 10 = 20
+	time.Sleep(time.Duration(15) * time.Millisecond)
+	et.RegisterOnTrigger(2, cb) // 2 ** 2 * 10 = 40
+	time.Sleep(time.Duration(35) * time.Millisecond)
+	et.RegisterOnTrigger(3, cb) // 2 ** 3 * 10 = 80
+
+	require.False(t, wasCalled, "Trigger the callback even if a new Register was called with a new view")
+	et.UnregisterOnTrigger()
+}
+
+func TestViewPowTimeout(t *testing.T) {
+	et := electiontrigger.NewTimerBasedElectionTrigger(10)
+	wasCalled := false
+	cb := func(view leanhelix.ViewCounter) { wasCalled = true }
+
+	et.RegisterOnTrigger(2, cb) // 2 ** 2 * 10 = 40
+	time.Sleep(time.Duration(35) * time.Millisecond)
+	require.False(t, wasCalled, "Triggered the callback too early")
+	time.Sleep(time.Duration(10) * time.Millisecond)
+	require.True(t, wasCalled, "Did not trigger the callback after the required timeout")
+
+	et.UnregisterOnTrigger()
 }
 
 func TestStoppingTrigger(t *testing.T) {
 	et := electiontrigger.NewTimerBasedElectionTrigger(10)
-	callCount := 0
-	cb := func() { callCount++ }
-	et.Start(cb)
+	wasCalled := false
+	cb := func(view leanhelix.ViewCounter) { wasCalled = true }
+	et.RegisterOnTrigger(0, cb)
+	time.Sleep(time.Duration(5) * time.Millisecond)
+	et.UnregisterOnTrigger()
 	time.Sleep(time.Duration(15) * time.Millisecond)
-	et.Stop()
-	time.Sleep(time.Duration(20) * time.Millisecond)
 
-	require.Exactly(t, 1, callCount, "Did not stop the timer")
+	require.False(t, wasCalled, "Did not stop the timer")
+	et.UnregisterOnTrigger()
 }
