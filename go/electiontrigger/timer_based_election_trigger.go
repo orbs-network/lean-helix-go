@@ -1,21 +1,23 @@
 package electiontrigger
 
 import (
+	"github.com/orbs-network/lean-helix-go/go/leanhelix"
+	"math"
 	"time"
 )
 
-func setInterval(cb func(), milliseconds uint) chan bool {
+func setTimeout(cb func(), milliseconds uint) chan bool {
 	interval := time.Duration(milliseconds) * time.Millisecond
-	ticker := time.NewTicker(interval)
+	timer := time.NewTimer(interval)
 	clear := make(chan bool)
 
 	go func() {
 		for {
 			select {
-			case <-ticker.C:
+			case <-timer.C:
 				cb()
 			case <-clear:
-				ticker.Stop()
+				timer.Stop()
 				return
 			}
 
@@ -26,23 +28,45 @@ func setInterval(cb func(), milliseconds uint) chan bool {
 }
 
 type TimerBasedElectionTrigger struct {
-	timeout    uint
+	minTimeout uint
+	view       leanhelix.ViewCounter
+	isActive   bool
+	cb         func(view leanhelix.ViewCounter)
 	clearTimer chan bool
 }
 
-func NewTimerBasedElectionTrigger(timeout uint) *TimerBasedElectionTrigger {
+func NewTimerBasedElectionTrigger(minTimeout uint) *TimerBasedElectionTrigger {
 	return &TimerBasedElectionTrigger{
-		timeout: timeout,
+		minTimeout: minTimeout,
 	}
 }
 
-func (tbet *TimerBasedElectionTrigger) Start(cb func()) {
-	tbet.clearTimer = setInterval(cb, tbet.timeout)
+func (tbet *TimerBasedElectionTrigger) RegisterOnTrigger(view leanhelix.ViewCounter, cb func(view leanhelix.ViewCounter)) {
+	tbet.cb = cb
+	if !tbet.isActive || tbet.view != view {
+		tbet.isActive = true
+		tbet.view = view
+		tbet.stop()
+		timeout := uint(math.Pow(2, float64(view))) * tbet.minTimeout
+		tbet.clearTimer = setTimeout(tbet.onTimeout, timeout)
+	}
 }
 
-func (tbet *TimerBasedElectionTrigger) Stop() {
+func (tbet *TimerBasedElectionTrigger) UnregisterOnTrigger() {
+	tbet.cb = nil
+	tbet.isActive = false
+	tbet.stop()
+}
+
+func (tbet *TimerBasedElectionTrigger) stop() {
 	if tbet.clearTimer != nil {
 		tbet.clearTimer <- true
 		tbet.clearTimer = nil
+	}
+}
+
+func (tbet *TimerBasedElectionTrigger) onTimeout() {
+	if tbet.cb != nil {
+		tbet.cb(tbet.view)
 	}
 }
