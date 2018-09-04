@@ -1,18 +1,20 @@
 package electiontrigger
 
+import lh "github.com/orbs-network/lean-helix-go/go/leanhelix"
+
 type ElectionTriggerMock struct {
-	cb func()
+	cb func(view lh.ViewCounter)
 }
 
 func NewElectionTriggerMock() *ElectionTriggerMock {
 	return &ElectionTriggerMock{}
 }
 
-func (tbet *ElectionTriggerMock) Start(cb func()) {
+func (tbet *ElectionTriggerMock) RegisterOnTrigger(view lh.ViewCounter, cb func(view lh.ViewCounter)) {
 	tbet.cb = cb
 }
 
-func (tbet *ElectionTriggerMock) Stop() {
+func (tbet *ElectionTriggerMock) UnregisterOnTrigger() {
 	tbet.cb = nil
 }
 
