@@ -18,6 +18,7 @@ func (tbet *ElectionTriggerMock) UnregisterOnTrigger() {
 	tbet.cb = nil
 }
 
+// TODO: Gil - what to put as arg to cb()
 func (tbet *ElectionTriggerMock) Trigger() {
 	if tbet.cb != nil {
 		tbet.cb()

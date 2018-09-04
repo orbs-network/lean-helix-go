@@ -16,8 +16,8 @@ type inMemoryPbftStorage struct {
 
 func (storage *inMemoryPbftStorage) StorePrePrepare(ppm *lh.PrePrepareMessage) bool {
 
-	term := ppm.Term
-	view := ppm.View
+	term := ppm.Content.Term
+	view := ppm.Content.View
 
 	views, ok := storage.preprepareStorage[term]
 	if !ok {
@@ -34,8 +34,8 @@ func (storage *inMemoryPbftStorage) StorePrePrepare(ppm *lh.PrePrepareMessage) b
 }
 
 func (storage *inMemoryPbftStorage) StorePrepare(pp *lh.PrepareMessage) bool {
-	term := pp.Term
-	view := pp.View
+	term := pp.Content.Term
+	view := pp.Content.View
 	// pps -> views ->
 	views, ok := storage.prepareStorage[term]
 	if !ok {
@@ -48,10 +48,10 @@ func (storage *inMemoryPbftStorage) StorePrepare(pp *lh.PrepareMessage) bool {
 		blockHashes = make(map[lh.BlockHash]map[lh.PublicKey]*lh.PrepareMessage)
 		views[view] = blockHashes
 	}
-	senders, ok := blockHashes[pp.BlockHash]
+	senders, ok := blockHashes[pp.Content.BlockHash]
 	if !ok {
 		senders = make(map[lh.PublicKey]*lh.PrepareMessage)
-		blockHashes[pp.BlockHash] = senders
+		blockHashes[pp.Content.BlockHash] = senders
 	}
 	senderPublicKey := pp.SignaturePair.SignerPublicKey
 	_, ok = senders[senderPublicKey]
@@ -60,14 +60,14 @@ func (storage *inMemoryPbftStorage) StorePrepare(pp *lh.PrepareMessage) bool {
 	}
 	senders[senderPublicKey] = pp
 
-	utils.Logger.Info("StorePrepare: term=%d view=%d, senderPk=%s, blockHash=%s", term, view, senderPublicKey, pp.BlockHash)
+	utils.Logger.Info("StorePrepare: term=%d view=%d, senderPk=%s, blockHash=%s", term, view, senderPublicKey, pp.Content.BlockHash)
 
 	return true
 }
 
 func (storage *inMemoryPbftStorage) StoreCommit(cm *lh.CommitMessage) bool {
-	term := cm.Term
-	view := cm.View
+	term := cm.Content.Term
+	view := cm.Content.View
 	// pps -> views ->
 	views, ok := storage.commitStorage[term]
 	if !ok {
@@ -80,10 +80,10 @@ func (storage *inMemoryPbftStorage) StoreCommit(cm *lh.CommitMessage) bool {
 		blockHashes = make(map[lh.BlockHash]map[lh.PublicKey]*lh.CommitMessage)
 		views[view] = blockHashes
 	}
-	senders, ok := blockHashes[cm.BlockHash]
+	senders, ok := blockHashes[cm.Content.BlockHash]
 	if !ok {
 		senders = make(map[lh.PublicKey]*lh.CommitMessage)
-		blockHashes[cm.BlockHash] = senders
+		blockHashes[cm.Content.BlockHash] = senders
 	}
 	_, ok = senders[cm.SignaturePair.SignerPublicKey]
 	if ok {
@@ -91,14 +91,14 @@ func (storage *inMemoryPbftStorage) StoreCommit(cm *lh.CommitMessage) bool {
 	}
 	senders[cm.SignaturePair.SignerPublicKey] = cm
 
-	utils.Logger.Info("StoreCommit: term=%d view=%d, senderPk=%s, blockHash=%s", term, view, cm.SignaturePair.SignerPublicKey, cm.BlockHash)
+	utils.Logger.Info("StoreCommit: term=%d view=%d, senderPk=%s, blockHash=%s", term, view, cm.SignaturePair.SignerPublicKey, cm.Content.BlockHash)
 
 	return true
 
 }
 
 func (storage *inMemoryPbftStorage) StoreViewChange(vcm *lh.ViewChangeMessage) bool {
-	term, view := vcm.Term, vcm.View
+	term, view := vcm.Content.Term, vcm.Content.View
 	// pps -> views ->
 	views, ok := storage.viewChangeStorage[term]
 	if !ok {
@@ -110,14 +110,14 @@ func (storage *inMemoryPbftStorage) StoreViewChange(vcm *lh.ViewChangeMessage) b
 		senders = make(map[lh.PublicKey]*lh.ViewChangeMessage)
 		views[view] = senders
 	}
-	_, ok = senders[vcm.SignerPublicKey]
+	_, ok = senders[vcm.SignaturePair.SignerPublicKey]
 	if ok {
 		return false
 	}
-	senders[vcm.SignerPublicKey] = vcm
+	senders[vcm.SignaturePair.SignerPublicKey] = vcm
 
 	utils.Logger.Info("StoreViewChange: term=%d view=%d, senderPk=%s",
-		term, view, vcm.SignerPublicKey)
+		term, view, vcm.SignaturePair.SignerPublicKey)
 
 	return true
 
@@ -219,7 +219,7 @@ func (storage *inMemoryPbftStorage) GetLatestPrepared(term lh.BlockHeight, f int
 	if !ok {
 		return nil, false
 	}
-	prepareMessages, ok := storage.getPrepareMessages(term, lastView, &ppm.BlockHash)
+	prepareMessages, ok := storage.getPrepareMessages(term, lastView, &ppm.Content.BlockHash)
 	if len(prepareMessages) < f*2 {
 		return nil, false
 	}

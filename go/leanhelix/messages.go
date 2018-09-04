@@ -10,40 +10,50 @@ const (
 	MESSAGE_TYPE_NEW_VIEW    MessageType = "new-view"
 )
 
-// TODO how to impl this???
 type Message interface {
 	SignaturePair() SignaturePair
-	Content() MessageContent
 }
 
-type MessageContent interface {
-	MessageType()
-	Term()
-	View()
-}
-
-type BlockMessageContent interface {
-	BlockHash() BlockHash
-}
-
-type BlockRefMessage interface {
-	Message
-	BlockMessageContent
+type BlockRefMessage struct {
+	SignaturePair *SignaturePair
+	Content       *BlockMessageContent
 }
 
 type PrePrepareMessage struct {
-	Message
+	*BlockRefMessage
 	Block *Block
 }
 
 type PrepareMessage struct {
-	Message
-	BlockHash BlockHash
+	*BlockRefMessage
 }
 
 type CommitMessage struct {
-	Message
-	BlockHash BlockHash
+	*BlockRefMessage
+}
+
+type ViewChangeMessage struct {
+	SignaturePair *SignaturePair
+	Block         *Block
+	Content       *ViewChangeMessageContent
+}
+
+type NewViewMessage struct {
+	SignaturePair     *SignaturePair
+	PreprepareMessage *PrePrepareMessage
+	Content           *NewViewContent
+}
+
+type NewViewContent struct {
+	MessageType MessageType
+	Term        BlockHeight
+	View        ViewCounter
+	Votes       []*ViewChangeVote
+}
+
+type ViewChangeVote struct {
+	SignaturePair *SignaturePair
+	Content       *ViewChangeMessageContent
 }
 
 type PreparedMessages struct {
@@ -51,23 +61,9 @@ type PreparedMessages struct {
 	PrepareMessages   []*PrepareMessage
 }
 
-type ViewChangeMessage struct {
-	Message
-	Block         *Block
-	PreparedProof *PreparedProof
-}
-
-type NewViewMessage struct {
-	Content           *NewViewMessageContent
-	SignaturePair     *SignaturePair
-	PrePrepareMessage PrePrepareMessage
-}
-
-/*
-type MessageContent struct {
-	MessageType MessageType
-	Term        BlockHeight
-	View        ViewCounter
+type SignaturePair struct {
+	SignerPublicKey  PublicKey
+	ContentSignature string
 }
 
 type BlockMessageContent struct {
@@ -75,11 +71,6 @@ type BlockMessageContent struct {
 	Term        BlockHeight
 	View        ViewCounter
 	BlockHash   BlockHash
-}
-*/
-type SignaturePair struct {
-	SignerPublicKey  PublicKey
-	ContentSignature string
 }
 
 type ViewChangeMessageContent struct {
@@ -90,18 +81,6 @@ type ViewChangeMessageContent struct {
 }
 
 type PreparedProof struct {
-	PreprepareBlockRefMessage *BlockRefMessage
+	PreprepareBlockRefMessage *PrePrepareMessage
 	PrepareBlockRefMessages   []*PrepareMessage
-}
-
-type NewViewMessageContent struct {
-	MessageType MessageType
-	Term        BlockHeight
-	View        ViewCounter
-	Votes       []ViewChangeVote
-}
-
-type ViewChangeVote struct {
-	Content       *ViewChangeMessageContent
-	SignaturePair *SignaturePair
 }
