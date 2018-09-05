@@ -2,6 +2,7 @@ package builders
 
 import (
 	lh "github.com/orbs-network/lean-helix-go/go/leanhelix"
+	"github.com/orbs-network/lean-helix-go/go/test/inmemoryblockchain"
 	"github.com/orbs-network/lean-helix-go/go/test/keymanagermock"
 	"github.com/stretchr/testify/require"
 	"math"
@@ -13,7 +14,7 @@ func TestMessageFactory(t *testing.T) {
 	keyManager := keymanagermock.NewMockKeyManager("My PK")
 	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000000))
 	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000000))
-	block := CreateBlock(GenesisBlock)
+	block := CreateBlock(inmemoryblockchain.GenesisBlock)
 	blockHash := CalculateBlockHash(block)
 	messageFactory := lh.NewMessageFactory(CalculateBlockHash, keyManager)
 
