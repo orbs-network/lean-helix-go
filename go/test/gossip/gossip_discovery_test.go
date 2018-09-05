@@ -24,7 +24,7 @@ func TestGossipDiscovery(t *testing.T) {
 		gd := NewGossipDiscovery()
 		expectedGossip := NewGossip(gd)
 		gd.RegisterGossip(id, expectedGossip)
-		actualGossip := gd.GetGossipByPK(id)
+		actualGossip, _ := gd.GetGossipByPK(id)
 		require.Equal(t, expectedGossip, actualGossip, "received Gossip instance by ID")
 	})
 
@@ -44,4 +44,42 @@ func TestGossipDiscovery(t *testing.T) {
 
 		require.ElementsMatch(t, actual, expected)
 	})
+
+	t.Run("return ok=false if given Id was not registered", func(t *testing.T) {
+		id := genId()
+		gd := NewGossipDiscovery()
+		_, ok := gd.GetGossipByPK(id)
+
+		require.False(t, ok, "GetGossipByPK() returns ok=false if ID not registered")
+	})
+
+	t.Run("return a list of all gossips", func(t *testing.T) {
+		gd := NewGossipDiscovery()
+		id1 := genId()
+		id2 := genId()
+		g1 := NewGossip(gd)
+		g2 := NewGossip(gd)
+		gd.RegisterGossip(id1, g1)
+		gd.RegisterGossip(id2, g2)
+		actual := gd.GetGossips(nil)
+		expected := []*Gossip{g1, g2}
+		require.ElementsMatch(t, actual, expected, "list of all gossips")
+	})
+
+	t.Run("return a list of requested gossips", func(t *testing.T) {
+		gd := NewGossipDiscovery()
+		id1 := genId()
+		id2 := genId()
+		id3 := genId()
+		g1 := NewGossip(gd)
+		g2 := NewGossip(gd)
+		g3 := NewGossip(gd)
+		gd.RegisterGossip(id1, g1)
+		gd.RegisterGossip(id2, g2)
+		gd.RegisterGossip(id3, g3)
+		actual := gd.GetGossips([]lh.PublicKey{id1, id3})
+		expected := []*Gossip{g1, g3}
+		require.ElementsMatch(t, actual, expected, "list of requested gossips")
+	})
+
 }
