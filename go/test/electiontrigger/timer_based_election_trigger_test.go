@@ -47,17 +47,20 @@ func TestIgnoreSameView(t *testing.T) {
 }
 
 func TestViewChanges(t *testing.T) {
-	et := lh.NewTimerBasedElectionTrigger(10)
+	et := lh.NewTimerBasedElectionTrigger(20)
 	wasCalled := false
 	cb := func(view lh.ViewCounter) { wasCalled = true }
 
-	et.RegisterOnTrigger(0, cb) // 2 ** 0 * 10 = 10
-	time.Sleep(time.Duration(5) * time.Millisecond)
-	et.RegisterOnTrigger(1, cb) // 2 ** 1 * 10 = 20
-	time.Sleep(time.Duration(15) * time.Millisecond)
-	et.RegisterOnTrigger(2, cb) // 2 ** 2 * 10 = 40
-	time.Sleep(time.Duration(35) * time.Millisecond)
-	et.RegisterOnTrigger(3, cb) // 2 ** 3 * 10 = 80
+	et.RegisterOnTrigger(0, cb) // 2 ** 0 * 20 = 20
+	time.Sleep(time.Duration(10) * time.Millisecond)
+
+	et.RegisterOnTrigger(1, cb) // 2 ** 1 * 20 = 40
+	time.Sleep(time.Duration(30) * time.Millisecond)
+
+	et.RegisterOnTrigger(2, cb) // 2 ** 2 * 20 = 80
+	time.Sleep(time.Duration(70) * time.Millisecond)
+
+	et.RegisterOnTrigger(3, cb) // 2 ** 3 * 20 = 160
 
 	require.False(t, wasCalled, "Trigger the callback even if a new Register was called with a new view")
 	et.UnregisterOnTrigger()
