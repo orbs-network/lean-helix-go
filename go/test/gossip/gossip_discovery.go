@@ -14,8 +14,9 @@ func NewGossipDiscovery() *discovery {
 	}
 }
 
-func (d *discovery) GetGossipByPK(pk lh.PublicKey) *Gossip {
-	return d.gossips[pk]
+func (d *discovery) GetGossipByPK(pk lh.PublicKey) (*Gossip, bool) {
+	result, ok := d.gossips[pk]
+	return result, ok
 }
 
 func (d *discovery) RegisterGossip(pk lh.PublicKey, gossip *Gossip) {
@@ -23,16 +24,18 @@ func (d *discovery) RegisterGossip(pk lh.PublicKey, gossip *Gossip) {
 }
 
 func (d *discovery) GetGossips(pks []lh.PublicKey) []*Gossip {
-	res := make([]*Gossip, 1)
-	if pks != nil {
-		for _, key := range d.getAllGossipsPKs() {
-			if indexOf(key, pks) {
-				res = append(res, d.GetGossipByPK(key))
-			}
+
+	if pks == nil {
+		return d.getAllGossips()
+	}
+
+	res := make([]*Gossip, 0, 1)
+	for _, key := range d.getAllGossipsPKs() {
+		if !indexOf(key, pks) {
+			continue
 		}
-	} else {
-		for _, val := range d.gossips {
-			res = append(res, val)
+		if gossip, ok := d.GetGossipByPK(key); ok {
+			res = append(res, gossip)
 		}
 	}
 	return res
@@ -45,6 +48,14 @@ func indexOf(pk lh.PublicKey, pks []lh.PublicKey) bool {
 		}
 	}
 	return false
+}
+
+func (d *discovery) getAllGossips() []*Gossip {
+	gossips := make([]*Gossip, 0, len(d.gossips))
+	for _, val := range d.gossips {
+		gossips = append(gossips, val)
+	}
+	return gossips
 }
 
 func (d *discovery) getAllGossipsPKs() []lh.PublicKey {

@@ -77,7 +77,7 @@ func (g *Gossip) unicast(pk lh.PublicKey, message lh.Message) {
 	if !g.inOutgoingWhitelist(pk) {
 		return
 	}
-	if targetGossip := g.discovery.GetGossipByPK(pk); targetGossip != nil {
+	if targetGossip, ok := g.discovery.GetGossipByPK(pk); ok {
 		targetGossip.onRemoteMessage(message)
 	}
 }
