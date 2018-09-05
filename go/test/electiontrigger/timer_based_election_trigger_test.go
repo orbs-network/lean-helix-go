@@ -46,7 +46,7 @@ func TestIgnoreSameView(t *testing.T) {
 	et.UnregisterOnTrigger()
 }
 
-func TestSameView(t *testing.T) {
+func TestViewChanges(t *testing.T) {
 	et := lh.NewTimerBasedElectionTrigger(10)
 	wasCalled := false
 	cb := func(view lh.ViewCounter) { wasCalled = true }
