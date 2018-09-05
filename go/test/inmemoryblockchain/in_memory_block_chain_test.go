@@ -10,13 +10,13 @@ import (
 func TestGenesisBlock(t *testing.T) {
 	blockChain := inmemoryblockchain.NewInMemoryBlockChain()
 	actual := blockChain.GetLastBlock()
-	expected := builders.GenesisBlock
+	expected := inmemoryblockchain.GenesisBlock
 	require.Equal(t, expected, actual, "Did not return the genesis block as the first block")
 }
 
 func TestAppendingToBlockChain(t *testing.T) {
 	blockChain := inmemoryblockchain.NewInMemoryBlockChain()
-	block := builders.CreateBlock(builders.GenesisBlock)
+	block := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
 	blockChain.AppendBlockToChain(block)
 
 	actual := blockChain.GetLastBlock()
@@ -25,7 +25,7 @@ func TestAppendingToBlockChain(t *testing.T) {
 
 func TestGettingTheLatestBlock(t *testing.T) {
 	blockChain := inmemoryblockchain.NewInMemoryBlockChain()
-	block1 := builders.CreateBlock(builders.GenesisBlock)
+	block1 := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
 	block2 := builders.CreateBlock(block1)
 	block3 := builders.CreateBlock(block2)
 	blockChain.AppendBlockToChain(block1)

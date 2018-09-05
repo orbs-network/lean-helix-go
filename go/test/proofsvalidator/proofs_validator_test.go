@@ -4,6 +4,7 @@ import (
 	lh "github.com/orbs-network/lean-helix-go/go/leanhelix"
 	pv "github.com/orbs-network/lean-helix-go/go/proofsvalidator"
 	"github.com/orbs-network/lean-helix-go/go/test/builders"
+	"github.com/orbs-network/lean-helix-go/go/test/inmemoryblockchain"
 	"github.com/orbs-network/lean-helix-go/go/test/keymanagermock"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -25,7 +26,7 @@ func TestProofsValidator(t *testing.T) {
 	const view = 0
 	const targetTerm = term
 	const targetView = view + 1
-	block := builders.CreateBlock(builders.GenesisBlock)
+	block := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
 
 	preprepareMessage := builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block)
 	prepareMessage1 := builders.CreatePrepareMessage(node1KeyManager, term, view, block)
@@ -168,7 +169,7 @@ func TestProofsValidator(t *testing.T) {
 		require.False(t, actualBadView, "Did not reject mismatching view")
 
 		// Mismatching blockHash //
-		otherBlock := builders.CreateBlock(builders.GenesisBlock)
+		otherBlock := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
 		badBlockHashProof := &lh.PreparedProof{
 			PreprepareBlockRefMessage: builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block).BlockRefMessage,
 			PrepareBlockRefMessages: []*lh.PrepareMessage{

@@ -5,6 +5,7 @@ import (
 	lh "github.com/orbs-network/lean-helix-go/go/leanhelix"
 	"github.com/orbs-network/lean-helix-go/go/storage"
 	"github.com/orbs-network/lean-helix-go/go/test/builders"
+	"github.com/orbs-network/lean-helix-go/go/test/inmemoryblockchain"
 	"github.com/orbs-network/lean-helix-go/go/test/keymanagermock"
 	"github.com/stretchr/testify/require"
 	"math"
@@ -103,8 +104,8 @@ func TestStorePrepareInStorage(t *testing.T) {
 	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1))
 	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2))
 	sender3KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId3))
-	block1 := builders.CreateBlock(builders.GenesisBlock)
-	block2 := builders.CreateBlock(builders.GenesisBlock)
+	block1 := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
+	block2 := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
 	block1Hash := builders.CalculateBlockHash(block1)
 	myStorage.StorePrepare(builders.CreatePrepareMessage(sender1KeyManager, term1, view1, block1))
 	myStorage.StorePrepare(builders.CreatePrepareMessage(sender2KeyManager, term1, view1, block1))
@@ -129,8 +130,8 @@ func TestStoreCommitInStorage(t *testing.T) {
 	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1))
 	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2))
 	sender3KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId3))
-	block1 := builders.CreateBlock(builders.GenesisBlock)
-	block2 := builders.CreateBlock(builders.GenesisBlock)
+	block1 := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
+	block2 := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
 	block1Hash := builders.CalculateBlockHash(block1)
 	myStorage.StoreCommit(builders.CreateCommitMessage(sender1KeyManager, term1, view1, block1))
 	myStorage.StoreCommit(builders.CreateCommitMessage(sender2KeyManager, term1, view1, block1))
@@ -148,7 +149,7 @@ func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	myStorage := storage.NewInMemoryPBFTStorage()
 	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
 	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
-	block := builders.CreateBlock(builders.GenesisBlock)
+	block := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
 	keyManager := keymanagermock.NewMockKeyManager(lh.PublicKey("PK"))
 	ppContent := builders.CreatePrePrepareMessage(keyManager, term, view, block)
 
@@ -167,7 +168,7 @@ func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1))
 	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2))
-	block := builders.CreateBlock(builders.GenesisBlock)
+	block := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
 	prepareMessage1 := builders.CreatePrepareMessage(sender1KeyManager, term, view, block)
 	prepareMessage2 := builders.CreatePrepareMessage(sender2KeyManager, term, view, block)
 
@@ -189,7 +190,7 @@ func TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1))
 	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2))
-	block := builders.CreateBlock(builders.GenesisBlock)
+	block := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
 
 	commitPayload1 := builders.CreateCommitMessage(sender1KeyManager, term, view, block)
 	commitPayload2 := builders.CreateCommitMessage(sender2KeyManager, term, view, block)
@@ -251,7 +252,7 @@ func TestPrepared(t *testing.T) {
 	leaderKeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(leaderId))
 	sender1KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId1))
 	sender2KeyManager := keymanagermock.NewMockKeyManager(lh.PublicKey(senderId2))
-	block := builders.CreateBlock(builders.GenesisBlock)
+	block := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
 	ppm := builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block)
 	pm1 := builders.CreatePrepareMessage(sender1KeyManager, term, view, block)
 	pm2 := builders.CreatePrepareMessage(sender2KeyManager, term, view, block)

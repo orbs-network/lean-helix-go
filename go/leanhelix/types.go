@@ -15,16 +15,11 @@ type Block struct {
 	Body   []byte
 }
 
-type Node struct {
-	MyPublicKey PublicKey
-}
-
 type BlockUtils interface {
 	CalculateBlockHash(block *Block) *BlockHash
 }
 
 type NetworkCommunication interface {
-	Nodes() []Node
 	SendToMembers(publicKeys []string, messageType string, message []byte)
 }
 

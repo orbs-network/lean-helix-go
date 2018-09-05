@@ -2,6 +2,7 @@ package network
 
 import (
 	lh "github.com/orbs-network/lean-helix-go/go/leanhelix"
+	"github.com/orbs-network/lean-helix-go/go/test/electiontrigger"
 	"github.com/orbs-network/lean-helix-go/go/test/inmemoryblockchain"
 )
 
@@ -33,8 +34,7 @@ func (node *Node) IsLeader() bool {
 }
 
 func (node *Node) TriggerElection() {
-	// TODO fix error
-	// node.Config.ElectionTrigger.(electiontrigger.ElectionTriggerMock).Trigger()
+	node.Config.ElectionTrigger.(*electiontrigger.ElectionTriggerMock).Trigger()
 }
 
 func (node *Node) onCommittedBlock(block *lh.Block) {

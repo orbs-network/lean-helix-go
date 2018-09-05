@@ -2,7 +2,6 @@ package inmemoryblockchain
 
 import (
 	lh "github.com/orbs-network/lean-helix-go/go/leanhelix"
-	"github.com/orbs-network/lean-helix-go/go/test/builders"
 )
 
 type InMemoryBlockChain struct {
@@ -11,7 +10,7 @@ type InMemoryBlockChain struct {
 
 func NewInMemoryBlockChain() *InMemoryBlockChain {
 	return &InMemoryBlockChain{
-		blockChain: []*lh.Block{builders.GenesisBlock},
+		blockChain: []*lh.Block{GenesisBlock},
 	}
 }
 
