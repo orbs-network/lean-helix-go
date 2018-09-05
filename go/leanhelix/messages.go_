@@ -1,0 +1,143 @@
+package leanhelix
+
+type MessageType string
+
+const (
+	MESSAGE_TYPE_PREPREPARE  MessageType = "preprepare"
+	MESSAGE_TYPE_PREPARE     MessageType = "prepare"
+	MESSAGE_TYPE_COMMIT      MessageType = "commit"
+	MESSAGE_TYPE_VIEW_CHANGE MessageType = "view-change"
+	MESSAGE_TYPE_NEW_VIEW    MessageType = "new-view"
+)
+
+
+
+
+
+
+type Message interface {
+	//Content() MessageContent
+	//SignaturePair() SignaturePair
+	MessageType() MessageType
+	Term() BlockHeight
+	SenderPK() PublicKey
+}
+
+type SignedMessage interface {
+	Signature() string
+	Signer() PublicKey
+	Content() MessageContent
+}
+
+type PrePrepareMessage struct {
+	block *Block
+	term BlockHeight
+	signaturePair SignaturePair
+}
+
+func (ppm *PrePrepareMessage) MessageType() MessageType {
+	return MESSAGE_TYPE_PREPREPARE
+}
+
+func (ppm *PrePrepareMessage) Term() BlockHeight {
+	return ppm.term
+}
+
+func (ppm *PrePrepareMessage) SenderPK() PublicKey {
+	return ppm.signaturePair.SignerPublicKey
+}
+
+
+
+type PrepareMessage struct {
+	term BlockHeight
+	signaturePair SignaturePair
+}
+
+
+
+type MessageContent interface {
+	MessageType() MessageType
+	Term() BlockHeight
+	View() ViewCounter
+}
+
+type SignaturePair struct {
+	SignerPublicKey  PublicKey
+	ContentSignature string
+}
+
+type BlockMessageContent interface {
+	BlockHash() BlockHash
+}
+
+type PrePrepareMessage struct {
+	Message
+	Block *Block
+}
+
+type PrepareMessage struct {
+	Message
+	BlockHash BlockHash
+}
+
+type CommitMessage struct {
+	Message
+	BlockHash BlockHash
+}
+
+type PreparedMessages struct {
+	PreprepareMessage *PrePrepareMessage
+	PrepareMessages   []*PrepareMessage
+}
+
+type ViewChangeMessage struct {
+	Message
+	Block         *Block
+	PreparedProof *PreparedProof
+}
+
+type NewViewMessage struct {
+	Content           *NewViewMessageContent
+	SignaturePair     *SignaturePair
+	PrePrepareMessage PrePrepareMessage
+}
+
+/*
+type MessageContent struct {
+	MessageType MessageType
+	Term        BlockHeight
+	View        ViewCounter
+}
+
+type BlockMessageContent struct {
+	MessageType MessageType
+	Term        BlockHeight
+	View        ViewCounter
+	BlockHash   BlockHash
+}
+*/
+
+type ViewChangeMessageContent struct {
+	MessageType   MessageType
+	Term          BlockHeight
+	View          ViewCounter
+	PreparedProof *PreparedProof
+}
+
+type PreparedProof struct {
+	PreprepareBlockRefMessage *BlockRefMessage
+	PrepareBlockRefMessages   []*PrepareMessage
+}
+
+type NewViewMessageContent struct {
+	MessageType MessageType
+	Term        BlockHeight
+	View        ViewCounter
+	Votes       []ViewChangeVote
+}
+
+type ViewChangeVote struct {
+	Content       *ViewChangeMessageContent
+	SignaturePair *SignaturePair
+}

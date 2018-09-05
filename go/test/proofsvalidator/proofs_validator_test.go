@@ -27,12 +27,15 @@ func TestProofsValidator(t *testing.T) {
 	const targetTerm = term
 	const targetView = view + 1
 	block := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
+	leaderMsgFactory := lh.NewMessageFactory(builders.CalculateBlockHash, leaderKeyManager)
+	node1MsgFactory := lh.NewMessageFactory(builders.CalculateBlockHash, node1KeyManager)
+	node2MsgFactory := lh.NewMessageFactory(builders.CalculateBlockHash, node2KeyManager)
 
-	preprepareMessage := builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block)
-	prepareMessage1 := builders.CreatePrepareMessage(node1KeyManager, term, view, block)
-	prepareMessage2 := builders.CreatePrepareMessage(node2KeyManager, term, view, block)
+	preprepareMessage := leaderMsgFactory.CreatePreprepareMessage(term, view, block)
+	prepareMessage1 := node1MsgFactory.CreatePrepareMessage(term, view, block)
+	prepareMessage2 := node2MsgFactory.CreatePrepareMessage(term, view, block)
 	preparedProof := &lh.PreparedProof{
-		PreprepareBlockRefMessage: preprepareMessage.BlockRefMessage,
+		PreprepareBlockRefMessage: preprepareMessage,
 		PrepareBlockRefMessages:   []*lh.PrepareMessage{prepareMessage1, prepareMessage2},
 	}
 
@@ -47,7 +50,7 @@ func TestProofsValidator(t *testing.T) {
 
 	t.Run("TestProofsValidatorWithNoPrepares", func(t *testing.T) {
 		preparedProof := &lh.PreparedProof{
-			PreprepareBlockRefMessage: preprepareMessage.BlockRefMessage,
+			PreprepareBlockRefMessage: preprepareMessage,
 			PrepareBlockRefMessages:   nil,
 		}
 		result := pv.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
@@ -73,7 +76,7 @@ func TestProofsValidator(t *testing.T) {
 
 	t.Run("TestProofsValidatorWithNotEnoughPrepareMessages", func(t *testing.T) {
 		preparedProof := &lh.PreparedProof{
-			PreprepareBlockRefMessage: preprepareMessage.BlockRefMessage,
+			PreprepareBlockRefMessage: preprepareMessage,
 			PrepareBlockRefMessages:   []*lh.PrepareMessage{prepareMessage1},
 		}
 		result := pv.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
@@ -97,9 +100,10 @@ func TestProofsValidator(t *testing.T) {
 
 	t.Run("TestProofsValidatorWithANoneMember", func(t *testing.T) {
 		noneMemberKeyManager := keymanagermock.NewMockKeyManager("Not in members PK")
-		prepareMessage1 := builders.CreatePrepareMessage(noneMemberKeyManager, term, view, block)
+		mf := lh.NewMessageFactory(builders.CalculateBlockHash, noneMemberKeyManager)
+		prepareMessage1 := mf.CreatePrepareMessage(term, view, block)
 		preparedProof := &lh.PreparedProof{
-			PreprepareBlockRefMessage: preprepareMessage.BlockRefMessage,
+			PreprepareBlockRefMessage: preprepareMessage,
 			PrepareBlockRefMessages:   []*lh.PrepareMessage{prepareMessage1, prepareMessage2},
 		}
 		result := pv.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
@@ -107,9 +111,10 @@ func TestProofsValidator(t *testing.T) {
 	})
 
 	t.Run("TestProofsValidatorWithPrepareFromTheLeader", func(t *testing.T) {
-		prepareMessage1 := builders.CreatePrepareMessage(leaderKeyManager, term, view, block)
+		mf := lh.NewMessageFactory(builders.CalculateBlockHash, leaderKeyManager)
+		prepareMessage1 := mf.CreatePrepareMessage(term, view, block)
 		preparedProof := &lh.PreparedProof{
-			PreprepareBlockRefMessage: preprepareMessage.BlockRefMessage,
+			PreprepareBlockRefMessage: preprepareMessage,
 			PrepareBlockRefMessages:   []*lh.PrepareMessage{prepareMessage1, prepareMessage2},
 		}
 		result := pv.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
@@ -121,7 +126,7 @@ func TestProofsValidator(t *testing.T) {
 			return "Some other node PK"
 		}
 		preparedProof := &lh.PreparedProof{
-			PreprepareBlockRefMessage: preprepareMessage.BlockRefMessage,
+			PreprepareBlockRefMessage: preprepareMessage,
 			PrepareBlockRefMessages:   []*lh.PrepareMessage{prepareMessage1, prepareMessage2},
 		}
 		result := pv.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
@@ -135,12 +140,17 @@ func TestProofsValidator(t *testing.T) {
 		const targetTerm = term
 		const targetView = view + 1
 
+		leaderMF := lh.NewMessageFactory(builders.CalculateBlockHash, leaderKeyManager)
+		node1MF := lh.NewMessageFactory(builders.CalculateBlockHash, node1KeyManager)
+		node2MF := lh.NewMessageFactory(builders.CalculateBlockHash, node2KeyManager)
+
+		// TODO Maybe can use node1MsgFactory instead of creating node1MF here (same for leader and node2)
 		// Good proof //
 		goodPrepareProof := &lh.PreparedProof{
-			PreprepareBlockRefMessage: builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block).BlockRefMessage,
+			PreprepareBlockRefMessage: leaderMF.CreatePreprepareMessage(term, view, block),
 			PrepareBlockRefMessages: []*lh.PrepareMessage{
-				builders.CreatePrepareMessage(node1KeyManager, term, view, block),
-				builders.CreatePrepareMessage(node2KeyManager, term, view, block),
+				node1MF.CreatePrepareMessage(term, view, block),
+				node2MF.CreatePrepareMessage(term, view, block),
 			},
 		}
 		actualGood := pv.ValidatePreparedProof(targetTerm, targetView, goodPrepareProof, f, keyManager, &membersPKs, calcLeaderPk)
@@ -148,10 +158,10 @@ func TestProofsValidator(t *testing.T) {
 
 		// Mismatching term //
 		badTermProof := &lh.PreparedProof{
-			PreprepareBlockRefMessage: builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block).BlockRefMessage,
+			PreprepareBlockRefMessage: leaderMF.CreatePreprepareMessage(term, view, block),
 			PrepareBlockRefMessages: []*lh.PrepareMessage{
-				builders.CreatePrepareMessage(node1KeyManager, term, view, block),
-				builders.CreatePrepareMessage(node2KeyManager, 666, view, block),
+				node1MF.CreatePrepareMessage(term, view, block),
+				node2MF.CreatePrepareMessage(666, view, block),
 			},
 		}
 		actualBadTerm := pv.ValidatePreparedProof(targetTerm, targetView, badTermProof, f, keyManager, &membersPKs, calcLeaderPk)
@@ -159,10 +169,10 @@ func TestProofsValidator(t *testing.T) {
 
 		// Mismatching view //
 		badViewProof := &lh.PreparedProof{
-			PreprepareBlockRefMessage: builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block).BlockRefMessage,
+			PreprepareBlockRefMessage: leaderMF.CreatePreprepareMessage(term, view, block),
 			PrepareBlockRefMessages: []*lh.PrepareMessage{
-				builders.CreatePrepareMessage(node1KeyManager, term, view, block),
-				builders.CreatePrepareMessage(node2KeyManager, term, 666, block),
+				node1MF.CreatePrepareMessage(term, view, block),
+				node2MF.CreatePrepareMessage(term, 666, block),
 			},
 		}
 		actualBadView := pv.ValidatePreparedProof(targetTerm, targetView, badViewProof, f, keyManager, &membersPKs, calcLeaderPk)
@@ -171,10 +181,10 @@ func TestProofsValidator(t *testing.T) {
 		// Mismatching blockHash //
 		otherBlock := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
 		badBlockHashProof := &lh.PreparedProof{
-			PreprepareBlockRefMessage: builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block).BlockRefMessage,
+			PreprepareBlockRefMessage: leaderMF.CreatePreprepareMessage(term, view, block),
 			PrepareBlockRefMessages: []*lh.PrepareMessage{
-				builders.CreatePrepareMessage(node1KeyManager, term, view, block),
-				builders.CreatePrepareMessage(node2KeyManager, term, view, otherBlock),
+				node1MF.CreatePrepareMessage(term, view, block),
+				node2MF.CreatePrepareMessage(term, view, otherBlock),
 			},
 		}
 		actualBadBlockHash := pv.ValidatePreparedProof(targetTerm, targetView, badBlockHashProof, f, keyManager, &membersPKs, calcLeaderPk)
@@ -182,11 +192,14 @@ func TestProofsValidator(t *testing.T) {
 	})
 
 	t.Run("TestProofsValidatorWithDuplicate prepare sender PK", func(t *testing.T) {
+		leaderMF := lh.NewMessageFactory(builders.CalculateBlockHash, leaderKeyManager)
+		node1MF := lh.NewMessageFactory(builders.CalculateBlockHash, node1KeyManager)
+
 		preparedProof := &lh.PreparedProof{
-			PreprepareBlockRefMessage: builders.CreatePrePrepareMessage(leaderKeyManager, term, view, block).BlockRefMessage,
+			PreprepareBlockRefMessage: leaderMF.CreatePreprepareMessage(term, view, block),
 			PrepareBlockRefMessages: []*lh.PrepareMessage{
-				builders.CreatePrepareMessage(node1KeyManager, term, view, block),
-				builders.CreatePrepareMessage(node1KeyManager, term, view, block),
+				node1MF.CreatePrepareMessage(term, view, block),
+				node1MF.CreatePrepareMessage(term, view, block),
 			},
 		}
 

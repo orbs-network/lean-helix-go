@@ -12,7 +12,7 @@ func isInMembers(membersPKs *[]lh.PublicKey, publicKey *lh.PublicKey) bool {
 }
 
 func verifyBlockRefMessage(msg *lh.BlockRefMessage, keyManager lh.KeyManager) bool {
-	content := msg.BlockMessageContent
+	content := msg.Content
 	publicKey := msg.SignaturePair.SignerPublicKey
 	signature := msg.SignaturePair.ContentSignature
 	return keyManager.VerifyBlockMessageContent(content, signature, publicKey)
@@ -42,12 +42,12 @@ func ValidatePreparedProof(
 		return false
 	}
 
-	term := preprepareBlockRefMessage.Term
+	term := preprepareBlockRefMessage.Content.Term
 	if term != targetTerm {
 		return false
 	}
 
-	view := preprepareBlockRefMessage.View
+	view := preprepareBlockRefMessage.Content.View
 	if view >= targetView {
 		return false
 	}
@@ -56,7 +56,8 @@ func ValidatePreparedProof(
 		return false
 	}
 
-	if verifyBlockRefMessage(preprepareBlockRefMessage, keyManager) == false {
+	// TODO Refactor names here!!!
+	if verifyBlockRefMessage(preprepareBlockRefMessage.BlockRefMessage, keyManager) == false {
 		return false
 	}
 
@@ -67,7 +68,7 @@ func ValidatePreparedProof(
 
 	seen := make(map[lh.PublicKey]bool, len(prepareBlockRefMessages))
 	for _, msg := range prepareBlockRefMessages {
-		content := msg.BlockMessageContent
+		content := msg.Content
 		signature := msg.SignaturePair.ContentSignature
 		publicKey := msg.SignaturePair.SignerPublicKey
 
@@ -91,7 +92,7 @@ func ValidatePreparedProof(
 			return false
 		}
 
-		if content.BlockHash != preprepareBlockRefMessage.BlockHash {
+		if content.BlockHash != preprepareBlockRefMessage.Content.BlockHash {
 			return false
 		}
 

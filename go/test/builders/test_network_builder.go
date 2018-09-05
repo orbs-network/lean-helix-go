@@ -1,5 +1,6 @@
 package builders
 
-func CreateTestNetwork() {
+func CreateTestNetwork(nodeCount int) {
+
 	panic("Not implemented")
 }

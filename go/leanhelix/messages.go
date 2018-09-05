@@ -10,9 +10,13 @@ const (
 	MESSAGE_TYPE_NEW_VIEW    MessageType = "new-view"
 )
 
+type Message interface {
+	SignaturePair() SignaturePair
+}
+
 type BlockRefMessage struct {
-	*BlockMessageContent
 	SignaturePair *SignaturePair
+	Content       *BlockMessageContent
 }
 
 type PrePrepareMessage struct {
@@ -20,34 +24,46 @@ type PrePrepareMessage struct {
 	Block *Block
 }
 
-type PrepareMessage BlockRefMessage
+type PrepareMessage struct {
+	*BlockRefMessage
+}
+
+type CommitMessage struct {
+	*BlockRefMessage
+}
+
+type ViewChangeMessage struct {
+	SignaturePair *SignaturePair
+	Block         *Block
+	Content       *ViewChangeMessageContent
+}
+
+type NewViewMessage struct {
+	SignaturePair     *SignaturePair
+	PreprepareMessage *PrePrepareMessage
+	Content           *NewViewContent
+}
+
+type NewViewContent struct {
+	MessageType MessageType
+	Term        BlockHeight
+	View        ViewCounter
+	Votes       []*ViewChangeVote
+}
+
+type ViewChangeVote struct {
+	SignaturePair *SignaturePair
+	Content       *ViewChangeMessageContent
+}
 
 type PreparedMessages struct {
 	PreprepareMessage *PrePrepareMessage
 	PrepareMessages   []*PrepareMessage
 }
 
-type CommitMessage BlockRefMessage
-
-// TODO For now I want "Block" to be explicit - it's not as integral part
-// of ViewChangeMessage as the other fields are
-
-type ViewChangeMessage struct {
-	*ViewChangeMessageContent
-	*SignaturePair
-	Block *Block
-}
-
-type NewViewMessage struct {
-	Content           *NewViewMessageContent
-	SignaturePair     *SignaturePair
-	PrePrepareMessage PrePrepareMessage
-}
-
-type MessageContent struct {
-	MessageType MessageType
-	Term        BlockHeight
-	View        ViewCounter
+type SignaturePair struct {
+	SignerPublicKey  PublicKey
+	ContentSignature string
 }
 
 type BlockMessageContent struct {
@@ -55,11 +71,6 @@ type BlockMessageContent struct {
 	Term        BlockHeight
 	View        ViewCounter
 	BlockHash   BlockHash
-}
-
-type SignaturePair struct {
-	SignerPublicKey  PublicKey
-	ContentSignature string
 }
 
 type ViewChangeMessageContent struct {
@@ -70,18 +81,6 @@ type ViewChangeMessageContent struct {
 }
 
 type PreparedProof struct {
-	PreprepareBlockRefMessage *BlockRefMessage
+	PreprepareBlockRefMessage *PrePrepareMessage
 	PrepareBlockRefMessages   []*PrepareMessage
-}
-
-type NewViewMessageContent struct {
-	MessageType MessageType
-	Term        BlockHeight
-	View        ViewCounter
-	Votes       []ViewChangeVote
-}
-
-type ViewChangeVote struct {
-	Content       *ViewChangeMessageContent
-	SignaturePair *SignaturePair
 }
