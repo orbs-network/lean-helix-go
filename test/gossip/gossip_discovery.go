@@ -1,29 +1,29 @@
 package gossip
 
 import (
-	"github.com/orbs-network/lean-helix-go/types"
+	lh "github.com/orbs-network/lean-helix-go"
 )
 
 type discovery struct {
-	gossips map[types.PublicKey]*Gossip
+	gossips map[lh.PublicKeyStr]*Gossip
 }
 
 func NewGossipDiscovery() *discovery {
 	return &discovery{
-		gossips: make(map[types.PublicKey]*Gossip),
+		gossips: make(map[lh.PublicKeyStr]*Gossip),
 	}
 }
 
-func (d *discovery) GetGossipByPK(pk types.PublicKey) (*Gossip, bool) {
-	result, ok := d.gossips[pk]
+func (d *discovery) GetGossipByPK(pk lh.PublicKey) (*Gossip, bool) {
+	result, ok := d.gossips[lh.PublicKeyStr(pk)]
 	return result, ok
 }
 
-func (d *discovery) RegisterGossip(pk types.PublicKey, gossip *Gossip) {
-	d.gossips[pk] = gossip
+func (d *discovery) RegisterGossip(pk lh.PublicKey, gossip *Gossip) {
+	d.gossips[lh.PublicKeyStr(pk)] = gossip
 }
 
-func (d *discovery) GetGossips(pks []types.PublicKey) []*Gossip {
+func (d *discovery) GetGossips(pks []lh.PublicKey) []*Gossip {
 
 	if pks == nil {
 		return d.getAllGossips()
@@ -41,9 +41,9 @@ func (d *discovery) GetGossips(pks []types.PublicKey) []*Gossip {
 	return res
 }
 
-func indexOf(pk types.PublicKey, pks []types.PublicKey) bool {
+func indexOf(pk lh.PublicKey, pks []lh.PublicKey) bool {
 	for _, key := range pks {
-		if key == pk {
+		if key.Equals(pk) {
 			return true
 		}
 	}
@@ -58,10 +58,10 @@ func (d *discovery) getAllGossips() []*Gossip {
 	return gossips
 }
 
-func (d *discovery) getAllGossipsPKs() []types.PublicKey {
-	keys := make([]types.PublicKey, 0, len(d.gossips))
+func (d *discovery) getAllGossipsPKs() []lh.PublicKey {
+	keys := make([]lh.PublicKey, 0, len(d.gossips))
 	for key := range d.gossips {
-		keys = append(keys, key)
+		keys = append(keys, lh.PublicKey(key))
 	}
 	return keys
 }

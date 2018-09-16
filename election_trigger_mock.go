@@ -1,17 +1,15 @@
 package leanhelix
 
-import "github.com/orbs-network/lean-helix-go/types"
-
 type ElectionTriggerMock struct {
-	view types.ViewCounter
-	cb   func(view types.ViewCounter)
+	view ViewCounter
+	cb   func(view ViewCounter)
 }
 
 func NewElectionTriggerMock() *ElectionTriggerMock {
 	return &ElectionTriggerMock{}
 }
 
-func (tbet *ElectionTriggerMock) RegisterOnTrigger(view types.ViewCounter, cb func(view types.ViewCounter)) {
+func (tbet *ElectionTriggerMock) RegisterOnTrigger(view ViewCounter, cb func(view ViewCounter)) {
 	tbet.view = view
 	tbet.cb = cb
 }

@@ -2,10 +2,8 @@ package test
 
 import (
 	"fmt"
-	"github.com/orbs-network/lean-helix-go"
+	lh "github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/test/builders"
-	"github.com/orbs-network/lean-helix-go/test/inmemoryblockchain"
-	"github.com/orbs-network/lean-helix-go/types"
 	"github.com/stretchr/testify/require"
 	"math"
 	"math/rand"
@@ -20,7 +18,7 @@ func TestClearAllStorageDataAfterCallingClearTermLogs(t *testing.T) {
 
 	//const storage = new InMemoryPBFTStorage(logger)
 
-	myStorage := storage.NewInMemoryPBFTStorage()
+	myStorage := storage.lh.NewInMemoryPBFTStorage()
 	term := math.Floor(rand.Int() * 1000)
 	view := math.Floor(rand.Int() * 1000)
 	block := builders.CreateBlock(builders.CreateGenesisBlock())
@@ -41,14 +39,14 @@ func TestClearAllStorageDataAfterCallingClearTermLogs(t *testing.T) {
 
 	require.NotNil(t, storage.GetPrePreparePayload(term, view), "GetPrePreparePayload() result is not nil")
 	require.Equal(t, 1, len(storage.GetPreparePayloads(term, view, blockHash)), "Length of GetPreparePayloads() result array is 1")
-	require.Equal(t, 1, len(storage.GetCommitSendersPublicKeys(term, view, blockHash)), "Length of GetCommitSendersPublicKeys() result array is 1")
+	require.Equal(t, 1, len(storage.GetCommitSenderslh.PublicKeys(term, view, blockHash)), "Length of GetCommitSenderslh.PublicKeys() result array is 1")
 	require.Equal(t, 1, len(storage.GetViewChangeProof(term, view, blockHash)), "Length of GetViewChangeProof() result array is 1")
 
 	storage.ClearTermLogs(term)
 
 	require.Nil(t, storage.GetPrePreparePayload(term, view), "GetPrePreparePayload() result is nil")
 	require.Equal(t, 0, len(storage.GetPreparePayloads(term, view, blockHash)), "Length of GetPreparePayloads() result array is 0")
-	require.Equal(t, 0, len(storage.GetCommitSendersPublicKeys(term, view, blockHash)), "Length of GetCommitSendersPublicKeys() result array is 0")
+	require.Equal(t, 0, len(storage.GetCommitSenderslh.PublicKeys(term, view, blockHash)), "Length of GetCommitSenderslh.PublicKeys() result array is 0")
 	require.Nil(t, 1, len(storage.GetViewChangeProof(term, view, blockHash)), "GetViewChangeProof() result is nil")
 
 
@@ -57,7 +55,7 @@ func TestClearAllStorageDataAfterCallingClearTermLogs(t *testing.T) {
 	//const term = Math.floor(Math.random() * 1000);
 	//const view = Math.floor(Math.random() * 1000);
 	//const block = aBlock(theGenesisBlock);
-	//const blockHash = calculateBlockHash(block);
+	//const blockHash = builders.CalculateBlockHash(block);
 	//const keyManager: KeyManager = new mockKeyManager("PK");
 	//const PPPayload = aPrePreparePayload(keyManager, term, view, block);
 	//const PPayload = aPreparePayload(keyManager, term, view, block);
@@ -92,91 +90,91 @@ func TestClearAllStorageDataAfterCallingClearTermLogs(t *testing.T) {
 // TODO Do we need TestStorePrePrepareInStorage(t *testing.T) ?
 
 func TestStorePrepareInStorage(t *testing.T) {
-	myStorage := leanhelix.NewInMemoryPBFTStorage()
-	term1 := types.BlockHeight(math.Floor(rand.Float64() * 1000))
-	term2 := types.BlockHeight(math.Floor(rand.Float64() * 1000))
-	view1 := types.ViewCounter(math.Floor(rand.Float64() * 1000))
-	view2 := types.ViewCounter(math.Floor(rand.Float64() * 1000))
-	senderId1 := types.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	senderId2 := types.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	senderId3 := types.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	sender1KeyManager := leanhelix.NewMockKeyManager(types.PublicKey(senderId1))
-	sender2KeyManager := leanhelix.NewMockKeyManager(types.PublicKey(senderId2))
-	sender3KeyManager := leanhelix.NewMockKeyManager(types.PublicKey(senderId3))
-	block1 := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
-	block2 := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
-	block1Hash := leanhelix.CalculateBlockHash(block1)
-	sender1MsgFactory := leanhelix.NewMessageFactory(leanhelix.CalculateBlockHash, sender1KeyManager)
-	sender2MsgFactory := leanhelix.NewMessageFactory(leanhelix.CalculateBlockHash, sender2KeyManager)
-	sender3MsgFactory := leanhelix.NewMessageFactory(leanhelix.CalculateBlockHash, sender3KeyManager)
+	myStorage := lh.NewInMemoryPBFTStorage()
+	term1 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	term2 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	view1 := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	view2 := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId3 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	sender1KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId1))
+	sender2KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId2))
+	sender3KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId3))
+	block1 := builders.CreateBlock(builders.GenesisBlock)
+	block2 := builders.CreateBlock(builders.GenesisBlock)
+	block1Hash := builders.CalculateBlockHash(block1)
+	sender1MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender1KeyManager)
+	sender2MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender2KeyManager)
+	sender3MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender3KeyManager)
 	myStorage.StorePrepare(sender1MsgFactory.CreatePrepareMessage(term1, view1, block1))
 	myStorage.StorePrepare(sender2MsgFactory.CreatePrepareMessage(term1, view1, block1))
 	myStorage.StorePrepare(sender2MsgFactory.CreatePrepareMessage(term1, view1, block2))
 	myStorage.StorePrepare(sender3MsgFactory.CreatePrepareMessage(term1, view2, block1))
 	myStorage.StorePrepare(sender3MsgFactory.CreatePrepareMessage(term2, view1, block2))
 
-	expected := []types.PublicKey{senderId1, senderId2}
+	expected := []lh.PublicKey{senderId1, senderId2}
 	actual := myStorage.GetPrepareSendersPKs(term1, view1, block1Hash)
 	require.ElementsMatch(t, expected, actual, "Storage stores unique PrePrepare values")
 }
 
 func TestStoreCommitInStorage(t *testing.T) {
-	myStorage := leanhelix.NewInMemoryPBFTStorage()
-	term1 := types.BlockHeight(math.Floor(rand.Float64() * 1000))
-	term2 := types.BlockHeight(math.Floor(rand.Float64() * 1000))
-	view1 := types.ViewCounter(math.Floor(rand.Float64() * 1000))
-	view2 := types.ViewCounter(math.Floor(rand.Float64() * 1000))
-	senderId1 := types.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	senderId2 := types.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	senderId3 := types.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	sender1KeyManager := leanhelix.NewMockKeyManager(types.PublicKey(senderId1))
-	sender2KeyManager := leanhelix.NewMockKeyManager(types.PublicKey(senderId2))
-	sender3KeyManager := leanhelix.NewMockKeyManager(types.PublicKey(senderId3))
-	block1 := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
-	block2 := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
-	block1Hash := leanhelix.CalculateBlockHash(block1)
-	sender1MsgFactory := leanhelix.NewMessageFactory(leanhelix.CalculateBlockHash, sender1KeyManager)
-	sender2MsgFactory := leanhelix.NewMessageFactory(leanhelix.CalculateBlockHash, sender2KeyManager)
-	sender3MsgFactory := leanhelix.NewMessageFactory(leanhelix.CalculateBlockHash, sender3KeyManager)
+	myStorage := lh.NewInMemoryPBFTStorage()
+	term1 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	term2 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	view1 := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	view2 := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId3 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	sender1KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId1))
+	sender2KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId2))
+	sender3KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId3))
+	block1 := builders.CreateBlock(builders.GenesisBlock)
+	block2 := builders.CreateBlock(builders.GenesisBlock)
+	block1Hash := builders.CalculateBlockHash(block1)
+	sender1MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender1KeyManager)
+	sender2MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender2KeyManager)
+	sender3MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender3KeyManager)
 	myStorage.StoreCommit(sender1MsgFactory.CreateCommitMessage(term1, view1, block1))
 	myStorage.StoreCommit(sender2MsgFactory.CreateCommitMessage(term1, view1, block1))
 	myStorage.StoreCommit(sender2MsgFactory.CreateCommitMessage(term1, view1, block2))
 	myStorage.StoreCommit(sender3MsgFactory.CreateCommitMessage(term1, view2, block1))
 	myStorage.StoreCommit(sender3MsgFactory.CreateCommitMessage(term2, view1, block2))
 
-	expected := []types.PublicKey{senderId1, senderId2}
+	expected := []lh.PublicKey{senderId1, senderId2}
 	actual := myStorage.GetCommitSendersPKs(term1, view1, block1Hash)
 	require.ElementsMatch(t, expected, actual, "Storage stores unique PrePrepare values")
 }
 
 func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 
-	myStorage := leanhelix.NewInMemoryPBFTStorage()
-	term := types.BlockHeight(math.Floor(rand.Float64() * 1000))
-	view := types.ViewCounter(math.Floor(rand.Float64() * 1000))
-	block := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
-	keyManager := leanhelix.NewMockKeyManager(types.PublicKey("PK"))
-	mf := leanhelix.NewMessageFactory(leanhelix.CalculateBlockHash, keyManager)
-	ppContent := mf.CreatePreprepareMessage(term, view, block)
+	myStorage := lh.NewInMemoryPBFTStorage()
+	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	block := builders.CreateBlock(builders.GenesisBlock)
+	keyManager := builders.NewMockKeyManager(lh.PublicKey("PK"))
+	mf := builders.NewMessageFactory(builders.CalculateBlockHash, keyManager)
+	ppm := mf.CreatePreprepareMessage(term, view, block)
 
-	firstTime := myStorage.StorePrePrepare(ppContent)
+	firstTime := myStorage.StorePrePrepare(ppm)
 	require.True(t, firstTime, "StorePrePrepare() returns true if storing a new value ")
 
-	secondTime := myStorage.StorePrePrepare(ppContent)
+	secondTime := myStorage.StorePrePrepare(ppm)
 	require.False(t, secondTime, "StorePrePrepare() returns false if trying to store a value that already exists")
 }
 
 func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
-	myStorage := leanhelix.NewInMemoryPBFTStorage()
-	term := types.BlockHeight(math.Floor(rand.Float64() * 1000))
-	view := types.ViewCounter(math.Floor(rand.Float64() * 1000))
-	senderId1 := types.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	senderId2 := types.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	sender1KeyManager := leanhelix.NewMockKeyManager(types.PublicKey(senderId1))
-	sender2KeyManager := leanhelix.NewMockKeyManager(types.PublicKey(senderId2))
-	block := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
-	sender1MsgFactory := leanhelix.NewMessageFactory(leanhelix.CalculateBlockHash, sender1KeyManager)
-	sender2MsgFactory := leanhelix.NewMessageFactory(leanhelix.CalculateBlockHash, sender2KeyManager)
+	myStorage := lh.NewInMemoryPBFTStorage()
+	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	sender1KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId1))
+	sender2KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId2))
+	block := builders.CreateBlock(builders.GenesisBlock)
+	sender1MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender1KeyManager)
+	sender2MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender2KeyManager)
 	prepareMessage1 := sender1MsgFactory.CreatePrepareMessage(term, view, block)
 	prepareMessage2 := sender2MsgFactory.CreatePrepareMessage(term, view, block)
 
@@ -191,16 +189,16 @@ func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 }
 
 func TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
-	myStorage := leanhelix.NewInMemoryPBFTStorage()
-	term := types.BlockHeight(math.Floor(rand.Float64() * 1000))
-	view := types.ViewCounter(math.Floor(rand.Float64() * 1000))
-	senderId1 := types.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	senderId2 := types.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	sender1KeyManager := leanhelix.NewMockKeyManager(types.PublicKey(senderId1))
-	sender2KeyManager := leanhelix.NewMockKeyManager(types.PublicKey(senderId2))
-	block := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
-	sender1MsgFactory := leanhelix.NewMessageFactory(leanhelix.CalculateBlockHash, sender1KeyManager)
-	sender2MsgFactory := leanhelix.NewMessageFactory(leanhelix.CalculateBlockHash, sender2KeyManager)
+	myStorage := lh.NewInMemoryPBFTStorage()
+	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	sender1KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId1))
+	sender2KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId2))
+	block := builders.CreateBlock(builders.GenesisBlock)
+	sender1MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender1KeyManager)
+	sender2MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender2KeyManager)
 
 	commitPayload1 := sender1MsgFactory.CreateCommitMessage(term, view, block)
 	commitPayload2 := sender2MsgFactory.CreateCommitMessage(term, view, block)
@@ -221,24 +219,24 @@ func TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 // Proofs
 
 func TestStoreAndGetViewChangeProof(t *testing.T) {
-	myStorage := leanhelix.NewInMemoryPBFTStorage()
-	term1 := types.BlockHeight(math.Floor(rand.Float64() * 1000))
-	term2 := types.BlockHeight(math.Floor(rand.Float64() * 1000))
-	view1 := types.ViewCounter(math.Floor(rand.Float64() * 1000))
-	senderId1 := types.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	senderId2 := types.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	senderId3 := types.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	sender1KeyManager := leanhelix.NewMockKeyManager(types.PublicKey(senderId1))
-	sender2KeyManager := leanhelix.NewMockKeyManager(types.PublicKey(senderId2))
-	sender3KeyManager := leanhelix.NewMockKeyManager(types.PublicKey(senderId3))
-	sender1MsgFactory := leanhelix.NewMessageFactory(leanhelix.CalculateBlockHash, sender1KeyManager)
-	sender2MsgFactory := leanhelix.NewMessageFactory(leanhelix.CalculateBlockHash, sender2KeyManager)
-	sender3MsgFactory := leanhelix.NewMessageFactory(leanhelix.CalculateBlockHash, sender3KeyManager)
-	vcms := make([]*leanhelix.ViewChangeMessage, 0, 4)
-	vcms = append(vcms, sender1MsgFactory.CreateViewChangeMessage(term1, view1, nil))
-	vcms = append(vcms, sender2MsgFactory.CreateViewChangeMessage(term1, view1, nil))
-	vcms = append(vcms, sender3MsgFactory.CreateViewChangeMessage(term1, view1, nil))
-	vcms = append(vcms, sender3MsgFactory.CreateViewChangeMessage(term2, view1, nil))
+	myStorage := lh.NewInMemoryPBFTStorage()
+	term1 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	term2 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	view1 := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId3 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	sender1KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId1))
+	sender2KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId2))
+	sender3KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId3))
+	sender1MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender1KeyManager)
+	sender2MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender2KeyManager)
+	sender3MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender3KeyManager)
+	vcms := make([]lh.ViewChangeMessage, 0, 4)
+	vcms = append(vcms, sender1MsgFactory.CreateViewChangeMessage(term1, view1, nil, nil))
+	vcms = append(vcms, sender2MsgFactory.CreateViewChangeMessage(term1, view1, nil, nil))
+	vcms = append(vcms, sender3MsgFactory.CreateViewChangeMessage(term1, view1, nil, nil))
+	vcms = append(vcms, sender3MsgFactory.CreateViewChangeMessage(term2, view1, nil, nil))
 	for _, k := range vcms {
 		myStorage.StoreViewChange(k)
 	}
@@ -248,48 +246,50 @@ func TestStoreAndGetViewChangeProof(t *testing.T) {
 	require.Equal(t, expected, len(actual), "return the view-change proof") // TODO bad explanation!
 }
 
-func compPrepareMessages(t *testing.T, a, b *leanhelix.PreparedMessages, msg string) {
-	require.Equal(t, a.PreprepareMessage, b.PreprepareMessage, msg)
-	require.ElementsMatch(t, a.PrepareMessages, b.PrepareMessages, msg)
+//func compPrepareMessages(t *testing.T, a, b *PreparedMessages, msg string) {
+//	require.Equal(t, a.PreprepareMessage, b.PreprepareMessage, msg)
+//	require.ElementsMatch(t, a.PrepareMessages, b.PrepareMessages, msg)
+//}
+
+func compPrepareProof(t *testing.T, a, b lh.PreparedProof, msg string) {
+	require.Equal(t, a.PreprepareMessage(), b.PreprepareMessage(), msg)
+	require.ElementsMatch(t, a.PrepareMessages(), b.PrepareMessages(), msg)
 }
 
 // from describe("Prepared")
 func TestPrepared(t *testing.T) {
 	// init here
 	fmt.Println("TestPrepared")
-	term := types.BlockHeight(math.Floor(rand.Float64() * 1000))
-	view := types.ViewCounter(math.Floor(rand.Float64() * 1000))
-	leaderId := types.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	senderId1 := types.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	senderId2 := types.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	leaderKeyManager := leanhelix.NewMockKeyManager(types.PublicKey(leaderId))
-	sender1KeyManager := leanhelix.NewMockKeyManager(types.PublicKey(senderId1))
-	sender2KeyManager := leanhelix.NewMockKeyManager(types.PublicKey(senderId2))
-	block := builders.CreateBlock(inmemoryblockchain.GenesisBlock)
-	leaderMsgFactory := leanhelix.NewMessageFactory(leanhelix.CalculateBlockHash, leaderKeyManager)
-	sender1MsgFactory := leanhelix.NewMessageFactory(leanhelix.CalculateBlockHash, sender1KeyManager)
-	sender2MsgFactory := leanhelix.NewMessageFactory(leanhelix.CalculateBlockHash, sender2KeyManager)
+	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	leaderId := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	leaderKeyManager := builders.NewMockKeyManager(lh.PublicKey(leaderId))
+	sender1KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId1))
+	sender2KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId2))
+	block := builders.CreateBlock(builders.GenesisBlock)
+	leaderMsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, leaderKeyManager)
+	sender1MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender1KeyManager)
+	sender2MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender2KeyManager)
 	ppm := leaderMsgFactory.CreatePreprepareMessage(term, view, block)
 	pm1 := sender1MsgFactory.CreatePrepareMessage(term, view, block)
 	pm2 := sender2MsgFactory.CreatePrepareMessage(term, view, block)
 	f := 1
 
 	t.Run("TestStoreAndGetPrepareProof", func(t *testing.T) {
-		myStorage := leanhelix.NewInMemoryPBFTStorage()
+		myStorage := lh.NewInMemoryPBFTStorage()
 		myStorage.StorePrePrepare(ppm)
 		myStorage.StorePrepare(pm2)
 		myStorage.StorePrepare(pm1)
-		expectedProof := &leanhelix.PreparedMessages{
-			PreprepareMessage: ppm,
-			PrepareMessages:   []*leanhelix.PrepareMessage{pm1, pm2},
-		}
+		expectedProof := lh.CreatePreparedProof(ppm, []lh.PrepareMessage{pm1, pm2})
 
 		actualProof, _ := myStorage.GetLatestPrepared(term, f)
-		compPrepareMessages(t, actualProof, expectedProof, "TestStoreAndGetPrepareProof(): return the prepared proof") // TODO bad explanation!
+		compPrepareProof(t, actualProof, expectedProof, "TestStoreAndGetPrepareProof(): return the prepared proof") // TODO bad explanation!
 	})
 
 	//t.Run("TestReturnPreparedProofWithHighestView", func(t *testing.T) {
-	//	myStorage := storage.NewInMemoryPBFTStorage()
+	//	myStorage := storage.lh.NewInMemoryPBFTStorage()
 	//	prePrepareMessage10 := builders.CreatePrePrepareMessage(leaderKeyManager, 1, 10, block)
 	//	prepareMessage10_1 := builders.CreatePrepareMessage(sender1KeyManager, 1, 10, block)
 	//	prepareMessage10_2 := builders.CreatePrepareMessage(sender2KeyManager, 1, 10, block)
@@ -323,7 +323,7 @@ func TestPrepared(t *testing.T) {
 	//})
 
 	t.Run("TestReturnNothingIfNoPrePrepare", func(t *testing.T) {
-		myStorage := leanhelix.NewInMemoryPBFTStorage()
+		myStorage := lh.NewInMemoryPBFTStorage()
 		myStorage.StorePrepare(pm1)
 		myStorage.StorePrepare(pm2)
 		_, ok := myStorage.GetLatestPrepared(term, f)
@@ -331,14 +331,14 @@ func TestPrepared(t *testing.T) {
 	})
 
 	t.Run("TestReturnNothingIfNoPrepares", func(t *testing.T) {
-		myStorage := leanhelix.NewInMemoryPBFTStorage()
+		myStorage := lh.NewInMemoryPBFTStorage()
 		myStorage.StorePrePrepare(ppm)
 		_, ok := myStorage.GetLatestPrepared(term, f)
 		require.False(t, ok, "Don't return PreparedMessages from latest view if no Prepare in storage")
 	})
 
 	t.Run("TestReturnNothingIfNotEnoughPrepares", func(t *testing.T) {
-		myStorage := leanhelix.NewInMemoryPBFTStorage()
+		myStorage := lh.NewInMemoryPBFTStorage()
 		myStorage.StorePrePrepare(ppm)
 		myStorage.StorePrepare(pm1)
 		_, ok := myStorage.GetLatestPrepared(term, f)

@@ -35,3 +35,11 @@ Go implementation of Lean Helix consensus algorithm
     ```sh
     ./test.sh
     ```
+
+## Design
+This library does not create any Message objects on its own.
+It defines interfaces and leaves it to the user of the library to
+create structs that implement them. This is because a Message can contain any data the user wishes, and the library needs not be concerned with that,
+as long as specific fields of the Message (as required by the interface's methods) are provided.
+
+KeyManager is also provided as interface-only and it is up to the user to implement its methods.

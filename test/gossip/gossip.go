@@ -1,11 +1,10 @@
 package gossip
 
 import (
-	"github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/types"
+	lh "github.com/orbs-network/lean-helix-go"
 )
 
-type Callback func(message leanhelix.Message)
+type Callback func(message lh.Message)
 
 type SubscriptionValue struct {
 	cb Callback
@@ -15,8 +14,8 @@ type Gossip struct {
 	discovery            *discovery
 	totalSubscriptions   int
 	subscriptions        map[int]*SubscriptionValue
-	outgoingWhiteListPKs []types.PublicKey
-	incomingWhiteListPKs []types.PublicKey
+	outgoingWhiteListPKs []lh.PublicKey
+	incomingWhiteListPKs []lh.PublicKey
 }
 
 func NewGossip(gd *discovery) *Gossip {
@@ -29,7 +28,7 @@ func NewGossip(gd *discovery) *Gossip {
 	}
 }
 
-func (g *Gossip) inIncomingWhitelist(pk types.PublicKey) bool {
+func (g *Gossip) inIncomingWhitelist(pk lh.PublicKey) bool {
 	if g.incomingWhiteListPKs == nil {
 		return false
 	}
@@ -41,7 +40,7 @@ func (g *Gossip) inIncomingWhitelist(pk types.PublicKey) bool {
 	return false
 }
 
-func (g *Gossip) inOutgoingWhitelist(pk types.PublicKey) bool {
+func (g *Gossip) inOutgoingWhitelist(pk lh.PublicKey) bool {
 	if g.outgoingWhiteListPKs == nil {
 		return false
 	}
@@ -53,7 +52,7 @@ func (g *Gossip) inOutgoingWhitelist(pk types.PublicKey) bool {
 	return false
 }
 
-func (g *Gossip) onRemoteMessage(message leanhelix.Message) {
+func (g *Gossip) onRemoteMessage(message lh.Message) {
 	for _, s := range g.subscriptions {
 		if !g.inIncomingWhitelist(message.SignaturePair().SignerPublicKey) {
 			return
@@ -74,7 +73,7 @@ func (g *Gossip) unsubscribe(subscriptionToken int) {
 	delete(g.subscriptions, subscriptionToken)
 }
 
-func (g *Gossip) unicast(pk types.PublicKey, message leanhelix.Message) {
+func (g *Gossip) unicast(pk lh.PublicKey, message lh.Message) {
 	if !g.inOutgoingWhitelist(pk) {
 		return
 	}
@@ -83,7 +82,7 @@ func (g *Gossip) unicast(pk types.PublicKey, message leanhelix.Message) {
 	}
 }
 
-func (g *Gossip) multicast(targetIds []types.PublicKey, message leanhelix.Message) {
+func (g *Gossip) multicast(targetIds []lh.PublicKey, message lh.Message) {
 	for _, targetId := range targetIds {
 		g.unicast(targetId, message)
 	}

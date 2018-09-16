@@ -2,8 +2,6 @@ package builders
 
 import (
 	lh "github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/test/inmemoryblockchain"
-	"github.com/orbs-network/lean-helix-go/types"
 	"github.com/stretchr/testify/require"
 	"math"
 	"math/rand"
@@ -11,32 +9,38 @@ import (
 )
 
 func TestMessageFactory(t *testing.T) {
-	keyManager := lh.NewMockKeyManager("My PK")
-	term := types.BlockHeight(math.Floor(rand.Float64() * 1000000))
-	view := types.ViewCounter(math.Floor(rand.Float64() * 1000000))
-	block := CreateBlock(inmemoryblockchain.GenesisBlock)
-	blockHash := lh.CalculateBlockHash(block)
-	messageFactory := lh.NewMessageFactory(lh.CalculateBlockHash, keyManager)
+	keyManager := NewMockKeyManager(lh.PublicKey("My PK"))
+	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000000))
+	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000000))
+	block := CreateBlock(GenesisBlock)
+	blockHash := CalculateBlockHash(block)
+	messageFactory := NewMessageFactory(CalculateBlockHash, keyManager)
 
 	t.Run("Construct Preprepare message", func(t *testing.T) {
-		content := &lh.BlockMessageContent{
-			MessageType: lh.MESSAGE_TYPE_PREPREPARE,
-			Term:        term,
-			View:        view,
-			BlockHash:   blockHash,
+		content := &blockRef{
+			messageType: lh.MESSAGE_TYPE_PREPREPARE,
+			term:        term,
+			view:        view,
+			blockHash:   blockHash,
 		}
-		expectedMessage := &lh.PrePrepareMessage{
-			BlockRefMessage: &lh.BlockRefMessage{
-				SignaturePair: &lh.SignaturePair{
-					SignerPublicKey:  keyManager.MyPublicKey(),
-					ContentSignature: keyManager.SignBlockMessageContent(content),
-				},
-				Content: content,
-			},
-			Block: block,
+		//expectedMessage := &lh.PrePrepareMessage{
+		//	BlockRefMessage: &lh.BlockRefMessage{
+		//		SignaturePair: &lh.SignaturePair{
+		//			SignerPublicKey:  keyManager.MyID(),
+		//			ContentSignature: keyManager.SignBlockMessageContent(content),
+		//		},
+		//		Content: content,
+		//	},
+		//	Block: block,
+		//}
+
+		ex := &preprepareMessage{
+			blockRef: content,
+			sender:   keyManager.SignBlockRef(content),
+			block:    block,
 		}
 		actualMessage := messageFactory.CreatePreprepareMessage(term, view, block)
-		require.Equal(t, expectedMessage, actualMessage, "Preprepare message created")
+		require.Equal(t, ex, actualMessage, "Preprepare message created")
 	})
 
 }

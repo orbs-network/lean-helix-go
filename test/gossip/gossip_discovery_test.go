@@ -1,7 +1,7 @@
 package gossip
 
 import (
-	"github.com/orbs-network/lean-helix-go/types"
+	lh "github.com/orbs-network/lean-helix-go"
 	"github.com/stretchr/testify/require"
 	"math"
 	"math/rand"
@@ -10,8 +10,8 @@ import (
 )
 
 func TestGossipDiscovery(t *testing.T) {
-	genId := func() types.PublicKey {
-		return types.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	genId := func() lh.PublicKey {
+		return lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	}
 
 	t.Run("create a GossipDiscovery instance", func(t *testing.T) {
@@ -39,7 +39,7 @@ func TestGossipDiscovery(t *testing.T) {
 		gd.RegisterGossip(id1, g1)
 		gd.RegisterGossip(id2, g2)
 		gd.RegisterGossip(id3, g3)
-		expected := []types.PublicKey{id1, id2, id3}
+		expected := []lh.PublicKey{id1, id2, id3}
 		actual := gd.getAllGossipsPKs()
 
 		require.ElementsMatch(t, actual, expected)
@@ -77,7 +77,7 @@ func TestGossipDiscovery(t *testing.T) {
 		gd.RegisterGossip(id1, g1)
 		gd.RegisterGossip(id2, g2)
 		gd.RegisterGossip(id3, g3)
-		actual := gd.GetGossips([]types.PublicKey{id1, id3})
+		actual := gd.GetGossips([]lh.PublicKey{id1, id3})
 		expected := []*Gossip{g1, g3}
 		require.ElementsMatch(t, actual, expected, "list of requested gossips")
 	})

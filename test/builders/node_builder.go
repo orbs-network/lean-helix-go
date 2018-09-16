@@ -1,40 +1,38 @@
 package builders
 
 import (
-	"github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/test/network"
-	"github.com/orbs-network/lean-helix-go/types"
+	lh "github.com/orbs-network/lean-helix-go"
 )
 
 type NodeBuilder struct {
-	publicKey       types.PublicKey
-	electionTrigger leanhelix.ElectionTrigger
+	publicKey       lh.PublicKey
+	electionTrigger lh.ElectionTrigger
 }
 
 func NewNodeBuilder() *NodeBuilder {
 	return &NodeBuilder{}
 }
 
-func (nb *NodeBuilder) ElectingLeaderUsing(electionTrigger leanhelix.ElectionTrigger) *NodeBuilder {
+func (nb *NodeBuilder) ElectingLeaderUsing(electionTrigger lh.ElectionTrigger) *NodeBuilder {
 	if nb.electionTrigger == nil {
 		nb.electionTrigger = electionTrigger
 	}
 	return nb
 }
 
-func (nb *NodeBuilder) WithPK(publicKey types.PublicKey) *NodeBuilder {
-	if nb.publicKey == "" {
+func (nb *NodeBuilder) WithPK(publicKey lh.PublicKey) *NodeBuilder {
+	if nb.publicKey.Equals(lh.PublicKey("")) {
 		nb.publicKey = publicKey
 	}
 	return nb
 }
 
-func (nb *NodeBuilder) buildConfig() *leanhelix.Config {
-	return &leanhelix.Config{
-		ElectionTrigger: nb.electionTrigger,
+func (nb *NodeBuilder) buildConfig() lh.Config {
+	return &mockConfig{
+		electionTrigger: nb.electionTrigger,
 	}
 }
 
-func (nb *NodeBuilder) Build() *network.Node {
-	return network.NewNode(nb.publicKey, nb.buildConfig())
+func (nb *NodeBuilder) Build() *Node {
+	return NewNode(nb.publicKey, nb.buildConfig())
 }

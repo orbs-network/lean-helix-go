@@ -1,5 +1,5 @@
 package leanhelix
 
-type Config struct {
-	ElectionTrigger ElectionTrigger
+type Config interface {
+	ElectionTrigger() ElectionTrigger
 }

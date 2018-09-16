@@ -1,8 +1,8 @@
-package network
+package builders
 
 import (
 	"github.com/orbs-network/go-mock"
-	"github.com/orbs-network/lean-helix-go/types"
+	lh "github.com/orbs-network/lean-helix-go"
 )
 
 type MockNetworkCommunication struct {
@@ -18,7 +18,7 @@ func (net *MockNetworkCommunication) SendToMembers(publicKeys []string, messageT
 	panic("implement me")
 }
 
-func NewMockNetworkCommunication(nodeCount int) types.NetworkCommunication {
+func NewMockNetworkCommunication(nodeCount int) lh.NetworkCommunication {
 
 	nodes := make([]Node, 0)
 

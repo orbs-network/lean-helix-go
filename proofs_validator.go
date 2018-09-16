@@ -1,53 +1,48 @@
 package leanhelix
 
-import "github.com/orbs-network/lean-helix-go/types"
-
-func isInMembers(membersPKs *[]types.PublicKey, publicKey *types.PublicKey) bool {
+func isInMembers(membersPKs *[]PublicKey, publicKey *PublicKey) bool {
 	for _, memberPK := range *membersPKs {
-		if memberPK == *publicKey {
+		if memberPK.Equals(*publicKey) {
 			return true
 		}
 	}
 	return false
 }
 
-func verifyBlockRefMessage(msg *BlockRefMessage, keyManager KeyManager) bool {
-	content := msg.Content
-	publicKey := msg.SignaturePair.SignerPublicKey
-	signature := msg.SignaturePair.ContentSignature
-	return keyManager.VerifyBlockMessageContent(content, signature, publicKey)
+func verifyBlockRefMessage(blockRef BlockRef, sender SenderSignature, keyManager KeyManager) bool {
+	return keyManager.VerifyBlockRef(blockRef, sender)
 }
 
-type CalcLeaderPk = func(view types.ViewCounter) types.PublicKey
+type CalcLeaderPk = func(view ViewCounter) PublicKey
 
 func ValidatePreparedProof(
-	targetTerm types.BlockHeight,
-	targetView types.ViewCounter,
-	preparedProof *PreparedProof,
+	targetTerm BlockHeight,
+	targetView ViewCounter,
+	preparedProof PreparedProof,
 	f int,
 	keyManager KeyManager,
-	membersPKs *[]types.PublicKey,
+	membersPKs *[]PublicKey,
 	calcLeaderPk CalcLeaderPk) bool {
 	if preparedProof == nil {
 		return true
 	}
 
-	preprepareBlockRefMessage := preparedProof.PreprepareBlockRefMessage
-	if preprepareBlockRefMessage == nil {
+	ppm := preparedProof.PreprepareMessage()
+	if ppm == nil {
 		return false
 	}
 
-	prepareBlockRefMessages := preparedProof.PrepareBlockRefMessages
+	prepareBlockRefMessages := preparedProof.PrepareMessages()
 	if prepareBlockRefMessages == nil {
 		return false
 	}
 
-	term := preprepareBlockRefMessage.Content.Term
+	term := ppm.Term()
 	if term != targetTerm {
 		return false
 	}
 
-	view := preprepareBlockRefMessage.Content.View
+	view := ppm.View()
 	if view >= targetView {
 		return false
 	}
@@ -57,26 +52,26 @@ func ValidatePreparedProof(
 	}
 
 	// TODO Refactor names here!!!
-	if verifyBlockRefMessage(preprepareBlockRefMessage.BlockRefMessage, keyManager) == false {
+
+	if verifyBlockRefMessage(ppm, ppm.Sender(), keyManager) == false {
 		return false
 	}
 
-	leaderPk := preprepareBlockRefMessage.SignaturePair.SignerPublicKey
-	if calcLeaderPk(view) != leaderPk {
+	leaderPk := ppm.Sender().SenderPublicKey()
+	if !calcLeaderPk(view).Equals(leaderPk) {
 		return false
 	}
 
-	seen := make(map[types.PublicKey]bool, len(prepareBlockRefMessages))
+	seen := make(map[PublicKeyStr]bool, len(prepareBlockRefMessages))
 	for _, msg := range prepareBlockRefMessages {
-		content := msg.Content
-		signature := msg.SignaturePair.ContentSignature
-		publicKey := msg.SignaturePair.SignerPublicKey
 
-		if keyManager.VerifyBlockMessageContent(content, signature, publicKey) == false {
+		if keyManager.VerifyBlockRef(msg, msg.Sender()) == false {
 			return false
 		}
 
-		if publicKey == leaderPk {
+		publicKey := msg.Sender().SenderPublicKey()
+
+		if publicKey.Equals(leaderPk) {
 			return false
 		}
 
@@ -84,23 +79,23 @@ func ValidatePreparedProof(
 			return false
 		}
 
-		if content.Term != term {
+		if msg.Term() != term {
 			return false
 		}
 
-		if content.View != view {
+		if msg.View() != view {
 			return false
 		}
 
-		if content.BlockHash != preprepareBlockRefMessage.Content.BlockHash {
+		if !msg.BlockHash().Equals(ppm.BlockHash()) {
 			return false
 		}
 
-		if _, ok := seen[publicKey]; ok {
+		if _, ok := seen[PublicKeyStr(publicKey)]; ok {
 			return false
 		}
 
-		seen[publicKey] = true
+		seen[PublicKeyStr(publicKey)] = true
 	}
 
 	return true

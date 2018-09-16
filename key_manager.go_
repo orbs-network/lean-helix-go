@@ -3,10 +3,20 @@ package leanhelix
 import "github.com/orbs-network/lean-helix-go/types"
 
 type KeyManager interface {
+	SignBlockRef()
+	SignViewChange()
+	SignNewView()
+
+	VerifyBlockRef()
+	VerifyViewChange()
+	VerifyNewView()
+
+	MyID()
+
 	SignBlockMessageContent(bmc *BlockMessageContent) string
 	SignViewChangeMessage(vcmc *ViewChangeMessageContent) string
 
-	VerifyBlockMessageContent(bmc *BlockMessageContent, signature string, publicKey types.PublicKey) bool
+	VerifyBlockMessageContent(bmc *BlockMessageContent, signature string, publicKey lh.PublicKey) bool
 
 	MyPublicKey() types.PublicKey
 }

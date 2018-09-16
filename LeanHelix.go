@@ -1,27 +1,32 @@
 package leanhelix
 
-import "github.com/orbs-network/lean-helix-go/types"
-
-type LeanHelix struct {
+type LeanHelix interface {
+	RegisterOnCommitted(cb func(block Block))
+	Dispose()
+	Start(height BlockHeight)
+	IsLeader() bool
 }
 
-func NewLeanHelix(config *Config) *LeanHelix {
-	return &LeanHelix{}
+type leanHelix struct {
 }
 
-func (pbft *LeanHelix) RegisterOnCommitted(cb func(block *types.Block)) {
+func NewLeanHelix(config Config) LeanHelix {
+	return &leanHelix{}
+}
+
+func (lh *leanHelix) RegisterOnCommitted(cb func(block Block)) {
 	// TODO: implement
 }
 
-func (pbft *LeanHelix) Dispose() {
+func (lh *leanHelix) Dispose() {
 	// TODO: implement
 }
 
-func (pbft *LeanHelix) Start(height types.BlockHeight) {
+func (lh *leanHelix) Start(height BlockHeight) {
 	// TODO: implement
 }
 
-func (pbft *LeanHelix) IsLeader() bool {
+func (lh *leanHelix) IsLeader() bool {
 	// TODO: implement
 	return false
 }

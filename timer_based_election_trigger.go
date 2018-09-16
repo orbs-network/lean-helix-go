@@ -1,7 +1,6 @@
 package leanhelix
 
 import (
-	"github.com/orbs-network/lean-helix-go/types"
 	"math"
 	"time"
 )
@@ -29,9 +28,9 @@ func setTimeout(cb func(), milliseconds uint) chan bool {
 
 type TimerBasedElectionTrigger struct {
 	minTimeout uint
-	view       types.ViewCounter
+	view       ViewCounter
 	isActive   bool
-	cb         func(view types.ViewCounter)
+	cb         func(view ViewCounter)
 	clearTimer chan bool
 }
 
@@ -41,7 +40,7 @@ func NewTimerBasedElectionTrigger(minTimeout uint) *TimerBasedElectionTrigger {
 	}
 }
 
-func (tbet *TimerBasedElectionTrigger) RegisterOnTrigger(view types.ViewCounter, cb func(view types.ViewCounter)) {
+func (tbet *TimerBasedElectionTrigger) RegisterOnTrigger(view ViewCounter, cb func(view ViewCounter)) {
 	tbet.cb = cb
 	if !tbet.isActive || tbet.view != view {
 		tbet.isActive = true

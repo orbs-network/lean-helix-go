@@ -1,0 +1,6 @@
+package types
+
+type BlockHeight uint64
+type ViewCounter uint64
+type BlockHash string
+type PublicKey string
