@@ -110,7 +110,7 @@ func (pm *prepareMessage) BlockHash() lh.BlockHash {
 }
 
 func (pm *prepareMessage) Sender() lh.SenderSignature {
-	return pm.Sender()
+	return pm.sender
 }
 
 // C
@@ -136,7 +136,7 @@ func (cm *commitMessage) BlockHash() lh.BlockHash {
 }
 
 func (cm *commitMessage) Sender() lh.SenderSignature {
-	return cm.Sender()
+	return cm.sender
 }
 
 // VC
@@ -164,7 +164,7 @@ func (vcm *viewChangeMessage) BlockHash() lh.BlockHash {
 }
 
 func (vcm *viewChangeMessage) Sender() lh.SenderSignature {
-	return vcm.Sender()
+	return vcm.sender
 }
 
 func (vcm *viewChangeMessage) Block() lh.Block {
