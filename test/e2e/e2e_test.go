@@ -9,6 +9,7 @@ import (
 const NODE_COUNT = 1
 
 func TestSendPreprepareOnlyIfLeader(t *testing.T) {
+	t.Skip()
 
 	//h := NewHarness(NODE_COUNT)
 	//
