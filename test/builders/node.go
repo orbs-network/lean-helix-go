@@ -32,7 +32,7 @@ func (node *Node) IsLeader() bool {
 }
 
 func (node *Node) TriggerElection() {
-	node.Config.ElectionTrigger().(*lh.ElectionTriggerMock).Trigger()
+	node.Config.ElectionTrigger().(*ElectionTriggerMock).Trigger()
 }
 
 func (node *Node) onCommittedBlock(block lh.Block) {
