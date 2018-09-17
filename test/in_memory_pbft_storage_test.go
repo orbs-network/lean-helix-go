@@ -175,16 +175,16 @@ func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	block := builders.CreateBlock(builders.GenesisBlock)
 	sender1MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender1KeyManager)
 	sender2MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender2KeyManager)
-	prepareMessage1 := sender1MsgFactory.CreatePrepareMessage(term, view, block)
-	prepareMessage2 := sender2MsgFactory.CreatePrepareMessage(term, view, block)
+	p1 := sender1MsgFactory.CreatePrepareMessage(term, view, block)
+	p2 := sender2MsgFactory.CreatePrepareMessage(term, view, block)
 
-	firstTime := myStorage.StorePrepare(prepareMessage1)
+	firstTime := myStorage.StorePrepare(p1)
 	require.True(t, firstTime, "StorePrepare() returns true if storing a new value (1 of 2)")
 
-	secondTime := myStorage.StorePrepare(prepareMessage2)
+	secondTime := myStorage.StorePrepare(p2)
 	require.True(t, secondTime, "StorePrepare() returns true if storing a new value (2 of 2)")
 
-	thirdTime := myStorage.StorePrepare(prepareMessage2)
+	thirdTime := myStorage.StorePrepare(p2)
 	require.False(t, thirdTime, "StorePrepare() returns false if trying to store a value that already exists")
 }
 
@@ -200,21 +200,63 @@ func TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	sender1MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender1KeyManager)
 	sender2MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender2KeyManager)
 
-	commitPayload1 := sender1MsgFactory.CreateCommitMessage(term, view, block)
-	commitPayload2 := sender2MsgFactory.CreateCommitMessage(term, view, block)
+	c1 := sender1MsgFactory.CreateCommitMessage(term, view, block)
+	c2 := sender2MsgFactory.CreateCommitMessage(term, view, block)
 
-	firstTime := myStorage.StoreCommit(commitPayload1)
+	firstTime := myStorage.StoreCommit(c1)
 	require.True(t, firstTime, "StoreCommit() returns true if storing a new value (1 of 2)")
 
-	secondTime := myStorage.StoreCommit(commitPayload2)
+	secondTime := myStorage.StoreCommit(c2)
 	require.True(t, secondTime, "StoreCommit() returns true if storing a new value (2 of 2)")
 
-	thirdTime := myStorage.StoreCommit(commitPayload2)
+	thirdTime := myStorage.StoreCommit(c2)
 	require.False(t, thirdTime, "StoreCommit() returns false if trying to store a value that already exists")
 
 }
 
-// TODO TestStoreViewChangeReturnsTrueIfNewOrFalseIfAlreadyExists
+func TestStoreViewChangeReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
+	myStorage := lh.NewInMemoryPBFTStorage()
+	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	sender1KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId1))
+	sender2KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId2))
+	sender1MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender1KeyManager)
+	sender2MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender2KeyManager)
+	vc1 := sender1MsgFactory.CreateViewChangeMessage(term, view, nil, nil)
+	vc2 := sender2MsgFactory.CreateViewChangeMessage(term, view, nil, nil)
+
+	firstTime := myStorage.StoreViewChange(vc1)
+	require.True(t, firstTime, "StoreViewChange() returns true if storing a new value (1 of 2)")
+
+	secondTime := myStorage.StoreViewChange(vc2)
+	require.True(t, secondTime, "StoreViewChange() returns true if storing a new value (2 of 2)")
+
+	thirdTime := myStorage.StoreViewChange(vc2)
+	require.False(t, thirdTime, "StoreViewChange() returns false if trying to store a value that already exists")
+
+}
+
+/*
+   it("storing a view-change returns true if it stored a new value, false if it already exists", () => {
+       const storage = new InMemoryPBFTStorage(logger);
+       const view = Math.floor(Math.random() * 1000);
+       const term = Math.floor(Math.random() * 1000);
+       const senderId1 = Math.floor(Math.random() * 1000).toString();
+       const senderId2 = Math.floor(Math.random() * 1000).toString();
+       const sender1KeyManager: KeyManager = new KeyManagerMock(senderId1);
+       const sender2KeyManager: KeyManager = new KeyManagerMock(senderId2);
+       const firstTime = storage.storeViewChange(aViewChangeMessage(sender1KeyManager, term, view));
+       expect(firstTime).to.be.true;
+       const secondstime = storage.storeViewChange(aViewChangeMessage(sender2KeyManager, term, view));
+       expect(secondstime).to.be.true;
+       const thirdTime = storage.storeViewChange(aViewChangeMessage(sender2KeyManager, term, view));
+       expect(thirdTime).to.be.false;
+   });
+
+
+*/
 
 // Proofs
 
