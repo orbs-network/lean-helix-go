@@ -13,78 +13,38 @@ import (
 
 // TODO TestClearAllStorageDataAfterCallingClearTermLogs
 
-/*
 func TestClearAllStorageDataAfterCallingClearTermLogs(t *testing.T) {
 
-	//const storage = new InMemoryPBFTStorage(logger)
+	myStorage := lh.NewInMemoryPBFTStorage()
+	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
+	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	block := builders.CreateBlock(builders.GenesisBlock)
+	blockHash := builders.CalculateBlockHash(block)
+	senderId := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	keyManager := builders.NewMockKeyManager(lh.PublicKey(senderId))
+	msgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, keyManager)
+	myStorage.StorePreprepare(msgFactory.CreatePreprepareMessage(term, view, block))
+	myStorage.StorePrepare(msgFactory.CreatePrepareMessage(term, view, block))
+	myStorage.StoreCommit(msgFactory.CreateCommitMessage(term, view, block))
+	myStorage.StoreViewChange(msgFactory.CreateViewChangeMessage(term, view, nil, nil))
 
-	myStorage := storage.lh.NewInMemoryPBFTStorage()
-	term := math.Floor(rand.Int() * 1000)
-	view := math.Floor(rand.Int() * 1000)
-	block := builders.CreateBlock(builders.CreateGenesisBlock())
+	pp, _ := myStorage.GetPreprepare(term, view)
+	ps, _ := myStorage.GetPrepares(term, view, blockHash)
+	require.NotNil(t, pp, "GetPreprepare() should return the store preprepare message")
+	require.Equal(t, 1, len(ps), "Length of GetPrepares() result array should be 1")
+	require.Equal(t, 1, len(myStorage.GetCommitSendersPKs(term, view, blockHash)), "Length of GetCommitSendersPKs() result array should be 1")
+	require.Equal(t, 1, len(myStorage.GetViewChangeMessages(term, view, 0)), "Length of GetViewChangeMessages() result array should be 1")
 
-	// TODO: This requires orbs-network-go/crypto which cannot be a dependency
-	blockHash := digest.CalcTransactionsBlockHash(block)
-	keyManager := keymanager.NewMockKeyManager([]byte("PK"), [][]byte{})
+	myStorage.ClearTermLogs(term)
 
-	prepreparePayload := CreatePrePrepareMessage(keyManager, term, view, block)
-	preparePayload := CreatePrepareMessage(keyManager, term, view, block)
-	commitPayload := CreateCommitMessage(keyManager, term, view, block)
-	viewChangePayload := CreatePayload(keyManager, nil)
+	pp, _ = myStorage.GetPreprepare(term, view)
+	ps, _ = myStorage.GetPrepares(term, view, blockHash)
 
-	myStorage.StorePrePrepare(term, view, prepreparePayload)
-	myStorage.StorePrepare(term, view, preparePayload)
-	myStorage.StoreCommit(term, view, commitPayload)
-	myStorage.StoreViewChange(term, view, viewChangePayload)
-
-	require.NotNil(t, storage.GetPrePreparePayload(term, view), "GetPrePreparePayload() result is not nil")
-	require.Equal(t, 1, len(storage.GetPreparePayloads(term, view, blockHash)), "Length of GetPreparePayloads() result array is 1")
-	require.Equal(t, 1, len(storage.GetCommitSenderslh.PublicKeys(term, view, blockHash)), "Length of GetCommitSenderslh.PublicKeys() result array is 1")
-	require.Equal(t, 1, len(storage.GetViewChangeProof(term, view, blockHash)), "Length of GetViewChangeProof() result array is 1")
-
-	storage.ClearTermLogs(term)
-
-	require.Nil(t, storage.GetPrePreparePayload(term, view), "GetPrePreparePayload() result is nil")
-	require.Equal(t, 0, len(storage.GetPreparePayloads(term, view, blockHash)), "Length of GetPreparePayloads() result array is 0")
-	require.Equal(t, 0, len(storage.GetCommitSenderslh.PublicKeys(term, view, blockHash)), "Length of GetCommitSenderslh.PublicKeys() result array is 0")
-	require.Nil(t, 1, len(storage.GetViewChangeProof(term, view, blockHash)), "GetViewChangeProof() result is nil")
-
-
-
-
-	//const term = Math.floor(Math.random() * 1000);
-	//const view = Math.floor(Math.random() * 1000);
-	//const block = aBlock(theGenesisBlock);
-	//const blockHash = builders.CalculateBlockHash(block);
-	//const keyManager: KeyManager = new mockKeyManager("PK");
-	//const PPPayload = aPrePreparePayload(keyManager, term, view, block);
-	//const PPayload = aPreparePayload(keyManager, term, view, block);
-	//const CPayload = aCommitPayload(keyManager, term, view, block);
-	//const VCPayload = aPayload(keyManager, {});
-	//
-	//// storing
-	//storage.storePrePrepare(term, view, PPPayload);
-	//storage.storePrepare(term, view, PPayload);
-	//storage.storeCommit(term, view, CPayload);
-	//storage.storeViewChange(term, view, VCPayload);
-
-	//expect(storage.getPrePreparePayload(term, view)).to.not.be.undefined;
-	//expect(storage.getPreparePayloads(term, view, blockHash).length).to.equal(1);
-	//expect(storage.getCommitSendersPks(term, view, blockHash).length).to.equal(1);
-	//expect(storage.getViewChangeProof(term, view, 0).length).to.equal(1);
-	//
-	//// clearing
-	//storage.clearTermLogs(term);
-	//
-	//expect(storage.getPrePreparePayload(term, view)).to.be.undefined;
-	//expect(storage.getPreparePayloads(term, view, blockHash).length).to.equal(0);
-	//expect(storage.getCommitSendersPks(term, view, blockHash).length).to.equal(0);
-	//expect(storage.getViewChangeProof(term, view, 0)).to.be.undefined;
-
-
+	require.Nil(t, pp, "GetPreprepare() should return nil after ClearTermLogs()")
+	require.Equal(t, 0, len(ps), "Length of GetPrepares() result array should be 0")
+	require.Equal(t, 0, len(myStorage.GetCommitSendersPKs(term, view, blockHash)), "Length of GetCommitSendersPKs() result array should be 0")
+	require.Equal(t, 0, len(myStorage.GetViewChangeMessages(term, view, 0)), "Length of GetViewChangeMessages() result array should be 0")
 }
-
-*/
 
 // TODO func TestStorePrePrepareInStorage
 // TODO Do we need TestStorePrePrepareInStorage(t *testing.T) ?
@@ -157,11 +117,11 @@ func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	mf := builders.NewMessageFactory(builders.CalculateBlockHash, keyManager)
 	ppm := mf.CreatePreprepareMessage(term, view, block)
 
-	firstTime := myStorage.StorePrePrepare(ppm)
-	require.True(t, firstTime, "StorePrePrepare() returns true if storing a new value ")
+	firstTime := myStorage.StorePreprepare(ppm)
+	require.True(t, firstTime, "StorePreprepare() returns true if storing a new value ")
 
-	secondTime := myStorage.StorePrePrepare(ppm)
-	require.False(t, secondTime, "StorePrePrepare() returns false if trying to store a value that already exists")
+	secondTime := myStorage.StorePreprepare(ppm)
+	require.False(t, secondTime, "StorePreprepare() returns false if trying to store a value that already exists")
 }
 
 func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
@@ -238,26 +198,6 @@ func TestStoreViewChangeReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 
 }
 
-/*
-   it("storing a view-change returns true if it stored a new value, false if it already exists", () => {
-       const storage = new InMemoryPBFTStorage(logger);
-       const view = Math.floor(Math.random() * 1000);
-       const term = Math.floor(Math.random() * 1000);
-       const senderId1 = Math.floor(Math.random() * 1000).toString();
-       const senderId2 = Math.floor(Math.random() * 1000).toString();
-       const sender1KeyManager: KeyManager = new KeyManagerMock(senderId1);
-       const sender2KeyManager: KeyManager = new KeyManagerMock(senderId2);
-       const firstTime = storage.storeViewChange(aViewChangeMessage(sender1KeyManager, term, view));
-       expect(firstTime).to.be.true;
-       const secondstime = storage.storeViewChange(aViewChangeMessage(sender2KeyManager, term, view));
-       expect(secondstime).to.be.true;
-       const thirdTime = storage.storeViewChange(aViewChangeMessage(sender2KeyManager, term, view));
-       expect(thirdTime).to.be.false;
-   });
-
-
-*/
-
 // Proofs
 
 func TestStoreAndGetViewChangeProof(t *testing.T) {
@@ -274,12 +214,12 @@ func TestStoreAndGetViewChangeProof(t *testing.T) {
 	sender1MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender1KeyManager)
 	sender2MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender2KeyManager)
 	sender3MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, sender3KeyManager)
-	vcms := make([]lh.ViewChangeMessage, 0, 4)
-	vcms = append(vcms, sender1MsgFactory.CreateViewChangeMessage(term1, view1, nil, nil))
-	vcms = append(vcms, sender2MsgFactory.CreateViewChangeMessage(term1, view1, nil, nil))
-	vcms = append(vcms, sender3MsgFactory.CreateViewChangeMessage(term1, view1, nil, nil))
-	vcms = append(vcms, sender3MsgFactory.CreateViewChangeMessage(term2, view1, nil, nil))
-	for _, k := range vcms {
+	vcs := make([]lh.ViewChangeMessage, 0, 4)
+	vcs = append(vcs, sender1MsgFactory.CreateViewChangeMessage(term1, view1, nil, nil))
+	vcs = append(vcs, sender2MsgFactory.CreateViewChangeMessage(term1, view1, nil, nil))
+	vcs = append(vcs, sender3MsgFactory.CreateViewChangeMessage(term1, view1, nil, nil))
+	vcs = append(vcs, sender3MsgFactory.CreateViewChangeMessage(term2, view1, nil, nil))
+	for _, k := range vcs {
 		myStorage.StoreViewChange(k)
 	}
 	f := 1
@@ -287,11 +227,6 @@ func TestStoreAndGetViewChangeProof(t *testing.T) {
 	expected := 2*f + 1                                                     // TODO why this?
 	require.Equal(t, expected, len(actual), "return the view-change proof") // TODO bad explanation!
 }
-
-//func compPrepareMessages(t *testing.T, a, b *PreparedMessages, msg string) {
-//	require.Equal(t, a.PreprepareMessage, b.PreprepareMessage, msg)
-//	require.ElementsMatch(t, a.PrepareMessages, b.PrepareMessages, msg)
-//}
 
 func compPrepareProof(t *testing.T, a, b lh.PreparedProof, msg string) {
 	require.Equal(t, a.PreprepareMessage(), b.PreprepareMessage(), msg)
@@ -319,50 +254,49 @@ func TestPrepared(t *testing.T) {
 	pm2 := sender2MsgFactory.CreatePrepareMessage(term, view, block)
 	f := 1
 
+	// TODO This "TestStoreAndGetPrepareProof" test will always PASS if "TestReturnPreparedProofWithHighestView" below passes, consider deleting
 	t.Run("TestStoreAndGetPrepareProof", func(t *testing.T) {
 		myStorage := lh.NewInMemoryPBFTStorage()
-		myStorage.StorePrePrepare(ppm)
+		myStorage.StorePreprepare(ppm)
 		myStorage.StorePrepare(pm2)
 		myStorage.StorePrepare(pm1)
 		expectedProof := lh.CreatePreparedProof(ppm, []lh.PrepareMessage{pm1, pm2})
 
 		actualProof, _ := myStorage.GetLatestPrepared(term, f)
-		compPrepareProof(t, actualProof, expectedProof, "TestStoreAndGetPrepareProof(): return the prepared proof") // TODO bad explanation!
+		compPrepareProof(t, actualProof, expectedProof, "return a prepared proof generated by the PPM and PMs in storage")
 	})
 
-	//t.Run("TestReturnPreparedProofWithHighestView", func(t *testing.T) {
-	//	myStorage := storage.lh.NewInMemoryPBFTStorage()
-	//	prePrepareMessage10 := builders.CreatePrePrepareMessage(leaderKeyManager, 1, 10, block)
-	//	prepareMessage10_1 := builders.CreatePrepareMessage(sender1KeyManager, 1, 10, block)
-	//	prepareMessage10_2 := builders.CreatePrepareMessage(sender2KeyManager, 1, 10, block)
-	//
-	//	prePrepareMessage20 := builders.CreatePrePrepareMessage(leaderKeyManager, 1, 20, block)
-	//	prepareMessage20_1 := builders.CreatePrepareMessage(sender1KeyManager, 1, 20, block)
-	//	prepareMessage20_2 := builders.CreatePrepareMessage(sender2KeyManager, 1, 20, block)
-	//
-	//	prePrepareMessage30 := builders.CreatePrePrepareMessage(leaderKeyManager, 1, 30, block)
-	//	prepareMessage30_1 := builders.CreatePrepareMessage(sender1KeyManager, 1, 30, block)
-	//	prepareMessage30_2 := builders.CreatePrepareMessage(sender2KeyManager, 1, 30, block)
-	//
-	//	myStorage.StorePrePrepare(prePrepareMessage10)
-	//	myStorage.StorePrepare(prepareMessage10_1)
-	//	myStorage.StorePrepare(prepareMessage10_2)
-	//
-	//	myStorage.StorePrePrepare(prePrepareMessage20)
-	//	myStorage.StorePrepare(prepareMessage20_1)
-	//	myStorage.StorePrepare(prepareMessage20_2)
-	//
-	//	myStorage.StorePrePrepare(prePrepareMessage30)
-	//	myStorage.StorePrepare(prepareMessage30_1)
-	//	myStorage.StorePrepare(prepareMessage30_2)
-	//
-	//	expected := &PreparedMessages{
-	//		PreprepareMessage: prePrepareMessage30,
-	//		PrepareMessages:   []*PrepareMessage{prepareMessage30_1, prepareMessage30_2},
-	//	}
-	//	actual, _ := myStorage.GetLatestPrepared(1, 1)
-	//	require.ElementsMatch(t, expected, actual, "TestReturnPreparedProofWithHighestView")
-	//})
+	t.Run("TestReturnPreparedProofWithHighestView", func(t *testing.T) {
+		myStorage := lh.NewInMemoryPBFTStorage()
+		ppm10 := leaderMsgFactory.CreatePreprepareMessage(1, 10, block)
+		pm10a := sender1MsgFactory.CreatePrepareMessage(1, 10, block)
+		pm10b := sender2MsgFactory.CreatePrepareMessage(1, 10, block)
+
+		ppm20 := leaderMsgFactory.CreatePreprepareMessage(1, 20, block)
+		pm20a := sender1MsgFactory.CreatePrepareMessage(1, 20, block)
+		pm20b := sender2MsgFactory.CreatePrepareMessage(1, 20, block)
+
+		ppm30 := leaderMsgFactory.CreatePreprepareMessage(1, 30, block)
+		pm30a := sender1MsgFactory.CreatePrepareMessage(1, 30, block)
+		pm30b := sender2MsgFactory.CreatePrepareMessage(1, 30, block)
+
+		myStorage.StorePreprepare(ppm10)
+		myStorage.StorePrepare(pm10a)
+		myStorage.StorePrepare(pm10b)
+
+		myStorage.StorePreprepare(ppm20)
+		myStorage.StorePrepare(pm20a)
+		myStorage.StorePrepare(pm20b)
+
+		myStorage.StorePreprepare(ppm30)
+		myStorage.StorePrepare(pm30a)
+		myStorage.StorePrepare(pm30b)
+
+		actual, _ := myStorage.GetLatestPrepared(1, 1)
+		require.Equal(t, actual.PreprepareMessage().View(), lh.ViewCounter(30), "View of preprepared message should be 30 (highest for this term)")
+		require.Equal(t, actual.PrepareMessages()[0].View(), lh.ViewCounter(30), "View of prepared message #1 should be 30 (highest for this term)")
+		require.Equal(t, actual.PrepareMessages()[1].View(), lh.ViewCounter(30), "View of prepared message #2 should be 30 (highest for this term)")
+	})
 
 	t.Run("TestReturnNothingIfNoPrePrepare", func(t *testing.T) {
 		myStorage := lh.NewInMemoryPBFTStorage()
@@ -374,24 +308,18 @@ func TestPrepared(t *testing.T) {
 
 	t.Run("TestReturnNothingIfNoPrepares", func(t *testing.T) {
 		myStorage := lh.NewInMemoryPBFTStorage()
-		myStorage.StorePrePrepare(ppm)
+		myStorage.StorePreprepare(ppm)
 		_, ok := myStorage.GetLatestPrepared(term, f)
 		require.False(t, ok, "Don't return PreparedMessages from latest view if no Prepare in storage")
 	})
 
 	t.Run("TestReturnNothingIfNotEnoughPrepares", func(t *testing.T) {
 		myStorage := lh.NewInMemoryPBFTStorage()
-		myStorage.StorePrePrepare(ppm)
+		myStorage.StorePreprepare(ppm)
 		myStorage.StorePrepare(pm1)
 		_, ok := myStorage.GetLatestPrepared(term, f)
 		require.False(t, ok, "Don't return PreparedMessages from latest view if not enough Prepares in storage (# Prepares < 2*f)")
 	})
 }
-
-// TODO func TestStoreAndGetPrepareProof
-// TODO func TestReturnHighestPrepareProof
-// TODO func TestReturnUndefinedIfNoPreprepare
-// TODO func TestReturnUndefinedIfNoPrepares
-// TODO func TestReturnUndefinedIfNotEnoughPrepares
 
 // TODO GetLatestPrepared() should initially be here as in TS code but later moved out, because it contains algo logic (it checks something with 2*f))
