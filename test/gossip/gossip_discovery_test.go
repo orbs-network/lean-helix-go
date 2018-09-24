@@ -40,7 +40,7 @@ func TestGossipDiscovery(t *testing.T) {
 		gd.RegisterGossip(id2, g2)
 		gd.RegisterGossip(id3, g3)
 		expected := []lh.PublicKey{id1, id2, id3}
-		actual := gd.getAllGossipsPKs()
+		actual := gd.AllGossipsPKs()
 
 		require.ElementsMatch(t, actual, expected)
 	})
@@ -61,7 +61,7 @@ func TestGossipDiscovery(t *testing.T) {
 		g2 := NewGossip(gd)
 		gd.RegisterGossip(id1, g1)
 		gd.RegisterGossip(id2, g2)
-		actual := gd.GetGossips(nil)
+		actual := gd.Gossips(nil)
 		expected := []*Gossip{g1, g2}
 		require.ElementsMatch(t, actual, expected, "list of all gossips")
 	})
@@ -77,7 +77,7 @@ func TestGossipDiscovery(t *testing.T) {
 		gd.RegisterGossip(id1, g1)
 		gd.RegisterGossip(id2, g2)
 		gd.RegisterGossip(id3, g3)
-		actual := gd.GetGossips([]lh.PublicKey{id1, id3})
+		actual := gd.Gossips([]lh.PublicKey{id1, id3})
 		expected := []*Gossip{g1, g3}
 		require.ElementsMatch(t, actual, expected, "list of requested gossips")
 	})

@@ -2,6 +2,7 @@ package builders
 
 import (
 	lh "github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/test/gossip"
 )
 
 type Node struct {
@@ -9,6 +10,7 @@ type Node struct {
 	Config     lh.Config
 	pbft       lh.LeanHelix
 	blockChain *InMemoryBlockChain
+	Gossip     *gossip.Gossip
 }
 
 func NewNode(publicKey lh.PublicKey, config lh.Config) *Node {

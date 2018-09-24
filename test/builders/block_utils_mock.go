@@ -21,3 +21,10 @@ func CalculateBlockHash(block lh.Block) lh.BlockHash {
 func (*MockBlockUtils) CalculateBlockHash(block lh.Block) lh.BlockHash {
 	return CalculateBlockHash(block)
 }
+
+func (mockBlockUtils *MockBlockUtils) ProvideNextBlock() {
+
+}
+func (mockBlockUtils *MockBlockUtils) ResolveAllValidations(b bool) {
+
+}

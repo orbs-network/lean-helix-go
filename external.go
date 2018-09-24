@@ -45,6 +45,22 @@ type Block interface {
 
 type NetworkCommunication interface {
 	SendToMembers(publicKeys []string, messageType string, message []byte)
+
+	// Copied from TS code as is
+	GetMembersPKs(seed int) []string
+	IsMember(pk PublicKey) bool
+
+	SendPreprepare(pks []PublicKey, message PreprepareMessage)
+	sendPrepare(pks []PublicKey, message PrepareMessage)
+	sendCommit(pks []PublicKey, message CommitMessage)
+	sendViewChange(pk PublicKey, message ViewChangeMessage) // TODO Is this ok to be single pk?
+	sendNewView(pks []PublicKey, message NewViewMessage)
+
+	RegisterToPreprepare(cb func(message PreprepareMessage))
+	RegisterToPrepare(cb func(message PrepareMessage))
+	RegisterToCommit(cb func(message CommitMessage))
+	RegisterToViewChange(cb func(message ViewChangeMessage))
+	RegisterToNewView(cb func(message NewViewMessage))
 }
 
 // TODO Maybe KeyManager shouldn't hold MyID and just be a static singleton that accepts ID like every other property
@@ -75,6 +91,11 @@ type SenderSignature interface {
 
 type HasMessageType interface {
 	MessageType() MessageType
+}
+
+type MessageTransporter interface {
+	SenderSignature
+	HasMessageType
 }
 
 type BlockRef interface {

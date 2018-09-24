@@ -1,24 +1,26 @@
 package gossip
 
 import (
+	"github.com/orbs-network/go-mock"
 	lh "github.com/orbs-network/lean-helix-go"
 )
 
-type Callback func(message lh.SenderSignature)
+type Callback func(message lh.MessageTransporter)
 
 type SubscriptionValue struct {
 	cb Callback
 }
 
 type Gossip struct {
-	discovery            *discovery
+	mock.Mock
+	discovery            Discovery
 	totalSubscriptions   int
 	subscriptions        map[int]*SubscriptionValue
 	outgoingWhiteListPKs []lh.PublicKey
 	incomingWhiteListPKs []lh.PublicKey
 }
 
-func NewGossip(gd *discovery) *Gossip {
+func NewGossip(gd Discovery) *Gossip {
 	return &Gossip{
 		discovery:            gd,
 		totalSubscriptions:   0,
@@ -52,7 +54,7 @@ func (g *Gossip) inOutgoingWhitelist(pk lh.PublicKey) bool {
 	return false
 }
 
-func (g *Gossip) onRemoteMessage(message lh.SenderSignature) {
+func (g *Gossip) onRemoteMessage(message lh.MessageTransporter) {
 	for _, s := range g.subscriptions {
 		if !g.inIncomingWhitelist(message.SenderPublicKey()) {
 			return
@@ -73,7 +75,7 @@ func (g *Gossip) unsubscribe(subscriptionToken int) {
 	delete(g.subscriptions, subscriptionToken)
 }
 
-func (g *Gossip) unicast(pk lh.PublicKey, message lh.SenderSignature) {
+func (g *Gossip) unicast(pk lh.PublicKey, message lh.MessageTransporter) {
 	if !g.inOutgoingWhitelist(pk) {
 		return
 	}
@@ -82,7 +84,7 @@ func (g *Gossip) unicast(pk lh.PublicKey, message lh.SenderSignature) {
 	}
 }
 
-func (g *Gossip) multicast(targetIds []lh.PublicKey, message lh.SenderSignature) {
+func (g *Gossip) Multicast(targetIds []lh.PublicKey, message lh.MessageTransporter) {
 	for _, targetId := range targetIds {
 		g.unicast(targetId, message)
 	}

@@ -7,22 +7,61 @@ import (
 
 type MockNetworkCommunication struct {
 	mock.Mock
-	nodes []Node
 }
 
-func (net *MockNetworkCommunication) Nodes() []Node {
-	return net.nodes
-}
-
-func (net *MockNetworkCommunication) SendToMembers(publicKeys []string, messageType string, message []byte) {
+func (n *MockNetworkCommunication) SendToMembers(publicKeys []string, messageType string, message []byte) {
 	panic("implement me")
 }
 
-func NewMockNetworkCommunication(nodeCount int) lh.NetworkCommunication {
+func (n *MockNetworkCommunication) GetMembersPKs(seed int) []string {
+	panic("implement me")
+}
 
-	nodes := make([]Node, 0)
+func (n *MockNetworkCommunication) IsMember(pk lh.PublicKey) bool {
+	panic("implement me")
+}
 
-	return &MockNetworkCommunication{
-		nodes: nodes,
-	}
+func (n *MockNetworkCommunication) SendPreprepare(pks []lh.PublicKey, message lh.PreprepareMessage) {
+	n.Called(pks, message)
+}
+
+func (n *MockNetworkCommunication) SendPrepare(pks []lh.PublicKey, message lh.PrepareMessage) {
+	panic("implement me")
+}
+
+func (n *MockNetworkCommunication) SendCommit(pks []lh.PublicKey, message lh.CommitMessage) {
+	panic("implement me")
+}
+
+func (n *MockNetworkCommunication) SendViewChange(pk lh.PublicKey, message lh.ViewChangeMessage) {
+	panic("implement me")
+}
+
+func (n *MockNetworkCommunication) SendNewView(pks []lh.PublicKey, message lh.NewViewMessage) {
+	panic("implement me")
+}
+
+func (n *MockNetworkCommunication) RegisterToPreprepare(cb func(message lh.PreprepareMessage)) {
+	panic("implement me")
+}
+
+func (n *MockNetworkCommunication) RegisterToPrepare(cb func(message lh.PrepareMessage)) {
+	panic("implement me")
+}
+
+func (n *MockNetworkCommunication) RegisterToCommit(cb func(message lh.CommitMessage)) {
+	panic("implement me")
+}
+
+func (n *MockNetworkCommunication) RegisterToViewChange(cb func(message lh.ViewChangeMessage)) {
+	panic("implement me")
+}
+
+func (n *MockNetworkCommunication) RegisterToNewView(cb func(message lh.NewViewMessage)) {
+	panic("implement me")
+}
+
+func NewMockNetworkCommunication() *MockNetworkCommunication {
+
+	return &MockNetworkCommunication{}
 }
