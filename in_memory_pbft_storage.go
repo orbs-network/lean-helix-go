@@ -5,6 +5,20 @@ import "sort"
 type BlockHashStr string
 type PublicKeyStr string
 
+type Storage interface {
+	StorePreprepare(ppm PreprepareMessage) bool
+	StorePrepare(pp PrepareMessage) bool
+	StoreCommit(cm CommitMessage) bool
+	StoreViewChange(vcm ViewChangeMessage) bool
+	GetPrepareSendersPKs(term BlockHeight, view ViewCounter, blockHash BlockHash) []PublicKey
+	GetCommitSendersPKs(term BlockHeight, view ViewCounter, blockHash BlockHash) []PublicKey
+	GetViewChangeMessages(term BlockHeight, view ViewCounter, f int) []ViewChangeMessage
+	GetPreprepare(term BlockHeight, view ViewCounter) (PreprepareMessage, bool)
+	GetPrepares(term BlockHeight, view ViewCounter, blockHash BlockHash) ([]PrepareMessage, bool)
+	GetLatestPrepared(term BlockHeight, f int) (PreparedProof, bool)
+	ClearTermLogs(term BlockHeight)
+}
+
 type InMemoryPbftStorage struct {
 	// TODO Refactor this mess - in the least create some intermediate types
 	preprepareStorage map[BlockHeight]map[ViewCounter]PreprepareMessage

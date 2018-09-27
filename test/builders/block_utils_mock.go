@@ -8,10 +8,13 @@ import (
 
 type MockBlockUtils struct {
 	mock.Mock
+	upcomingBlocks []lh.Block
 }
 
-func NewMockBlockUtils() *MockBlockUtils {
-	return &MockBlockUtils{}
+func NewMockBlockUtils(upcomingBlocks []lh.Block) *MockBlockUtils {
+	return &MockBlockUtils{
+		upcomingBlocks: upcomingBlocks,
+	}
 }
 
 func CalculateBlockHash(block lh.Block) lh.BlockHash {
@@ -27,4 +30,16 @@ func (mockBlockUtils *MockBlockUtils) ProvideNextBlock() {
 }
 func (mockBlockUtils *MockBlockUtils) ResolveAllValidations(b bool) {
 
+}
+
+func (mockBlockUtils *MockBlockUtils) RequestCommittee() {
+	panic("implement me")
+}
+
+func (mockBlockUtils *MockBlockUtils) RequestNewBlock() {
+	panic("implement me")
+}
+
+func (mockBlockUtils *MockBlockUtils) ValidateBlock() {
+	panic("implement me")
 }

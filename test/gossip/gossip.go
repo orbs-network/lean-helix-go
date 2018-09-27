@@ -63,7 +63,7 @@ func (g *Gossip) onRemoteMessage(message lh.MessageTransporter) {
 	}
 }
 
-func (g *Gossip) subscribe(cb Callback) int {
+func (g *Gossip) Subscribe(cb Callback) int {
 	g.totalSubscriptions++
 	g.subscriptions[g.totalSubscriptions] = &SubscriptionValue{
 		cb,
@@ -71,7 +71,7 @@ func (g *Gossip) subscribe(cb Callback) int {
 	return g.totalSubscriptions
 }
 
-func (g *Gossip) unsubscribe(subscriptionToken int) {
+func (g *Gossip) Unsubscribe(subscriptionToken int) {
 	delete(g.subscriptions, subscriptionToken)
 }
 
@@ -85,6 +85,7 @@ func (g *Gossip) unicast(pk lh.PublicKey, message lh.MessageTransporter) {
 }
 
 func (g *Gossip) Multicast(targetIds []lh.PublicKey, message lh.MessageTransporter) {
+	g.Mock.Called(targetIds, message)
 	for _, targetId := range targetIds {
 		g.unicast(targetId, message)
 	}

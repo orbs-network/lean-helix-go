@@ -7,7 +7,7 @@ type ElectionTriggerMock struct {
 	cb   func(view lh.ViewCounter)
 }
 
-func NewElectionTriggerMock() *ElectionTriggerMock {
+func NewMockElectionTrigger() *ElectionTriggerMock {
 	return &ElectionTriggerMock{}
 }
 

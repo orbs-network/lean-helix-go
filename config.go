@@ -1,5 +1,10 @@
 package leanhelix
 
-type Config interface {
-	ElectionTrigger() ElectionTrigger
+type Config struct {
+	NetworkCommunication NetworkCommunication
+	BlockUtils           BlockUtils
+	KeyManager           KeyManager
+	Logger               Logger
+	ElectionTrigger      ElectionTrigger
+	Storage              Storage
 }

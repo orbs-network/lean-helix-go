@@ -10,7 +10,7 @@ type LeanHelix interface {
 type leanHelix struct {
 }
 
-func NewLeanHelix(config Config) LeanHelix {
+func NewLeanHelix(config *Config) LeanHelix {
 	return &leanHelix{}
 }
 

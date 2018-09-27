@@ -24,18 +24,18 @@ import (
 const NODE_COUNT = 4
 
 func TestSendPreprepareOnlyIfLeader(t *testing.T) {
-	t.Skip()
+	//t.Skip()
 
 	//
 
-	net := builders.CreateTestNetwork(NODE_COUNT) // Node 0 is leader
+	net := builders.CreateSimpleTestNetwork(NODE_COUNT, nil) // Node 0 is leader
 
 	predicateMessageTypeIsPreprepare := func(msg interface{}) bool {
 		message := msg.(lh.MessageTransporter)
 		return message.MessageType() == lh.MESSAGE_TYPE_PREPREPARE
 	}
 
-	gossips := make([]*gossip.Gossip, len(net.Nodes))
+	gossips := make([]*gossip.Gossip, 0, len(net.Nodes))
 	for i := range net.Nodes {
 		gossip, ok := net.GetNodeGossip(net.Nodes[i].PublicKey)
 		if !ok {
@@ -46,7 +46,7 @@ func TestSendPreprepareOnlyIfLeader(t *testing.T) {
 
 	gossips[0].When("Multicast", mock.Any, mock.AnyIf("gossip sends preprepare", predicateMessageTypeIsPreprepare)).Times(1)
 	for i := 1; i < NODE_COUNT; i++ {
-		gossips[i].When("Multicast", mock.Any, mock.AnyIf("gossip sends preprepare", predicateMessageTypeIsPreprepare)).Times(0)
+		gossips[i].Never("Multicast", mock.Any, mock.AnyIf("gossip sends preprepare", predicateMessageTypeIsPreprepare))
 	}
 
 	net.Start()
@@ -54,11 +54,17 @@ func TestSendPreprepareOnlyIfLeader(t *testing.T) {
 	net.BlockUtils.ProvideNextBlock()
 	net.BlockUtils.ResolveAllValidations(true)
 
-	for i := 1; i < NODE_COUNT; i++ {
-		gossips[i].Verify()
+	errors := make([]error, 0)
+	for i := 0; i < NODE_COUNT; i++ {
+		_, err := gossips[i].Verify()
+		if err != nil {
+			errors = append(errors, err)
+		}
 	}
 
-	// TODO Verify here
+	if len(errors) > 0 {
+		t.Errorf("Found %d errors: %v", len(errors), errors)
+	}
 
 	// 17-Sep-2018 plan for this test
 	// Code the harness to generate the test network ("Network")

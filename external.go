@@ -44,17 +44,17 @@ type Block interface {
 }
 
 type NetworkCommunication interface {
-	SendToMembers(publicKeys []string, messageType string, message []byte)
+	SendToMembers(publicKeys []PublicKey, messageType string, message []MessageTransporter)
 
 	// Copied from TS code as is
 	GetMembersPKs(seed int) []string
 	IsMember(pk PublicKey) bool
 
 	SendPreprepare(pks []PublicKey, message PreprepareMessage)
-	sendPrepare(pks []PublicKey, message PrepareMessage)
-	sendCommit(pks []PublicKey, message CommitMessage)
-	sendViewChange(pk PublicKey, message ViewChangeMessage) // TODO Is this ok to be single pk?
-	sendNewView(pks []PublicKey, message NewViewMessage)
+	SendPrepare(pks []PublicKey, message PrepareMessage)
+	SendCommit(pks []PublicKey, message CommitMessage)
+	SendViewChange(pk PublicKey, message ViewChangeMessage) // TODO Is this ok to be single pk? (see NetworkCommunication.ts)
+	SendNewView(pks []PublicKey, message NewViewMessage)
 
 	RegisterToPreprepare(cb func(message PreprepareMessage))
 	RegisterToPrepare(cb func(message PrepareMessage))
@@ -76,9 +76,9 @@ type KeyManager interface {
 	MyID() PublicKey
 }
 
-// TODO Maybe BlockHandler is better name?
+// TODO Maybe BlockHandler is better name? or BlockService
 type BlockUtils interface {
-	CalculateBlockHash(block *Block) *BlockHash
+	CalculateBlockHash(block Block) BlockHash
 	RequestNewBlock()
 	ValidateBlock()
 	RequestCommittee()
@@ -130,6 +130,15 @@ type PreprepareMessage interface {
 	Sender() SenderSignature
 	Block() Block
 }
+
+//////
+
+type Adapter interface {
+	RequestNewBlock()
+	CommitBlock(Block)
+}
+
+////
 
 type PrepareMessage interface {
 	BlockRef
