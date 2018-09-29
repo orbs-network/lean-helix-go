@@ -9,11 +9,13 @@ import (
 type MockBlockUtils struct {
 	mock.Mock
 	upcomingBlocks []lh.Block
+	latestBlock    lh.Block
 }
 
 func NewMockBlockUtils(upcomingBlocks []lh.Block) *MockBlockUtils {
 	return &MockBlockUtils{
 		upcomingBlocks: upcomingBlocks,
+		latestBlock:    GenesisBlock,
 	}
 }
 
@@ -21,25 +23,34 @@ func CalculateBlockHash(block lh.Block) lh.BlockHash {
 	return lh.BlockHash(fmt.Sprintf("%s_%d_%s", block.Body(), block.Header().Term(), block.Header().BlockHash()))
 }
 
-func (*MockBlockUtils) CalculateBlockHash(block lh.Block) lh.BlockHash {
+func (b MockBlockUtils) CalculateBlockHash(block lh.Block) lh.BlockHash {
 	return CalculateBlockHash(block)
 }
 
-func (mockBlockUtils *MockBlockUtils) ProvideNextBlock() {
+func (b MockBlockUtils) ProvideNextBlock() lh.Block {
 
+	var nextBlock lh.Block
+	if len(b.upcomingBlocks) > 0 {
+		// Simple queue impl, see https://github.com/golang/go/wiki/SliceTricks
+		nextBlock, b.upcomingBlocks = b.upcomingBlocks[0], b.upcomingBlocks[1:]
+	} else {
+		nextBlock = CreateBlock(b.latestBlock)
+	}
+	b.latestBlock = nextBlock
+	return nextBlock
 }
-func (mockBlockUtils *MockBlockUtils) ResolveAllValidations(b bool) {
 
+func (b MockBlockUtils) ResolveAllValidations(isValid bool) {
 }
 
-func (mockBlockUtils *MockBlockUtils) RequestCommittee() {
+func (b MockBlockUtils) RequestCommittee() {
 	panic("implement me")
 }
 
-func (mockBlockUtils *MockBlockUtils) RequestNewBlock() {
-	panic("implement me")
+func (b MockBlockUtils) RequestNewBlock() lh.Block {
+	return b.ProvideNextBlock()
 }
 
-func (mockBlockUtils *MockBlockUtils) ValidateBlock() {
+func (b MockBlockUtils) ValidateBlock() {
 	panic("implement me")
 }

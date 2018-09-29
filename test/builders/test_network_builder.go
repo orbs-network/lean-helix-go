@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+const MINIMUM_NODES = 2
+
 type TestNetwork struct {
 	mock.Mock
 	Nodes      []*Node
@@ -19,12 +21,13 @@ type TestNetworkBuilder struct {
 	logger          lh.Logger
 	customNodes     []NodeBuilder
 	electionTrigger lh.ElectionTrigger
-	blockUtils      lh.BlockUtils
+	blockUtils      *MockBlockUtils
 	blocksPool      []lh.Block
 	nodeCount       int
+	discovery       gossip.Discovery
 }
 
-func (builder *TestNetworkBuilder) GettingBlocksVia(utils lh.BlockUtils) *TestNetworkBuilder {
+func (builder *TestNetworkBuilder) GettingBlocksVia(utils *MockBlockUtils) *TestNetworkBuilder {
 	builder.blockUtils = utils
 	return builder
 }
@@ -41,14 +44,12 @@ func (builder *TestNetworkBuilder) ThatLogsToCustomLogger(logger lh.Logger) *Tes
 
 func (builder *TestNetworkBuilder) Build() *TestNetwork {
 
-	discovery := gossip.NewGossipDiscovery()
-	nodes := createNodes(builder.nodeCount, discovery)
-
 	testNet := &TestNetwork{
-		Nodes: nodes,
-		//BlockUtils: builder.blockUtils,
+
+		Nodes:      builder.createNodes(),
+		BlockUtils: builder.blockUtils,
 		//Transport:  builder.transport,
-		discovery: discovery,
+		discovery: builder.discovery,
 	}
 
 	// TODO Why we need this?? it does nothing on TS code
@@ -57,7 +58,7 @@ func (builder *TestNetworkBuilder) Build() *TestNetwork {
 	return testNet
 }
 
-func CreateSimpleTestNetwork(nodeCount int, blocksPool []lh.Block) *TestNetwork {
+func NewSimpleTestNetwork(nodeCount int, blocksPool []lh.Block) *TestNetwork {
 
 	b1 := CreateBlock(GenesisBlock)
 	b2 := CreateBlock(b1)
@@ -73,14 +74,14 @@ func CreateSimpleTestNetwork(nodeCount int, blocksPool []lh.Block) *TestNetwork 
 
 	mockBlockUtils := NewMockBlockUtils(blocks)
 
-	testNet := CreateTestNetworkBuilder(nodeCount).
+	testNet := NewTestNetworkBuilder(nodeCount).
 		GettingBlocksVia(mockBlockUtils).
 		Build()
 
 	return testNet
 }
 
-func CreateTestNetworkBuilder(nodeCount int) *TestNetworkBuilder {
+func NewTestNetworkBuilder(nodeCount int) *TestNetworkBuilder {
 	return &TestNetworkBuilder{
 		logger:          &lh.SilentLogger{},
 		customNodes:     nil,
@@ -88,14 +89,15 @@ func CreateTestNetworkBuilder(nodeCount int) *TestNetworkBuilder {
 		blockUtils:      nil,
 		blocksPool:      nil,
 		nodeCount:       nodeCount,
+		discovery:       gossip.NewGossipDiscovery(),
 	}
 }
 
-func createNodes(nodeCount int, discovery gossip.Discovery) []*Node {
-	nodes := make([]*Node, nodeCount)
+func (builder *TestNetworkBuilder) createNodes() []*Node {
+	nodes := make([]*Node, builder.nodeCount)
 
 	for i := range nodes {
-		nodes[i] = buildNode(lh.PublicKey(fmt.Sprintf("Node %d", i)), discovery)
+		nodes[i] = buildNode(lh.PublicKey(fmt.Sprintf("Node %d", i)), builder.discovery)
 	}
 
 	// TODO postpone handling custom nodes till needed by TDD (see TestNetworkBuilder.ts)
@@ -107,10 +109,19 @@ func (net *TestNetwork) GetNodeGossip(pk lh.PublicKey) (*gossip.Gossip, bool) {
 	return net.discovery.GetGossipByPK(pk)
 }
 
-func (net *TestNetwork) Start() {
-
+func (net *TestNetwork) StartConsensusOnAllNodes() error {
+	if len(net.Nodes) < 2 {
+		return fmt.Errorf("not enough nodes in test network - found %d but minimum is %d", len(net.Nodes), MINIMUM_NODES)
+	}
+	for _, node := range net.Nodes {
+		node.StartConsensus()
+	}
+	return nil
 }
 
 func (net *TestNetwork) Stop() {
+	for _, node := range net.Nodes {
+		node.Dispose()
+	}
 
 }

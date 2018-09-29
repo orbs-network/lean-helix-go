@@ -24,11 +24,11 @@ import (
 const NODE_COUNT = 4
 
 func TestSendPreprepareOnlyIfLeader(t *testing.T) {
-	//t.Skip()
+	t.Skip()
 
 	//
 
-	net := builders.CreateSimpleTestNetwork(NODE_COUNT, nil) // Node 0 is leader
+	net := builders.NewSimpleTestNetwork(NODE_COUNT, nil) // Node 0 is leader
 
 	predicateMessageTypeIsPreprepare := func(msg interface{}) bool {
 		message := msg.(lh.MessageTransporter)
@@ -49,8 +49,12 @@ func TestSendPreprepareOnlyIfLeader(t *testing.T) {
 		gossips[i].Never("Multicast", mock.Any, mock.AnyIf("gossip sends preprepare", predicateMessageTypeIsPreprepare))
 	}
 
-	net.Start()
 	defer net.Stop()
+	err := net.StartConsensusOnAllNodes()
+	if err != nil {
+		t.Error(err)
+	}
+
 	net.BlockUtils.ProvideNextBlock()
 	net.BlockUtils.ResolveAllValidations(true)
 
@@ -71,7 +75,7 @@ func TestSendPreprepareOnlyIfLeader(t *testing.T) {
 
 	// Create instance of the Harness
 	// Each node has: real LeanHelix, mock BlockUtils, mock KeyManager, mock NetworkCommunication, Config?
-	// Start the Network - each node starts the infinite loop and listens on messages
+	// StartConsensusOnAllNodes the Network - each node starts the infinite loop and listens on messages
 	// Spy (hook) on all messages that are send by the nodes
 	// Provide the next block from outside the Network
 	// Verify that only the leader sends out a Preprepare message
@@ -89,7 +93,7 @@ func TestSendPreprepareOnlyIfLeader(t *testing.T) {
 	//
 	//h.service.network.When("sendToMembers", &services.CommitBlockInput{expectedBlockPair}).Return(nil, nil).Times(1)
 	//h.service.network.When("SendBenchmarkConsensusCommitted", mock.AnyIf(fmt.Sprintf("LastCommittedBlockHeight equals %d, recipient equals %s and sender equals %s", expectedLastCommitted, expectedRecipient, expectedSender), lastCommittedReplyMatcher)).Times(1)
-	//h.service.Start()
+	//h.service.StartConsensusOnAllNodes()
 	//defer h.service.Stop()
 
 }

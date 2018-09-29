@@ -24,9 +24,9 @@ func TestProofsValidator(t *testing.T) {
 	const targetTerm = term
 	const targetView = view + 1
 	block := builders.CreateBlock(builders.GenesisBlock)
-	leaderMsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, leaderKeyManager)
-	node1MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, node1KeyManager)
-	node2MsgFactory := builders.NewMessageFactory(builders.CalculateBlockHash, node2KeyManager)
+	leaderMsgFactory := lh.NewMessageFactory(builders.CalculateBlockHash, leaderKeyManager)
+	node1MsgFactory := lh.NewMessageFactory(builders.CalculateBlockHash, node1KeyManager)
+	node2MsgFactory := lh.NewMessageFactory(builders.CalculateBlockHash, node2KeyManager)
 
 	preprepareMessage := leaderMsgFactory.CreatePreprepareMessage(term, view, block)
 	prepareMessage1 := node1MsgFactory.CreatePrepareMessage(term, view, block)
@@ -86,7 +86,7 @@ func TestProofsValidator(t *testing.T) {
 
 	t.Run("TestProofsValidatorWithANoneMember", func(t *testing.T) {
 		noneMemberKeyManager := builders.NewMockKeyManager(lh.PublicKey("Not in members PK"))
-		mf := builders.NewMessageFactory(builders.CalculateBlockHash, noneMemberKeyManager)
+		mf := lh.NewMessageFactory(builders.CalculateBlockHash, noneMemberKeyManager)
 		prepareMessage1 := mf.CreatePrepareMessage(term, view, block)
 		preparedProof := lh.CreatePreparedProof(preprepareMessage, []lh.PrepareMessage{prepareMessage1, prepareMessage2})
 		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
@@ -94,7 +94,7 @@ func TestProofsValidator(t *testing.T) {
 	})
 
 	t.Run("TestProofsValidatorWithPrepareFromTheLeader", func(t *testing.T) {
-		mf := builders.NewMessageFactory(builders.CalculateBlockHash, leaderKeyManager)
+		mf := lh.NewMessageFactory(builders.CalculateBlockHash, leaderKeyManager)
 		prepareMessage1 := mf.CreatePrepareMessage(term, view, block)
 		preparedProof := lh.CreatePreparedProof(preprepareMessage, []lh.PrepareMessage{prepareMessage1, prepareMessage2})
 		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
@@ -117,9 +117,9 @@ func TestProofsValidator(t *testing.T) {
 		const targetTerm = term
 		const targetView = view + 1
 
-		leaderMF := builders.NewMessageFactory(builders.CalculateBlockHash, leaderKeyManager)
-		node1MF := builders.NewMessageFactory(builders.CalculateBlockHash, node1KeyManager)
-		node2MF := builders.NewMessageFactory(builders.CalculateBlockHash, node2KeyManager)
+		leaderMF := lh.NewMessageFactory(builders.CalculateBlockHash, leaderKeyManager)
+		node1MF := lh.NewMessageFactory(builders.CalculateBlockHash, node1KeyManager)
+		node2MF := lh.NewMessageFactory(builders.CalculateBlockHash, node2KeyManager)
 
 		// TODO Maybe can use node1MsgFactory instead of creating node1MF here (same for leader and node2)
 		// Good proof //
@@ -159,8 +159,8 @@ func TestProofsValidator(t *testing.T) {
 	})
 
 	t.Run("TestProofsValidatorWithDuplicate prepare sender PK", func(t *testing.T) {
-		leaderMF := builders.NewMessageFactory(builders.CalculateBlockHash, leaderKeyManager)
-		node1MF := builders.NewMessageFactory(builders.CalculateBlockHash, node1KeyManager)
+		leaderMF := lh.NewMessageFactory(builders.CalculateBlockHash, leaderKeyManager)
+		node1MF := lh.NewMessageFactory(builders.CalculateBlockHash, node1KeyManager)
 
 		preparedProof := lh.CreatePreparedProof(leaderMF.CreatePreprepareMessage(term, view, block), []lh.PrepareMessage{
 			node1MF.CreatePrepareMessage(term, view, block),

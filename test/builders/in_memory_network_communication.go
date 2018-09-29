@@ -61,7 +61,7 @@ func (comm *InMemoryNetworkCommunication) SendToMembers(publicKeys []lh.PublicKe
 	panic("implement me")
 }
 
-func (comm *InMemoryNetworkCommunication) GetMembersPKs(seed int) []string {
+func (comm *InMemoryNetworkCommunication) GetMembersPKs(seed uint64) []lh.PublicKey {
 	panic("implement me")
 }
 

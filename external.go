@@ -47,7 +47,7 @@ type NetworkCommunication interface {
 	SendToMembers(publicKeys []PublicKey, messageType string, message []MessageTransporter)
 
 	// Copied from TS code as is
-	GetMembersPKs(seed int) []string
+	GetMembersPKs(seed uint64) []PublicKey
 	IsMember(pk PublicKey) bool
 
 	SendPreprepare(pks []PublicKey, message PreprepareMessage)
@@ -79,7 +79,7 @@ type KeyManager interface {
 // TODO Maybe BlockHandler is better name? or BlockService
 type BlockUtils interface {
 	CalculateBlockHash(block Block) BlockHash
-	RequestNewBlock()
+	RequestNewBlock() Block
 	ValidateBlock()
 	RequestCommittee()
 }

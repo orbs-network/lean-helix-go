@@ -8,7 +8,7 @@ import (
 type Node struct {
 	PublicKey  lh.PublicKey
 	Config     *lh.Config
-	pbft       lh.LeanHelix
+	leanHelix  lh.LeanHelix
 	blockChain *InMemoryBlockChain
 	Gossip     *gossip.Gossip
 }
@@ -18,7 +18,7 @@ func NewNode(publicKey lh.PublicKey, config *lh.Config) *Node {
 	node := &Node{
 		PublicKey:  publicKey,
 		Config:     config,
-		pbft:       pbft,
+		leanHelix:  pbft,
 		blockChain: NewInMemoryBlockChain(),
 	}
 	pbft.RegisterOnCommitted(node.onCommittedBlock)
@@ -48,7 +48,7 @@ func (node *Node) GetLatestCommittedBlock() lh.Block {
 }
 
 func (node *Node) IsLeader() bool {
-	return node.pbft.IsLeader()
+	return node.leanHelix.IsLeader()
 }
 
 func (node *Node) TriggerElection() {
@@ -60,14 +60,14 @@ func (node *Node) onCommittedBlock(block lh.Block) {
 }
 
 func (node *Node) StartConsensus() {
-	if node.pbft != nil {
+	if node.leanHelix != nil {
 		lastCommittedBlock := node.GetLatestCommittedBlock()
-		node.pbft.Start(lastCommittedBlock.Header().Term())
+		node.leanHelix.Start(lastCommittedBlock.Header().Term())
 	}
 }
 
 func (node *Node) Dispose() {
-	if node.pbft != nil {
-		node.pbft.Dispose()
+	if node.leanHelix != nil {
+		node.leanHelix.Dispose()
 	}
 }
