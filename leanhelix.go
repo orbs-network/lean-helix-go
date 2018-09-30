@@ -1,5 +1,7 @@
 package leanhelix
 
+import "github.com/orbs-network/lean-helix-go/instrumentation/log"
+
 // PBFT.ts
 type LeanHelix interface {
 	RegisterOnCommitted(cb func(block Block))
@@ -13,7 +15,7 @@ type TermConfig struct {
 	NetworkCommunication NetworkCommunication
 	BlockUtils           BlockUtils
 	KeyManager           KeyManager
-	Logger               Logger
+	Logger               log.BasicLogger
 	ElectionTrigger      ElectionTrigger
 	Storage              Storage
 }

@@ -9,11 +9,11 @@ type MockNetworkCommunication struct {
 	mock.Mock
 }
 
-func (n *MockNetworkCommunication) SendToMembers(publicKeys []string, messageType string, message []byte) {
+func (n *MockNetworkCommunication) SendToMembers(publicKeys []lh.PublicKey, messageType string, message []lh.MessageTransporter) {
 	panic("implement me")
 }
 
-func (n *MockNetworkCommunication) GetMembersPKs(seed int) []string {
+func (n *MockNetworkCommunication) GetMembersPKs(seed uint64) []lh.PublicKey {
 	panic("implement me")
 }
 

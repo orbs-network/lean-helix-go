@@ -3,6 +3,7 @@ package builders
 import (
 	"fmt"
 	lh "github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/instrumentation/log"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
 	"github.com/stretchr/testify/mock"
 )
@@ -18,7 +19,7 @@ type TestNetwork struct {
 }
 
 type TestNetworkBuilder struct {
-	logger          lh.Logger
+	logger          log.BasicLogger
 	customNodes     []NodeBuilder
 	electionTrigger lh.ElectionTrigger
 	blockUtils      *MockBlockUtils
@@ -37,7 +38,7 @@ func (builder *TestNetworkBuilder) WithNodeCount(nodeCount int) *TestNetworkBuil
 	return builder
 }
 
-func (builder *TestNetworkBuilder) ThatLogsToCustomLogger(logger lh.Logger) *TestNetworkBuilder {
+func (builder *TestNetworkBuilder) ThatLogsToCustomLogger(logger log.BasicLogger) *TestNetworkBuilder {
 	builder.logger = logger
 	return builder
 }
@@ -82,8 +83,11 @@ func NewSimpleTestNetwork(nodeCount int, blocksPool []lh.Block) *TestNetwork {
 }
 
 func NewTestNetworkBuilder(nodeCount int) *TestNetworkBuilder {
+
+	var reporting log.BasicLogger
+
 	return &TestNetworkBuilder{
-		logger:          &lh.SilentLogger{},
+		logger:          reporting.For(log.Service("test-network-builder")),
 		customNodes:     nil,
 		electionTrigger: nil,
 		blockUtils:      nil,

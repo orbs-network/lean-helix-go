@@ -2,6 +2,7 @@ package builders
 
 import (
 	lh "github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/instrumentation/log"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
 )
 
@@ -27,7 +28,8 @@ func NewNode(publicKey lh.PublicKey, config *lh.Config) *Node {
 
 func buildNode(publicKey lh.PublicKey, discovery gossip.Discovery) *Node {
 
-	logger := lh.NewSilentLogger()
+	var reporting log.BasicLogger
+	logger := reporting.For(log.Service("node"))
 	electionTrigger := NewMockElectionTrigger() // TODO TestNetworkBuilder.ts uses ElectionTriggerFactory here, maybe do it too
 	blockUtils := NewMockBlockUtils(nil)
 	gossip := gossip.NewGossip(discovery)

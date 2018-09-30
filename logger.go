@@ -9,9 +9,9 @@ const LEVEL_INFO LogLevel = 1
 const LEVEL_ERROR LogLevel = 2
 
 type Logger interface {
-	Debug(format string, a ...interface{})
-	Info(format string, a ...interface{})
-	Error(format string, a ...interface{})
+	Debug(msg string, data *LogData)
+	Info(msg string, data *LogData)
+	Error(msg string, data *LogData)
 }
 
 type ConsoleLogger struct {

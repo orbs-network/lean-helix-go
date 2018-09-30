@@ -7,8 +7,11 @@
 Go implementation of Lean Helix consensus algorithm
 
 ## TODO
+* See [issues on Github](https://github.com/orbs-network/lean-helix-go/issues)
+
 * [ ] Decide on types - do we use primitives for height, view, public key, hash (ints, []byte's) which are easier to program, or aliases which are easier to understand but cumbersome to maintain esp with []PublicKey -> []string conversions
-* [ ] JSON log
+* [ ] Location and naming for unit and component tests
+* [ ] Logging - I copied the impl from orbs-network-go
 
 
 

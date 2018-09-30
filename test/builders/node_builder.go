@@ -2,13 +2,14 @@ package builders
 
 import (
 	lh "github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/instrumentation/log"
 )
 
 type NodeBuilder struct {
 	networkCommunication lh.NetworkCommunication
 	publicKey            lh.PublicKey
 	storage              lh.Storage
-	logger               lh.Logger
+	logger               log.BasicLogger
 	electionTrigger      lh.ElectionTrigger
 	blockUtils           lh.BlockUtils
 	logsToConsole        bool
@@ -53,7 +54,7 @@ func (builder *NodeBuilder) buildConfig() *lh.Config {
 	var (
 		electionTrigger lh.ElectionTrigger
 		blockUtils      lh.BlockUtils
-		logger          lh.Logger
+		logger          log.BasicLogger
 		storage         lh.Storage
 	)
 
@@ -69,15 +70,17 @@ func (builder *NodeBuilder) buildConfig() *lh.Config {
 		blockUtils = NewMockBlockUtils(nil)
 	}
 
-	if builder.logger != nil {
-		logger = builder.logger
-	} else {
-		if builder.logsToConsole {
-			logger = lh.NewConsoleLogger(string(builder.publicKey))
-		} else {
-			logger = lh.NewSilentLogger()
-		}
-	}
+	//if builder.logger != nil {
+	//	logger = builder.logger
+	//} else {
+	//	if builder.logsToConsole {
+	//		// TODO Find the silent logger
+	//		//logger = lh.NewConsoleLogger(string(builder.publicKey))
+	//		logger =
+	//	} else {
+	//		logger = log.BasicLogger.For(log.Service("node"))
+	//	}
+	//}
 
 	if builder.storage != nil {
 		storage = builder.storage
@@ -90,7 +93,7 @@ func (builder *NodeBuilder) buildConfig() *lh.Config {
 		ElectionTrigger:      electionTrigger,
 		BlockUtils:           blockUtils,
 		KeyManager:           NewMockKeyManager(builder.publicKey),
-		Logger:               logger,
+		Logger:               logger.For(log.Service("node")),
 		Storage:              storage,
 	}
 }
@@ -102,7 +105,7 @@ func (builder *NodeBuilder) GettingBlocksVia(blockUtils lh.BlockUtils) *NodeBuil
 	return builder
 }
 
-func (builder *NodeBuilder) ThatLogsTo(logger lh.Logger) *NodeBuilder {
+func (builder *NodeBuilder) ThatLogsTo(logger log.BasicLogger) *NodeBuilder {
 	if builder.logger == nil {
 		builder.logger = logger
 	}
