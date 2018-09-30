@@ -47,7 +47,7 @@ func (b MockBlockUtils) RequestCommittee() {
 	panic("implement me")
 }
 
-func (b MockBlockUtils) RequestNewBlock() lh.Block {
+func (b MockBlockUtils) RequestNewBlock(height lh.BlockHeight) lh.Block {
 	return b.ProvideNextBlock()
 }
 

@@ -62,7 +62,7 @@ func (comm *InMemoryNetworkCommunication) SendToMembers(publicKeys []lh.PublicKe
 }
 
 func (comm *InMemoryNetworkCommunication) GetMembersPKs(seed uint64) []lh.PublicKey {
-	panic("implement me")
+	return comm.discovery.AllGossipsPKs()
 }
 
 func (comm *InMemoryNetworkCommunication) IsMember(pk lh.PublicKey) bool {

@@ -19,29 +19,33 @@ type ConsoleLogger struct {
 	level LogLevel
 }
 
-func (l *ConsoleLogger) Debug(format string, a ...interface{}) {
+type LogData map[string]string
+
+// TODO Impl Stringer for LogData by printing each property, or use JSON.unmarshal or something
+
+func (l *ConsoleLogger) Debug(msg string, data *LogData) {
 	if l.level > LEVEL_DEBUG {
 		return
 	}
-	stdout("%s "+format, "LEVEL_DEBUG", a)
+	stdout("[DEBUG] - %s %s", msg, data)
 }
 
-func (l *ConsoleLogger) Info(format string, a ...interface{}) {
+func (l *ConsoleLogger) Info(msg string, data *LogData) {
 	if l.level > LEVEL_INFO {
 		return
 	}
-	stdout("%s "+format, "LEVEL_INFO", a)
+	stdout("[INFO ] - %s %s", msg, data)
 }
 
-func (l *ConsoleLogger) Error(format string, a ...interface{}) {
+func (l *ConsoleLogger) Error(msg string, data *LogData) {
 	if l.level > LEVEL_ERROR {
 		return
 	}
-	stdout("%s "+format, "LEVEL_ERROR", a)
+	stdout("*ERROR* - %s %s", msg, data)
 }
 
-func stdout(format string, a ...interface{}) {
-	fmt.Printf(format, a)
+func stdout(format string, args ...interface{}) {
+	fmt.Printf(format, args)
 }
 
 type SilentLogger struct {

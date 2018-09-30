@@ -86,11 +86,12 @@ func (builder *NodeBuilder) buildConfig() *lh.Config {
 	}
 
 	return &lh.Config{
-		ElectionTrigger: electionTrigger,
-		BlockUtils:      blockUtils,
-		KeyManager:      NewMockKeyManager(builder.publicKey),
-		Logger:          logger,
-		Storage:         storage,
+		NetworkCommunication: builder.networkCommunication,
+		ElectionTrigger:      electionTrigger,
+		BlockUtils:           blockUtils,
+		KeyManager:           NewMockKeyManager(builder.publicKey),
+		Logger:               logger,
+		Storage:              storage,
 	}
 }
 

@@ -79,7 +79,7 @@ type KeyManager interface {
 // TODO Maybe BlockHandler is better name? or BlockService
 type BlockUtils interface {
 	CalculateBlockHash(block Block) BlockHash
-	RequestNewBlock() Block
+	RequestNewBlock(height BlockHeight) Block
 	ValidateBlock()
 	RequestCommittee()
 }
