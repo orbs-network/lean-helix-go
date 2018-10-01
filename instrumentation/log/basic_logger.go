@@ -2,8 +2,10 @@ package log
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -44,6 +46,10 @@ const (
 	SourceType
 	StringArrayType
 )
+
+func RandNumStr() string {
+	return strconv.FormatUint(rand.Uint64(), 10)
+}
 
 func GetLogger(params ...*Field) BasicLogger {
 	logger := &basicLogger{

@@ -14,7 +14,8 @@ func (n *MockNetworkCommunication) SendToMembers(publicKeys []lh.PublicKey, mess
 }
 
 func (n *MockNetworkCommunication) GetMembersPKs(seed uint64) []lh.PublicKey {
-	panic("implement me")
+	ret := n.Called(seed)
+	return ret.Get(0).([]lh.PublicKey)
 }
 
 func (n *MockNetworkCommunication) IsMember(pk lh.PublicKey) bool {

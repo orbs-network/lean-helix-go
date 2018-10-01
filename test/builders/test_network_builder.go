@@ -5,7 +5,10 @@ import (
 	lh "github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/instrumentation/log"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
+	"github.com/orbs-network/orbs-network-go/config"
 	"github.com/stretchr/testify/mock"
+	"io"
+	"os"
 )
 
 const MINIMUM_NODES = 2
@@ -84,10 +87,27 @@ func NewSimpleTestNetwork(nodeCount int, blocksPool []lh.Block) *TestNetwork {
 
 func NewTestNetworkBuilder(nodeCount int) *TestNetworkBuilder {
 
-	var reporting log.BasicLogger
+	var output io.Writer
+	output = os.Stdout
+
+	testId := log.RandNumStr()
+
+	if os.Getenv("NO_LOG_STDOUT") == "true" {
+		logFile, err := os.OpenFile(config.GetProjectSourceRootPath()+"/logs/acceptance/"+testId+".log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			panic(err)
+		}
+		output = logFile
+	}
+	testLogger := log.GetLogger(log.String("test-id", testId)).
+		WithOutput(log.NewOutput(output).
+			WithFormatter(log.NewHumanReadableFormatter()))
+	//WithFilter(log.String("flow", "block-sync")).
+	//WithFilter(log.String("service", "gossip"))
+	testLogger.Info("===========================================================================")
 
 	return &TestNetworkBuilder{
-		logger:          reporting.For(log.Service("test-network-builder")),
+		logger:          testLogger,
 		customNodes:     nil,
 		electionTrigger: nil,
 		blockUtils:      nil,

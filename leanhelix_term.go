@@ -34,6 +34,7 @@ func NewLeanHelixTerm(config *TermConfig, newHeight BlockHeight, onCommittedBloc
 
 	keyManager := config.KeyManager
 	blockUtils := config.BlockUtils
+	myPK := keyManager.MyID()
 	comm := config.NetworkCommunication
 	termMembers := comm.GetMembersPKs(uint64(newHeight))
 	if len(termMembers) == 0 {
@@ -41,7 +42,7 @@ func NewLeanHelixTerm(config *TermConfig, newHeight BlockHeight, onCommittedBloc
 	}
 	otherMembers := make([]PublicKey, 0)
 	for _, member := range termMembers {
-		if !member.Equals(keyManager.MyID()) {
+		if !member.Equals(myPK) {
 			otherMembers = append(otherMembers, member)
 		}
 	}
@@ -57,6 +58,7 @@ func NewLeanHelixTerm(config *TermConfig, newHeight BlockHeight, onCommittedBloc
 		TermMembersPublicKeys: termMembers,
 		MessageFactory:        NewMessageFactory(blockUtils.CalculateBlockHash, keyManager),
 		onCommittedBlock:      onCommittedBlock,
+		MyPublicKey:           myPK,
 	}
 
 	newTerm.startTerm()
