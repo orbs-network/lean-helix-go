@@ -15,7 +15,7 @@ import (
 
 func TestClearAllStorageDataAfterCallingClearTermLogs(t *testing.T) {
 
-	myStorage := lh.NewInMemoryPBFTStorage()
+	myStorage := lh.NewInMemoryStorage()
 	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
 	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
 	block := builders.CreateBlock(builders.GenesisBlock)
@@ -50,7 +50,7 @@ func TestClearAllStorageDataAfterCallingClearTermLogs(t *testing.T) {
 // TODO Do we need TestStorePrePrepareInStorage(t *testing.T) ?
 
 func TestStorePrepareInStorage(t *testing.T) {
-	myStorage := lh.NewInMemoryPBFTStorage()
+	myStorage := lh.NewInMemoryStorage()
 	term1 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
 	term2 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
 	view1 := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
@@ -79,7 +79,7 @@ func TestStorePrepareInStorage(t *testing.T) {
 }
 
 func TestStoreCommitInStorage(t *testing.T) {
-	myStorage := lh.NewInMemoryPBFTStorage()
+	myStorage := lh.NewInMemoryStorage()
 	term1 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
 	term2 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
 	view1 := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
@@ -109,7 +109,7 @@ func TestStoreCommitInStorage(t *testing.T) {
 
 func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 
-	myStorage := lh.NewInMemoryPBFTStorage()
+	myStorage := lh.NewInMemoryStorage()
 	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
 	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
 	block := builders.CreateBlock(builders.GenesisBlock)
@@ -125,7 +125,7 @@ func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 }
 
 func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
-	myStorage := lh.NewInMemoryPBFTStorage()
+	myStorage := lh.NewInMemoryStorage()
 	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
 	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
 	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
@@ -149,7 +149,7 @@ func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 }
 
 func TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
-	myStorage := lh.NewInMemoryPBFTStorage()
+	myStorage := lh.NewInMemoryStorage()
 	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
 	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
 	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
@@ -175,7 +175,7 @@ func TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 }
 
 func TestStoreViewChangeReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
-	myStorage := lh.NewInMemoryPBFTStorage()
+	myStorage := lh.NewInMemoryStorage()
 	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
 	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
 	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
@@ -201,7 +201,7 @@ func TestStoreViewChangeReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 // Proofs
 
 func TestStoreAndGetViewChangeProof(t *testing.T) {
-	myStorage := lh.NewInMemoryPBFTStorage()
+	myStorage := lh.NewInMemoryStorage()
 	term1 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
 	term2 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
 	view1 := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
@@ -256,7 +256,7 @@ func TestPrepared(t *testing.T) {
 
 	// TODO This "TestStoreAndGetPrepareProof" test will always PASS if "TestReturnPreparedProofWithHighestView" below passes, consider deleting
 	t.Run("TestStoreAndGetPrepareProof", func(t *testing.T) {
-		myStorage := lh.NewInMemoryPBFTStorage()
+		myStorage := lh.NewInMemoryStorage()
 		myStorage.StorePreprepare(ppm)
 		myStorage.StorePrepare(pm2)
 		myStorage.StorePrepare(pm1)
@@ -267,7 +267,7 @@ func TestPrepared(t *testing.T) {
 	})
 
 	t.Run("TestReturnPreparedProofWithHighestView", func(t *testing.T) {
-		myStorage := lh.NewInMemoryPBFTStorage()
+		myStorage := lh.NewInMemoryStorage()
 		ppm10 := leaderMsgFactory.CreatePreprepareMessage(1, 10, block)
 		pm10a := sender1MsgFactory.CreatePrepareMessage(1, 10, block)
 		pm10b := sender2MsgFactory.CreatePrepareMessage(1, 10, block)
@@ -299,7 +299,7 @@ func TestPrepared(t *testing.T) {
 	})
 
 	t.Run("TestReturnNothingIfNoPrePrepare", func(t *testing.T) {
-		myStorage := lh.NewInMemoryPBFTStorage()
+		myStorage := lh.NewInMemoryStorage()
 		myStorage.StorePrepare(pm1)
 		myStorage.StorePrepare(pm2)
 		_, ok := myStorage.GetLatestPrepared(term, f)
@@ -307,14 +307,14 @@ func TestPrepared(t *testing.T) {
 	})
 
 	t.Run("TestReturnNothingIfNoPrepares", func(t *testing.T) {
-		myStorage := lh.NewInMemoryPBFTStorage()
+		myStorage := lh.NewInMemoryStorage()
 		myStorage.StorePreprepare(ppm)
 		_, ok := myStorage.GetLatestPrepared(term, f)
 		require.False(t, ok, "Don't return PreparedMessages from latest view if no Prepare in storage")
 	})
 
 	t.Run("TestReturnNothingIfNotEnoughPrepares", func(t *testing.T) {
-		myStorage := lh.NewInMemoryPBFTStorage()
+		myStorage := lh.NewInMemoryStorage()
 		myStorage.StorePreprepare(ppm)
 		myStorage.StorePrepare(pm1)
 		_, ok := myStorage.GetLatestPrepared(term, f)

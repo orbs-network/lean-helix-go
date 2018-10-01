@@ -4,7 +4,9 @@
 **--Work in progress - not yet functional--**
 
 
-Go implementation of Lean Helix consensus algorithm
+Go implementation of Lean Helix consensus algorithm.
+
+Spec location: TBD
 
 ## TODO
 * See [issues on Github](https://github.com/orbs-network/lean-helix-go/issues)

@@ -85,7 +85,7 @@ func (builder *NodeBuilder) buildConfig() *lh.Config {
 	if builder.storage != nil {
 		storage = builder.storage
 	} else {
-		storage = lh.NewInMemoryPBFTStorage()
+		storage = lh.NewInMemoryStorage()
 	}
 
 	return &lh.Config{

@@ -24,10 +24,13 @@ func TestAcceptPreprepareWithCurrentView(t *testing.T) {
 
 	net := builders.NewTestNetworkBuilder(NODE_COUNT).Build()
 	node1 := net.Nodes[1]
-	config1 := lh.BuildTermConfig(node1.Config)
-	mockStorage1 := &builders.MockStorage{}
-	config1.Storage = mockStorage1
-	node1LeanHelixTerm, err := lh.NewLeanHelixTerm(config1, 0, nil)
+	termConfig1 := lh.BuildTermConfig(node1.Config)
+	mockStorage1 := builders.NewMockStorage()
+
+	// TODO This is smelly - maybe wait till correct config architecture
+	// emerges from future tests
+	termConfig1.Storage = mockStorage1
+	node1LeanHelixTerm, err := lh.NewLeanHelixTerm(termConfig1, 0, nil)
 	if err != nil {
 		t.Error(err)
 	}

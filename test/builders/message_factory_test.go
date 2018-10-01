@@ -13,34 +13,11 @@ func TestMessageFactory(t *testing.T) {
 	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000000))
 	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000000))
 	block := CreateBlock(GenesisBlock)
-	blockHash := CalculateBlockHash(block)
-	messageFactory := NewMessageFactory(CalculateBlockHash, keyManager)
+	//blockHash := CalculateBlockHash(block)
+	fac := lh.NewMessageFactory(CalculateBlockHash, keyManager)
 
-	t.Run("Construct Preprepare message", func(t *testing.T) {
-		content := &blockRef{
-			messageType: lh.MESSAGE_TYPE_PREPREPARE,
-			term:        term,
-			view:        view,
-			blockHash:   blockHash,
-		}
-		//expectedMessage := &lh.PrePrepareMessage{
-		//	BlockRefMessage: &lh.BlockRefMessage{
-		//		SignaturePair: &lh.SignaturePair{
-		//			SignerPublicKey:  keyManager.MyID(),
-		//			ContentSignature: keyManager.SignBlockMessageContent(content),
-		//		},
-		//		Content: content,
-		//	},
-		//	Block: block,
-		//}
+	ppm := fac.CreatePreprepareMessage(term, view, block)
 
-		ex := &preprepareMessage{
-			blockRef: content,
-			sender:   keyManager.SignBlockRef(content),
-			block:    block,
-		}
-		actualMessage := messageFactory.CreatePreprepareMessage(term, view, block)
-		require.Equal(t, ex, actualMessage, "Preprepare message created")
-	})
+	require.Equal(t, term, ppm.Term(), "expected term to be %s but got %s", term, ppm.Term())
 
 }

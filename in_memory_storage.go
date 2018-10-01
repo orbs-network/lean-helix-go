@@ -19,7 +19,7 @@ type Storage interface {
 	ClearTermLogs(term BlockHeight)
 }
 
-type InMemoryPbftStorage struct {
+type InMemoryStorage struct {
 	// TODO Refactor this mess - in the least create some intermediate types
 	preprepareStorage map[BlockHeight]map[ViewCounter]PreprepareMessage
 	prepareStorage    map[BlockHeight]map[ViewCounter]map[BlockHashStr]map[PublicKeyStr]PrepareMessage
@@ -27,7 +27,7 @@ type InMemoryPbftStorage struct {
 	viewChangeStorage map[BlockHeight]map[ViewCounter]map[PublicKeyStr]ViewChangeMessage
 }
 
-func (storage *InMemoryPbftStorage) StorePreprepare(ppm PreprepareMessage) bool {
+func (storage *InMemoryStorage) StorePreprepare(ppm PreprepareMessage) bool {
 
 	term := ppm.Term()
 	view := ppm.View()
@@ -45,7 +45,7 @@ func (storage *InMemoryPbftStorage) StorePreprepare(ppm PreprepareMessage) bool 
 	return true
 }
 
-func (storage *InMemoryPbftStorage) StorePrepare(pp PrepareMessage) bool {
+func (storage *InMemoryStorage) StorePrepare(pp PrepareMessage) bool {
 	term := pp.Term()
 	view := pp.View()
 	// pps -> views ->
@@ -75,7 +75,7 @@ func (storage *InMemoryPbftStorage) StorePrepare(pp PrepareMessage) bool {
 	return true
 }
 
-func (storage *InMemoryPbftStorage) StoreCommit(cm CommitMessage) bool {
+func (storage *InMemoryStorage) StoreCommit(cm CommitMessage) bool {
 	term := cm.Term()
 	view := cm.View()
 	// pps -> views ->
@@ -105,7 +105,7 @@ func (storage *InMemoryPbftStorage) StoreCommit(cm CommitMessage) bool {
 
 }
 
-func (storage *InMemoryPbftStorage) StoreViewChange(vcm ViewChangeMessage) bool {
+func (storage *InMemoryStorage) StoreViewChange(vcm ViewChangeMessage) bool {
 	term, view := vcm.Term(), vcm.View()
 	// pps -> views ->
 	views, ok := storage.viewChangeStorage[term]
@@ -128,7 +128,7 @@ func (storage *InMemoryPbftStorage) StoreViewChange(vcm ViewChangeMessage) bool 
 
 }
 
-func (storage *InMemoryPbftStorage) getPrepare(term BlockHeight, view ViewCounter, blockHash BlockHash) (map[PublicKeyStr]PrepareMessage, bool) {
+func (storage *InMemoryStorage) getPrepare(term BlockHeight, view ViewCounter, blockHash BlockHash) (map[PublicKeyStr]PrepareMessage, bool) {
 	views, ok := storage.prepareStorage[term]
 	if !ok {
 		return nil, false
@@ -140,7 +140,7 @@ func (storage *InMemoryPbftStorage) getPrepare(term BlockHeight, view ViewCounte
 	return blockHashes[BlockHashStr(blockHash)], true
 }
 
-func (storage *InMemoryPbftStorage) GetPrepareSendersPKs(term BlockHeight, view ViewCounter, blockHash BlockHash) []PublicKey {
+func (storage *InMemoryStorage) GetPrepareSendersPKs(term BlockHeight, view ViewCounter, blockHash BlockHash) []PublicKey {
 	senders, ok := storage.getPrepare(term, view, blockHash)
 	if !ok {
 		return []PublicKey{}
@@ -154,7 +154,7 @@ func (storage *InMemoryPbftStorage) GetPrepareSendersPKs(term BlockHeight, view 
 	return keys
 }
 
-func (storage *InMemoryPbftStorage) getCommit(term BlockHeight, view ViewCounter, blockHash BlockHash) (map[PublicKeyStr]CommitMessage, bool) {
+func (storage *InMemoryStorage) getCommit(term BlockHeight, view ViewCounter, blockHash BlockHash) (map[PublicKeyStr]CommitMessage, bool) {
 	views, ok := storage.commitStorage[term]
 	if !ok {
 		return nil, false
@@ -166,7 +166,7 @@ func (storage *InMemoryPbftStorage) getCommit(term BlockHeight, view ViewCounter
 	return blockHashes[BlockHashStr(blockHash)], true
 }
 
-func (storage *InMemoryPbftStorage) GetCommitSendersPKs(term BlockHeight, view ViewCounter, blockHash BlockHash) []PublicKey {
+func (storage *InMemoryStorage) GetCommitSendersPKs(term BlockHeight, view ViewCounter, blockHash BlockHash) []PublicKey {
 	senders, ok := storage.getCommit(term, view, blockHash)
 	if !ok {
 		return []PublicKey{}
@@ -179,7 +179,7 @@ func (storage *InMemoryPbftStorage) GetCommitSendersPKs(term BlockHeight, view V
 	}
 	return keys
 }
-func (storage *InMemoryPbftStorage) GetViewChangeMessages(term BlockHeight, view ViewCounter, f int) []ViewChangeMessage {
+func (storage *InMemoryStorage) GetViewChangeMessages(term BlockHeight, view ViewCounter, f int) []ViewChangeMessage {
 	views, ok := storage.viewChangeStorage[term]
 	if !ok {
 		return nil
@@ -205,7 +205,7 @@ func (storage *InMemoryPbftStorage) GetViewChangeMessages(term BlockHeight, view
 	return result
 }
 
-func (storage *InMemoryPbftStorage) GetPreprepare(term BlockHeight, view ViewCounter) (PreprepareMessage, bool) {
+func (storage *InMemoryStorage) GetPreprepare(term BlockHeight, view ViewCounter) (PreprepareMessage, bool) {
 	views, ok := storage.preprepareStorage[term]
 	if !ok {
 		return nil, false
@@ -215,7 +215,7 @@ func (storage *InMemoryPbftStorage) GetPreprepare(term BlockHeight, view ViewCou
 }
 
 // TODO Whether to use ptr for string (BlockHash)
-func (storage *InMemoryPbftStorage) GetPrepares(term BlockHeight, view ViewCounter, blockHash BlockHash) ([]PrepareMessage, bool) {
+func (storage *InMemoryStorage) GetPrepares(term BlockHeight, view ViewCounter, blockHash BlockHash) ([]PrepareMessage, bool) {
 	senders, ok := storage.getPrepare(term, view, blockHash)
 	if !ok {
 		return nil, false
@@ -227,7 +227,7 @@ func (storage *InMemoryPbftStorage) GetPrepares(term BlockHeight, view ViewCount
 	return values, true
 }
 
-func (storage *InMemoryPbftStorage) GetLatestPrepared(term BlockHeight, f int) (PreparedProof, bool) {
+func (storage *InMemoryStorage) GetLatestPrepared(term BlockHeight, f int) (PreparedProof, bool) {
 	views, ok := storage.preprepareStorage[term]
 	if !ok {
 		return nil, false
@@ -256,38 +256,38 @@ func (storage *InMemoryPbftStorage) GetLatestPrepared(term BlockHeight, f int) (
 
 }
 
-func (storage *InMemoryPbftStorage) ClearTermLogs(term BlockHeight) {
+func (storage *InMemoryStorage) ClearTermLogs(term BlockHeight) {
 	storage.resetPreprepareStorage(term)
 	storage.resetPrepareStorage(term)
 	storage.resetCommitStorage(term)
 	storage.resetViewChangeStorage(term)
 }
 
-func (storage *InMemoryPbftStorage) resetPreprepareStorage(term BlockHeight) map[ViewCounter]PreprepareMessage {
+func (storage *InMemoryStorage) resetPreprepareStorage(term BlockHeight) map[ViewCounter]PreprepareMessage {
 	views := make(map[ViewCounter]PreprepareMessage)
 	storage.preprepareStorage[term] = views
 	return views
 }
 
-func (storage *InMemoryPbftStorage) resetPrepareStorage(term BlockHeight) map[ViewCounter]map[BlockHashStr]map[PublicKeyStr]PrepareMessage {
+func (storage *InMemoryStorage) resetPrepareStorage(term BlockHeight) map[ViewCounter]map[BlockHashStr]map[PublicKeyStr]PrepareMessage {
 	views := make(map[ViewCounter]map[BlockHashStr]map[PublicKeyStr]PrepareMessage)
 	storage.prepareStorage[term] = views
 	return views
 }
 
-func (storage *InMemoryPbftStorage) resetCommitStorage(term BlockHeight) map[ViewCounter]map[BlockHashStr]map[PublicKeyStr]CommitMessage {
+func (storage *InMemoryStorage) resetCommitStorage(term BlockHeight) map[ViewCounter]map[BlockHashStr]map[PublicKeyStr]CommitMessage {
 	views := make(map[ViewCounter]map[BlockHashStr]map[PublicKeyStr]CommitMessage)
 	storage.commitStorage[term] = views
 	return views
 }
-func (storage *InMemoryPbftStorage) resetViewChangeStorage(term BlockHeight) map[ViewCounter]map[PublicKeyStr]ViewChangeMessage {
+func (storage *InMemoryStorage) resetViewChangeStorage(term BlockHeight) map[ViewCounter]map[PublicKeyStr]ViewChangeMessage {
 	views := make(map[ViewCounter]map[PublicKeyStr]ViewChangeMessage)
 	storage.viewChangeStorage[term] = views
 	return views
 }
 
-func NewInMemoryPBFTStorage() *InMemoryPbftStorage {
-	return &InMemoryPbftStorage{
+func NewInMemoryStorage() *InMemoryStorage {
+	return &InMemoryStorage{
 		preprepareStorage: make(map[BlockHeight]map[ViewCounter]PreprepareMessage),
 		prepareStorage:    make(map[BlockHeight]map[ViewCounter]map[BlockHashStr]map[PublicKeyStr]PrepareMessage),
 		commitStorage:     make(map[BlockHeight]map[ViewCounter]map[BlockHashStr]map[PublicKeyStr]CommitMessage),
