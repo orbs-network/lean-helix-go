@@ -1,6 +1,9 @@
 package leanhelix
 
-import "github.com/orbs-network/lean-helix-go/instrumentation/log"
+import (
+	"context"
+	"github.com/orbs-network/lean-helix-go/instrumentation/log"
+)
 
 // PBFT.ts
 type LeanHelix interface {
@@ -21,10 +24,20 @@ type TermConfig struct {
 }
 
 type leanHelix struct {
+	ctx       context.Context
+	ctxCancel context.CancelFunc
+	log       log.BasicLogger
 }
 
 func NewLeanHelix(config *Config) LeanHelix {
-	return &leanHelix{}
+
+	ctx, ctxCancel := context.WithCancel(config.ctx)
+
+	return &leanHelix{
+		ctx:       ctx,
+		ctxCancel: ctxCancel,
+		log:       config.Logger.For(log.Service("leanhelix")),
+	}
 }
 
 func (lh *leanHelix) RegisterOnCommitted(cb func(block Block)) {
@@ -32,16 +45,34 @@ func (lh *leanHelix) RegisterOnCommitted(cb func(block Block)) {
 }
 
 func (lh *leanHelix) Dispose() {
+
 	// TODO: implement
 }
 
 func (lh *leanHelix) Start(height BlockHeight) {
-	// TODO: implement
+
+	// TODO: create an infinite loop which can be stopped by context.Done()
+
+	for {
+		select {
+
+		// case: some channel that fires when consensus completed successfully or with error
+		case <-lh.ctx.Done():
+			lh.log.Info("Context.done called")
+			lh.GracefulShutdown()
+
+		}
+	}
+
 }
 
 func (lh *leanHelix) IsLeader() bool {
 	// TODO: implement
 	return false
+}
+func (lh *leanHelix) GracefulShutdown() {
+	lh.log.Info("GracefulShutdown() called")
+	lh.ctxCancel()
 }
 
 func BuildTermConfig(config *Config) *TermConfig {

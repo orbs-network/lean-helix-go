@@ -1,8 +1,12 @@
 package leanhelix
 
-import "github.com/orbs-network/lean-helix-go/instrumentation/log"
+import (
+	"context"
+	"github.com/orbs-network/lean-helix-go/instrumentation/log"
+)
 
 type Config struct {
+	ctx                  context.Context
 	NetworkCommunication NetworkCommunication
 	BlockUtils           BlockUtils
 	KeyManager           KeyManager
