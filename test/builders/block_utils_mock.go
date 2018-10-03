@@ -19,8 +19,9 @@ func NewMockBlockUtils(upcomingBlocks []lh.Block) *MockBlockUtils {
 	}
 }
 
-func CalculateBlockHash(block lh.Block) lh.BlockHash {
-	return lh.BlockHash(fmt.Sprintf("%s_%d_%s", block.Body(), block.Header().Term(), block.Header().BlockHash()))
+func CalculateBlockHash(b lh.Block) lh.BlockHash {
+	testBlock := b.(*block)
+	return lh.BlockHash(fmt.Sprintf("%s_%d_%s", testBlock.body, testBlock.GetTerm(), testBlock.GetBlockHash()))
 }
 
 func (b MockBlockUtils) CalculateBlockHash(block lh.Block) lh.BlockHash {

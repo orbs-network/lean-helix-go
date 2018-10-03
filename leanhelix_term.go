@@ -77,7 +77,7 @@ func (term *leanHelixTerm) startTerm() {
 	term.log.Info("StartTerm() is leader", log.Stringable("id", term.KeyManager.MyPublicKey()), log.Stringable("height", term.height))
 	// TODO This should block!!!
 	block := term.BlockUtils.RequestNewBlock(term.height)
-	term.log.Info("StartTerm() generated new block", log.Stringable("id", term.KeyManager.MyPublicKey()), log.Stringable("height", term.height), log.Stringable("block-hash", block.Header().BlockHash()))
+	term.log.Info("StartTerm() generated new block", log.Stringable("id", term.KeyManager.MyPublicKey()), log.Stringable("height", term.height), log.Stringable("block-hash", block.GetBlockHash()))
 	if term.disposed {
 		term.log.Debug("StartTerm() disposed, returning", log.Stringable("id", term.KeyManager.MyPublicKey()), log.Stringable("height", term.height))
 		return

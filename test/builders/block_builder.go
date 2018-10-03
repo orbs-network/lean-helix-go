@@ -6,39 +6,23 @@ import (
 )
 
 var GenesisBlock = &block{
-	header: &blockHeader{
-		term:      0,
-		blockHash: lh.BlockHash("The Genesis Block"),
-	},
-	body: []byte("The Genesis Block"),
+	term:      0,
+	blockHash: lh.BlockHash("The Genesis Block"),
 }
 
-// BlockHeader
-type blockHeader struct {
-	term      lh.BlockHeight
-	blockHash lh.BlockHash
+func (b *block) GetTerm() lh.BlockHeight {
+	return b.term
 }
 
-func (h *blockHeader) Term() lh.BlockHeight {
-	return h.term
-}
-
-func (h *blockHeader) BlockHash() lh.BlockHash {
+func (h *block) GetBlockHash() lh.BlockHash {
 	return h.blockHash
 }
 
 // block
 type block struct {
-	header *blockHeader
-	body   []byte
-}
-
-func (b *block) Body() []byte {
-	return b.body
-}
-
-func (b *block) Header() lh.BlockHeader {
-	return b.header
+	term      lh.BlockHeight
+	blockHash lh.BlockHash
+	body      []byte
 }
 
 var globalCounter = 0
@@ -51,11 +35,9 @@ func genBody() []byte {
 func CreateBlock(previousBlock lh.Block) lh.Block {
 
 	block := &block{
-		header: &blockHeader{
-			term:      previousBlock.Header().Term() + 1,
-			blockHash: CalculateBlockHash(previousBlock),
-		},
-		body: genBody(),
+		term:      previousBlock.GetTerm() + 1,
+		blockHash: CalculateBlockHash(previousBlock),
+		body:      genBody(),
 	}
 	return block
 }

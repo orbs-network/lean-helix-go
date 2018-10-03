@@ -53,14 +53,14 @@ const (
 )
 
 type BlockHeader interface {
-	Term() BlockHeight
-	BlockHash() BlockHash
 }
 
 // TODO Is this only for testing, or is there real need for it in code?
 type Block interface {
-	Header() BlockHeader
-	Body() []byte
+	GetTerm() BlockHeight
+	GetBlockHash() BlockHash
+
+	//Body() []byte
 }
 
 type NetworkCommunication interface {
@@ -98,6 +98,7 @@ type KeyManager interface {
 
 // TODO Maybe BlockHandler is better name? or BlockService
 type BlockUtils interface {
+	// Does Commit() go here?
 	CalculateBlockHash(block Block) BlockHash
 	RequestNewBlock(height BlockHeight) Block
 	ValidateBlock()
@@ -122,7 +123,7 @@ type BlockRef interface {
 	HasMessageType
 	Term() BlockHeight
 	View() View
-	BlockHash() BlockHash
+	BlockHash() BlockHash // TODO Gad: rename this to "current block hash"???
 }
 
 // TODO this is different from definition of LeanHelixPreparedProof in lean_helix.mb.go:448 in orbs-spec
