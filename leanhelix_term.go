@@ -30,15 +30,15 @@ type leanHelixTerm struct {
 	leaderPublicKey        PublicKey
 }
 
-func NewLeanHelixTerm(config *TermConfig, newHeight BlockHeight, onCommittedBlock func(block Block)) (LeanHelixTerm, error) {
+func NewLeanHelixTerm(config *TermConfig, newBlockHeight BlockHeight, onCommittedBlock func(block Block)) (LeanHelixTerm, error) {
 
 	keyManager := config.KeyManager
 	blockUtils := config.BlockUtils
 	myPK := keyManager.MyPublicKey()
 	comm := config.NetworkCommunication
-	termMembers := comm.GetMembersPKs(uint64(newHeight))
+	termMembers := comm.GetMembersPKs(uint64(newBlockHeight))
 	if len(termMembers) == 0 {
-		return nil, fmt.Errorf("no members for block height %v", newHeight)
+		return nil, fmt.Errorf("no members for block height %v", newBlockHeight)
 	}
 	otherMembers := make([]PublicKey, 0)
 	for _, member := range termMembers {
@@ -48,11 +48,11 @@ func NewLeanHelixTerm(config *TermConfig, newHeight BlockHeight, onCommittedBloc
 	}
 
 	newTerm := &leanHelixTerm{
-		height:                newHeight,
+		height:                newBlockHeight,
 		KeyManager:            keyManager,
 		NetworkCommunication:  comm,
 		Storage:               config.Storage,
-		log:                   config.Logger.For(log.Service("leanhelix-term")),
+		log:                   config.Logger.For(log.Service("leanhelix-height")),
 		electionTrigger:       config.ElectionTrigger,
 		BlockUtils:            blockUtils,
 		TermMembersPublicKeys: termMembers,

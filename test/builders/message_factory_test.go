@@ -18,6 +18,6 @@ func TestMessageFactory(t *testing.T) {
 
 	ppm := fac.CreatePreprepareMessage(term, view, block)
 
-	require.Equal(t, term, ppm.Term(), "expected term to be %s but got %s", term, ppm.Term())
+	require.Equal(t, term, ppm.BlockHeight(), "expected term to be %s but got %s", term, ppm.BlockHeight())
 
 }

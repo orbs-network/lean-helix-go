@@ -12,7 +12,7 @@ import (
 	"os"
 )
 
-// The Lean Helix Term component tests in this file require a test network to run
+// The Lean Helix BlockHeight component tests in this file require a test network to run
 
 const MINIMUM_NODES = 2
 

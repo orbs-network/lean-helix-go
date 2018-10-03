@@ -46,7 +46,7 @@ package leanhelix
 //
 //type NewViewContent struct {
 //	MessageType   MessageType
-//	Term          types.BlockHeight
+//	BlockHeight          types.BlockHeight
 //	View          types.View
 //	Confirmations []*ViewChangeConfirmation
 //}
@@ -68,14 +68,14 @@ package leanhelix
 //
 //type BlockMessageContent struct {
 //	MessageType MessageType
-//	Term        types.BlockHeight
+//	BlockHeight        types.BlockHeight
 //	View        types.View
 //	BlockHash   types.BlockHash
 //}
 //
 //type ViewChangeMessageContent struct {
 //	MessageType   MessageType
-//	Term          types.BlockHeight
+//	BlockHeight          types.BlockHeight
 //	View          types.View
 //	PreparedProof *PreparedProof
 //}

@@ -100,7 +100,7 @@ type KeyManager interface {
 type BlockUtils interface {
 	// Does Commit() go here?
 	CalculateBlockHash(block Block) BlockHash
-	RequestNewBlock(height BlockHeight) Block
+	RequestNewBlock(blockHeight BlockHeight) Block
 	ValidateBlock()
 	RequestCommittee()
 }
@@ -121,7 +121,7 @@ type MessageTransporter interface {
 
 type BlockRef interface {
 	HasMessageType
-	Term() BlockHeight
+	BlockHeight() BlockHeight
 	View() View
 	BlockHash() BlockHash // TODO Gad: rename this to "current block hash"???
 }
@@ -180,7 +180,7 @@ type ViewChangeMessage interface {
 }
 
 type NewViewMessage interface {
-	BlockRef // TODO doesn't need BlockHash so maybe replace with Term() and View()
+	BlockRef // TODO doesn't need BlockHash so maybe replace with BlockHeight() and View()
 	ViewChangeConfirmations() []ViewChangeConfirmation
 }
 

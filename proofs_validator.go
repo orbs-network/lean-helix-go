@@ -16,7 +16,7 @@ func verifyBlockRefMessage(blockRef BlockRef, sender SenderSignature, keyManager
 type CalcLeaderPk = func(view View) PublicKey
 
 func ValidatePreparedProof(
-	targetTerm BlockHeight,
+	targetHeight BlockHeight,
 	targetView View,
 	preparedProof PreparedProof,
 	f int,
@@ -37,8 +37,8 @@ func ValidatePreparedProof(
 		return false
 	}
 
-	term := ppm.Term()
-	if term != targetTerm {
+	term := ppm.BlockHeight()
+	if term != targetHeight {
 		return false
 	}
 
@@ -79,7 +79,7 @@ func ValidatePreparedProof(
 			return false
 		}
 
-		if msg.Term() != term {
+		if msg.BlockHeight() != term {
 			return false
 		}
 

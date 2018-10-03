@@ -9,7 +9,7 @@ import (
 type LeanHelix interface {
 	RegisterOnCommitted(cb func(block Block))
 	Dispose()
-	Start(height BlockHeight)
+	Start(blockHeight BlockHeight)
 	IsLeader() bool
 }
 
@@ -46,7 +46,7 @@ func (lh *leanHelix) Dispose() {
 	// TODO: implement
 }
 
-func (lh *leanHelix) Start(height BlockHeight) {
+func (lh *leanHelix) Start(blockHeight BlockHeight) {
 
 	// TODO: create an infinite loop which can be stopped by context.Done()
 

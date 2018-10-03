@@ -2,8 +2,8 @@ package leanhelix
 
 // MessageFactory - see receivers below
 type MessageFactory interface {
-	CreatePreprepareMessage(term BlockHeight, view View, block Block) PreprepareMessage
-	CreatePrepareMessage(term BlockHeight, view View, block Block) PrepareMessage
+	CreatePreprepareMessage(blockHeight BlockHeight, view View, block Block) PreprepareMessage
+	CreatePrepareMessage(blockHeight BlockHeight, view View, block Block) PrepareMessage
 	//CreatePreparedProof(preprepare PreprepareMessage, prepares []PrepareMessage) PreparedProof
 }
 
@@ -16,7 +16,7 @@ type messageFactory struct {
 // blockRef
 type blockRef struct {
 	messageType MessageType
-	term        BlockHeight
+	height      BlockHeight
 	view        View
 	blockHash   BlockHash
 }
@@ -25,8 +25,8 @@ func (ref *blockRef) MessageType() MessageType {
 	return ref.messageType
 }
 
-func (ref *blockRef) Term() BlockHeight {
-	return ref.term
+func (ref *blockRef) BlockHeight() BlockHeight {
+	return ref.height
 }
 
 func (ref *blockRef) View() View {
@@ -62,8 +62,8 @@ func (ppm *preprepareMessage) MessageType() MessageType {
 	return ppm.blockRef.messageType
 }
 
-func (ppm *preprepareMessage) Term() BlockHeight {
-	return ppm.blockRef.term
+func (ppm *preprepareMessage) BlockHeight() BlockHeight {
+	return ppm.blockRef.height
 }
 
 func (ppm *preprepareMessage) View() View {
@@ -93,8 +93,8 @@ func (pm *prepareMessage) MessageType() MessageType {
 	return pm.blockRef.messageType
 }
 
-func (pm *prepareMessage) Term() BlockHeight {
-	return pm.blockRef.term
+func (pm *prepareMessage) BlockHeight() BlockHeight {
+	return pm.blockRef.height
 }
 
 func (pm *prepareMessage) View() View {
@@ -119,8 +119,8 @@ func (cm *commitMessage) MessageType() MessageType {
 	return cm.blockRef.messageType
 }
 
-func (cm *commitMessage) Term() BlockHeight {
-	return cm.blockRef.term
+func (cm *commitMessage) BlockHeight() BlockHeight {
+	return cm.blockRef.height
 }
 
 func (cm *commitMessage) View() View {
@@ -147,8 +147,8 @@ func (vcm *viewChangeMessage) MessageType() MessageType {
 	return vcm.blockRef.messageType
 }
 
-func (vcm *viewChangeMessage) Term() BlockHeight {
-	return vcm.blockRef.term
+func (vcm *viewChangeMessage) BlockHeight() BlockHeight {
+	return vcm.blockRef.height
 }
 
 func (vcm *viewChangeMessage) View() View {
@@ -173,7 +173,7 @@ func (vcm *viewChangeMessage) PreparedProof() PreparedProof {
 
 // NV
 type newViewMessage struct {
-	blockRef                *blockRef // TODO doesn't need BlockHash so maybe replace with Term() and View()
+	blockRef                *blockRef // TODO doesn't need BlockHash so maybe replace with BlockHeight() and View()
 	viewChangeConfirmations []ViewChangeConfirmation
 }
 
@@ -205,12 +205,12 @@ func NewMessageFactory(calculateBlockHash func(block Block) BlockHash, keyManage
 	}
 }
 
-func (mf *messageFactory) CreatePreprepareMessage(term BlockHeight, view View, block Block) PreprepareMessage {
+func (mf *messageFactory) CreatePreprepareMessage(blockHeight BlockHeight, view View, block Block) PreprepareMessage {
 	blockHash := mf.CalculateBlockHash(block)
 
 	blockRef := &blockRef{
 		messageType: MESSAGE_TYPE_PREPREPARE,
-		term:        term,
+		height:      blockHeight,
 		view:        view,
 		blockHash:   blockHash,
 	}
@@ -226,12 +226,12 @@ func (mf *messageFactory) CreatePreprepareMessage(term BlockHeight, view View, b
 	return result
 }
 
-func (mf *messageFactory) CreatePrepareMessage(term BlockHeight, view View, block Block) PrepareMessage {
+func (mf *messageFactory) CreatePrepareMessage(blockHeight BlockHeight, view View, block Block) PrepareMessage {
 	blockHash := mf.CalculateBlockHash(block)
 
 	blockRef := &blockRef{
 		messageType: MESSAGE_TYPE_PREPARE,
-		term:        term,
+		height:      blockHeight,
 		view:        view,
 		blockHash:   blockHash,
 	}
@@ -247,12 +247,12 @@ func (mf *messageFactory) CreatePrepareMessage(term BlockHeight, view View, bloc
 	return result
 }
 
-func (mf *messageFactory) CreateCommitMessage(term BlockHeight, view View, block Block) CommitMessage {
+func (mf *messageFactory) CreateCommitMessage(blockHeight BlockHeight, view View, block Block) CommitMessage {
 	blockHash := mf.CalculateBlockHash(block)
 
 	blockRef := &blockRef{
 		messageType: MESSAGE_TYPE_COMMIT,
-		term:        term,
+		height:      blockHeight,
 		view:        view,
 		blockHash:   blockHash,
 	}
@@ -267,7 +267,7 @@ func (mf *messageFactory) CreateCommitMessage(term BlockHeight, view View, block
 	return result
 }
 
-func (mf *messageFactory) CreateViewChangeMessage(term BlockHeight, view View, preprepare PreprepareMessage, prepares []PrepareMessage) ViewChangeMessage {
+func (mf *messageFactory) CreateViewChangeMessage(blockHeight BlockHeight, view View, preprepare PreprepareMessage, prepares []PrepareMessage) ViewChangeMessage {
 	var (
 		preparedProof PreparedProof
 		block         Block
@@ -281,7 +281,7 @@ func (mf *messageFactory) CreateViewChangeMessage(term BlockHeight, view View, p
 
 	blockRef := &blockRef{
 		messageType: MESSAGE_TYPE_VIEW_CHANGE,
-		term:        term,
+		height:      blockHeight,
 		view:        view,
 		blockHash:   blockHash,
 	}
