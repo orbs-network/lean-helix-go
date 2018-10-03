@@ -32,23 +32,23 @@ func (s *mockStorage) StoreViewChange(vcm leanhelix.ViewChangeMessage) bool {
 	panic("implement me")
 }
 
-func (s *mockStorage) GetPrepareSendersPKs(term leanhelix.BlockHeight, view leanhelix.ViewCounter, blockHash leanhelix.BlockHash) []leanhelix.PublicKey {
+func (s *mockStorage) GetPrepareSendersPKs(term leanhelix.BlockHeight, view leanhelix.View, blockHash leanhelix.BlockHash) []leanhelix.PublicKey {
 	panic("implement me")
 }
 
-func (s *mockStorage) GetCommitSendersPKs(term leanhelix.BlockHeight, view leanhelix.ViewCounter, blockHash leanhelix.BlockHash) []leanhelix.PublicKey {
+func (s *mockStorage) GetCommitSendersPKs(term leanhelix.BlockHeight, view leanhelix.View, blockHash leanhelix.BlockHash) []leanhelix.PublicKey {
 	panic("implement me")
 }
 
-func (s *mockStorage) GetViewChangeMessages(term leanhelix.BlockHeight, view leanhelix.ViewCounter, f int) []leanhelix.ViewChangeMessage {
+func (s *mockStorage) GetViewChangeMessages(term leanhelix.BlockHeight, view leanhelix.View, f int) []leanhelix.ViewChangeMessage {
 	panic("implement me")
 }
 
-func (s *mockStorage) GetPreprepare(term leanhelix.BlockHeight, view leanhelix.ViewCounter) (leanhelix.PreprepareMessage, bool) {
+func (s *mockStorage) GetPreprepare(term leanhelix.BlockHeight, view leanhelix.View) (leanhelix.PreprepareMessage, bool) {
 	panic("implement me")
 }
 
-func (s *mockStorage) GetPrepares(term leanhelix.BlockHeight, view leanhelix.ViewCounter, blockHash leanhelix.BlockHash) ([]leanhelix.PrepareMessage, bool) {
+func (s *mockStorage) GetPrepares(term leanhelix.BlockHeight, view leanhelix.View, blockHash leanhelix.BlockHash) ([]leanhelix.PrepareMessage, bool) {
 	panic("implement me")
 }
 

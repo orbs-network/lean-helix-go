@@ -8,9 +8,9 @@ func (h BlockHeight) String() string {
 	return string(h)
 }
 
-type ViewCounter uint64
+type View uint64
 
-func (v ViewCounter) String() string {
+func (v View) String() string {
 	return string(v)
 }
 
@@ -70,11 +70,11 @@ type NetworkCommunication interface {
 	GetMembersPKs(seed uint64) []PublicKey
 	IsMember(pk PublicKey) bool
 
-	SendPreprepare(pks []PublicKey, message PreprepareMessage)
-	SendPrepare(pks []PublicKey, message PrepareMessage)
-	SendCommit(pks []PublicKey, message CommitMessage)
-	SendViewChange(pk PublicKey, message ViewChangeMessage) // TODO Is this ok to be single pk? (see NetworkCommunication.ts)
-	SendNewView(pks []PublicKey, message NewViewMessage)
+	SendPreprepare(publicKeys []PublicKey, message PreprepareMessage)
+	SendPrepare(publicKeys []PublicKey, message PrepareMessage)
+	SendCommit(publicKeys []PublicKey, message CommitMessage)
+	SendViewChange(publicKey PublicKey, message ViewChangeMessage) // TODO Is this ok to be single pk? (see NetworkCommunication.ts)
+	SendNewView(publicKeys []PublicKey, message NewViewMessage)
 
 	RegisterToPreprepare(cb func(message PreprepareMessage))
 	RegisterToPrepare(cb func(message PrepareMessage))
@@ -83,7 +83,7 @@ type NetworkCommunication interface {
 	RegisterToNewView(cb func(message NewViewMessage))
 }
 
-// TODO Maybe KeyManager shouldn't hold MyID and just be a static singleton that accepts ID like every other property
+// TODO Maybe KeyManager shouldn't hold MyPublicKey and just be a static singleton that accepts ID like every other property
 type KeyManager interface {
 	SignBlockRef(blockRef BlockRef) SenderSignature // TODO uses its internal ID to sign
 	SignViewChange(vcm ViewChangeMessage) SenderSignature
@@ -93,7 +93,7 @@ type KeyManager interface {
 	VerifyViewChange(vcm ViewChangeMessage, sender SenderSignature) bool
 	VerifyNewView(nvm NewViewMessage, sender SenderSignature) bool
 
-	MyID() PublicKey
+	MyPublicKey() PublicKey
 }
 
 // TODO Maybe BlockHandler is better name? or BlockService
@@ -121,7 +121,7 @@ type MessageTransporter interface {
 type BlockRef interface {
 	HasMessageType
 	Term() BlockHeight
-	View() ViewCounter
+	View() View
 	BlockHash() BlockHash
 }
 

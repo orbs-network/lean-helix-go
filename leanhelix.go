@@ -13,7 +13,7 @@ type LeanHelix interface {
 	IsLeader() bool
 }
 
-// TODO looks indentical to Config, why is this needed?
+// TODO looks identical to Config, why is this needed?
 type TermConfig struct {
 	NetworkCommunication NetworkCommunication
 	BlockUtils           BlockUtils

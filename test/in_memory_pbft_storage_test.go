@@ -17,7 +17,7 @@ func TestClearAllStorageDataAfterCallingClearTermLogs(t *testing.T) {
 
 	myStorage := lh.NewInMemoryStorage()
 	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
-	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	view := lh.View(math.Floor(rand.Float64() * 1000))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	blockHash := builders.CalculateBlockHash(block)
 	senderId := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
@@ -53,8 +53,8 @@ func TestStorePrepareInStorage(t *testing.T) {
 	myStorage := lh.NewInMemoryStorage()
 	term1 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
 	term2 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
-	view1 := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
-	view2 := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	view1 := lh.View(math.Floor(rand.Float64() * 1000))
+	view2 := lh.View(math.Floor(rand.Float64() * 1000))
 	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId3 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
@@ -82,8 +82,8 @@ func TestStoreCommitInStorage(t *testing.T) {
 	myStorage := lh.NewInMemoryStorage()
 	term1 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
 	term2 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
-	view1 := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
-	view2 := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	view1 := lh.View(math.Floor(rand.Float64() * 1000))
+	view2 := lh.View(math.Floor(rand.Float64() * 1000))
 	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId3 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
@@ -111,7 +111,7 @@ func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 
 	myStorage := lh.NewInMemoryStorage()
 	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
-	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	view := lh.View(math.Floor(rand.Float64() * 1000))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	keyManager := builders.NewMockKeyManager(lh.PublicKey("PK"))
 	mf := lh.NewMessageFactory(builders.CalculateBlockHash, keyManager)
@@ -127,7 +127,7 @@ func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	myStorage := lh.NewInMemoryStorage()
 	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
-	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	view := lh.View(math.Floor(rand.Float64() * 1000))
 	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	sender1KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId1))
@@ -151,7 +151,7 @@ func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 func TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	myStorage := lh.NewInMemoryStorage()
 	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
-	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	view := lh.View(math.Floor(rand.Float64() * 1000))
 	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	sender1KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId1))
@@ -177,7 +177,7 @@ func TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 func TestStoreViewChangeReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	myStorage := lh.NewInMemoryStorage()
 	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
-	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	view := lh.View(math.Floor(rand.Float64() * 1000))
 	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	sender1KeyManager := builders.NewMockKeyManager(lh.PublicKey(senderId1))
@@ -204,7 +204,7 @@ func TestStoreAndGetViewChangeProof(t *testing.T) {
 	myStorage := lh.NewInMemoryStorage()
 	term1 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
 	term2 := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
-	view1 := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	view1 := lh.View(math.Floor(rand.Float64() * 1000))
 	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId3 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
@@ -238,7 +238,7 @@ func TestPrepared(t *testing.T) {
 	// init here
 	fmt.Println("TestPrepared")
 	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000))
-	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000))
+	view := lh.View(math.Floor(rand.Float64() * 1000))
 	leaderId := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId1 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId2 := lh.PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
@@ -293,9 +293,9 @@ func TestPrepared(t *testing.T) {
 		myStorage.StorePrepare(pm30b)
 
 		actual, _ := myStorage.GetLatestPrepared(1, 1)
-		require.Equal(t, actual.PreprepareMessage().View(), lh.ViewCounter(30), "View of preprepared message should be 30 (highest for this term)")
-		require.Equal(t, actual.PrepareMessages()[0].View(), lh.ViewCounter(30), "View of prepared message #1 should be 30 (highest for this term)")
-		require.Equal(t, actual.PrepareMessages()[1].View(), lh.ViewCounter(30), "View of prepared message #2 should be 30 (highest for this term)")
+		require.Equal(t, actual.PreprepareMessage().View(), lh.View(30), "View of preprepared message should be 30 (highest for this term)")
+		require.Equal(t, actual.PrepareMessages()[0].View(), lh.View(30), "View of prepared message #1 should be 30 (highest for this term)")
+		require.Equal(t, actual.PrepareMessages()[1].View(), lh.View(30), "View of prepared message #2 should be 30 (highest for this term)")
 	})
 
 	t.Run("TestReturnNothingIfNoPrePrepare", func(t *testing.T) {

@@ -16,7 +16,7 @@ type mockKeyManager struct {
 	RejectedPublicKeys []lh.PublicKey
 }
 
-func (km *mockKeyManager) MyID() lh.PublicKey {
+func (km *mockKeyManager) MyPublicKey() lh.PublicKey {
 	return km.myPublicKey
 }
 
@@ -28,18 +28,18 @@ func NewMockKeyManager(publicKey lh.PublicKey, rejectedPublicKeys ...lh.PublicKe
 }
 
 func (km *mockKeyManager) SignBlockRef(blockRef lh.BlockRef) lh.SenderSignature {
-	return NewMockSenderSignature(km.MyID(),
-		lh.Signature(fmt.Sprintf("%s|%s|%s|%d|%d|%s", blockRef.MessageType(), PRIVATE_KEY_PREFIX, km.MyID(), blockRef.Term(), blockRef.View(), blockRef.BlockHash())))
+	return NewMockSenderSignature(km.MyPublicKey(),
+		lh.Signature(fmt.Sprintf("%s|%s|%s|%d|%d|%s", blockRef.MessageType(), PRIVATE_KEY_PREFIX, km.MyPublicKey(), blockRef.Term(), blockRef.View(), blockRef.BlockHash())))
 }
 
 func (km *mockKeyManager) SignViewChange(vcm lh.ViewChangeMessage) lh.SenderSignature {
-	return NewMockSenderSignature(km.MyID(),
-		lh.Signature(fmt.Sprintf("%s|%s|%s|%d|%d", vcm.MessageType(), PRIVATE_KEY_PREFIX, km.MyID(), vcm.Term(), vcm.View())))
+	return NewMockSenderSignature(km.MyPublicKey(),
+		lh.Signature(fmt.Sprintf("%s|%s|%s|%d|%d", vcm.MessageType(), PRIVATE_KEY_PREFIX, km.MyPublicKey(), vcm.Term(), vcm.View())))
 }
 
 func (km *mockKeyManager) SignNewView(nvm lh.NewViewMessage) lh.SenderSignature {
-	return NewMockSenderSignature(km.MyID(),
-		lh.Signature(fmt.Sprintf("%s|%s|%s|%d|%d", nvm.MessageType(), PRIVATE_KEY_PREFIX, km.MyID(), nvm.Term(), nvm.View())))
+	return NewMockSenderSignature(km.MyPublicKey(),
+		lh.Signature(fmt.Sprintf("%s|%s|%s|%d|%d", nvm.MessageType(), PRIVATE_KEY_PREFIX, km.MyPublicKey(), nvm.Term(), nvm.View())))
 }
 
 func (km *mockKeyManager) VerifyBlockRef(blockRef lh.BlockRef, sender lh.SenderSignature) bool {

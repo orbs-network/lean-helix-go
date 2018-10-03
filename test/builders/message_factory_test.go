@@ -11,7 +11,7 @@ import (
 func TestMessageFactory(t *testing.T) {
 	keyManager := NewMockKeyManager(lh.PublicKey("My PK"))
 	term := lh.BlockHeight(math.Floor(rand.Float64() * 1000000))
-	view := lh.ViewCounter(math.Floor(rand.Float64() * 1000000))
+	view := lh.View(math.Floor(rand.Float64() * 1000000))
 	block := CreateBlock(GenesisBlock)
 	//blockHash := CalculateBlockHash(block)
 	fac := lh.NewMessageFactory(CalculateBlockHash, keyManager)

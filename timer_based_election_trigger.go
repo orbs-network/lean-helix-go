@@ -28,9 +28,9 @@ func setTimeout(cb func(), milliseconds uint) chan bool {
 
 type TimerBasedElectionTrigger struct {
 	minTimeout uint
-	view       ViewCounter
+	view       View
 	isActive   bool
-	cb         func(view ViewCounter)
+	cb         func(view View)
 	clearTimer chan bool
 }
 
@@ -40,7 +40,7 @@ func NewTimerBasedElectionTrigger(minTimeout uint) *TimerBasedElectionTrigger {
 	}
 }
 
-func (tbet *TimerBasedElectionTrigger) RegisterOnTrigger(view ViewCounter, cb func(view ViewCounter)) {
+func (tbet *TimerBasedElectionTrigger) RegisterOnTrigger(view View, cb func(view View)) {
 	tbet.cb = cb
 	if !tbet.isActive || tbet.view != view {
 		tbet.isActive = true

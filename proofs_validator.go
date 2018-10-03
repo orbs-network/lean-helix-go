@@ -13,11 +13,11 @@ func verifyBlockRefMessage(blockRef BlockRef, sender SenderSignature, keyManager
 	return keyManager.VerifyBlockRef(blockRef, sender)
 }
 
-type CalcLeaderPk = func(view ViewCounter) PublicKey
+type CalcLeaderPk = func(view View) PublicKey
 
 func ValidatePreparedProof(
 	targetTerm BlockHeight,
-	targetView ViewCounter,
+	targetView View,
 	preparedProof PreparedProof,
 	f int,
 	keyManager KeyManager,

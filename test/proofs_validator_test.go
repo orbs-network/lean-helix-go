@@ -14,7 +14,7 @@ func TestProofsValidator(t *testing.T) {
 	node2KeyManager := builders.NewMockKeyManager(lh.PublicKey("Node 2"))
 
 	membersPKs := []lh.PublicKey{lh.PublicKey("Leader PK"), lh.PublicKey("Node 1"), lh.PublicKey("Node 2"), lh.PublicKey("Node 3")}
-	calcLeaderPk := func(view lh.ViewCounter) lh.PublicKey {
+	calcLeaderPk := func(view lh.View) lh.PublicKey {
 		return membersPKs[view]
 	}
 
@@ -102,7 +102,7 @@ func TestProofsValidator(t *testing.T) {
 	})
 
 	t.Run("TestProofsValidatorWithMismatchingViewToLeader", func(t *testing.T) {
-		calcLeaderPk := func(view lh.ViewCounter) lh.PublicKey {
+		calcLeaderPk := func(view lh.View) lh.PublicKey {
 			return lh.PublicKey("Some other node PK")
 		}
 		preparedProof := lh.CreatePreparedProof(preprepareMessage, []lh.PrepareMessage{prepareMessage1, prepareMessage2})

@@ -11,6 +11,8 @@ import (
 	"os"
 )
 
+// The Lean Helix Term component tests in this file require a test network to run
+
 const MINIMUM_NODES = 2
 
 type TestNetwork struct {

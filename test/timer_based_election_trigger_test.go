@@ -10,7 +10,7 @@ import (
 func TestCallbackTrigger(t *testing.T) {
 	et := lh.NewTimerBasedElectionTrigger(10)
 	wasCalled := false
-	cb := func(view lh.ViewCounter) { wasCalled = true }
+	cb := func(view lh.View) { wasCalled = true }
 	et.RegisterOnTrigger(0, cb)
 	time.Sleep(time.Duration(15) * time.Millisecond)
 
@@ -21,7 +21,7 @@ func TestCallbackTrigger(t *testing.T) {
 func TestCallbackTriggerOnce(t *testing.T) {
 	et := lh.NewTimerBasedElectionTrigger(10)
 	callCount := 0
-	cb := func(view lh.ViewCounter) { callCount++ }
+	cb := func(view lh.View) { callCount++ }
 	et.RegisterOnTrigger(0, cb)
 	time.Sleep(time.Duration(25) * time.Millisecond)
 
@@ -32,7 +32,7 @@ func TestCallbackTriggerOnce(t *testing.T) {
 func TestIgnoreSameView(t *testing.T) {
 	et := lh.NewTimerBasedElectionTrigger(30)
 	callCount := 0
-	cb := func(view lh.ViewCounter) { callCount++ }
+	cb := func(view lh.View) { callCount++ }
 
 	et.RegisterOnTrigger(0, cb)
 	time.Sleep(time.Duration(10) * time.Millisecond)
@@ -49,7 +49,7 @@ func TestIgnoreSameView(t *testing.T) {
 func TestViewChanges(t *testing.T) {
 	et := lh.NewTimerBasedElectionTrigger(20)
 	wasCalled := false
-	cb := func(view lh.ViewCounter) { wasCalled = true }
+	cb := func(view lh.View) { wasCalled = true }
 
 	et.RegisterOnTrigger(0, cb) // 2 ** 0 * 20 = 20
 	time.Sleep(time.Duration(10) * time.Millisecond)
@@ -69,7 +69,7 @@ func TestViewChanges(t *testing.T) {
 func TestViewPowTimeout(t *testing.T) {
 	et := lh.NewTimerBasedElectionTrigger(10)
 	wasCalled := false
-	cb := func(view lh.ViewCounter) { wasCalled = true }
+	cb := func(view lh.View) { wasCalled = true }
 
 	et.RegisterOnTrigger(2, cb) // 2 ** 2 * 10 = 40
 	time.Sleep(time.Duration(35) * time.Millisecond)
@@ -83,7 +83,7 @@ func TestViewPowTimeout(t *testing.T) {
 func TestStoppingTrigger(t *testing.T) {
 	et := lh.NewTimerBasedElectionTrigger(10)
 	wasCalled := false
-	cb := func(view lh.ViewCounter) { wasCalled = true }
+	cb := func(view lh.View) { wasCalled = true }
 	et.RegisterOnTrigger(0, cb)
 	time.Sleep(time.Duration(5) * time.Millisecond)
 	et.UnregisterOnTrigger()

@@ -10,21 +10,21 @@ type Storage interface {
 	StorePrepare(pp PrepareMessage) bool
 	StoreCommit(cm CommitMessage) bool
 	StoreViewChange(vcm ViewChangeMessage) bool
-	GetPrepareSendersPKs(term BlockHeight, view ViewCounter, blockHash BlockHash) []PublicKey
-	GetCommitSendersPKs(term BlockHeight, view ViewCounter, blockHash BlockHash) []PublicKey
-	GetViewChangeMessages(term BlockHeight, view ViewCounter, f int) []ViewChangeMessage
-	GetPreprepare(term BlockHeight, view ViewCounter) (PreprepareMessage, bool)
-	GetPrepares(term BlockHeight, view ViewCounter, blockHash BlockHash) ([]PrepareMessage, bool)
+	GetPrepareSendersPKs(term BlockHeight, view View, blockHash BlockHash) []PublicKey
+	GetCommitSendersPKs(term BlockHeight, view View, blockHash BlockHash) []PublicKey
+	GetViewChangeMessages(term BlockHeight, view View, f int) []ViewChangeMessage
+	GetPreprepare(term BlockHeight, view View) (PreprepareMessage, bool)
+	GetPrepares(term BlockHeight, view View, blockHash BlockHash) ([]PrepareMessage, bool)
 	GetLatestPrepared(term BlockHeight, f int) (PreparedProof, bool)
 	ClearTermLogs(term BlockHeight)
 }
 
 type InMemoryStorage struct {
 	// TODO Refactor this mess - in the least create some intermediate types
-	preprepareStorage map[BlockHeight]map[ViewCounter]PreprepareMessage
-	prepareStorage    map[BlockHeight]map[ViewCounter]map[BlockHashStr]map[PublicKeyStr]PrepareMessage
-	commitStorage     map[BlockHeight]map[ViewCounter]map[BlockHashStr]map[PublicKeyStr]CommitMessage
-	viewChangeStorage map[BlockHeight]map[ViewCounter]map[PublicKeyStr]ViewChangeMessage
+	preprepareStorage map[BlockHeight]map[View]PreprepareMessage
+	prepareStorage    map[BlockHeight]map[View]map[BlockHashStr]map[PublicKeyStr]PrepareMessage
+	commitStorage     map[BlockHeight]map[View]map[BlockHashStr]map[PublicKeyStr]CommitMessage
+	viewChangeStorage map[BlockHeight]map[View]map[PublicKeyStr]ViewChangeMessage
 }
 
 func (storage *InMemoryStorage) StorePreprepare(ppm PreprepareMessage) bool {
@@ -128,7 +128,7 @@ func (storage *InMemoryStorage) StoreViewChange(vcm ViewChangeMessage) bool {
 
 }
 
-func (storage *InMemoryStorage) getPrepare(term BlockHeight, view ViewCounter, blockHash BlockHash) (map[PublicKeyStr]PrepareMessage, bool) {
+func (storage *InMemoryStorage) getPrepare(term BlockHeight, view View, blockHash BlockHash) (map[PublicKeyStr]PrepareMessage, bool) {
 	views, ok := storage.prepareStorage[term]
 	if !ok {
 		return nil, false
@@ -140,7 +140,7 @@ func (storage *InMemoryStorage) getPrepare(term BlockHeight, view ViewCounter, b
 	return blockHashes[BlockHashStr(blockHash)], true
 }
 
-func (storage *InMemoryStorage) GetPrepareSendersPKs(term BlockHeight, view ViewCounter, blockHash BlockHash) []PublicKey {
+func (storage *InMemoryStorage) GetPrepareSendersPKs(term BlockHeight, view View, blockHash BlockHash) []PublicKey {
 	senders, ok := storage.getPrepare(term, view, blockHash)
 	if !ok {
 		return []PublicKey{}
@@ -154,7 +154,7 @@ func (storage *InMemoryStorage) GetPrepareSendersPKs(term BlockHeight, view View
 	return keys
 }
 
-func (storage *InMemoryStorage) getCommit(term BlockHeight, view ViewCounter, blockHash BlockHash) (map[PublicKeyStr]CommitMessage, bool) {
+func (storage *InMemoryStorage) getCommit(term BlockHeight, view View, blockHash BlockHash) (map[PublicKeyStr]CommitMessage, bool) {
 	views, ok := storage.commitStorage[term]
 	if !ok {
 		return nil, false
@@ -166,7 +166,7 @@ func (storage *InMemoryStorage) getCommit(term BlockHeight, view ViewCounter, bl
 	return blockHashes[BlockHashStr(blockHash)], true
 }
 
-func (storage *InMemoryStorage) GetCommitSendersPKs(term BlockHeight, view ViewCounter, blockHash BlockHash) []PublicKey {
+func (storage *InMemoryStorage) GetCommitSendersPKs(term BlockHeight, view View, blockHash BlockHash) []PublicKey {
 	senders, ok := storage.getCommit(term, view, blockHash)
 	if !ok {
 		return []PublicKey{}
@@ -179,7 +179,7 @@ func (storage *InMemoryStorage) GetCommitSendersPKs(term BlockHeight, view ViewC
 	}
 	return keys
 }
-func (storage *InMemoryStorage) GetViewChangeMessages(term BlockHeight, view ViewCounter, f int) []ViewChangeMessage {
+func (storage *InMemoryStorage) GetViewChangeMessages(term BlockHeight, view View, f int) []ViewChangeMessage {
 	views, ok := storage.viewChangeStorage[term]
 	if !ok {
 		return nil
@@ -205,7 +205,7 @@ func (storage *InMemoryStorage) GetViewChangeMessages(term BlockHeight, view Vie
 	return result
 }
 
-func (storage *InMemoryStorage) GetPreprepare(term BlockHeight, view ViewCounter) (PreprepareMessage, bool) {
+func (storage *InMemoryStorage) GetPreprepare(term BlockHeight, view View) (PreprepareMessage, bool) {
 	views, ok := storage.preprepareStorage[term]
 	if !ok {
 		return nil, false
@@ -215,7 +215,7 @@ func (storage *InMemoryStorage) GetPreprepare(term BlockHeight, view ViewCounter
 }
 
 // TODO Whether to use ptr for string (BlockHash)
-func (storage *InMemoryStorage) GetPrepares(term BlockHeight, view ViewCounter, blockHash BlockHash) ([]PrepareMessage, bool) {
+func (storage *InMemoryStorage) GetPrepares(term BlockHeight, view View, blockHash BlockHash) ([]PrepareMessage, bool) {
 	senders, ok := storage.getPrepare(term, view, blockHash)
 	if !ok {
 		return nil, false
@@ -235,7 +235,7 @@ func (storage *InMemoryStorage) GetLatestPrepared(term BlockHeight, f int) (Prep
 	if len(views) == 0 {
 		return nil, false
 	}
-	viewKeys := make([]ViewCounter, 0, len(views))
+	viewKeys := make([]View, 0, len(views))
 	for key := range views {
 		viewKeys = append(viewKeys, key)
 	}
@@ -263,34 +263,34 @@ func (storage *InMemoryStorage) ClearTermLogs(term BlockHeight) {
 	storage.resetViewChangeStorage(term)
 }
 
-func (storage *InMemoryStorage) resetPreprepareStorage(term BlockHeight) map[ViewCounter]PreprepareMessage {
-	views := make(map[ViewCounter]PreprepareMessage)
+func (storage *InMemoryStorage) resetPreprepareStorage(term BlockHeight) map[View]PreprepareMessage {
+	views := make(map[View]PreprepareMessage)
 	storage.preprepareStorage[term] = views
 	return views
 }
 
-func (storage *InMemoryStorage) resetPrepareStorage(term BlockHeight) map[ViewCounter]map[BlockHashStr]map[PublicKeyStr]PrepareMessage {
-	views := make(map[ViewCounter]map[BlockHashStr]map[PublicKeyStr]PrepareMessage)
+func (storage *InMemoryStorage) resetPrepareStorage(term BlockHeight) map[View]map[BlockHashStr]map[PublicKeyStr]PrepareMessage {
+	views := make(map[View]map[BlockHashStr]map[PublicKeyStr]PrepareMessage)
 	storage.prepareStorage[term] = views
 	return views
 }
 
-func (storage *InMemoryStorage) resetCommitStorage(term BlockHeight) map[ViewCounter]map[BlockHashStr]map[PublicKeyStr]CommitMessage {
-	views := make(map[ViewCounter]map[BlockHashStr]map[PublicKeyStr]CommitMessage)
+func (storage *InMemoryStorage) resetCommitStorage(term BlockHeight) map[View]map[BlockHashStr]map[PublicKeyStr]CommitMessage {
+	views := make(map[View]map[BlockHashStr]map[PublicKeyStr]CommitMessage)
 	storage.commitStorage[term] = views
 	return views
 }
-func (storage *InMemoryStorage) resetViewChangeStorage(term BlockHeight) map[ViewCounter]map[PublicKeyStr]ViewChangeMessage {
-	views := make(map[ViewCounter]map[PublicKeyStr]ViewChangeMessage)
+func (storage *InMemoryStorage) resetViewChangeStorage(term BlockHeight) map[View]map[PublicKeyStr]ViewChangeMessage {
+	views := make(map[View]map[PublicKeyStr]ViewChangeMessage)
 	storage.viewChangeStorage[term] = views
 	return views
 }
 
 func NewInMemoryStorage() *InMemoryStorage {
 	return &InMemoryStorage{
-		preprepareStorage: make(map[BlockHeight]map[ViewCounter]PreprepareMessage),
-		prepareStorage:    make(map[BlockHeight]map[ViewCounter]map[BlockHashStr]map[PublicKeyStr]PrepareMessage),
-		commitStorage:     make(map[BlockHeight]map[ViewCounter]map[BlockHashStr]map[PublicKeyStr]CommitMessage),
-		viewChangeStorage: make(map[BlockHeight]map[ViewCounter]map[PublicKeyStr]ViewChangeMessage),
+		preprepareStorage: make(map[BlockHeight]map[View]PreprepareMessage),
+		prepareStorage:    make(map[BlockHeight]map[View]map[BlockHashStr]map[PublicKeyStr]PrepareMessage),
+		commitStorage:     make(map[BlockHeight]map[View]map[BlockHashStr]map[PublicKeyStr]CommitMessage),
+		viewChangeStorage: make(map[BlockHeight]map[View]map[PublicKeyStr]ViewChangeMessage),
 	}
 }

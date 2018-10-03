@@ -3,15 +3,15 @@ package builders
 import lh "github.com/orbs-network/lean-helix-go"
 
 type ElectionTriggerMock struct {
-	view lh.ViewCounter
-	cb   func(view lh.ViewCounter)
+	view lh.View
+	cb   func(view lh.View)
 }
 
 func NewMockElectionTrigger() *ElectionTriggerMock {
 	return &ElectionTriggerMock{}
 }
 
-func (tbet *ElectionTriggerMock) RegisterOnTrigger(view lh.ViewCounter, cb func(view lh.ViewCounter)) {
+func (tbet *ElectionTriggerMock) RegisterOnTrigger(view lh.View, cb func(view lh.View)) {
 	tbet.view = view
 	tbet.cb = cb
 }

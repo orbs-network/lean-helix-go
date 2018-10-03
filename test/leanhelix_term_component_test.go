@@ -20,8 +20,6 @@ func triggerElection(testnet *builders.TestNetwork) {
 // Based on "onReceivePrePrepare should accept views that match its current view"
 func TestAcceptPreprepareWithCurrentView(t *testing.T) {
 
-	t.Skip()
-
 	net := builders.NewTestNetworkBuilder(NODE_COUNT).Build()
 	node1 := net.Nodes[1]
 	termConfig1 := lh.BuildTermConfig(node1.Config)
@@ -34,9 +32,9 @@ func TestAcceptPreprepareWithCurrentView(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	require.Equal(t, node1LeanHelixTerm.GetView(), lh.ViewCounter(0), "Node 1 view should be 0")
+	require.Equal(t, node1LeanHelixTerm.GetView(), lh.View(0), "Node 1 view should be 0")
 	triggerElection(net)
-	require.Equal(t, node1LeanHelixTerm.GetView(), lh.ViewCounter(1), "Node 1 view should be 1")
+	require.Equal(t, node1LeanHelixTerm.GetView(), lh.View(1), "Node 1 view should be 1")
 
 	block := builders.CreateBlock(builders.GenesisBlock)
 	// spy on storePrepare

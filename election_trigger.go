@@ -1,6 +1,6 @@
 package leanhelix
 
 type ElectionTrigger interface {
-	RegisterOnTrigger(view ViewCounter, cb func(view ViewCounter))
+	RegisterOnTrigger(view View, cb func(view View))
 	UnregisterOnTrigger()
 }
