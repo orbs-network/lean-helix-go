@@ -1,6 +1,7 @@
 package builders
 
 import (
+	"context"
 	"fmt"
 	lh "github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/instrumentation/log"
@@ -17,6 +18,7 @@ const MINIMUM_NODES = 2
 
 type TestNetwork struct {
 	mock.Mock
+	ctxCancel  context.CancelFunc
 	Nodes      []*Node
 	BlockUtils *MockBlockUtils
 	Transport  *MockNetworkCommunication
@@ -24,6 +26,8 @@ type TestNetwork struct {
 }
 
 type TestNetworkBuilder struct {
+	ctx             context.Context
+	ctxCancel       context.CancelFunc
 	logger          log.BasicLogger
 	customNodes     []NodeBuilder
 	electionTrigger lh.ElectionTrigger
@@ -51,7 +55,7 @@ func (builder *TestNetworkBuilder) ThatLogsToCustomLogger(logger log.BasicLogger
 func (builder *TestNetworkBuilder) Build() *TestNetwork {
 
 	testNet := &TestNetwork{
-
+		ctxCancel:  builder.ctxCancel,
 		Nodes:      builder.createNodes(),
 		BlockUtils: builder.blockUtils,
 		//Transport:  builder.transport,
@@ -89,6 +93,8 @@ func NewSimpleTestNetwork(nodeCount int, blocksPool []lh.Block) *TestNetwork {
 
 func NewTestNetworkBuilder(nodeCount int) *TestNetworkBuilder {
 
+	ctx, ctxCancel := context.WithCancel(context.Background())
+
 	var output io.Writer
 	output = os.Stdout
 
@@ -109,6 +115,8 @@ func NewTestNetworkBuilder(nodeCount int) *TestNetworkBuilder {
 	testLogger.Info("===========================================================================")
 
 	return &TestNetworkBuilder{
+		ctx:             ctx,
+		ctxCancel:       ctxCancel,
 		logger:          testLogger,
 		customNodes:     nil,
 		electionTrigger: nil,
@@ -123,7 +131,7 @@ func (builder *TestNetworkBuilder) createNodes() []*Node {
 	nodes := make([]*Node, builder.nodeCount)
 
 	for i := range nodes {
-		nodes[i] = buildNode(lh.PublicKey(fmt.Sprintf("Node %d", i)), builder.discovery)
+		nodes[i] = buildNode(builder.ctx, lh.PublicKey(fmt.Sprintf("Node %d", i)), builder.discovery, builder.logger)
 	}
 
 	// TODO postpone handling custom nodes till needed by TDD (see TestNetworkBuilder.ts)
@@ -146,6 +154,10 @@ func (net *TestNetwork) StartConsensusOnAllNodes() error {
 }
 
 func (net *TestNetwork) Stop() {
+
+	net.ctxCancel()
+
+	// TODO Do we need this??
 	for _, node := range net.Nodes {
 		node.Dispose()
 	}

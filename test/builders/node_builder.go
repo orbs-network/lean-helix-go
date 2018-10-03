@@ -1,11 +1,13 @@
 package builders
 
 import (
+	"context"
 	lh "github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/instrumentation/log"
 )
 
 type NodeBuilder struct {
+	ctx                  context.Context
 	networkCommunication lh.NetworkCommunication
 	publicKey            lh.PublicKey
 	storage              lh.Storage
@@ -54,7 +56,6 @@ func (builder *NodeBuilder) buildConfig() *lh.Config {
 	var (
 		electionTrigger lh.ElectionTrigger
 		blockUtils      lh.BlockUtils
-		logger          log.BasicLogger
 		storage         lh.Storage
 	)
 
@@ -89,11 +90,12 @@ func (builder *NodeBuilder) buildConfig() *lh.Config {
 	}
 
 	return &lh.Config{
+		Ctx:                  builder.ctx,
 		NetworkCommunication: builder.networkCommunication,
 		ElectionTrigger:      electionTrigger,
 		BlockUtils:           blockUtils,
 		KeyManager:           NewMockKeyManager(builder.publicKey),
-		Logger:               logger.For(log.Service("node")),
+		Logger:               builder.logger.For(log.Service("node")),
 		Storage:              storage,
 	}
 }
@@ -114,4 +116,8 @@ func (builder *NodeBuilder) ThatLogsTo(logger log.BasicLogger) *NodeBuilder {
 
 func (builder *NodeBuilder) Build() *Node {
 	return NewNode(builder.publicKey, builder.buildConfig())
+}
+func (builder *NodeBuilder) WithContext(ctx context.Context) *NodeBuilder {
+	builder.ctx = ctx
+	return builder
 }

@@ -31,12 +31,9 @@ type leanHelix struct {
 
 func NewLeanHelix(config *Config) LeanHelix {
 
-	ctx, ctxCancel := context.WithCancel(config.ctx)
-
 	return &leanHelix{
-		ctx:       ctx,
-		ctxCancel: ctxCancel,
-		log:       config.Logger.For(log.Service("leanhelix")),
+		ctx: config.Ctx,
+		log: config.Logger.For(log.Service("leanhelix")),
 	}
 }
 

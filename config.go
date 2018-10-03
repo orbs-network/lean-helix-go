@@ -6,7 +6,7 @@ import (
 )
 
 type Config struct {
-	ctx                  context.Context
+	Ctx                  context.Context
 	NetworkCommunication NetworkCommunication
 	BlockUtils           BlockUtils
 	KeyManager           KeyManager
