@@ -6,12 +6,12 @@ import (
 )
 
 var GenesisBlock = &block{
-	term:      0,
+	height:    0,
 	blockHash: lh.BlockHash("The Genesis Block"),
 }
 
 func (b *block) GetTerm() lh.BlockHeight {
-	return b.term
+	return b.height
 }
 
 func (h *block) GetBlockHash() lh.BlockHash {
@@ -20,9 +20,13 @@ func (h *block) GetBlockHash() lh.BlockHash {
 
 // block
 type block struct {
-	term      lh.BlockHeight
+	height    lh.BlockHeight
 	blockHash lh.BlockHash
 	body      []byte
+}
+
+func (b *block) GetHeight() lh.BlockHeight {
+	return b.height
 }
 
 var globalCounter = 0
@@ -35,7 +39,7 @@ func genBody() []byte {
 func CreateBlock(previousBlock lh.Block) lh.Block {
 
 	block := &block{
-		term:      previousBlock.GetTerm() + 1,
+		height:    previousBlock.GetHeight() + 1,
 		blockHash: CalculateBlockHash(previousBlock),
 		body:      genBody(),
 	}

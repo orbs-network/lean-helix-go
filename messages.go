@@ -1,5 +1,93 @@
 package leanhelix
 
+type MessageType string
+
+const (
+	MESSAGE_TYPE_PREPREPARE  MessageType = "preprepare"
+	MESSAGE_TYPE_PREPARE     MessageType = "prepare"
+	MESSAGE_TYPE_COMMIT      MessageType = "commit"
+	MESSAGE_TYPE_VIEW_CHANGE MessageType = "view-change"
+	MESSAGE_TYPE_NEW_VIEW    MessageType = "new-view"
+)
+
+// START MESSAGE TYPES //
+
+type PreprepareMessage interface {
+	SignedHeader() BlockRef
+	Sender() SenderSignature
+	Block() Block
+}
+
+type PrepareMessage interface {
+	SignedHeader() BlockRef
+	Sender() SenderSignature
+}
+
+type CommitMessage interface {
+	SignedHeader() BlockRef
+	Sender() SenderSignature
+	// TODO Add RandomSeedShare?
+}
+
+type ViewChangeHeader interface {
+	HasMessageType
+	BlockHeight() BlockHeight
+	View() View
+	PreparedProof() PreparedProof
+}
+
+type ViewChangeMessage interface {
+	SignedHeader() ViewChangeHeader
+	Sender() SenderSignature
+	Block() Block
+}
+
+type NewViewMessage interface {
+	SignedHeader() NewViewHeader
+	Sender() SenderSignature
+}
+
+// END MESSAGE TYPES //
+
+type SenderSignature interface {
+	SenderPublicKey() PublicKey
+	Signature() Signature
+}
+
+type HasMessageType interface {
+	MessageType() MessageType
+}
+
+type MessageTransporter interface {
+	SenderSignature
+	HasMessageType
+}
+
+type BlockRef interface {
+	HasMessageType
+	BlockHeight() BlockHeight
+	View() View
+	BlockHash() BlockHash // TODO Gad: rename this to "current block hash"???
+}
+
+// TODO this is different from definition of LeanHelixPreparedProof in lean_helix.mb.go:448 in orbs-spec
+type PreparedProof interface {
+	PreprepareMessage() PreprepareMessage
+	PrepareMessages() []PrepareMessage
+}
+
+type NewViewHeader interface {
+	HasMessageType
+	BlockHeight() BlockHeight
+	View() View
+	ViewChangeConfirmations() []ViewChangeConfirmation
+}
+
+type ViewChangeConfirmation interface {
+	Sender() SenderSignature
+	SignedHeader() ViewChangeHeader
+}
+
 //type MessageType string
 //
 //const (

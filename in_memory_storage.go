@@ -29,8 +29,8 @@ type InMemoryStorage struct {
 
 func (storage *InMemoryStorage) StorePreprepare(ppm PreprepareMessage) bool {
 
-	height := ppm.BlockHeight()
-	view := ppm.View()
+	height := ppm.SignedHeader().BlockHeight()
+	view := ppm.SignedHeader().View()
 
 	views, ok := storage.preprepareStorage[height]
 	if !ok {
@@ -46,8 +46,8 @@ func (storage *InMemoryStorage) StorePreprepare(ppm PreprepareMessage) bool {
 }
 
 func (storage *InMemoryStorage) StorePrepare(pp PrepareMessage) bool {
-	height := pp.BlockHeight()
-	view := pp.View()
+	height := pp.SignedHeader().BlockHeight()
+	view := pp.SignedHeader().View()
 	// pps -> views ->
 	views, ok := storage.prepareStorage[height]
 	if !ok {
@@ -59,7 +59,7 @@ func (storage *InMemoryStorage) StorePrepare(pp PrepareMessage) bool {
 		blockHashes = make(map[BlockHashStr]map[PublicKeyStr]PrepareMessage)
 		views[view] = blockHashes
 	}
-	ppBlockHash := BlockHashStr(pp.BlockHash())
+	ppBlockHash := BlockHashStr(pp.SignedHeader().BlockHash())
 	senders, ok := blockHashes[ppBlockHash]
 	if !ok {
 		senders = make(map[PublicKeyStr]PrepareMessage)
@@ -76,8 +76,8 @@ func (storage *InMemoryStorage) StorePrepare(pp PrepareMessage) bool {
 }
 
 func (storage *InMemoryStorage) StoreCommit(cm CommitMessage) bool {
-	height := cm.BlockHeight()
-	view := cm.View()
+	height := cm.SignedHeader().BlockHeight()
+	view := cm.SignedHeader().View()
 	// pps -> views ->
 	views, ok := storage.commitStorage[height]
 	if !ok {
@@ -89,10 +89,10 @@ func (storage *InMemoryStorage) StoreCommit(cm CommitMessage) bool {
 		blockHashes = make(map[BlockHashStr]map[PublicKeyStr]CommitMessage)
 		views[view] = blockHashes
 	}
-	senders, ok := blockHashes[BlockHashStr(cm.BlockHash())]
+	senders, ok := blockHashes[BlockHashStr(cm.SignedHeader().BlockHash())]
 	if !ok {
 		senders = make(map[PublicKeyStr]CommitMessage)
-		blockHashes[BlockHashStr(cm.BlockHash())] = senders
+		blockHashes[BlockHashStr(cm.SignedHeader().BlockHash())] = senders
 	}
 	pk := PublicKeyStr(cm.Sender().SenderPublicKey())
 	_, ok = senders[pk]
@@ -106,7 +106,7 @@ func (storage *InMemoryStorage) StoreCommit(cm CommitMessage) bool {
 }
 
 func (storage *InMemoryStorage) StoreViewChange(vcm ViewChangeMessage) bool {
-	height, view := vcm.BlockHeight(), vcm.View()
+	height, view := vcm.SignedHeader().BlockHeight(), vcm.SignedHeader().View()
 	// pps -> views ->
 	views, ok := storage.viewChangeStorage[height]
 	if !ok {
@@ -246,7 +246,7 @@ func (storage *InMemoryStorage) GetLatestPrepared(blockHeight BlockHeight, f int
 	if !ok {
 		return nil, false
 	}
-	prepareMessages, ok := storage.GetPrepares(blockHeight, lastView, ppm.BlockHash())
+	prepareMessages, ok := storage.GetPrepares(blockHeight, lastView, ppm.SignedHeader().BlockHash())
 	if len(prepareMessages) < f*2 {
 		return nil, false
 	}
@@ -256,6 +256,7 @@ func (storage *InMemoryStorage) GetLatestPrepared(blockHeight BlockHeight, f int
 
 }
 
+// TODO Keep this name? it means the same as Term in LeanHelixTerm
 func (storage *InMemoryStorage) ClearTermLogs(blockHeight BlockHeight) {
 	storage.resetPreprepareStorage(blockHeight)
 	storage.resetPrepareStorage(blockHeight)

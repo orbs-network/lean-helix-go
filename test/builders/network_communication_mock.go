@@ -13,7 +13,7 @@ func (n *MockNetworkCommunication) SendToMembers(publicKeys []lh.PublicKey, mess
 	panic("implement me")
 }
 
-func (n *MockNetworkCommunication) GetMembersPKs(seed uint64) []lh.PublicKey {
+func (n *MockNetworkCommunication) RequestOrderedCommittee(seed uint64) []lh.PublicKey {
 	ret := n.Called(seed)
 	return ret.Get(0).([]lh.PublicKey)
 }

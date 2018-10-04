@@ -37,12 +37,12 @@ func ValidatePreparedProof(
 		return false
 	}
 
-	term := ppm.BlockHeight()
+	term := ppm.SignedHeader().BlockHeight()
 	if term != targetHeight {
 		return false
 	}
 
-	view := ppm.View()
+	view := ppm.SignedHeader().View()
 	if view >= targetView {
 		return false
 	}
@@ -53,7 +53,7 @@ func ValidatePreparedProof(
 
 	// TODO Refactor names here!!!
 
-	if verifyBlockRefMessage(ppm, ppm.Sender(), keyManager) == false {
+	if verifyBlockRefMessage(ppm.SignedHeader(), ppm.Sender(), keyManager) == false {
 		return false
 	}
 
@@ -65,7 +65,7 @@ func ValidatePreparedProof(
 	seen := make(map[PublicKeyStr]bool, len(prepareBlockRefMessages))
 	for _, msg := range prepareBlockRefMessages {
 
-		if keyManager.VerifyBlockRef(msg, msg.Sender()) == false {
+		if keyManager.VerifyBlockRef(msg.SignedHeader(), msg.Sender()) == false {
 			return false
 		}
 
@@ -79,15 +79,15 @@ func ValidatePreparedProof(
 			return false
 		}
 
-		if msg.BlockHeight() != term {
+		if msg.SignedHeader().BlockHeight() != term {
 			return false
 		}
 
-		if msg.View() != view {
+		if msg.SignedHeader().View() != view {
 			return false
 		}
 
-		if !msg.BlockHash().Equals(ppm.BlockHash()) {
+		if !msg.SignedHeader().BlockHash().Equals(ppm.SignedHeader().BlockHash()) {
 			return false
 		}
 

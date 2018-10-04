@@ -18,7 +18,7 @@ func TestReturnOkForMembersInCurrentHeight(t *testing.T) {
 	mockBlockUtils := builders.NewMockBlockUtils(nil)
 	mockElectionTrigger := builders.NewMockElectionTrigger()
 	mockStorage := builders.NewMockStorage()
-	mockComm.When("GetMembersPKs", mock.Any).Return([]lh.PublicKey{pk})
+	mockComm.When("RequestOrderedCommittee", mock.Any).Return([]lh.PublicKey{pk})
 	mockComm.When("SendPreprepare", mock.Any, mock.Any).Return()
 	mockStorage.When("StorePreprepare", mock.Any).Return(true)
 	config := &lh.TermConfig{
@@ -41,7 +41,7 @@ func TestReturnErrorIfNoMembersInCurrentHeight(t *testing.T) {
 	mockBlockUtils := builders.NewMockBlockUtils(nil)
 	mockElectionTrigger := builders.NewMockElectionTrigger()
 	mockStorage := lh.NewInMemoryStorage()
-	mockComm.When("GetMembersPKs", mock.Any).Return([]lh.PublicKey{})
+	mockComm.When("RequestOrderedCommittee", mock.Any).Return([]lh.PublicKey{})
 	mockComm.When("SendPreprepare", mock.Any, mock.Any).Return()
 	config := &lh.TermConfig{
 		KeyManager:           builders.NewMockKeyManager(pk),

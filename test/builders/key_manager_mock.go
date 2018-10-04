@@ -32,14 +32,14 @@ func (km *mockKeyManager) SignBlockRef(blockRef lh.BlockRef) lh.SenderSignature 
 		lh.Signature(fmt.Sprintf("%s|%s|%s|%d|%d|%s", blockRef.MessageType(), PRIVATE_KEY_PREFIX, km.MyPublicKey(), blockRef.BlockHeight(), blockRef.View(), blockRef.BlockHash())))
 }
 
-func (km *mockKeyManager) SignViewChange(vcm lh.ViewChangeMessage) lh.SenderSignature {
+func (km *mockKeyManager) SignViewChange(vcHeader lh.ViewChangeHeader) lh.SenderSignature {
 	return NewMockSenderSignature(km.MyPublicKey(),
-		lh.Signature(fmt.Sprintf("%s|%s|%s|%d|%d", vcm.MessageType(), PRIVATE_KEY_PREFIX, km.MyPublicKey(), vcm.BlockHeight(), vcm.View())))
+		lh.Signature(fmt.Sprintf("%s|%s|%s|%d|%d", vcHeader.MessageType(), PRIVATE_KEY_PREFIX, km.MyPublicKey(), vcHeader.BlockHeight(), vcHeader.View())))
 }
 
-func (km *mockKeyManager) SignNewView(nvm lh.NewViewMessage) lh.SenderSignature {
+func (km *mockKeyManager) SignNewView(nvHeader lh.NewViewHeader) lh.SenderSignature {
 	return NewMockSenderSignature(km.MyPublicKey(),
-		lh.Signature(fmt.Sprintf("%s|%s|%s|%d|%d", nvm.MessageType(), PRIVATE_KEY_PREFIX, km.MyPublicKey(), nvm.BlockHeight(), nvm.View())))
+		lh.Signature(fmt.Sprintf("%s|%s|%s|%d|%d", nvHeader.MessageType(), PRIVATE_KEY_PREFIX, km.MyPublicKey(), nvHeader.BlockHeight(), nvHeader.View())))
 }
 
 func (km *mockKeyManager) VerifyBlockRef(blockRef lh.BlockRef, sender lh.SenderSignature) bool {
@@ -52,21 +52,21 @@ func (km *mockKeyManager) VerifyBlockRef(blockRef lh.BlockRef, sender lh.SenderS
 	return signedMessage.Equals(sender.Signature())
 }
 
-func (km *mockKeyManager) VerifyViewChange(vcm lh.ViewChangeMessage, sender lh.SenderSignature) bool {
+func (km *mockKeyManager) VerifyViewChange(vcHeader lh.ViewChangeHeader, sender lh.SenderSignature) bool {
 	if myIdRejected(sender.SenderPublicKey(), km.RejectedPublicKeys) {
 		return false
 	}
 
-	signedMessage := lh.Signature(fmt.Sprintf("%s|%s|%s|%d|%d|%s", vcm.MessageType(), PRIVATE_KEY_PREFIX, sender.SenderPublicKey(), vcm.BlockHeight(), vcm.View(), vcm.BlockHash()))
+	signedMessage := lh.Signature(fmt.Sprintf("%s|%s|%s|%d|%d", vcHeader.MessageType(), PRIVATE_KEY_PREFIX, sender.SenderPublicKey(), vcHeader.BlockHeight(), vcHeader.View()))
 	return signedMessage.Equals(sender.Signature())
 }
 
-func (km *mockKeyManager) VerifyNewView(nvm lh.NewViewMessage, sender lh.SenderSignature) bool {
+func (km *mockKeyManager) VerifyNewView(nvHeader lh.NewViewHeader, sender lh.SenderSignature) bool {
 	if myIdRejected(sender.SenderPublicKey(), km.RejectedPublicKeys) {
 		return false
 	}
 
-	signedMessage := lh.Signature(fmt.Sprintf("%s|%s|%s|%d|%d|%s", nvm.MessageType(), PRIVATE_KEY_PREFIX, sender.SenderPublicKey(), nvm.BlockHeight(), nvm.View(), nvm.BlockHash()))
+	signedMessage := lh.Signature(fmt.Sprintf("%s|%s|%s|%d|%d", nvHeader.MessageType(), PRIVATE_KEY_PREFIX, sender.SenderPublicKey(), nvHeader.BlockHeight(), nvHeader.View()))
 	return signedMessage.Equals(sender.Signature())
 }
 

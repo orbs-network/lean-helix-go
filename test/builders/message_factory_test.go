@@ -14,10 +14,10 @@ func TestMessageFactory(t *testing.T) {
 	view := lh.View(math.Floor(rand.Float64() * 1000000))
 	block := CreateBlock(GenesisBlock)
 	//blockHash := CalculateBlockHash(block)
-	fac := lh.NewMessageFactory(CalculateBlockHash, keyManager)
+	fac := NewMockMessageFactory(CalculateBlockHash, keyManager)
 
 	ppm := fac.CreatePreprepareMessage(term, view, block)
 
-	require.Equal(t, term, ppm.BlockHeight(), "expected term to be %s but got %s", term, ppm.BlockHeight())
+	require.Equal(t, term, ppm.SignedHeader().BlockHeight(), "expected height to be %s but got %s", term, ppm.SignedHeader().BlockHeight())
 
 }

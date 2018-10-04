@@ -61,7 +61,7 @@ func (comm *InMemoryNetworkCommunication) SendToMembers(publicKeys []lh.PublicKe
 	panic("implement me")
 }
 
-func (comm *InMemoryNetworkCommunication) GetMembersPKs(seed uint64) []lh.PublicKey {
+func (comm *InMemoryNetworkCommunication) RequestOrderedCommittee(seed uint64) []lh.PublicKey {
 	return comm.discovery.AllGossipsPKs()
 }
 

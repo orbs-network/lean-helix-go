@@ -18,16 +18,16 @@ type leanHelixTerm struct {
 	log             log.BasicLogger
 	electionTrigger ElectionTrigger
 	BlockUtils
-	MyPublicKey            PublicKey
-	TermMembersPublicKeys  []PublicKey
-	OtherMembersPublicKeys []PublicKey
-	MessageFactory         MessageFactory
-	onCommittedBlock       func(block Block)
-	height                 BlockHeight
-	view                   View
-	disposed               bool
-	preparedLocally        bool
-	leaderPublicKey        PublicKey
+	MyPublicKey                   PublicKey
+	CommitteeMembersPublicKeys    []PublicKey
+	NonCommitteeMembersPublicKeys []PublicKey
+	MessageFactory                MessageFactory
+	onCommittedBlock              func(block Block)
+	height                        BlockHeight
+	view                          View
+	disposed                      bool
+	preparedLocally               bool
+	leaderPublicKey               PublicKey
 }
 
 func NewLeanHelixTerm(config *TermConfig, newBlockHeight BlockHeight, onCommittedBlock func(block Block)) (LeanHelixTerm, error) {
@@ -36,29 +36,29 @@ func NewLeanHelixTerm(config *TermConfig, newBlockHeight BlockHeight, onCommitte
 	blockUtils := config.BlockUtils
 	myPK := keyManager.MyPublicKey()
 	comm := config.NetworkCommunication
-	termMembers := comm.GetMembersPKs(uint64(newBlockHeight))
-	if len(termMembers) == 0 {
+	committeeMembers := comm.RequestOrderedCommittee(uint64(newBlockHeight))
+	if len(committeeMembers) == 0 {
 		return nil, fmt.Errorf("no members for block height %v", newBlockHeight)
 	}
-	otherMembers := make([]PublicKey, 0)
-	for _, member := range termMembers {
+	nonCommitteeMembers := make([]PublicKey, 0)
+	for _, member := range committeeMembers {
 		if !member.Equals(myPK) {
-			otherMembers = append(otherMembers, member)
+			nonCommitteeMembers = append(nonCommitteeMembers, member)
 		}
 	}
 
 	newTerm := &leanHelixTerm{
-		height:                newBlockHeight,
-		KeyManager:            keyManager,
-		NetworkCommunication:  comm,
-		Storage:               config.Storage,
-		log:                   config.Logger.For(log.Service("leanhelix-height")),
-		electionTrigger:       config.ElectionTrigger,
-		BlockUtils:            blockUtils,
-		TermMembersPublicKeys: termMembers,
-		MessageFactory:        NewMessageFactory(blockUtils.CalculateBlockHash, keyManager),
-		onCommittedBlock:      onCommittedBlock,
-		MyPublicKey:           myPK,
+		height:                     newBlockHeight,
+		KeyManager:                 keyManager,
+		NetworkCommunication:       comm,
+		Storage:                    config.Storage,
+		log:                        config.Logger.For(log.Service("leanhelix-height")),
+		electionTrigger:            config.ElectionTrigger,
+		BlockUtils:                 blockUtils,
+		CommitteeMembersPublicKeys: committeeMembers,
+		MessageFactory:             config.MessageFactory,
+		onCommittedBlock:           onCommittedBlock,
+		MyPublicKey:                myPK,
 	}
 
 	newTerm.startTerm()
@@ -96,13 +96,13 @@ func (term *leanHelixTerm) GetView() View {
 	return term.view
 }
 func (term *leanHelixTerm) sendPreprepare(message PreprepareMessage) {
-	term.NetworkCommunication.SendPreprepare(term.OtherMembersPublicKeys, message)
+	term.NetworkCommunication.SendPreprepare(term.NonCommitteeMembersPublicKeys, message)
 
 	term.log.Debug("GossipSend preprepare",
 		log.Stringable("senderPK", term.KeyManager.MyPublicKey()),
-		log.String("targetPKs", pksToString(term.OtherMembersPublicKeys)),
-		log.Stringable("height", message.View()),
-		log.Stringable("blockHash", message.BlockHash()),
+		log.String("targetPKs", pksToString(term.NonCommitteeMembersPublicKeys)),
+		log.Stringable("height", message.SignedHeader().View()),
+		log.Stringable("blockHash", message.SignedHeader().BlockHash()),
 	)
 }
 func pksToString(keys []PublicKey) string {
@@ -120,8 +120,8 @@ func (term *leanHelixTerm) initView(view View) {
 	term.electionTrigger.RegisterOnTrigger(view, func(v View) { term.onLeaderChange(v) })
 }
 func (term *leanHelixTerm) calcLeaderPublicKey(view View) PublicKey {
-	index := int(view) % len(term.TermMembersPublicKeys)
-	return term.TermMembersPublicKeys[index]
+	index := int(view) % len(term.CommitteeMembersPublicKeys)
+	return term.CommitteeMembersPublicKeys[index]
 }
 func (term *leanHelixTerm) IsLeader() bool {
 	return term.MyPublicKey.Equals(term.leaderPublicKey)
