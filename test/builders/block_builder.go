@@ -5,27 +5,31 @@ import (
 	lh "github.com/orbs-network/lean-helix-go"
 )
 
-var GenesisBlock = &block{
+var GenesisBlock = &MockBlock{
 	height:    0,
 	blockHash: lh.BlockHash("The Genesis Block"),
 }
 
-func (b *block) GetTerm() lh.BlockHeight {
+func CalculateBlockHash(block lh.Block) lh.BlockHash {
+	panic("impl me!")
+}
+
+func (b *MockBlock) GetTerm() lh.BlockHeight {
 	return b.height
 }
 
-func (h *block) GetBlockHash() lh.BlockHash {
+func (h *MockBlock) GetBlockHash() lh.BlockHash {
 	return h.blockHash
 }
 
-// block
-type block struct {
+// MockBlock
+type MockBlock struct {
 	height    lh.BlockHeight
 	blockHash lh.BlockHash
 	body      []byte
 }
 
-func (b *block) GetHeight() lh.BlockHeight {
+func (b *MockBlock) GetHeight() lh.BlockHeight {
 	return b.height
 }
 
@@ -38,7 +42,7 @@ func genBody() []byte {
 
 func CreateBlock(previousBlock lh.Block) lh.Block {
 
-	block := &block{
+	block := &MockBlock{
 		height:    previousBlock.GetHeight() + 1,
 		blockHash: CalculateBlockHash(previousBlock),
 		body:      genBody(),

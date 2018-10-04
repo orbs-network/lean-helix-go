@@ -110,7 +110,7 @@ func NewTestNetworkBuilder(nodeCount int) *TestNetworkBuilder {
 	testLogger := log.GetLogger(log.String("test-id", testId)).
 		WithOutput(log.NewOutput(output).
 			WithFormatter(log.NewHumanReadableFormatter()))
-	//WithFilter(log.String("flow", "block-sync")).
+	//WithFilter(log.String("flow", "MockBlock-sync")).
 	//WithFilter(log.String("service", "gossip"))
 	testLogger.Info("===========================================================================")
 

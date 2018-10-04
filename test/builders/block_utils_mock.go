@@ -1,7 +1,6 @@
 package builders
 
 import (
-	"fmt"
 	"github.com/orbs-network/go-mock"
 	lh "github.com/orbs-network/lean-helix-go"
 )
@@ -17,11 +16,6 @@ func NewMockBlockUtils(upcomingBlocks []lh.Block) *MockBlockUtils {
 		upcomingBlocks: upcomingBlocks,
 		latestBlock:    GenesisBlock,
 	}
-}
-
-func CalculateBlockHash(b lh.Block) lh.BlockHash {
-	testBlock := b.(*block)
-	return lh.BlockHash(fmt.Sprintf("%s_%d_%s", testBlock.body, testBlock.GetTerm(), testBlock.GetBlockHash()))
 }
 
 func (b MockBlockUtils) CalculateBlockHash(block lh.Block) lh.BlockHash {

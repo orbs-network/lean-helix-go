@@ -326,6 +326,8 @@ func (mf *mockMessageFactory) CreateViewChangeMessage(blockHeight lh.BlockHeight
 	return result
 }
 
+// TODO add CreateNewViewMessage
+
 func generatePreparedProof(preprepare lh.PreprepareMessage, prepares []lh.PrepareMessage) *preparedProof {
 	return &preparedProof{
 		preprepare: preprepare,
