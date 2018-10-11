@@ -10,6 +10,50 @@ type mockMessageFactory struct {
 	MyPK               lh.PublicKey
 }
 
+func (mf *mockMessageFactory) CreatePreprepareMessage(blockRef lh.BlockRef, sender lh.SenderSignature, block lh.Block) lh.PreprepareMessage {
+	panic("implement me")
+}
+
+func (mf *mockMessageFactory) CreatePrepareMessage(blockRef lh.BlockRef, sender lh.SenderSignature) lh.PrepareMessage {
+	panic("implement me")
+}
+
+func (mf *mockMessageFactory) CreateCommitMessage(blockRef lh.BlockRef, sender lh.SenderSignature) lh.CommitMessage {
+	panic("implement me")
+}
+
+func (mf *mockMessageFactory) CreateViewChangeMessage(vcHeader lh.ViewChangeHeader, sender lh.SenderSignature, block lh.Block) lh.ViewChangeMessage {
+	panic("implement me")
+}
+
+func (mf *mockMessageFactory) CreateNewViewMessage(preprepareMessage lh.PreprepareMessage, nvHeader lh.NewViewHeader, sender lh.SenderSignature) lh.NewViewMessage {
+	panic("implement me")
+}
+
+func (mf *mockMessageFactory) CreateSenderSignature(sender []byte, signature []byte) lh.SenderSignature {
+	panic("implement me")
+}
+
+func (mf *mockMessageFactory) CreateBlockRef(messageType int, blockHeight int, view int, blockHash []byte) lh.BlockRef {
+	panic("implement me")
+}
+
+func (mf *mockMessageFactory) CreateNewViewHeader(messageType int, blockHeight int, view int, confirmations []lh.ViewChangeConfirmation) lh.NewViewHeader {
+	panic("implement me")
+}
+
+func (mf *mockMessageFactory) CreateViewChangeConfirmation(vcHeader lh.ViewChangeHeader, sender lh.SenderSignature) lh.ViewChangeConfirmation {
+	panic("implement me")
+}
+
+func (mf *mockMessageFactory) CreateViewChangeHeader(blockHeight int, view int, proof lh.PreparedProof) lh.ViewChangeHeader {
+	panic("implement me")
+}
+
+func (mf *mockMessageFactory) CreatePreparedProof(ppBlockRef lh.BlockRef, pBlockRef lh.BlockRef, ppSender lh.SenderSignature, pSenders []lh.SenderSignature) lh.PreparedProof {
+	panic("implement me")
+}
+
 // signedHeader
 type blockRef struct {
 	messageType lh.MessageType

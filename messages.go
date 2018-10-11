@@ -13,43 +13,60 @@ const (
 // START MESSAGE TYPES //
 
 type PreprepareMessage interface {
+	Serializable
 	SignedHeader() BlockRef
 	Sender() SenderSignature
 	Block() Block
 }
 
 type PrepareMessage interface {
+	Serializable
 	SignedHeader() BlockRef
 	Sender() SenderSignature
 }
 
 type CommitMessage interface {
+	Serializable
 	SignedHeader() BlockRef
 	Sender() SenderSignature
-	// TODO Add RandomSeedShare?
-}
-
-type ViewChangeHeader interface {
-	HasMessageType
-	BlockHeight() BlockHeight
-	View() View
-	PreparedProof() PreparedProof
 }
 
 type ViewChangeMessage interface {
+	Serializable
 	SignedHeader() ViewChangeHeader
 	Sender() SenderSignature
 	Block() Block
 }
 
 type NewViewMessage interface {
+	Serializable
 	SignedHeader() NewViewHeader
+	PreprepareMessage() PreprepareMessage
 	Sender() SenderSignature
 }
 
 // END MESSAGE TYPES //
 
+// START MESSAGE PARTS TYPES //
+
+type BlockRef interface {
+	Serializable
+	HasMessageType
+	BlockHeight() BlockHeight
+	View() View
+	BlockHash() BlockHash
+}
+
+type ViewChangeHeader interface {
+	Serializable
+	HasMessageType
+	BlockHeight() BlockHeight
+	View() View
+	PreparedProof() PreparedProof
+}
+
 type SenderSignature interface {
+	Serializable
 	SenderPublicKey() PublicKey
 	Signature() Signature
 }
@@ -58,25 +75,21 @@ type HasMessageType interface {
 	MessageType() MessageType
 }
 
-type MessageTransporter interface {
-	SenderSignature
-	HasMessageType
-}
-
-type BlockRef interface {
-	HasMessageType
-	BlockHeight() BlockHeight
-	View() View
-	BlockHash() BlockHash // TODO Gad: rename this to "current block hash"???
+type Serializable interface {
+	Serialize() []byte
 }
 
 // TODO this is different from definition of LeanHelixPreparedProof in lean_helix.mb.go:448 in orbs-spec
 type PreparedProof interface {
-	PreprepareMessage() PreprepareMessage
-	PrepareMessages() []PrepareMessage
+	Serializable
+	PPBlockRef() BlockRef
+	PBlockRef() BlockRef
+	PPSender() SenderSignature
+	PSenders() []SenderSignature
 }
 
 type NewViewHeader interface {
+	Serializable
 	HasMessageType
 	BlockHeight() BlockHeight
 	View() View
@@ -84,8 +97,50 @@ type NewViewHeader interface {
 }
 
 type ViewChangeConfirmation interface {
-	Sender() SenderSignature
+	Serializable
 	SignedHeader() ViewChangeHeader
+	Sender() SenderSignature
+}
+
+// END MESSAGE PART TYPES
+
+type MessageTransporter interface {
+	SenderSignature
+	HasMessageType
+}
+
+//type MessageFactory interface {
+//	CreatePreprepareMessage(blockHeight BlockHeight, view View, block Block) PreprepareMessage
+//	CreatePrepareMessage(blockHeight BlockHeight, view View, blockHash BlockHash) PrepareMessage
+//	CreateCommitMessage(blockHeight BlockHeight, view View, blockHash BlockHash) CommitMessage
+//	CreateViewChangeMessage(blockHeight BlockHeight, view View, preparedMessages []PreprepareMessage) ViewChangeMessage
+//	CreateNewViewMessage(blockHeight BlockHeight, view View, preprepareMessage PreprepareMessage, viewChangeConfirmations []ViewChangeConfirmation) NewViewMessage
+//	//CreatePreparedProof(preprepare PreprepareMessage, prepares []PrepareMessage) PreparedProof
+//}
+//
+type MessageFactory interface {
+	// Message creation methods
+
+	CreatePreprepareMessage(blockRef BlockRef, sender SenderSignature, block Block) PreprepareMessage
+	CreatePrepareMessage(blockRef BlockRef, sender SenderSignature) PrepareMessage
+	CreateCommitMessage(blockRef BlockRef, sender SenderSignature) CommitMessage
+	CreateViewChangeMessage(vcHeader ViewChangeHeader, sender SenderSignature, block Block) ViewChangeMessage
+	CreateNewViewMessage(preprepareMessage PreprepareMessage, nvHeader NewViewHeader, sender SenderSignature) NewViewMessage
+
+	// Auxiliary methods
+
+	CreateSenderSignature(sender []byte, signature []byte) SenderSignature
+	CreateBlockRef(messageType int, blockHeight int, view int, blockHash []byte) BlockRef
+	CreateNewViewHeader(messageType int, blockHeight int, view int, confirmations []ViewChangeConfirmation) NewViewHeader
+	CreateViewChangeConfirmation(vcHeader ViewChangeHeader, sender SenderSignature) ViewChangeConfirmation
+	CreateViewChangeHeader(blockHeight int, view int, proof PreparedProof) ViewChangeHeader
+	CreatePreparedProof(ppBlockRef BlockRef, pBlockRef BlockRef, ppSender SenderSignature, pSenders []SenderSignature) PreparedProof
+
+	// TODO Remove old methods once not needed
+}
+
+type InternalMessageFactory interface {
+	// TODO USe TDD to decide on methods here
 }
 
 //type MessageType string

@@ -35,52 +35,52 @@ func TestProofsValidator(t *testing.T) {
 
 	t.Run("TestProofsValidatorWithNoPrePrepare", func(t *testing.T) {
 		preparedProof := lh.CreatePreparedProof(nil, []lh.PrepareMessage{prepareMessage1, prepareMessage2})
-		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
+		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, membersPKs, calcLeaderPk)
 		require.False(t, result, "Did not reject a proof that did not have a preprepare message")
 	})
 
 	t.Run("TestProofsValidatorWithNoPrepares", func(t *testing.T) {
 		preparedProof := lh.CreatePreparedProof(preprepareMessage, nil)
 
-		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
+		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, membersPKs, calcLeaderPk)
 		require.False(t, result, "Did not reject a proof that did not have prepare messages")
 	})
 
 	t.Run("TestProofsValidatorWithNoProof", func(t *testing.T) {
-		result := lh.ValidatePreparedProof(targetTerm, targetView, nil, f, keyManager, &membersPKs, calcLeaderPk)
+		result := lh.ValidatePreparedProof(targetTerm, targetView, nil, f, keyManager, membersPKs, calcLeaderPk)
 		require.True(t, result, "Did not approve a nil proof")
 	})
 
 	t.Run("TestProofsValidatorWithBadPreprepareSignature", func(t *testing.T) {
 		keyManager := builders.NewMockKeyManager(lh.PublicKey("Dummy PK"), lh.PublicKey("Leader PK"))
-		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
+		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, membersPKs, calcLeaderPk)
 		require.False(t, result, "Did not reject a proof that did not pass preprepare signature validation")
 	})
 
 	t.Run("TestProofsValidatorWithBadPrepareSignature", func(t *testing.T) {
 		keyManager := builders.NewMockKeyManager(lh.PublicKey("Dummy PK"), lh.PublicKey("Node 2"))
-		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
+		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, membersPKs, calcLeaderPk)
 		require.False(t, result, "Did not reject a proof that did not pass prepare signature validation")
 	})
 
 	t.Run("TestProofsValidatorWithNotEnoughPrepareMessages", func(t *testing.T) {
 		preparedProof := lh.CreatePreparedProof(preprepareMessage, []lh.PrepareMessage{prepareMessage1})
-		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
+		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, membersPKs, calcLeaderPk)
 		require.False(t, result, "Did not reject a proof with not enough prepares")
 	})
 
 	t.Run("TestProofsValidatorWithTerm", func(t *testing.T) {
-		result := lh.ValidatePreparedProof(666, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
+		result := lh.ValidatePreparedProof(666, targetView, preparedProof, f, keyManager, membersPKs, calcLeaderPk)
 		require.False(t, result, "Did not reject a proof with mismatching term")
 	})
 
 	t.Run("TestProofsValidatorWithTheSameView", func(t *testing.T) {
-		result := lh.ValidatePreparedProof(targetTerm, view, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
+		result := lh.ValidatePreparedProof(targetTerm, view, preparedProof, f, keyManager, membersPKs, calcLeaderPk)
 		require.False(t, result, "Did not reject a proof with equal targetView")
 	})
 
 	t.Run("TestProofsValidatorWithTheSmallerView", func(t *testing.T) {
-		result := lh.ValidatePreparedProof(targetTerm, targetView-1, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
+		result := lh.ValidatePreparedProof(targetTerm, targetView-1, preparedProof, f, keyManager, membersPKs, calcLeaderPk)
 		require.False(t, result, "Did not reject a proof with smaller targetView")
 	})
 
@@ -89,7 +89,7 @@ func TestProofsValidator(t *testing.T) {
 		mf := builders.NewMockMessageFactory(builders.CalculateBlockHash, noneMemberKeyManager)
 		prepareMessage1 := mf.CreatePrepareMessage(term, view, block)
 		preparedProof := lh.CreatePreparedProof(preprepareMessage, []lh.PrepareMessage{prepareMessage1, prepareMessage2})
-		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
+		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, membersPKs, calcLeaderPk)
 		require.False(t, result, "Did not reject a proof with a none member")
 	})
 
@@ -97,7 +97,7 @@ func TestProofsValidator(t *testing.T) {
 		mf := builders.NewMockMessageFactory(builders.CalculateBlockHash, leaderKeyManager)
 		prepareMessage1 := mf.CreatePrepareMessage(term, view, block)
 		preparedProof := lh.CreatePreparedProof(preprepareMessage, []lh.PrepareMessage{prepareMessage1, prepareMessage2})
-		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
+		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, membersPKs, calcLeaderPk)
 		require.False(t, result, "Did not reject a proof with a prepare from the leader")
 	})
 
@@ -106,7 +106,7 @@ func TestProofsValidator(t *testing.T) {
 			return lh.PublicKey("Some other node PK")
 		}
 		preparedProof := lh.CreatePreparedProof(preprepareMessage, []lh.PrepareMessage{prepareMessage1, prepareMessage2})
-		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
+		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, membersPKs, calcLeaderPk)
 		require.False(t, result, "Did not reject a proof with a mismatching view to leader")
 	})
 
@@ -127,7 +127,7 @@ func TestProofsValidator(t *testing.T) {
 			node1MF.CreatePrepareMessage(term, view, block),
 			node2MF.CreatePrepareMessage(term, view, block),
 		})
-		actualGood := lh.ValidatePreparedProof(targetTerm, targetView, goodPrepareProof, f, keyManager, &membersPKs, calcLeaderPk)
+		actualGood := lh.ValidatePreparedProof(targetTerm, targetView, goodPrepareProof, f, keyManager, membersPKs, calcLeaderPk)
 		require.True(t, actualGood, "Did not approve a valid proof")
 
 		// Mismatching term //
@@ -136,7 +136,7 @@ func TestProofsValidator(t *testing.T) {
 			node2MF.CreatePrepareMessage(666, view, block),
 		})
 
-		actualBadTerm := lh.ValidatePreparedProof(targetTerm, targetView, badTermProof, f, keyManager, &membersPKs, calcLeaderPk)
+		actualBadTerm := lh.ValidatePreparedProof(targetTerm, targetView, badTermProof, f, keyManager, membersPKs, calcLeaderPk)
 		require.False(t, actualBadTerm, "Did not reject mismatching term")
 
 		// Mismatching view //
@@ -144,7 +144,7 @@ func TestProofsValidator(t *testing.T) {
 			node1MF.CreatePrepareMessage(term, view, block),
 			node2MF.CreatePrepareMessage(term, 666, block),
 		})
-		actualBadView := lh.ValidatePreparedProof(targetTerm, targetView, badViewProof, f, keyManager, &membersPKs, calcLeaderPk)
+		actualBadView := lh.ValidatePreparedProof(targetTerm, targetView, badViewProof, f, keyManager, membersPKs, calcLeaderPk)
 		require.False(t, actualBadView, "Did not reject mismatching view")
 
 		// Mismatching blockHash //
@@ -154,7 +154,7 @@ func TestProofsValidator(t *testing.T) {
 			node2MF.CreatePrepareMessage(term, view, otherBlock),
 		})
 
-		actualBadBlockHash := lh.ValidatePreparedProof(targetTerm, targetView, badBlockHashProof, f, keyManager, &membersPKs, calcLeaderPk)
+		actualBadBlockHash := lh.ValidatePreparedProof(targetTerm, targetView, badBlockHashProof, f, keyManager, membersPKs, calcLeaderPk)
 		require.False(t, actualBadBlockHash, "Did not reject mismatching block hash")
 	})
 
@@ -166,12 +166,12 @@ func TestProofsValidator(t *testing.T) {
 			node1MF.CreatePrepareMessage(term, view, block),
 			node1MF.CreatePrepareMessage(term, view, block),
 		})
-		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
+		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, membersPKs, calcLeaderPk)
 		require.False(t, result, "Did not reject a proof with duplicate sender PK")
 	})
 
 	t.Run("TestProofsValidatorWithNoProof", func(t *testing.T) {
-		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, &membersPKs, calcLeaderPk)
+		result := lh.ValidatePreparedProof(targetTerm, targetView, preparedProof, f, keyManager, membersPKs, calcLeaderPk)
 		require.True(t, result, "Did not approve a valid proof")
 	})
 }

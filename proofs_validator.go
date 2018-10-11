@@ -1,8 +1,8 @@
 package leanhelix
 
-func isInMembers(membersPKs *[]PublicKey, publicKey *PublicKey) bool {
-	for _, memberPK := range *membersPKs {
-		if memberPK.Equals(*publicKey) {
+func isInMembers(membersPKs []PublicKey, publicKey PublicKey) bool {
+	for _, memberPK := range membersPKs {
+		if memberPK.Equals(publicKey) {
 			return true
 		}
 	}
@@ -21,81 +21,85 @@ func ValidatePreparedProof(
 	preparedProof PreparedProof,
 	f int,
 	keyManager KeyManager,
-	membersPKs *[]PublicKey,
+	membersPKs []PublicKey,
 	calcLeaderPk CalcLeaderPk) bool {
 	if preparedProof == nil {
 		return true
 	}
 
-	ppm := preparedProof.PreprepareMessage()
-	if ppm == nil {
+	ppBlockRef := preparedProof.PPBlockRef()
+	ppSender := preparedProof.PPSender()
+	pBlockRef := preparedProof.PBlockRef()
+	pSenders := preparedProof.PSenders()
+
+	if ppBlockRef == nil {
 		return false
 	}
 
-	prepareBlockRefMessages := preparedProof.PrepareMessages()
-	if prepareBlockRefMessages == nil {
+	if pSenders == nil {
 		return false
 	}
 
-	term := ppm.SignedHeader().BlockHeight()
-	if term != targetHeight {
+	ppBlockHeight := ppBlockRef.BlockHeight()
+
+	if ppBlockHeight != targetHeight {
 		return false
 	}
 
-	view := ppm.SignedHeader().View()
-	if view >= targetView {
+	ppView := ppBlockRef.View()
+	if ppView >= targetView {
 		return false
 	}
 
-	if len(prepareBlockRefMessages) < 2*f {
+	if !pBlockRef.BlockHash().Equals(ppBlockRef.BlockHash()) {
+		return false
+	}
+
+	if len(pSenders) < 2*f {
 		return false
 	}
 
 	// TODO Refactor names here!!!
 
-	if verifyBlockRefMessage(ppm.SignedHeader(), ppm.Sender(), keyManager) == false {
+	if !verifyBlockRefMessage(ppBlockRef, ppSender, keyManager) {
 		return false
 	}
 
-	leaderPk := ppm.Sender().SenderPublicKey()
-	if !calcLeaderPk(view).Equals(leaderPk) {
+	leaderFromPPMessage := ppSender.SenderPublicKey()
+	leaderFromView := calcLeaderPk(ppView)
+	if !leaderFromView.Equals(leaderFromPPMessage) {
 		return false
 	}
 
-	seen := make(map[PublicKeyStr]bool, len(prepareBlockRefMessages))
-	for _, msg := range prepareBlockRefMessages {
+	if !pBlockRef.BlockHeight().Equals(ppBlockHeight) {
+		return false
+	}
 
-		if keyManager.VerifyBlockRef(msg.SignedHeader(), msg.Sender()) == false {
+	if !pBlockRef.View().Equals(ppView) {
+		return false
+	}
+
+	set := make(map[PublicKeyStr]bool, len(pSenders))
+	for _, pSender := range pSenders {
+
+		pSenderPublicKey := pSender.SenderPublicKey()
+		if keyManager.VerifyBlockRef(pBlockRef, pSender) == false {
 			return false
 		}
 
-		publicKey := msg.Sender().SenderPublicKey()
-
-		if publicKey.Equals(leaderPk) {
+		if pSenderPublicKey.Equals(leaderFromPPMessage) {
 			return false
 		}
 
-		if isInMembers(membersPKs, &publicKey) == false {
+		if isInMembers(membersPKs, pSenderPublicKey) == false {
 			return false
 		}
 
-		if msg.SignedHeader().BlockHeight() != term {
+		if _, ok := set[PublicKeyStr(pSenderPublicKey)]; ok {
 			return false
 		}
 
-		if msg.SignedHeader().View() != view {
-			return false
-		}
-
-		if !msg.SignedHeader().BlockHash().Equals(ppm.SignedHeader().BlockHash()) {
-			return false
-		}
-
-		if _, ok := seen[PublicKeyStr(publicKey)]; ok {
-			return false
-		}
-
-		seen[PublicKeyStr(publicKey)] = true
+		set[PublicKeyStr(pSenderPublicKey)] = true
 	}
 
 	return true

@@ -11,6 +11,11 @@ type LeanHelix interface {
 	Dispose()
 	Start(blockHeight BlockHeight)
 	IsLeader() bool
+
+	// OnPreprepareMessage(ppm PreprepareMessage)
+	// TODO: orbs will build a concrete type
+
+	// Add MessageHandler
 }
 
 // TODO looks identical to Config, why is this needed?
@@ -21,7 +26,7 @@ type TermConfig struct {
 	Logger               log.BasicLogger
 	ElectionTrigger      ElectionTrigger
 	Storage              Storage
-	MessageFactory       MessageFactory
+	MessageFactory       InternalMessageFactory
 }
 
 type leanHelix struct {

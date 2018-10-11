@@ -1,7 +1,5 @@
 package leanhelix
 
-import "sort"
-
 type BlockHashStr string
 type PublicKeyStr string
 
@@ -227,34 +225,34 @@ func (storage *InMemoryStorage) GetPrepares(blockHeight BlockHeight, view View, 
 	return values, true
 }
 
-func (storage *InMemoryStorage) GetLatestPrepared(blockHeight BlockHeight, f int) (PreparedProof, bool) {
-	views, ok := storage.preprepareStorage[blockHeight]
-	if !ok {
-		return nil, false
-	}
-	if len(views) == 0 {
-		return nil, false
-	}
-	viewKeys := make([]View, 0, len(views))
-	for key := range views {
-		viewKeys = append(viewKeys, key)
-	}
-	sort.Sort(ViewCounters(viewKeys))
-	lastView := viewKeys[len(viewKeys)-1]
-
-	ppm, ok := storage.GetPreprepare(blockHeight, lastView)
-	if !ok {
-		return nil, false
-	}
-	prepareMessages, ok := storage.GetPrepares(blockHeight, lastView, ppm.SignedHeader().BlockHash())
-	if len(prepareMessages) < f*2 {
-		return nil, false
-	}
-
-	proof := CreatePreparedProof(ppm, prepareMessages)
-	return proof, true
-
-}
+//func (storage *InMemoryStorage) GetLatestPrepared(blockHeight BlockHeight, f int) (PreparedProof, bool) {
+//	views, ok := storage.preprepareStorage[blockHeight]
+//	if !ok {
+//		return nil, false
+//	}
+//	if len(views) == 0 {
+//		return nil, false
+//	}
+//	viewKeys := make([]View, 0, len(views))
+//	for key := range views {
+//		viewKeys = append(viewKeys, key)
+//	}
+//	sort.Sort(ViewCounters(viewKeys))
+//	lastView := viewKeys[len(viewKeys)-1]
+//
+//	lastViewPpm, ok := storage.GetPreprepare(blockHeight, lastView)
+//	if !ok {
+//		return nil, false
+//	}
+//	prepareMessages, ok := storage.GetPrepares(blockHeight, lastView, lastViewPpm.SignedHeader().BlockHash())
+//	if len(prepareMessages) < f*2 {
+//		return nil, false
+//	}
+//
+//	proof := CreatePreparedProof(lastViewPpm, prepareMessages)
+//	return proof, true
+//
+//}
 
 // TODO Keep this name? it means the same as Term in LeanHelixTerm
 func (storage *InMemoryStorage) ClearTermLogs(blockHeight BlockHeight) {

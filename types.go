@@ -6,10 +6,18 @@ func (h BlockHeight) String() string {
 	return string(h)
 }
 
+func (h BlockHeight) Equals(other BlockHeight) bool {
+	return uint64(h) == uint64(other)
+}
+
 type View uint64
 
 func (v View) String() string {
 	return string(v)
+}
+
+func (v View) Equals(other View) bool {
+	return uint64(v) == uint64(other)
 }
 
 type BlockHash []byte
