@@ -11,8 +11,15 @@ Spec location: TBD
 ## TODO
 * See [issues on Github](https://github.com/orbs-network/lean-helix-go/issues)
 
+## Design (Lean Helix fully serializes its messages internally)
+Uses orbs-spec
+* orbs-spec/interfaces/protocol/gossipmessages/lean-helix.proto
+* orbs-spec/interfaces/protocol/consensus/lean-helix.proto
 
-## Design
+
+
+
+## Design (Lean helix only uses interfaces)
 This library does not create any Message objects on its own.
 It defines interfaces and leaves it to the user of the library to
 create structs that implement them. This is because a Message can contain any data the user wishes, and the library needs not be concerned with that,
