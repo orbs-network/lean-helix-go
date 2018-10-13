@@ -47,10 +47,12 @@ func CreatePreprepareMessage(
 
 func TestCreatePPM(t *testing.T) {
 
-	// TODO Write this thing
+	// TODO This will demo how to create a message and convert to []byte
+	// TODO Uncomment and write it
 
 	//ppm := CreatePreprepareMessage(&builders.MockBlockUtils{}, )
-
+	//bytes := ppm.Raw()
+	//
 }
 
 //func CreatePreparedProof(ref leanhelix.BlockRef) {
