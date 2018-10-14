@@ -3,14 +3,11 @@ package builders
 import (
 	"github.com/orbs-network/go-mock"
 	"github.com/orbs-network/lean-helix-go"
+	. "github.com/orbs-network/lean-helix-go/primitives"
 )
 
 type mockStorage struct {
 	mock.Mock
-}
-
-func NewMockStorage() *mockStorage {
-	return &mockStorage{}
 }
 
 func (s *mockStorage) StorePreprepare(ppm leanhelix.PreprepareMessage) bool {
@@ -19,8 +16,6 @@ func (s *mockStorage) StorePreprepare(ppm leanhelix.PreprepareMessage) bool {
 }
 
 func (s *mockStorage) StorePrepare(pp leanhelix.PrepareMessage) bool {
-	//ret := s.Called(pp)
-	//return ret.Get(0).(bool)
 	panic("implement me")
 }
 
@@ -32,30 +27,34 @@ func (s *mockStorage) StoreViewChange(vcm leanhelix.ViewChangeMessage) bool {
 	panic("implement me")
 }
 
-func (s *mockStorage) GetPrepareSendersPKs(term leanhelix.BlockHeight, view leanhelix.View, blockHash leanhelix.BlockHash) []leanhelix.PublicKey {
+func (s *mockStorage) GetPrepareSendersPKs(blockHeight BlockHeight, view View, blockHash leanhelix.BlockHashStr) []Ed25519PublicKey {
 	panic("implement me")
 }
 
-func (s *mockStorage) GetCommitSendersPKs(term leanhelix.BlockHeight, view leanhelix.View, blockHash leanhelix.BlockHash) []leanhelix.PublicKey {
+func (s *mockStorage) GetCommitSendersPKs(blockHeight BlockHeight, view View, blockHash leanhelix.BlockHashStr) []Ed25519PublicKey {
 	panic("implement me")
 }
 
-func (s *mockStorage) GetViewChangeMessages(term leanhelix.BlockHeight, view leanhelix.View, f int) []leanhelix.ViewChangeMessage {
+func (s *mockStorage) GetViewChangeMessages(blockHeight BlockHeight, view View, f int) []leanhelix.ViewChangeMessage {
 	panic("implement me")
 }
 
-func (s *mockStorage) GetPreprepare(term leanhelix.BlockHeight, view leanhelix.View) (leanhelix.PreprepareMessage, bool) {
+func (s *mockStorage) GetPreprepare(blockHeight BlockHeight, view View) (leanhelix.PreprepareMessage, bool) {
 	panic("implement me")
 }
 
-func (s *mockStorage) GetPrepares(term leanhelix.BlockHeight, view leanhelix.View, blockHash leanhelix.BlockHash) ([]leanhelix.PrepareMessage, bool) {
+func (s *mockStorage) GetPrepares(blockHeight BlockHeight, view View, blockHash leanhelix.BlockHashStr) ([]leanhelix.PrepareMessage, bool) {
 	panic("implement me")
 }
 
-func (s *mockStorage) GetLatestPrepared(term leanhelix.BlockHeight, f int) (leanhelix.PreparedProof, bool) {
+func (s *mockStorage) GetLatestPrepared(blockHeight BlockHeight, f int) (leanhelix.PreparedProof, bool) {
 	panic("implement me")
 }
 
-func (s *mockStorage) ClearTermLogs(term leanhelix.BlockHeight) {
+func (s *mockStorage) ClearTermLogs(blockHeight BlockHeight) {
 	panic("implement me")
+}
+
+func NewMockStorage() *mockStorage {
+	return &mockStorage{}
 }

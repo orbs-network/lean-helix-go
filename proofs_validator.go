@@ -1,36 +1,46 @@
 package leanhelix
 
-func isInMembers(membersPKs []PublicKey, publicKey PublicKey) bool {
+import . "github.com/orbs-network/lean-helix-go/primitives"
+
+func isInMembers(membersPKs []Ed25519PublicKey, publicKey Ed25519PublicKey) bool {
 	for _, memberPK := range membersPKs {
-		if memberPK.Equals(publicKey) {
+		if memberPK.Equal(publicKey) {
 			return true
 		}
 	}
 	return false
 }
 
-func verifyBlockRefMessage(blockRef BlockRef, sender SenderSignature, keyManager KeyManager) bool {
-	return keyManager.VerifyBlockRef(blockRef, sender)
+func verifyBlockRefMessage(blockRef *BlockRef, sender *SenderSignature, keyManager KeyManager) bool {
+	return keyManager.Verify(blockRef.Raw(), sender)
 }
 
-type CalcLeaderPk = func(view View) PublicKey
+type CalcLeaderPk = func(view View) Ed25519PublicKey
 
 func ValidatePreparedProof(
 	targetHeight BlockHeight,
 	targetView View,
-	preparedProof PreparedProof,
+	preparedProof *PreparedProof,
 	f int,
 	keyManager KeyManager,
-	membersPKs []PublicKey,
+	membersPKs []Ed25519PublicKey,
 	calcLeaderPk CalcLeaderPk) bool {
 	if preparedProof == nil {
 		return true
 	}
 
-	ppBlockRef := preparedProof.PPBlockRef()
-	ppSender := preparedProof.PPSender()
-	pBlockRef := preparedProof.PBlockRef()
-	pSenders := preparedProof.PSenders()
+	ppBlockRef := preparedProof.PreprepareBlockRef()
+	ppSender := preparedProof.PreprepareSender()
+	pBlockRef := preparedProof.PrepareBlockRef()
+	pSendersIter := preparedProof.PrepareSendersIterator()
+	pSenders := make([]*SenderSignature, 0, 1)
+
+	for {
+		if !pSendersIter.HasNext() {
+			break
+		}
+		pSenders = append(pSenders, pSendersIter.NextPrepareSenders())
+	}
 
 	if ppBlockRef == nil {
 		return false
@@ -51,7 +61,7 @@ func ValidatePreparedProof(
 		return false
 	}
 
-	if !pBlockRef.BlockHash().Equals(ppBlockRef.BlockHash()) {
+	if !pBlockRef.BlockHash().Equal(ppBlockRef.BlockHash()) {
 		return false
 	}
 
@@ -67,27 +77,27 @@ func ValidatePreparedProof(
 
 	leaderFromPPMessage := ppSender.SenderPublicKey()
 	leaderFromView := calcLeaderPk(ppView)
-	if !leaderFromView.Equals(leaderFromPPMessage) {
+	if !leaderFromView.Equal(leaderFromPPMessage) {
 		return false
 	}
 
-	if !pBlockRef.BlockHeight().Equals(ppBlockHeight) {
+	if !pBlockRef.BlockHeight().Equal(ppBlockHeight) {
 		return false
 	}
 
-	if !pBlockRef.View().Equals(ppView) {
+	if !pBlockRef.View().Equal(ppView) {
 		return false
 	}
 
-	set := make(map[PublicKeyStr]bool, len(pSenders))
+	set := make(map[PublicKeyStr]bool)
 	for _, pSender := range pSenders {
 
 		pSenderPublicKey := pSender.SenderPublicKey()
-		if keyManager.VerifyBlockRef(pBlockRef, pSender) == false {
+		if keyManager.Verify(pBlockRef.Raw(), pSender) == false {
 			return false
 		}
 
-		if pSenderPublicKey.Equals(leaderFromPPMessage) {
+		if pSenderPublicKey.Equal(leaderFromPPMessage) {
 			return false
 		}
 

@@ -1,36 +1,38 @@
 package gossip
 
 import (
-	lh "github.com/orbs-network/lean-helix-go"
+	. "github.com/orbs-network/lean-helix-go/primitives"
 )
 
+type PublicKeyStr string
+
 type Discovery interface {
-	GetGossipByPK(pk lh.PublicKey) (*Gossip, bool)
-	RegisterGossip(pk lh.PublicKey, gossip *Gossip)
-	AllGossipsPKs() []lh.PublicKey
-	Gossips(pks []lh.PublicKey) []*Gossip
+	GetGossipByPK(pk Ed25519PublicKey) (*Gossip, bool)
+	RegisterGossip(pk Ed25519PublicKey, gossip *Gossip)
+	AllGossipsPKs() []Ed25519PublicKey
+	Gossips(pks []Ed25519PublicKey) []*Gossip
 }
 
 type discovery struct {
-	gossips map[lh.PublicKeyStr]*Gossip
+	gossips map[string]*Gossip
 }
 
 func NewGossipDiscovery() Discovery {
 	return &discovery{
-		gossips: make(map[lh.PublicKeyStr]*Gossip),
+		gossips: make(map[string]*Gossip),
 	}
 }
 
-func (d *discovery) GetGossipByPK(pk lh.PublicKey) (*Gossip, bool) {
-	result, ok := d.gossips[lh.PublicKeyStr(pk)]
+func (d *discovery) GetGossipByPK(pk Ed25519PublicKey) (*Gossip, bool) {
+	result, ok := d.gossips[pk.String()]
 	return result, ok
 }
 
-func (d *discovery) RegisterGossip(pk lh.PublicKey, gossip *Gossip) {
-	d.gossips[lh.PublicKeyStr(pk)] = gossip
+func (d *discovery) RegisterGossip(pk Ed25519PublicKey, gossip *Gossip) {
+	d.gossips[pk.String()] = gossip
 }
 
-func (d *discovery) Gossips(pks []lh.PublicKey) []*Gossip {
+func (d *discovery) Gossips(pks []Ed25519PublicKey) []*Gossip {
 
 	if pks == nil {
 		return d.getAllGossips()
@@ -48,9 +50,9 @@ func (d *discovery) Gossips(pks []lh.PublicKey) []*Gossip {
 	return res
 }
 
-func indexOf(pk lh.PublicKey, pks []lh.PublicKey) bool {
+func indexOf(pk Ed25519PublicKey, pks []Ed25519PublicKey) bool {
 	for _, key := range pks {
-		if key.Equals(pk) {
+		if key.Equal(pk) {
 			return true
 		}
 	}
@@ -65,10 +67,10 @@ func (d *discovery) getAllGossips() []*Gossip {
 	return gossips
 }
 
-func (d *discovery) AllGossipsPKs() []lh.PublicKey {
-	keys := make([]lh.PublicKey, 0, len(d.gossips))
+func (d *discovery) AllGossipsPKs() []Ed25519PublicKey {
+	keys := make([]Ed25519PublicKey, 0, len(d.gossips))
 	for key := range d.gossips {
-		keys = append(keys, lh.PublicKey(key))
+		keys = append(keys, Ed25519PublicKey(key))
 	}
 	return keys
 }

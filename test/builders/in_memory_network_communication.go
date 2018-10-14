@@ -2,6 +2,7 @@ package builders
 
 import (
 	lh "github.com/orbs-network/lean-helix-go"
+	. "github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
 )
 
@@ -14,6 +15,14 @@ type InMemoryNetworkCommunication struct {
 
 	discovery gossip.Discovery
 	gossip    *gossip.Gossip
+}
+
+func (comm *InMemoryNetworkCommunication) Send(publicKeys []Ed25519PublicKey, message []byte) error {
+	panic("implement me")
+}
+
+func (comm *InMemoryNetworkCommunication) SendWithBlock(publicKeys []Ed25519PublicKey, message []byte, block lh.Block) error {
+	panic("implement me")
 }
 
 func NewInMemoryNetworkCommunication(discovery gossip.Discovery, gossip *gossip.Gossip) *InMemoryNetworkCommunication {
@@ -34,58 +43,58 @@ func NewInMemoryNetworkCommunication(discovery gossip.Discovery, gossip *gossip.
 
 func (comm *InMemoryNetworkCommunication) onGossipMessage(message lh.MessageTransporter) {
 	switch message.MessageType() {
-	case lh.MESSAGE_TYPE_PREPREPARE:
+	case lh.LEAN_HELIX_PREPREPARE:
 		if comm.PPCallback != nil {
 			comm.PPCallback(message.(lh.PreprepareMessage))
 		}
-	case lh.MESSAGE_TYPE_PREPARE:
+	case lh.LEAN_HELIX_PREPARE:
 		if comm.PCallback != nil {
 			comm.PCallback(message.(lh.PrepareMessage))
 		}
-	case lh.MESSAGE_TYPE_COMMIT:
+	case lh.LEAN_HELIX_COMMIT:
 		if comm.CCallback != nil {
 			comm.CCallback(message.(lh.CommitMessage))
 		}
-	case lh.MESSAGE_TYPE_VIEW_CHANGE:
+	case lh.LEAN_HELIX_VIEW_CHANGE:
 		if comm.VCCallback != nil {
 			comm.VCCallback(message.(lh.ViewChangeMessage))
 		}
-	case lh.MESSAGE_TYPE_NEW_VIEW:
+	case lh.LEAN_HELIX_NEW_VIEW:
 		if comm.NVCallback != nil {
 			comm.NVCallback(message.(lh.NewViewMessage))
 		}
 	}
 }
 
-func (comm *InMemoryNetworkCommunication) SendToMembers(publicKeys []lh.PublicKey, messageType string, message []lh.MessageTransporter) {
+func (comm *InMemoryNetworkCommunication) SendToMembers(publicKeys []Ed25519PublicKey, messageType string, message []lh.MessageTransporter) {
 	panic("implement me")
 }
 
-func (comm *InMemoryNetworkCommunication) RequestOrderedCommittee(seed uint64) []lh.PublicKey {
+func (comm *InMemoryNetworkCommunication) RequestOrderedCommittee(seed uint64) []Ed25519PublicKey {
 	return comm.discovery.AllGossipsPKs()
 }
 
-func (comm *InMemoryNetworkCommunication) IsMember(pk lh.PublicKey) bool {
+func (comm *InMemoryNetworkCommunication) IsMember(pk Ed25519PublicKey) bool {
 	panic("implement me")
 }
 
-func (comm *InMemoryNetworkCommunication) SendPreprepare(pks []lh.PublicKey, message lh.PreprepareMessage) {
+func (comm *InMemoryNetworkCommunication) SendPreprepare(pks []Ed25519PublicKey, message lh.PreprepareMessage) {
 	panic("implement me")
 }
 
-func (comm *InMemoryNetworkCommunication) SendPrepare(pks []lh.PublicKey, message lh.PrepareMessage) {
+func (comm *InMemoryNetworkCommunication) SendPrepare(pks []Ed25519PublicKey, message lh.PrepareMessage) {
 	panic("implement me")
 }
 
-func (comm *InMemoryNetworkCommunication) SendCommit(pks []lh.PublicKey, message lh.CommitMessage) {
+func (comm *InMemoryNetworkCommunication) SendCommit(pks []Ed25519PublicKey, message lh.CommitMessage) {
 	panic("implement me")
 }
 
-func (comm *InMemoryNetworkCommunication) SendViewChange(pk lh.PublicKey, message lh.ViewChangeMessage) {
+func (comm *InMemoryNetworkCommunication) SendViewChange(pk Ed25519PublicKey, message lh.ViewChangeMessage) {
 	panic("implement me")
 }
 
-func (comm *InMemoryNetworkCommunication) SendNewView(pks []lh.PublicKey, message lh.NewViewMessage) {
+func (comm *InMemoryNetworkCommunication) SendNewView(pks []Ed25519PublicKey, message lh.NewViewMessage) {
 	panic("implement me")
 }
 

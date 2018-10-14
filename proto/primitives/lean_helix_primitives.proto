@@ -1,6 +1,6 @@
 syntax = "proto3";
 package primitives;
-option go_package = "github.com/orbs-network/lean-helix-go";
+option go_package = "github.com/orbs-network/lean-helix-go/primitives";
 
 option inline = true;
 

@@ -2,6 +2,7 @@ package test
 
 import (
 	lh "github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -19,7 +20,7 @@ func TestBuildAndReadPreprepareMessage(t *testing.T) {
 	blocks := []lh.Block{b1, b2, b3, b4}
 
 	mockBlockUtils := builders.NewMockBlockUtils(blocks)
-	mockKeyManager := builders.NewMockKeyManager(lh.PublicKey("PK"), nil)
+	mockKeyManager := builders.NewMockKeyManager(primitives.Ed25519PublicKey("PK"), nil)
 	//mockNetComm := builders.NewMockNetworkCommunication()
 
 	mf := &lh.MessageFactoryImpl{

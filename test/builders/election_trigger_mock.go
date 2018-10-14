@@ -1,17 +1,19 @@
 package builders
 
-import lh "github.com/orbs-network/lean-helix-go"
+import (
+	. "github.com/orbs-network/lean-helix-go/primitives"
+)
 
 type ElectionTriggerMock struct {
-	view lh.View
-	cb   func(view lh.View)
+	view View
+	cb   func(view View)
 }
 
 func NewMockElectionTrigger() *ElectionTriggerMock {
 	return &ElectionTriggerMock{}
 }
 
-func (tbet *ElectionTriggerMock) RegisterOnTrigger(view lh.View, cb func(view lh.View)) {
+func (tbet *ElectionTriggerMock) RegisterOnTrigger(view View, cb func(view View)) {
 	tbet.view = view
 	tbet.cb = cb
 }

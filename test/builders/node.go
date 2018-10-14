@@ -4,18 +4,19 @@ import (
 	"context"
 	lh "github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/instrumentation/log"
+	. "github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
 )
 
 type Node struct {
-	PublicKey  lh.PublicKey
+	PublicKey  Ed25519PublicKey
 	Config     *lh.Config
 	leanHelix  lh.LeanHelix
 	blockChain *InMemoryBlockChain
 	Gossip     *gossip.Gossip
 }
 
-func NewNode(publicKey lh.PublicKey, config *lh.Config) *Node {
+func NewNode(publicKey Ed25519PublicKey, config *lh.Config) *Node {
 	pbft := lh.NewLeanHelix(config)
 	node := &Node{
 		PublicKey:  publicKey,
@@ -27,7 +28,7 @@ func NewNode(publicKey lh.PublicKey, config *lh.Config) *Node {
 	return node
 }
 
-func buildNode(ctx context.Context, publicKey lh.PublicKey, discovery gossip.Discovery, logger log.BasicLogger) *Node {
+func buildNode(ctx context.Context, publicKey Ed25519PublicKey, discovery gossip.Discovery, logger log.BasicLogger) *Node {
 
 	nodeLogger := logger.For(log.Service("node"))
 	electionTrigger := NewMockElectionTrigger() // TODO TestNetworkBuilder.ts uses ElectionTriggerFactory here, maybe do it too

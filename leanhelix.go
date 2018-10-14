@@ -3,13 +3,14 @@ package leanhelix
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/instrumentation/log"
+	"github.com/orbs-network/lean-helix-go/primitives"
 )
 
 // PBFT.ts
 type LeanHelix interface {
 	RegisterOnCommitted(cb func(block Block))
 	Dispose()
-	Start(blockHeight BlockHeight)
+	Start(blockHeight primitives.BlockHeight)
 	IsLeader() bool
 
 	// OnPreprepareMessage(ppm PreprepareMessage)
@@ -52,7 +53,7 @@ func (lh *leanHelix) Dispose() {
 	// TODO: implement
 }
 
-func (lh *leanHelix) Start(blockHeight BlockHeight) {
+func (lh *leanHelix) Start(blockHeight primitives.BlockHeight) {
 
 	// TODO: create an infinite loop which can be stopped by context.Done()
 

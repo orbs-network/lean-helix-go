@@ -1,7 +1,5 @@
 package leanhelix
 
-import "github.com/orbs-network/orbs-network-go/services/consensusalgo/leanhelix"
-
 type HasMessageType interface {
 	MessageType() MessageType
 }
@@ -12,19 +10,20 @@ type Serializable interface {
 
 type MessageTransporter interface {
 	HasMessageType
+	Sender() *SenderSignature
 }
 
 type MessageContent interface {
 	HasMessageType
 	Serializable
-	SignedHeader() BlockRef
-	Sender() SenderSignature
+	SignedHeader() *BlockRef
+	Sender() *SenderSignature
 }
 
 // PP
 type PreprepareMessage interface {
 	MessageContent
-	Block
+	Block() Block
 }
 
 type PrepareMessage interface {
@@ -36,25 +35,36 @@ type CommitMessage interface {
 }
 
 type ViewChangeMessage interface {
-	MessageContent
+	HasMessageType
+	Serializable
+	SignedHeader() *ViewChangeHeader
+	Sender() *SenderSignature
 	Block
 }
 
 type NewViewMessage interface {
-	MessageContent
+	HasMessageType
+	Serializable
+	SignedHeader() *NewViewHeader
+	Sender() *SenderSignature
+	PreprepareMessage() PreprepareMessage
 }
 
 type preprepareMessage struct {
 	Content *PreprepareMessageContent
-	Block
+	block   Block
 }
 
-func (ppm *preprepareMessage) SignedHeader() BlockRef {
+func (ppm *preprepareMessage) SignedHeader() *BlockRef {
 	return ppm.SignedHeader()
 }
 
-func (ppm *preprepareMessage) Sender() SenderSignature {
+func (ppm *preprepareMessage) Sender() *SenderSignature {
 	return ppm.Sender()
+}
+
+func (ppm *preprepareMessage) Block() Block {
+	return ppm.block
 }
 
 func (ppm *preprepareMessage) MessageType() MessageType {
@@ -104,6 +114,18 @@ func (vcm *viewChangeMessage) Raw() []byte {
 
 type newViewMessage struct {
 	Content *NewViewMessageContent
+}
+
+func (nvm *newViewMessage) SignedHeader() BlockRef {
+	return nvm.SignedHeader()
+}
+
+func (nvm *newViewMessage) Sender() SenderSignature {
+	return nvm.Sender()
+}
+
+func (nvm *newViewMessage) PreprepareMessage() PreprepareMessage {
+	return nvm.PreprepareMessage()
 }
 
 func (nvm *newViewMessage) MessageType() MessageType {

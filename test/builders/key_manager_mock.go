@@ -3,6 +3,7 @@ package builders
 import (
 	"github.com/orbs-network/go-mock"
 	lh "github.com/orbs-network/lean-helix-go"
+	. "github.com/orbs-network/lean-helix-go/primitives"
 )
 
 // TODO Keys should not be strings - convert to our primitives
@@ -11,11 +12,11 @@ const PRIVATE_KEY_PREFIX = "PRIVATE_KEY"
 
 type mockKeyManager struct {
 	mock.Mock
-	myPublicKey        lh.PublicKey
-	RejectedPublicKeys []lh.PublicKey
+	myPublicKey        Ed25519PublicKey
+	RejectedPublicKeys []Ed25519PublicKey
 }
 
-func NewMockKeyManager(publicKey lh.PublicKey, rejectedPublicKeys ...lh.PublicKey) *mockKeyManager {
+func NewMockKeyManager(publicKey Ed25519PublicKey, rejectedPublicKeys ...Ed25519PublicKey) *mockKeyManager {
 	return &mockKeyManager{
 		myPublicKey:        publicKey,
 		RejectedPublicKeys: rejectedPublicKeys,
@@ -32,7 +33,7 @@ func (km *mockKeyManager) Verify(content []byte, sender lh.SenderSignature) bool
 	panic("implement me")
 }
 
-func (km *mockKeyManager) MyPublicKey() lh.PublicKey {
+func (km *mockKeyManager) MyPublicKey() Ed25519PublicKey {
 	return km.myPublicKey
 }
 
@@ -79,9 +80,9 @@ func (km *mockKeyManager) MyPublicKey() lh.PublicKey {
 //	return signedMessage.Equals(sender.Signature())
 //}
 
-func myIdRejected(id lh.PublicKey, rejected []lh.PublicKey) bool {
+func myIdRejected(id Ed25519PublicKey, rejected []Ed25519PublicKey) bool {
 	for _, rejectedKey := range rejected {
-		if rejectedKey.Equals(id) {
+		if rejectedKey.Equal(id) {
 			return true
 		}
 	}

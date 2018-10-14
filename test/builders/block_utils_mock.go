@@ -3,6 +3,7 @@ package builders
 import (
 	"github.com/orbs-network/go-mock"
 	lh "github.com/orbs-network/lean-helix-go"
+	. "github.com/orbs-network/lean-helix-go/primitives"
 )
 
 type MockBlockUtils struct {
@@ -18,7 +19,7 @@ func NewMockBlockUtils(upcomingBlocks []lh.Block) *MockBlockUtils {
 	}
 }
 
-func (b MockBlockUtils) CalculateBlockHash(block lh.Block) lh.BlockHash {
+func (b MockBlockUtils) CalculateBlockHash(block lh.Block) Uint256 {
 	return CalculateBlockHash(block)
 }
 
@@ -42,7 +43,7 @@ func (b MockBlockUtils) RequestCommittee() {
 	panic("implement me")
 }
 
-func (b MockBlockUtils) RequestNewBlock(height lh.BlockHeight) lh.Block {
+func (b MockBlockUtils) RequestNewBlock(height BlockHeight) lh.Block {
 	return b.ProvideNextBlock()
 }
 

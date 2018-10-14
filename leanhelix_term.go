@@ -3,6 +3,7 @@ package leanhelix
 import (
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/instrumentation/log"
+	. "github.com/orbs-network/lean-helix-go/primitives"
 	"math"
 	"sort"
 	"strings"
@@ -22,16 +23,16 @@ type leanHelixTerm struct {
 	log             log.BasicLogger
 	electionTrigger ElectionTrigger
 	BlockUtils
-	MyPublicKey                   PublicKey
-	CommitteeMembersPublicKeys    []PublicKey
-	NonCommitteeMembersPublicKeys []PublicKey
+	MyPublicKey                   Ed25519PublicKey
+	CommitteeMembersPublicKeys    []Ed25519PublicKey
+	NonCommitteeMembersPublicKeys []Ed25519PublicKey
 	MessageFactory                MessageFactoryImpl
 	onCommittedBlock              func(block Block)
 	height                        BlockHeight
 	view                          View
 	disposed                      bool
 	preparedLocally               bool
-	leaderPublicKey               PublicKey
+	leaderPublicKey               Ed25519PublicKey
 	newViewLocally                View
 }
 
@@ -45,9 +46,9 @@ func NewLeanHelixTerm(config *TermConfig, newBlockHeight BlockHeight, onCommitte
 	if len(committeeMembers) == 0 {
 		return nil, fmt.Errorf("no members for block height %v", newBlockHeight)
 	}
-	nonCommitteeMembers := make([]PublicKey, 0)
+	nonCommitteeMembers := make([]Ed25519PublicKey, 0)
 	for _, member := range committeeMembers {
-		if !member.Equals(myPK) {
+		if !member.Equal(myPK) {
 			nonCommitteeMembers = append(nonCommitteeMembers, member)
 		}
 	}
@@ -110,20 +111,20 @@ func (term *leanHelixTerm) validatePreprepare(ppm PreprepareMessage) bool {
 		term.log.Info("PPM already received", log.Stringable("block-height", blockHeight), log.Stringable("view", view))
 		return false
 	}
-	if !term.KeyManager.VerifyBlockRef(ppm.SignedHeader(), ppm.Sender()) {
+	if !term.KeyManager.Verify(ppm.Raw(), ppm.Sender()) {
 		term.log.Info("PPM did not pass verification") // TODO Elaborate
 		return false
 	}
 
 	leaderPublicKey := term.calcLeaderPublicKey(view)
 
-	if !ppm.Sender().SenderPublicKey().Equals(leaderPublicKey) {
+	if !ppm.Sender().SenderPublicKey().Equal(leaderPublicKey) {
 		// Log
 		return false
 	}
 
 	givenBlockHash := term.BlockUtils.CalculateBlockHash(ppm.Block())
-	if !ppm.SignedHeader().BlockHash().Equals(givenBlockHash) {
+	if !ppm.SignedHeader().BlockHash().Equal(givenBlockHash) {
 		//term.log.Info({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceivePrePrepare from "${senderPk}", block rejected because it doesn't match the given blockHash (${view})` });
 		return false
 	}
@@ -156,15 +157,21 @@ func (term *leanHelixTerm) OnReceiveNewView(nvm NewViewMessage) {
 	signedHeader := nvm.SignedHeader()
 	sender := nvm.Sender()
 	preprepareMessage := nvm.PreprepareMessage()
-	viewChangeConfirmations := signedHeader.ViewChangeConfirmations()
+	viewChangeConfirmationsIter := signedHeader.ViewChangeConfirmationsIterator()
+	viewChangeConfirmations := make([]*ViewChangeConfirmation, 0, 1)
+	for {
+		if viewChangeConfirmationsIter.HasNext() {
+			viewChangeConfirmations = append(viewChangeConfirmations, viewChangeConfirmationsIter.NextViewChangeConfirmations())
+		}
+	}
 
-	if !term.KeyManager.VerifyNewView(signedHeader, sender) {
+	if !term.KeyManager.Verify(signedHeader.Raw(), sender) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", ignored because the signature verification failed` });
 		return
 	}
 
 	futureLeaderId := term.calcLeaderPublicKey(signedHeader.View())
-	if !sender.SenderPublicKey().Equals(futureLeaderId) {
+	if !sender.SenderPublicKey().Equal(futureLeaderId) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", rejected because it match the new id (${view})` });
 		return
 	}
@@ -179,12 +186,12 @@ func (term *leanHelixTerm) OnReceiveNewView(nvm NewViewMessage) {
 		return
 	}
 
-	if !preprepareMessage.SignedHeader().View().Equals(signedHeader.View()) {
+	if !preprepareMessage.SignedHeader().View().Equal(signedHeader.View()) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", view doesn't match PP.view` });
 		return
 	}
 
-	if !preprepareMessage.SignedHeader().BlockHeight().Equals(signedHeader.BlockHeight()) {
+	if !preprepareMessage.SignedHeader().BlockHeight().Equal(signedHeader.BlockHeight()) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", blockHeight doesn't match PP.blockHeight` });
 		return
 	}
@@ -198,10 +205,10 @@ func (term *leanHelixTerm) OnReceiveNewView(nvm NewViewMessage) {
 		}
 
 		// rewrite this mess
-		latestVoteBlockHash := latestVote.SignedHeader().PreparedProof().PPBlockRef().BlockHash()
+		latestVoteBlockHash := latestVote.ViewChangeSignedHeader().PreparedProof().PreprepareBlockRef().BlockHash()
 		if latestVoteBlockHash != nil {
 			ppBlockHash := term.BlockUtils.CalculateBlockHash(preprepareMessage.Block())
-			if !latestVoteBlockHash.Equals(ppBlockHash) {
+			if !latestVoteBlockHash.Equal(ppBlockHash) {
 				//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", the given block (PP.block) doesn't match the best block from the VCProof` });
 				return
 			}
@@ -219,7 +226,7 @@ func (term *leanHelixTerm) GetView() View {
 	return term.view
 }
 func (term *leanHelixTerm) sendPreprepare(message PreprepareMessage) {
-	term.NetworkCommunication.SendPreprepare(term.NonCommitteeMembersPublicKeys, message)
+	term.NetworkCommunication.SendWithBlock(term.NonCommitteeMembersPublicKeys, message.Raw(), message.Block())
 
 	term.log.Debug("GossipSend preprepare",
 		log.Stringable("senderPK", term.KeyManager.MyPublicKey()),
@@ -228,7 +235,7 @@ func (term *leanHelixTerm) sendPreprepare(message PreprepareMessage) {
 		log.Stringable("blockHash", message.SignedHeader().BlockHash()),
 	)
 }
-func pksToString(keys []PublicKey) string {
+func pksToString(keys []Ed25519PublicKey) string {
 	pkStrings := make([]string, len(keys))
 	for i := 0; i < len(keys); i++ {
 		pkStrings[i] = string(keys[i])
@@ -242,29 +249,29 @@ func (term *leanHelixTerm) initView(view View) {
 	term.leaderPublicKey = term.calcLeaderPublicKey(view)
 	term.electionTrigger.RegisterOnTrigger(view, func(v View) { term.onLeaderChange(v) })
 }
-func (term *leanHelixTerm) calcLeaderPublicKey(view View) PublicKey {
+func (term *leanHelixTerm) calcLeaderPublicKey(view View) Ed25519PublicKey {
 	index := int(view) % len(term.CommitteeMembersPublicKeys)
 	return term.CommitteeMembersPublicKeys[index]
 }
 func (term *leanHelixTerm) IsLeader() bool {
-	return term.MyPublicKey.Equals(term.leaderPublicKey)
+	return term.MyPublicKey.Equal(term.leaderPublicKey)
 }
 func (term *leanHelixTerm) onLeaderChange(counter View) {
 	panic("not impl")
 }
 
 // TODO Unit-test this!!
-func (term *leanHelixTerm) latestViewChangeConfirmation(confirmations []ViewChangeConfirmation) ViewChangeConfirmation {
+func (term *leanHelixTerm) latestViewChangeConfirmation(confirmations []*ViewChangeConfirmation) *ViewChangeConfirmation {
 
-	res := make([]ViewChangeConfirmation, 0, len(confirmations))
+	res := make([]*ViewChangeConfirmation, 0, len(confirmations))
 	for _, confirmation := range confirmations {
-		if confirmation.SignedHeader().PreparedProof() != nil {
+		if confirmation.ViewChangeSignedHeader().PreparedProof() != nil {
 			res = append(res, confirmation)
 		}
 	}
 
 	sort.Slice(res, func(i, j int) bool {
-		return res[j].SignedHeader().PreparedProof().PPBlockRef().View() > res[i].SignedHeader().PreparedProof().PPBlockRef().View()
+		return res[j].ViewChangeSignedHeader().PreparedProof().PreprepareBlockRef().View() > res[i].ViewChangeSignedHeader().PreparedProof().PreprepareBlockRef().View()
 	})
 
 	if len(res) > 0 {
@@ -273,14 +280,14 @@ func (term *leanHelixTerm) latestViewChangeConfirmation(confirmations []ViewChan
 		return nil
 	}
 }
-func (term *leanHelixTerm) isViewChangeValid(targetLeaderPublicKey PublicKey, view View, confirmation ViewChangeConfirmation) bool {
+func (term *leanHelixTerm) isViewChangeValid(targetLeaderPublicKey Ed25519PublicKey, view View, confirmation *ViewChangeConfirmation) bool {
 
-	signedHeader := confirmation.SignedHeader()
+	signedHeader := confirmation.ViewChangeSignedHeader()
 	newView := signedHeader.View()
 	preparedProof := signedHeader.PreparedProof()
-	sender := confirmation.Sender()
+	sender := confirmation.ViewChangeSender()
 
-	if !term.KeyManager.VerifyViewChange(signedHeader, sender) {
+	if !term.KeyManager.Verify(signedHeader.Raw(), sender) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${newView}], onReceiveViewChange from "${senderPk}", ignored because the signature verification failed` });
 		return false
 	}
@@ -290,13 +297,13 @@ func (term *leanHelixTerm) isViewChangeValid(targetLeaderPublicKey PublicKey, vi
 		return false
 	}
 
-	if !ValidatePreparedProof(term.height, newView, preparedProof, term.GetF(), term.KeyManager, term.CommitteeMembersPublicKeys, func(view View) PublicKey { return term.calcLeaderPublicKey(view) }) {
+	if !ValidatePreparedProof(term.height, newView, preparedProof, term.GetF(), term.KeyManager, term.CommitteeMembersPublicKeys, func(view View) Ed25519PublicKey { return term.calcLeaderPublicKey(view) }) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${newView}], onReceiveViewChange from "${senderPk}", ignored because the preparedProof is invalid` });
 		return false
 	}
 
 	futureLeaderPublicKey := term.calcLeaderPublicKey(newView)
-	if !targetLeaderPublicKey.Equals(futureLeaderPublicKey) {
+	if !targetLeaderPublicKey.Equal(futureLeaderPublicKey) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], newView:[${newView}], onReceiveViewChange from "${senderPk}", ignored because the newView doesn't match the target leader` });
 		return false
 	}
@@ -312,7 +319,7 @@ func (term *leanHelixTerm) SetView(view View) {
 func (term *leanHelixTerm) GetF() int {
 	return int(math.Floor(float64(len(term.CommitteeMembersPublicKeys))-1) / 3)
 }
-func (term *leanHelixTerm) validateViewChangeConfirmations(targetBlockHeight BlockHeight, targetView View, confirmations []ViewChangeConfirmation) bool {
+func (term *leanHelixTerm) validateViewChangeConfirmations(targetBlockHeight BlockHeight, targetView View, confirmations []*ViewChangeConfirmation) bool {
 
 	minimumConfirmations := int(term.GetF()*2 + 1)
 
@@ -325,11 +332,11 @@ func (term *leanHelixTerm) validateViewChangeConfirmations(targetBlockHeight Blo
 	// Verify that all block heights and views match, and all public keys are unique
 	// TODO consider refactor here, the purpose of this code is not apparent
 	for _, confirmation := range confirmations {
-		senderPublicKeyStr := string(confirmation.Sender().SenderPublicKey())
-		if confirmation.SignedHeader().BlockHeight() != targetBlockHeight {
+		senderPublicKeyStr := string(confirmation.ViewChangeSender().SenderPublicKey())
+		if confirmation.ViewChangeSignedHeader().BlockHeight() != targetBlockHeight {
 			return false
 		}
-		if confirmation.SignedHeader().View() != targetView {
+		if confirmation.ViewChangeSignedHeader().View() != targetView {
 			return false
 		}
 		if set[senderPublicKeyStr] {

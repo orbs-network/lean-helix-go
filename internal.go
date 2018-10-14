@@ -1,7 +1,9 @@
 package leanhelix
 
+import "github.com/orbs-network/lean-helix-go/primitives"
+
 // Sorting View arrays
-type ViewCounters []View
+type ViewCounters []primitives.View
 
 func (arr ViewCounters) Len() int           { return len(arr) }
 func (arr ViewCounters) Swap(i, j int)      { arr[i], arr[j] = arr[j], arr[i] }

@@ -4,12 +4,13 @@ import (
 	"context"
 	lh "github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/instrumentation/log"
+	. "github.com/orbs-network/lean-helix-go/primitives"
 )
 
 type NodeBuilder struct {
 	ctx                  context.Context
 	networkCommunication lh.NetworkCommunication
-	publicKey            lh.PublicKey
+	publicKey            Ed25519PublicKey
 	storage              lh.Storage
 	logger               log.BasicLogger
 	electionTrigger      lh.ElectionTrigger
@@ -43,8 +44,8 @@ func (builder *NodeBuilder) ElectingLeaderUsing(electionTrigger lh.ElectionTrigg
 	return builder
 }
 
-func (builder *NodeBuilder) WithPK(publicKey lh.PublicKey) *NodeBuilder {
-	if builder.publicKey.Equals(lh.PublicKey("")) {
+func (builder *NodeBuilder) WithPK(publicKey Ed25519PublicKey) *NodeBuilder {
+	if builder.publicKey.Equal(Ed25519PublicKey("")) {
 		builder.publicKey = publicKey
 	}
 	return builder

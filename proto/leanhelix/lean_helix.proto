@@ -1,6 +1,8 @@
 syntax = "proto3";
 package leanhelix;
-option go_package = "github.com/orbs-network/lean-helix-go";
+option go_package = "github.com/orbs-network/lean-helix-go/leanhelix";
+
+import "../primitives/lean_helix_primitives.proto";
 
 enum MessageType {
     LEAN_HELIX_RESERVED = 0;
@@ -62,7 +64,7 @@ message NewViewMessageContent {
 // message payloads (serializable)
 
 message RandomSeedShare {
-    Bls1_sig random_seed_share = 1;
+    primitives.Bls1_sig random_seed_share = 1;
 }
 
 message ViewChangeHeader {

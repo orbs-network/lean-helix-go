@@ -1,5 +1,7 @@
 package leanhelix
 
+import . "github.com/orbs-network/lean-helix-go/primitives"
+
 // This is the ORBS side
 
 type MessageFactoryImpl struct {
@@ -9,27 +11,16 @@ type MessageFactoryImpl struct {
 
 func (f *MessageFactoryImpl) CreatePreprepareMessage(blockHeight BlockHeight, view View, block Block) PreprepareMessage {
 
-	var (
-		header *BlockRefBuilder
-		sender *SenderSignatureBuilder
-	)
-
-	header = &BlockRefBuilder{
+	header := &BlockRefBuilder{
 		MessageType: LEAN_HELIX_PREPREPARE,
-		BlockHeight: &BlockHeightBuilder{
-			Value: uint64(blockHeight),
-		},
-		View: &ViewBuilder{
-			Value: uint64(view),
-		},
-		BlockHash: &Uint256Builder{
-			Value: f.BlockUtils.CalculateBlockHash(block),
-		},
+		BlockHeight: BlockHeight(blockHeight),
+		View:        View(view),
+		BlockHash:   Uint256(f.BlockUtils.CalculateBlockHash(block)),
 	}
 
-	sig := &Ed25519_sigBuilder{Value: f.KeyManager.Sign(header.Build().Raw())}
-	me := &Ed25519_public_keyBuilder{Value: f.KeyManager.MyPublicKey()}
-	sender = &SenderSignatureBuilder{
+	sig := Ed25519Sig(f.KeyManager.Sign(header.Build().Raw()))
+	me := Ed25519PublicKey(f.KeyManager.MyPublicKey())
+	sender := &SenderSignatureBuilder{
 		SenderPublicKey: me,
 		Signature:       sig,
 	}
@@ -37,11 +28,11 @@ func (f *MessageFactoryImpl) CreatePreprepareMessage(blockHeight BlockHeight, vi
 	ppmc := PreprepareMessageContentBuilder{
 		SignedHeader: header,
 		Sender:       sender,
-	}.Build()
+	}
 
 	ppm := &preprepareMessage{
-		Content: ppmc,
-		Block:   block,
+		Content: ppmc.Build(),
+		block:   block,
 	}
 
 	return ppm

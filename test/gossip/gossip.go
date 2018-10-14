@@ -3,6 +3,7 @@ package gossip
 import (
 	"github.com/orbs-network/go-mock"
 	lh "github.com/orbs-network/lean-helix-go"
+	. "github.com/orbs-network/lean-helix-go/primitives"
 )
 
 type Callback func(message lh.MessageTransporter)
@@ -16,8 +17,8 @@ type Gossip struct {
 	discovery            Discovery
 	totalSubscriptions   int
 	subscriptions        map[int]*SubscriptionValue
-	outgoingWhiteListPKs []lh.PublicKey
-	incomingWhiteListPKs []lh.PublicKey
+	outgoingWhiteListPKs []Ed25519PublicKey
+	incomingWhiteListPKs []Ed25519PublicKey
 }
 
 func NewGossip(gd Discovery) *Gossip {
@@ -30,24 +31,24 @@ func NewGossip(gd Discovery) *Gossip {
 	}
 }
 
-func (g *Gossip) inIncomingWhitelist(pk lh.PublicKey) bool {
+func (g *Gossip) inIncomingWhitelist(pk Ed25519PublicKey) bool {
 	if g.incomingWhiteListPKs == nil {
 		return false
 	}
 	for _, currentPK := range g.incomingWhiteListPKs {
-		if currentPK.Equals(pk) {
+		if currentPK.Equal(pk) {
 			return true
 		}
 	}
 	return false
 }
 
-func (g *Gossip) inOutgoingWhitelist(pk lh.PublicKey) bool {
+func (g *Gossip) inOutgoingWhitelist(pk Ed25519PublicKey) bool {
 	if g.outgoingWhiteListPKs == nil {
 		return false
 	}
 	for _, currentPK := range g.outgoingWhiteListPKs {
-		if currentPK.Equals(pk) {
+		if currentPK.Equal(pk) {
 			return true
 		}
 	}
@@ -56,7 +57,7 @@ func (g *Gossip) inOutgoingWhitelist(pk lh.PublicKey) bool {
 
 func (g *Gossip) onRemoteMessage(message lh.MessageTransporter) {
 	for _, s := range g.subscriptions {
-		if !g.inIncomingWhitelist(message.SenderPublicKey()) {
+		if !g.inIncomingWhitelist(message.Sender().SenderPublicKey()) {
 			return
 		}
 		s.cb(message)
@@ -75,7 +76,7 @@ func (g *Gossip) Unsubscribe(subscriptionToken int) {
 	delete(g.subscriptions, subscriptionToken)
 }
 
-func (g *Gossip) unicast(pk lh.PublicKey, message lh.MessageTransporter) {
+func (g *Gossip) unicast(pk Ed25519PublicKey, message lh.MessageTransporter) {
 	if !g.inOutgoingWhitelist(pk) {
 		return
 	}
@@ -84,7 +85,7 @@ func (g *Gossip) unicast(pk lh.PublicKey, message lh.MessageTransporter) {
 	}
 }
 
-func (g *Gossip) Multicast(targetIds []lh.PublicKey, message lh.MessageTransporter) {
+func (g *Gossip) Multicast(targetIds []Ed25519PublicKey, message lh.MessageTransporter) {
 	g.Mock.Called(targetIds, message)
 	for _, targetId := range targetIds {
 		g.unicast(targetId, message)
