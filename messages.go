@@ -1,127 +1,124 @@
 package leanhelix
 
-type MessageType string
-
-const (
-	MESSAGE_TYPE_PREPREPARE  MessageType = "preprepare"
-	MESSAGE_TYPE_PREPARE     MessageType = "prepare"
-	MESSAGE_TYPE_COMMIT      MessageType = "commit"
-	MESSAGE_TYPE_VIEW_CHANGE MessageType = "view-change"
-	MESSAGE_TYPE_NEW_VIEW    MessageType = "new-view"
-)
-
-// START MESSAGE TYPES //
-
-type PreprepareMessage interface {
-	Serializable
-	SignedHeader() BlockRef
-	Sender() SenderSignature
-	Block() Block
-}
-
-type PrepareMessage interface {
-	Serializable
-	SignedHeader() BlockRef
-	Sender() SenderSignature
-}
-
-type CommitMessage interface {
-	Serializable
-	SignedHeader() BlockRef
-	Sender() SenderSignature
-}
-
-type ViewChangeMessage interface {
-	Serializable
-	SignedHeader() ViewChangeHeader
-	Sender() SenderSignature
-	Block() Block
-}
-
-type NewViewMessage interface {
-	Serializable
-	SignedHeader() NewViewHeader
-	PreprepareMessage() PreprepareMessage
-	Sender() SenderSignature
-}
-
-// END MESSAGE TYPES //
-
-// START MESSAGE PARTS TYPES //
-
-type BlockRef interface {
-	Serializable
-	HasMessageType
-	BlockHeight() BlockHeight
-	View() View
-	BlockHash() BlockHash
-}
-
-type ViewChangeHeader interface {
-	Serializable
-	HasMessageType
-	BlockHeight() BlockHeight
-	View() View
-	PreparedProof() PreparedProof
-}
-
-type SenderSignature interface {
-	Serializable
-	SenderPublicKey() PublicKey
-	Signature() Signature
-}
+import "github.com/orbs-network/orbs-network-go/services/consensusalgo/leanhelix"
 
 type HasMessageType interface {
 	MessageType() MessageType
 }
 
 type Serializable interface {
-	Serialize() []byte
+	Raw() []byte
 }
 
-// TODO this is different from definition of LeanHelixPreparedProof in lean_helix.mb.go:448 in orbs-spec
-type PreparedProof interface {
-	Serializable
-	PPBlockRef() BlockRef
-	PBlockRef() BlockRef
-	PPSender() SenderSignature
-	PSenders() []SenderSignature
-}
-
-type NewViewHeader interface {
-	Serializable
+type MessageTransporter interface {
 	HasMessageType
-	BlockHeight() BlockHeight
-	View() View
-	ViewChangeConfirmations() []ViewChangeConfirmation
 }
 
-type ViewChangeConfirmation interface {
+type MessageContent interface {
+	HasMessageType
 	Serializable
-	SignedHeader() ViewChangeHeader
+	SignedHeader() BlockRef
 	Sender() SenderSignature
 }
 
-// END MESSAGE PART TYPES
-
-type MessageTransporter interface {
-	SenderSignature
-	HasMessageType
+// PP
+type PreprepareMessage interface {
+	MessageContent
+	Block
 }
 
-//type MessageFactory interface {
-//	CreatePreprepareMessage(blockHeight BlockHeight, view View, block Block) PreprepareMessage
-//	CreatePrepareMessage(blockHeight BlockHeight, view View, blockHash BlockHash) PrepareMessage
-//	CreateCommitMessage(blockHeight BlockHeight, view View, blockHash BlockHash) CommitMessage
-//	CreateViewChangeMessage(blockHeight BlockHeight, view View, preparedMessages []PreprepareMessage) ViewChangeMessage
-//	CreateNewViewMessage(blockHeight BlockHeight, view View, preprepareMessage PreprepareMessage, viewChangeConfirmations []ViewChangeConfirmation) NewViewMessage
-//	//CreatePreparedProof(preprepare PreprepareMessage, prepares []PrepareMessage) PreparedProof
-//}
-//
+type PrepareMessage interface {
+	MessageContent
+}
+
+type CommitMessage interface {
+	MessageContent
+}
+
+type ViewChangeMessage interface {
+	MessageContent
+	Block
+}
+
+type NewViewMessage interface {
+	MessageContent
+}
+
+type preprepareMessage struct {
+	Content *PreprepareMessageContent
+	Block
+}
+
+func (ppm *preprepareMessage) SignedHeader() BlockRef {
+	return ppm.SignedHeader()
+}
+
+func (ppm *preprepareMessage) Sender() SenderSignature {
+	return ppm.Sender()
+}
+
+func (ppm *preprepareMessage) MessageType() MessageType {
+	return LEAN_HELIX_PREPREPARE
+}
+
+func (ppm *preprepareMessage) Raw() []byte {
+	return ppm.Raw()
+}
+
+type prepareMessage struct {
+	Content *PrepareMessageContent
+}
+
+func (pm *prepareMessage) MessageType() MessageType {
+	return LEAN_HELIX_PREPARE
+}
+
+func (pm *prepareMessage) Raw() []byte {
+	return pm.Raw()
+}
+
+type commitMessage struct {
+	Content *CommitMessageContent
+}
+
+func (cm *commitMessage) MessageType() MessageType {
+	return LEAN_HELIX_COMMIT
+}
+
+func (cm *commitMessage) Raw() []byte {
+	return cm.Raw()
+}
+
+type viewChangeMessage struct {
+	Content *ViewChangeMessageContent
+	Block
+}
+
+func (vcm *viewChangeMessage) MessageType() MessageType {
+	return LEAN_HELIX_VIEW_CHANGE
+}
+
+func (vcm *viewChangeMessage) Raw() []byte {
+	return vcm.Raw()
+}
+
+type newViewMessage struct {
+	Content *NewViewMessageContent
+}
+
+func (nvm *newViewMessage) MessageType() MessageType {
+	return LEAN_HELIX_NEW_VIEW
+}
+
+func (nvm *newViewMessage) Raw() []byte {
+	return nvm.Raw()
+}
+
 type MessageFactory interface {
 	// Message creation methods
 
-	CreatePreprepareMessage(blockRef BlockRef, sender SenderSignature, block Block) PreprepareMessage
+	//CreatePreprepareMessage(blockRef BlockRef, sender SenderSignature, block Block) PreprepareMessage
+	CreatePreprepareMessage(blockHeight uint64, view uint64, block Block) PreprepareMessage
 	CreatePrepareMessage(blockRef BlockRef, sender SenderSignature) PrepareMessage
 	CreateCommitMessage(blockRef BlockRef, sender SenderSignature) CommitMessage
 	CreateViewChangeMessage(vcHeader ViewChangeHeader, sender SenderSignature, block Block) ViewChangeMessage
@@ -129,12 +126,12 @@ type MessageFactory interface {
 
 	// Auxiliary methods
 
-	CreateSenderSignature(sender []byte, signature []byte) SenderSignature
-	CreateBlockRef(messageType int, blockHeight int, view int, blockHash []byte) BlockRef
-	CreateNewViewHeader(messageType int, blockHeight int, view int, confirmations []ViewChangeConfirmation) NewViewHeader
-	CreateViewChangeConfirmation(vcHeader ViewChangeHeader, sender SenderSignature) ViewChangeConfirmation
-	CreateViewChangeHeader(blockHeight int, view int, proof PreparedProof) ViewChangeHeader
-	CreatePreparedProof(ppBlockRef BlockRef, pBlockRef BlockRef, ppSender SenderSignature, pSenders []SenderSignature) PreparedProof
+	//CreateSenderSignature(sender []byte, signature []byte) SenderSignature
+	//CreateBlockRef(messageType int, blockHeight int, view int, blockHash []byte) BlockRef
+	//CreateNewViewHeader(messageType int, blockHeight int, view int, confirmations []ViewChangeConfirmation) NewViewHeader
+	//CreateViewChangeConfirmation(vcHeader ViewChangeHeader, sender SenderSignature) ViewChangeConfirmation
+	//CreateViewChangeHeader(blockHeight int, view int, proof PreparedProof) ViewChangeHeader
+	//CreatePreparedProof(ppBlockRef BlockRef, pBlockRef BlockRef, ppSender SenderSignature, pSenders []SenderSignature) PreparedProof
 
 	// TODO Remove old methods once not needed
 }
@@ -164,7 +161,7 @@ type InternalMessageFactory interface {
 //
 //type PrePrepareMessage struct {
 //	*BlockRefMessage
-//	Block *types.Block
+//	Block *primitives.Block
 //}
 //
 //type PrepareMessage struct {
@@ -178,7 +175,7 @@ type InternalMessageFactory interface {
 //type ViewChangeMessage struct {
 //	Content       *ViewChangeMessageContent
 //	SignaturePair *SignaturePair
-//	Block         *types.Block // optional
+//	Block         *primitives.Block // optional
 //}
 //
 //type NewViewMessage struct {
@@ -189,8 +186,8 @@ type InternalMessageFactory interface {
 //
 //type NewViewContent struct {
 //	MessageType   MessageType
-//	BlockHeight          types.BlockHeight
-//	View          types.View
+//	BlockHeight          primitives.BlockHeight
+//	View          primitives.View
 //	Confirmations []*ViewChangeConfirmation
 //}
 //
@@ -205,21 +202,21 @@ type InternalMessageFactory interface {
 //}
 //
 //type SignaturePair struct {
-//	SignerPublicKey  types.PublicKey
+//	SignerPublicKey  primitives.PublicKey
 //	ContentSignature string
 //}
 //
 //type BlockMessageContent struct {
 //	MessageType MessageType
-//	BlockHeight        types.BlockHeight
-//	View        types.View
-//	BlockHash   types.BlockHash
+//	BlockHeight        primitives.BlockHeight
+//	View        primitives.View
+//	BlockHash   primitives.BlockHash
 //}
 //
 //type ViewChangeMessageContent struct {
 //	MessageType   MessageType
-//	BlockHeight          types.BlockHeight
-//	View          types.View
+//	BlockHeight          primitives.BlockHeight
+//	View          primitives.View
 //	PreparedProof *PreparedProof
 //}
 //

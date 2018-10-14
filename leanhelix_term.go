@@ -25,7 +25,7 @@ type leanHelixTerm struct {
 	MyPublicKey                   PublicKey
 	CommitteeMembersPublicKeys    []PublicKey
 	NonCommitteeMembersPublicKeys []PublicKey
-	MessageFactory                InternalMessageFactory
+	MessageFactory                MessageFactoryImpl
 	onCommittedBlock              func(block Block)
 	height                        BlockHeight
 	view                          View
@@ -88,6 +88,7 @@ func (term *leanHelixTerm) startTerm() {
 		return
 	}
 	ppm := term.MessageFactory.CreatePreprepareMessage(term.height, term.view, block)
+
 	term.Storage.StorePreprepare(ppm)
 	term.sendPreprepare(ppm)
 

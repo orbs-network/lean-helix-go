@@ -9,6 +9,16 @@ type MockNetworkCommunication struct {
 	mock.Mock
 }
 
+func (n *MockNetworkCommunication) Send(publicKeys []lh.PublicKey, message []byte) error {
+	ret := n.Called(publicKeys, message)
+	return ret.Error(0)
+}
+
+func (n *MockNetworkCommunication) SendWithBlock(publicKeys []lh.PublicKey, message []byte, block lh.Block) error {
+	ret := n.Called(publicKeys, message, block)
+	return ret.Error(0)
+}
+
 func (n *MockNetworkCommunication) SendToMembers(publicKeys []lh.PublicKey, messageType string, message []lh.MessageTransporter) {
 	panic("implement me")
 }

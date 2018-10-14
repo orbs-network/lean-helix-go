@@ -46,6 +46,6 @@ func (b MockBlockUtils) RequestNewBlock(height lh.BlockHeight) lh.Block {
 	return b.ProvideNextBlock()
 }
 
-func (b MockBlockUtils) ValidateBlock() {
+func (b MockBlockUtils) ValidateBlock(block lh.Block) bool {
 	panic("implement me")
 }

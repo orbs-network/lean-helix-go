@@ -1,18 +1,16 @@
-package messages_test
+package leanhelix_test
 
 import (
-	"fmt"
 	"github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/proto"
 	"testing"
 )
 
 func CreatePreprepareMessage(
 	utils leanhelix.BlockUtils,
 	keyManager leanhelix.KeyManager,
-	blockHeight leanhelix.BlockHeight,
-	view leanhelix.View,
-	block leanhelix.Block) *messages.LeanHelixPrePrepareMessage {
+	blockHeight uint64,
+	view uint64,
+	block leanhelix.Block) *messages.LeanHelixPrePrepareMessageBuilder {
 
 	var (
 		header *messages.LeanHelixBlockRefBuilder
@@ -24,7 +22,9 @@ func CreatePreprepareMessage(
 		BlockHeight: &messages.BlockHeightBuilder{
 			Value: uint64(blockHeight),
 		},
-		View: uint32(view),
+		View: &messages.ViewBuilder{
+			Value: uint64(view),
+		},
 		BlockHash: &messages.Uint256Builder{
 			Value: utils.CalculateBlockHash(block),
 		},
@@ -42,7 +42,7 @@ func CreatePreprepareMessage(
 		Sender:       sender,
 	}
 
-	return ppm.Build()
+	return ppm
 }
 
 func TestCreatePPM(t *testing.T) {

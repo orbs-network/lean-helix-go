@@ -57,7 +57,7 @@ type MessageFactory interface {
 
 ```
 
-Message types
+Message primitives
 ```
 type PreprepareMessage interface {
 	Serializable

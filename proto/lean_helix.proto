@@ -1,120 +1,92 @@
 syntax = "proto3";
-package messages;
-option go_package = "github.com/orbs-network/lean-helix-go/proto/go";
+package leanhelix;
+option go_package = "github.com/orbs-network/lean-helix-go";
 
-message Bls1_sig {
-    option inline_type = "bytes";
-    bytes value = 1;
-    // TODO size
-}
-
-message Ed25519_public_key {
-    option inline_type = "bytes";
-    bytes value = 1;
-    // size 32 bytes
-}
-message Ed25519_sig {
-    option inline_type = "bytes";
-    bytes value = 1;
-    // size 64 bytes
-}
-message Uint256 {
-    option inline_type = "bytes";
-    bytes value = 1;
-    // size 32 bytes
-}
-message BlockHeight {
-    option inline_type = "uint64";
-    uint64 value = 1;
-    // size 8 bytes
-}
-
-
-enum LeanHelixMessageType {
+enum MessageType {
     LEAN_HELIX_RESERVED = 0;
-    LEAN_HELIX_PRE_PREPARE = 1;
+    LEAN_HELIX_PREPREPARE = 1;
     LEAN_HELIX_PREPARE = 2;
     LEAN_HELIX_COMMIT = 3;
     LEAN_HELIX_NEW_VIEW = 4;
     LEAN_HELIX_VIEW_CHANGE = 5;
 }
 
-message LeanHelixBlockProof {
-    LeanHelixBlockRef block_ref = 1;
-    repeated LeanHelixSenderSignature nodes = 2;
-    Bls1_sig random_seed_signature = 3;
+message BlockProof {
+    BlockRef block_ref = 1;
+    repeated SenderSignature nodes = 2;
+    primitives.Bls1_sig random_seed_signature = 3;
 }
 
-message LeanHelixSenderSignature {
-    Ed25519_public_key sender_public_key = 1;
-    Ed25519_sig signature = 2;
+message SenderSignature {
+    primitives.Ed25519_public_key sender_public_key = 1;
+    primitives.Ed25519_sig signature = 2;
 }
 
-message LeanHelixBlockRef {
-    LeanHelixMessageType message_type = 1;
-    BlockHeight block_height = 2;
-    uint32 view = 3;
-    Uint256 block_hash = 4; // primitives.sha256({primitives.sha256(TransactionBlockHeader,primitives.sha256(ResultsBlockHeader)})
+message BlockRef {
+    MessageType message_type = 1;
+    primitives.BlockHeight block_height = 2;
+    primitives.View view = 3;
+    primitives.Uint256 block_hash = 4; // primitives.sha256({primitives.sha256(TransactionBlockHeader,primitives.sha256(ResultsBlockHeader)})
 }
 // message format
 
-message LeanHelixPrePrepareMessage {
-    LeanHelixBlockRef signed_header = 1;
-    LeanHelixSenderSignature sender = 2; // signs on signed_header
+message PreprepareMessageContent {
+    BlockRef signed_header = 1;
+    SenderSignature sender = 2; // signs on signed_header
 //    BlockPairContainer block_pair = 3;
 }
 
-message LeanHelixPrepareMessage {
-    LeanHelixBlockRef signed_header = 1;
-    LeanHelixSenderSignature sender = 2; // signs on signed_header
+message PrepareMessageContent {
+    BlockRef signed_header = 1;
+    SenderSignature sender = 2; // signs on signed_header
 }
 
-message LeanHelixCommitMessage {
-    LeanHelixBlockRef signed_header = 1;
-    LeanHelixSenderSignature sender = 2; // signs on signed_header
-    LeanHelixRandomSeedShare share = 3;
+message CommitMessageContent {
+    BlockRef signed_header = 1;
+    SenderSignature sender = 2; // signs on signed_header
+    RandomSeedShare share = 3;
 }
 
-message LeanHelixViewChangeMessage {
-    LeanHelixViewChangeHeader signed_header = 1;
-    LeanHelixSenderSignature sender = 2; // signs on signed_header
+message ViewChangeMessageContent {
+    ViewChangeHeader signed_header = 1;
+    SenderSignature sender = 2; // signs on signed_header
 //    protocol.BlockPairContainer block_pair = 3;
 }
 
-message LeanHelixNewViewMessage {
-    LeanHelixNewViewHeader signed_header = 1;
-    LeanHelixSenderSignature sender = 2; // signs on signed_header
-    LeanHelixPrePrepareMessage pre_prepare_message = 3;
+message NewViewMessageContent {
+    NewViewHeader signed_header = 1;
+    SenderSignature sender = 2; // signs on signed_header
+    PreprepareMessageContent preprepare_message_content = 3;
 }
 
 // message payloads (serializable)
 
-message LeanHelixRandomSeedShare {
+message RandomSeedShare {
     Bls1_sig random_seed_share = 1;
 }
 
-message LeanHelixViewChangeHeader {
-    LeanHelixMessageType message_type = 1;
-    BlockHeight block_height = 2;
-    uint32 view = 3;
-    LeanHelixPreparedProof prepared_proof = 4;
+message ViewChangeHeader {
+    MessageType message_type = 1;
+    primitives.BlockHeight block_height = 2;
+    primitives.View view = 3;
+    PreparedProof prepared_proof = 4;
 }
 
-message LeanHelixPreparedProof {
-    LeanHelixBlockRef pre_prepare_block_ref = 1;
-    LeanHelixSenderSignature pre_prepare_sender = 2;
-    LeanHelixBlockRef prepare_block_ref = 3;
-    repeated LeanHelixSenderSignature prepare_senders = 4;
+message PreparedProof {
+    BlockRef preprepare_block_ref = 1;
+    SenderSignature preprepare_sender = 2;
+    BlockRef prepare_block_ref = 3;
+    repeated SenderSignature prepare_senders = 4;
 }
 
-message LeanHelixNewViewHeader {
-    LeanHelixMessageType message_type = 1;
-    BlockHeight block_height = 2;
-    uint32 view = 3;
-    repeated LeanHelixViewChangeConfirmation view_change_confirmations = 4;
+message NewViewHeader {
+    MessageType message_type = 1;
+    primitives.BlockHeight block_height = 2;
+    primitives.View view = 3;
+    repeated ViewChangeConfirmation view_change_confirmations = 4;
 }
 
-message LeanHelixViewChangeConfirmation {
-    LeanHelixViewChangeHeader view_change_signed_header = 1;
-    LeanHelixSenderSignature view_change_sender = 2;
+message ViewChangeConfirmation {
+    ViewChangeHeader view_change_signed_header = 1;
+    SenderSignature view_change_sender = 2;
 }

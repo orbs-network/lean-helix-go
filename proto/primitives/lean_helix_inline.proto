@@ -1,0 +1,37 @@
+syntax = "proto3";
+package primitives;
+option go_package = "github.com/orbs-network/lean-helix-go";
+
+option inline = true;
+
+message Bls1_sig {
+    option inline_type = "bytes";
+    bytes value = 1;
+    // TODO size
+}
+
+message Ed25519_public_key {
+    option inline_type = "bytes";
+    bytes value = 1;
+    // size 32 bytes
+}
+message Ed25519_sig {
+    option inline_type = "bytes";
+    bytes value = 1;
+    // size 64 bytes
+}
+message Uint256 {
+    option inline_type = "bytes";
+    bytes value = 1;
+    // size 32 bytes
+}
+message BlockHeight {
+    option inline_type = "uint64";
+    uint64 value = 1;
+    // size 8 bytes
+}
+message View {
+    option inline_type = "uint64";
+    uint64 value = 1;
+    // size 8 bytes
+}
