@@ -4,6 +4,7 @@ import (
 	"github.com/orbs-network/go-mock"
 	lh "github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/instrumentation/log"
+	. "github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -13,12 +14,12 @@ import (
 
 func TestReturnOkForMembersInCurrentHeight(t *testing.T) {
 	// Instantiate, provide no members, and expect error
-	pk := lh.PublicKey("PK")
+	pk := Ed25519PublicKey("PK")
 	mockComm := builders.NewMockNetworkCommunication()
 	mockBlockUtils := builders.NewMockBlockUtils(nil)
 	mockElectionTrigger := builders.NewMockElectionTrigger()
 	mockStorage := builders.NewMockStorage()
-	mockComm.When("RequestOrderedCommittee", mock.Any).Return([]lh.PublicKey{pk})
+	mockComm.When("RequestOrderedCommittee", mock.Any).Return([]Ed25519PublicKey{pk})
 	mockComm.When("SendPreprepare", mock.Any, mock.Any).Return()
 	mockStorage.When("StorePreprepare", mock.Any).Return(true)
 	config := &lh.TermConfig{
@@ -36,12 +37,12 @@ func TestReturnOkForMembersInCurrentHeight(t *testing.T) {
 func TestReturnErrorIfNoMembersInCurrentHeight(t *testing.T) {
 	// Instantiate, provide no members, and expect error
 
-	pk := lh.PublicKey("PK")
+	pk := Ed25519PublicKey("PK")
 	mockComm := builders.NewMockNetworkCommunication()
 	mockBlockUtils := builders.NewMockBlockUtils(nil)
 	mockElectionTrigger := builders.NewMockElectionTrigger()
 	mockStorage := lh.NewInMemoryStorage()
-	mockComm.When("RequestOrderedCommittee", mock.Any).Return([]lh.PublicKey{})
+	mockComm.When("RequestOrderedCommittee", mock.Any).Return([]Ed25519PublicKey{})
 	mockComm.When("SendPreprepare", mock.Any, mock.Any).Return()
 	config := &lh.TermConfig{
 		KeyManager:           builders.NewMockKeyManager(pk),

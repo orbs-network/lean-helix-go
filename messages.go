@@ -1,5 +1,7 @@
 package leanhelix
 
+import "github.com/orbs-network/lean-helix-go/primitives"
+
 type HasMessageType interface {
 	MessageType() MessageType
 }
@@ -140,11 +142,12 @@ type MessageFactory interface {
 	// Message creation methods
 
 	//CreatePreprepareMessage(blockRef BlockRef, sender SenderSignature, block Block) PreprepareMessage
-	CreatePreprepareMessage(blockHeight uint64, view uint64, block Block) PreprepareMessage
-	CreatePrepareMessage(blockRef BlockRef, sender SenderSignature) PrepareMessage
-	CreateCommitMessage(blockRef BlockRef, sender SenderSignature) CommitMessage
-	CreateViewChangeMessage(vcHeader ViewChangeHeader, sender SenderSignature, block Block) ViewChangeMessage
-	CreateNewViewMessage(preprepareMessage PreprepareMessage, nvHeader NewViewHeader, sender SenderSignature) NewViewMessage
+	CreatePreprepareMessage(blockHeight primitives.BlockHeight, view primitives.View, block Block) PreprepareMessage
+	CreatePrepareMessage(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.Uint256) PrepareMessage
+	CreateCommitMessage(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.Uint256) CommitMessage
+	// TODO Add PreparedMessages
+	CreateViewChangeMessage(blockHeight primitives.BlockHeight, view primitives.View, preparedMessages *PreparedMessages) ViewChangeMessage
+	CreateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.View, ppm PreprepareMessage, confirmations []ViewChangeConfirmation) NewViewMessage
 
 	// Auxiliary methods
 
@@ -156,10 +159,6 @@ type MessageFactory interface {
 	//CreatePreparedProof(ppBlockRef BlockRef, pBlockRef BlockRef, ppSender SenderSignature, pSenders []SenderSignature) PreparedProof
 
 	// TODO Remove old methods once not needed
-}
-
-type InternalMessageFactory interface {
-	// TODO USe TDD to decide on methods here
 }
 
 //type MessageType string

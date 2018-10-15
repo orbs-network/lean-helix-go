@@ -5,10 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/orbs-network-go/instrumentation/log"
-	"github.com/orbs-network/orbs-network-go/test/builders"
-	"github.com/orbs-network/orbs-spec/types/go/primitives"
-	"github.com/orbs-network/orbs-spec/types/go/protocol"
 	"github.com/stretchr/testify/require"
 	"io"
 	"io/ioutil"
@@ -73,8 +69,7 @@ func TestSimpleLogger(t *testing.T) {
 
 func TestBasicLogger_WithFilter_ForPrefix(t *testing.T) {
 	b := new(bytes.Buffer)
-	log.GetLogger(log.String("flow", "flow1")).WithOutput(log.NewOutput(b)).
-		WithFilter(log.String("flow", "flow1")).
+	log.GetLogger(log.String("flow", "flow1")).WithOutput(log.NewOutput(b)).WithFilter(log.String("flow", "flow1")).
 		Info("foo")
 	require.Empty(t, b.String(), "output was not empty")
 }
@@ -90,7 +85,7 @@ func TestBasicLogger_WithFilter_ForParam(t *testing.T) {
 func TestCompareLogger(t *testing.T) {
 	stdout := captureStdout(func(writer io.Writer) {
 		serviceLogger := log.GetLogger(log.Node("node1"), log.Service("public-api")).WithOutput(log.NewOutput(writer))
-		serviceLogger.LogFailedExpectation("Service initialized compare", log.BlockHeight(leanhelix.BlockHeight(9999)), log.BlockHeight(leanhelix.BlockHeight(8888)), log.Bytes("bytes", []byte{2, 3, 99}))
+		serviceLogger.LogFailedExpectation("Service initialized compare", log.BlockHeight(uint64(9999)), log.BlockHeight(leanhelix.BlockHeight(8888)), log.Bytes("bytes", []byte{2, 3, 99}))
 	})
 
 	fmt.Println(stdout)

@@ -29,7 +29,7 @@ func (km *mockKeyManager) Sign(content []byte) []byte {
 	return append(MOCK_SIG_PREFIX, content...)
 }
 
-func (km *mockKeyManager) Verify(content []byte, sender lh.SenderSignature) bool {
+func (km *mockKeyManager) Verify(content []byte, sender *lh.SenderSignature) bool {
 	panic("implement me")
 }
 

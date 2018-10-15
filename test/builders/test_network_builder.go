@@ -5,6 +5,7 @@ import (
 	"fmt"
 	lh "github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/instrumentation/log"
+	. "github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
 	"github.com/orbs-network/orbs-network-go/config"
 	"github.com/stretchr/testify/mock"
@@ -131,7 +132,7 @@ func (builder *TestNetworkBuilder) createNodes() []*Node {
 	nodes := make([]*Node, builder.nodeCount)
 
 	for i := range nodes {
-		nodes[i] = buildNode(builder.ctx, lh.PublicKey(fmt.Sprintf("Node %d", i)), builder.discovery, builder.logger)
+		nodes[i] = buildNode(builder.ctx, Ed25519PublicKey(fmt.Sprintf("Node %d", i)), builder.discovery, builder.logger)
 	}
 
 	// TODO postpone handling custom nodes till needed by TDD (see TestNetworkBuilder.ts)
@@ -139,7 +140,7 @@ func (builder *TestNetworkBuilder) createNodes() []*Node {
 	return nodes
 }
 
-func (net *TestNetwork) GetNodeGossip(pk lh.PublicKey) (*gossip.Gossip, bool) {
+func (net *TestNetwork) GetNodeGossip(pk Ed25519PublicKey) (*gossip.Gossip, bool) {
 	return net.discovery.GetGossipByPK(pk)
 }
 

@@ -2,6 +2,7 @@ package test
 
 import (
 	lh "github.com/orbs-network/lean-helix-go"
+	. "github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -36,9 +37,9 @@ func TestAcceptPreprepareWithCurrentView(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	require.Equal(t, node1LeanHelixTerm.GetView(), lh.View(0), "Node 1 view should be 0")
+	require.Equal(t, node1LeanHelixTerm.GetView(), View(0), "Node 1 view should be 0")
 	triggerElection(net)
-	require.Equal(t, node1LeanHelixTerm.GetView(), lh.View(1), "Node 1 view should be 1")
+	require.Equal(t, node1LeanHelixTerm.GetView(), View(1), "Node 1 view should be 1")
 
 	block := builders.CreateBlock(builders.GenesisBlock)
 	// spy on storePrepare

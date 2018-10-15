@@ -34,7 +34,7 @@ func TestSendPreprepareOnlyIfLeader(t *testing.T) {
 
 	predicateMessageTypeIsPreprepare := func(msg interface{}) bool {
 		message := msg.(lh.MessageTransporter)
-		return message.MessageType() == lh.MESSAGE_TYPE_PREPREPARE
+		return message.MessageType() == lh.LEAN_HELIX_PREPREPARE
 	}
 
 	gossips := make([]*gossip.Gossip, 0, len(net.Nodes))

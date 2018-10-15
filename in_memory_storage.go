@@ -1,6 +1,9 @@
 package leanhelix
 
-import . "github.com/orbs-network/lean-helix-go/primitives"
+import (
+	. "github.com/orbs-network/lean-helix-go/primitives"
+	"sort"
+)
 
 type BlockHashStr string
 type PublicKeyStr string
@@ -10,12 +13,12 @@ type Storage interface {
 	StorePrepare(pp PrepareMessage) bool
 	StoreCommit(cm CommitMessage) bool
 	StoreViewChange(vcm ViewChangeMessage) bool
-	GetPrepareSendersPKs(blockHeight BlockHeight, view View, blockHash BlockHashStr) []Ed25519PublicKey
-	GetCommitSendersPKs(blockHeight BlockHeight, view View, blockHash BlockHashStr) []Ed25519PublicKey
+	GetPrepareSendersPKs(blockHeight BlockHeight, view View, blockHash Uint256) []Ed25519PublicKey
+	GetCommitSendersPKs(blockHeight BlockHeight, view View, blockHash Uint256) []Ed25519PublicKey
 	GetViewChangeMessages(blockHeight BlockHeight, view View, f int) []ViewChangeMessage
 	GetPreprepare(blockHeight BlockHeight, view View) (PreprepareMessage, bool)
-	GetPrepares(blockHeight BlockHeight, view View, blockHash BlockHashStr) ([]PrepareMessage, bool)
-	GetLatestPrepared(blockHeight BlockHeight, f int) (PreparedProof, bool)
+	GetPrepares(blockHeight BlockHeight, view View, blockHash Uint256) ([]PrepareMessage, bool)
+	GetLatestPreprepare(blockHeight BlockHeight) (PreprepareMessage, bool)
 	ClearTermLogs(blockHeight BlockHeight)
 }
 
@@ -25,6 +28,27 @@ type InMemoryStorage struct {
 	prepareStorage    map[BlockHeight]map[View]map[BlockHashStr]map[PublicKeyStr]PrepareMessage
 	commitStorage     map[BlockHeight]map[View]map[BlockHashStr]map[PublicKeyStr]CommitMessage
 	viewChangeStorage map[BlockHeight]map[View]map[PublicKeyStr]ViewChangeMessage
+}
+
+func (storage *InMemoryStorage) GetLatestPreprepare(blockHeight BlockHeight) (PreprepareMessage, bool) {
+
+	views, ok := storage.preprepareStorage[blockHeight]
+	if !ok {
+		return nil, false
+	}
+	if len(views) == 0 {
+		return nil, false
+	}
+	viewKeys := make([]View, 0, len(views))
+	for key := range views {
+		viewKeys = append(viewKeys, key)
+	}
+	if len(viewKeys) == 0 {
+		return nil, false
+	}
+	sort.Sort(ViewCounters(viewKeys))
+	lastView := viewKeys[len(viewKeys)-1]
+	return views[lastView], true
 }
 
 func (storage *InMemoryStorage) StorePreprepare(ppm PreprepareMessage) bool {
@@ -130,7 +154,7 @@ func (storage *InMemoryStorage) StoreViewChange(vcm ViewChangeMessage) bool {
 
 }
 
-func (storage *InMemoryStorage) getPrepare(blockHeight BlockHeight, view View, blockHash BlockHashStr) (map[PublicKeyStr]PrepareMessage, bool) {
+func (storage *InMemoryStorage) getPrepare(blockHeight BlockHeight, view View, blockHash Uint256) (map[PublicKeyStr]PrepareMessage, bool) {
 	views, ok := storage.prepareStorage[blockHeight]
 	if !ok {
 		return nil, false
@@ -139,24 +163,24 @@ func (storage *InMemoryStorage) getPrepare(blockHeight BlockHeight, view View, b
 	if !ok {
 		return nil, false
 	}
-	return blockHashes[blockHash], true
+	return blockHashes[BlockHashStr(blockHash)], true
 }
 
-func (storage *InMemoryStorage) GetPrepareSendersPKs(blockHeight BlockHeight, view View, blockHash BlockHashStr) []PublicKeyStr {
+func (storage *InMemoryStorage) GetPrepareSendersPKs(blockHeight BlockHeight, view View, blockHash Uint256) []Ed25519PublicKey {
 	senders, ok := storage.getPrepare(blockHeight, view, blockHash)
 	if !ok {
-		return []PublicKeyStr{}
+		return []Ed25519PublicKey{}
 	}
-	keys := make([]PublicKeyStr, len(senders))
+	keys := make([]Ed25519PublicKey, len(senders))
 	i := 0
 	for k := range senders {
-		keys[i] = k
+		keys[i] = Ed25519PublicKey(k)
 		i++
 	}
 	return keys
 }
 
-func (storage *InMemoryStorage) getCommit(blockHeight BlockHeight, view View, blockHash BlockHashStr) (map[PublicKeyStr]CommitMessage, bool) {
+func (storage *InMemoryStorage) getCommit(blockHeight BlockHeight, view View, blockHash Uint256) (map[PublicKeyStr]CommitMessage, bool) {
 	views, ok := storage.commitStorage[blockHeight]
 	if !ok {
 		return nil, false
@@ -165,18 +189,18 @@ func (storage *InMemoryStorage) getCommit(blockHeight BlockHeight, view View, bl
 	if !ok {
 		return nil, false
 	}
-	return blockHashes[blockHash], true
+	return blockHashes[BlockHashStr(blockHash)], true
 }
 
-func (storage *InMemoryStorage) GetCommitSendersPKs(blockHeight BlockHeight, view View, blockHash BlockHashStr) []PublicKeyStr {
+func (storage *InMemoryStorage) GetCommitSendersPKs(blockHeight BlockHeight, view View, blockHash Uint256) []Ed25519PublicKey {
 	senders, ok := storage.getCommit(blockHeight, view, blockHash)
 	if !ok {
-		return []PublicKeyStr{}
+		return []Ed25519PublicKey{}
 	}
-	keys := make([]PublicKeyStr, len(senders))
+	keys := make([]Ed25519PublicKey, len(senders))
 	i := 0
 	for k := range senders {
-		keys[i] = PublicKeyStr(k)
+		keys[i] = Ed25519PublicKey(k)
 		i++
 	}
 	return keys
@@ -217,7 +241,7 @@ func (storage *InMemoryStorage) GetPreprepare(blockHeight BlockHeight, view View
 }
 
 // TODO Whether to use ptr for string (BlockHash)
-func (storage *InMemoryStorage) GetPrepares(blockHeight BlockHeight, view View, blockHash BlockHashStr) ([]PrepareMessage, bool) {
+func (storage *InMemoryStorage) GetPrepares(blockHeight BlockHeight, view View, blockHash Uint256) ([]PrepareMessage, bool) {
 	senders, ok := storage.getPrepare(blockHeight, view, blockHash)
 	if !ok {
 		return nil, false
