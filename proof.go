@@ -19,7 +19,7 @@ func verifyBlockRefMessage(blockRef *BlockRef, sender *SenderSignature, keyManag
 
 type CalcLeaderPk = func(view View) Ed25519PublicKey
 
-//func CreatePreparedProof(keyManager KeyManager, preprepareMessage PreprepareMessage, prepareMessages []PrepareMessage) *PreparedProof {
+//func CreatePreparedProof(keyManager KeyManager, PreprepareMessageImpl PreprepareMessage, prepareMessages []PrepareMessage) *PreparedProof {
 func CreatePreparedProof(ppKeyManager KeyManager, pKeyManagers []KeyManager, height BlockHeight, view View, blockHash Uint256) *PreparedProof {
 
 	var pBlockRef *BlockRefBuilder

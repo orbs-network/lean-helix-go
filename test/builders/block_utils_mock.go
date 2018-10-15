@@ -19,12 +19,13 @@ func NewMockBlockUtils(upcomingBlocks []lh.Block) *MockBlockUtils {
 	}
 }
 
-func (b MockBlockUtils) CalculateBlockHash(block lh.Block) Uint256 {
+func (b *MockBlockUtils) CalculateBlockHash(block lh.Block) Uint256 {
+	b.Called(block)
 	return CalculateBlockHash(block)
 }
 
-func (b MockBlockUtils) ProvideNextBlock() lh.Block {
-
+func (b *MockBlockUtils) ProvideNextBlock() lh.Block {
+	b.Called()
 	var nextBlock lh.Block
 	if len(b.upcomingBlocks) > 0 {
 		// Simple queue impl, see https://github.com/golang/go/wiki/SliceTricks
@@ -36,17 +37,21 @@ func (b MockBlockUtils) ProvideNextBlock() lh.Block {
 	return nextBlock
 }
 
-func (b MockBlockUtils) ResolveAllValidations(isValid bool) {
+func (b *MockBlockUtils) ResolveAllValidations(isValid bool) {
+	b.Called(isValid)
 }
 
-func (b MockBlockUtils) RequestCommittee() {
+func (b *MockBlockUtils) RequestCommittee() {
+	b.Called()
 	panic("implement me")
 }
 
-func (b MockBlockUtils) RequestNewBlock(height BlockHeight) lh.Block {
+func (b *MockBlockUtils) RequestNewBlock(height BlockHeight) lh.Block {
+	b.Called(height)
 	return b.ProvideNextBlock()
 }
 
-func (b MockBlockUtils) ValidateBlock(block lh.Block) bool {
+func (b *MockBlockUtils) ValidateBlock(block lh.Block) bool {
+	b.Called(block)
 	panic("implement me")
 }

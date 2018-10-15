@@ -5,7 +5,6 @@ import . "github.com/orbs-network/lean-helix-go/primitives"
 // This is the ORBS side
 
 type MessageFactoryImpl struct {
-	CalculateBlockHash func(Block) Uint256
 	KeyManager
 }
 
@@ -15,7 +14,7 @@ func (f *MessageFactoryImpl) CreatePreprepareMessage(blockHeight BlockHeight, vi
 		MessageType: LEAN_HELIX_PREPREPARE,
 		BlockHeight: blockHeight,
 		View:        view,
-		BlockHash:   Uint256(f.CalculateBlockHash(block)),
+		BlockHash:   block.BlockHash(),
 	}
 
 	sig := Ed25519Sig(f.KeyManager.Sign(header.Build().Raw()))
@@ -30,9 +29,9 @@ func (f *MessageFactoryImpl) CreatePreprepareMessage(blockHeight BlockHeight, vi
 		Sender:       sender,
 	}
 
-	ppm := &preprepareMessage{
+	ppm := &PreprepareMessageImpl{
 		Content: ppmc.Build(),
-		block:   block,
+		MyBlock: block,
 	}
 
 	return ppm
@@ -54,9 +53,8 @@ func (f *MessageFactoryImpl) CreateNewViewMessage(blockHeight BlockHeight, view 
 	panic("implement me")
 }
 
-func NewMessageFactory(calculateBlockHash func(Block) Uint256, keyManager KeyManager) MessageFactory {
+func NewMessageFactory(keyManager KeyManager) MessageFactory {
 	return &MessageFactoryImpl{
-		CalculateBlockHash: calculateBlockHash,
-		KeyManager:         keyManager,
+		KeyManager: keyManager,
 	}
 }

@@ -1,7 +1,9 @@
 package builders
 
 import (
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"bytes"
+	lh "github.com/orbs-network/lean-helix-go"
+	. "github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/stretchr/testify/require"
 	"math"
 	"math/rand"
@@ -9,15 +11,36 @@ import (
 )
 
 func TestMessageFactory(t *testing.T) {
-	keyManager := NewMockKeyManager(primitives.Ed25519PublicKey("My PK"))
-	term := primitives.BlockHeight(math.Floor(rand.Float64() * 1000000))
-	view := primitives.View(math.Floor(rand.Float64() * 1000000))
+	keyManager := NewMockKeyManager(Ed25519PublicKey("My PK"))
+	height := BlockHeight(math.Floor(rand.Float64() * 1000000))
+	view := View(math.Floor(rand.Float64() * 1000000))
 	block := CreateBlock(GenesisBlock)
-	//blockHash := block.BlockHash()
-	fac := NewMockMessageFactory(CalculateBlockHash, keyManager)
+	blockHash := block.BlockHash()
+	fac := lh.NewMessageFactory(keyManager)
 
-	ppm := fac.CreatePreprepareMessage(term, view, block)
+	t.Run("create PreprepareMessage", func(t *testing.T) {
+		signedHeader := &lh.BlockRefBuilder{
+			MessageType: lh.LEAN_HELIX_PREPREPARE,
+			BlockHeight: height,
+			View:        view,
+			BlockHash:   blockHash,
+		}
+		ppmcb := &lh.PreprepareMessageContentBuilder{
+			SignedHeader: signedHeader,
+			Sender: &lh.SenderSignatureBuilder{
+				SenderPublicKey: keyManager.MyPublicKey(),
+				Signature:       keyManager.Sign(signedHeader.Build().Raw()),
+			},
+		}
 
-	require.Equal(t, term, ppm.SignedHeader().BlockHeight(), "expected height to be %s but got %s", term, ppm.SignedHeader().BlockHeight())
+		expectedPPM := &lh.PreprepareMessageImpl{
+			Content: ppmcb.Build(),
+			MyBlock: block,
+		}
+
+		actualPPM := fac.CreatePreprepareMessage(height, view, block)
+
+		require.True(t, bytes.Compare(expectedPPM.Raw(), actualPPM.Raw()) == 0, "compared bytes of PPM")
+	})
 
 }

@@ -52,29 +52,29 @@ type NewViewMessage interface {
 	PreprepareMessage() PreprepareMessage
 }
 
-type preprepareMessage struct {
+type PreprepareMessageImpl struct {
 	Content *PreprepareMessageContent
-	block   Block
+	MyBlock Block
 }
 
-func (ppm *preprepareMessage) SignedHeader() *BlockRef {
+func (ppm *PreprepareMessageImpl) Block() Block {
+	return ppm.MyBlock
+}
+
+func (ppm *PreprepareMessageImpl) SignedHeader() *BlockRef {
 	return ppm.SignedHeader()
 }
 
-func (ppm *preprepareMessage) Sender() *SenderSignature {
+func (ppm *PreprepareMessageImpl) Sender() *SenderSignature {
 	return ppm.Sender()
 }
 
-func (ppm *preprepareMessage) Block() Block {
-	return ppm.block
-}
-
-func (ppm *preprepareMessage) MessageType() MessageType {
+func (ppm *PreprepareMessageImpl) MessageType() MessageType {
 	return LEAN_HELIX_PREPREPARE
 }
 
-func (ppm *preprepareMessage) Raw() []byte {
-	return ppm.Raw()
+func (ppm *PreprepareMessageImpl) Raw() []byte {
+	return ppm.Content.Raw()
 }
 
 type prepareMessage struct {
