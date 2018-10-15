@@ -13,7 +13,7 @@ func TestMessageFactory(t *testing.T) {
 	term := primitives.BlockHeight(math.Floor(rand.Float64() * 1000000))
 	view := primitives.View(math.Floor(rand.Float64() * 1000000))
 	block := CreateBlock(GenesisBlock)
-	//blockHash := CalculateBlockHash(MockBlock)
+	//blockHash := block.BlockHash()
 	fac := NewMockMessageFactory(CalculateBlockHash, keyManager)
 
 	ppm := fac.CreatePreprepareMessage(term, view, block)

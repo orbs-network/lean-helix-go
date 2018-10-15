@@ -83,7 +83,7 @@ func (term *leanHelixTerm) startTerm() {
 	term.log.Info("StartTerm() is leader", log.Stringable("id", term.KeyManager.MyPublicKey()), log.Stringable("height", term.height))
 	// TODO This should block!!!
 	block := term.BlockUtils.RequestNewBlock(term.height)
-	term.log.Info("StartTerm() generated new block", log.Stringable("id", term.KeyManager.MyPublicKey()), log.Stringable("height", term.height), log.Stringable("block-hash", block.GetBlockHash()))
+	term.log.Info("StartTerm() generated new block", log.Stringable("id", term.KeyManager.MyPublicKey()), log.Stringable("height", term.height), log.Stringable("block-hash", block.BlockHash()))
 	if term.disposed {
 		term.log.Debug("StartTerm() disposed, returning", log.Stringable("id", term.KeyManager.MyPublicKey()), log.Stringable("height", term.height))
 		return
@@ -226,7 +226,10 @@ func (term *leanHelixTerm) GetView() View {
 	return term.view
 }
 func (term *leanHelixTerm) sendPreprepare(message PreprepareMessage) {
-	term.NetworkCommunication.SendWithBlock(term.NonCommitteeMembersPublicKeys, message.Raw(), message.Block())
+
+	consensusMessage := CreateConsensusMessage(message.Raw(), message.Block())
+
+	term.NetworkCommunication.Send(term.NonCommitteeMembersPublicKeys, consensusMessage)
 
 	term.log.Debug("GossipSend preprepare",
 		log.Stringable("senderPK", term.KeyManager.MyPublicKey()),

@@ -8,7 +8,6 @@ import (
 type Config struct {
 	Ctx                  context.Context
 	NetworkCommunication NetworkCommunication
-	MessageFactory       MessageFactory
 	BlockUtils           BlockUtils
 	KeyManager           KeyManager
 	Logger               log.BasicLogger

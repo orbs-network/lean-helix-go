@@ -17,28 +17,8 @@ type InMemoryNetworkCommunication struct {
 	gossip    *gossip.Gossip
 }
 
-func (comm *InMemoryNetworkCommunication) Send(publicKeys []Ed25519PublicKey, message []byte) error {
+func (comm *InMemoryNetworkCommunication) Send(targets []Ed25519PublicKey, message lh.ConsensusMessage) error {
 	panic("implement me")
-}
-
-func (comm *InMemoryNetworkCommunication) SendWithBlock(publicKeys []Ed25519PublicKey, message []byte, block lh.Block) error {
-	panic("implement me")
-}
-
-func NewInMemoryNetworkCommunication(discovery gossip.Discovery, gossip *gossip.Gossip) *InMemoryNetworkCommunication {
-
-	comm := &InMemoryNetworkCommunication{
-		discovery: discovery,
-		gossip:    gossip,
-	}
-
-	subscribeFunc := func(message lh.MessageTransporter) {
-		comm.onGossipMessage(message)
-	}
-
-	comm.gossip.Subscribe(subscribeFunc)
-
-	return comm
 }
 
 func (comm *InMemoryNetworkCommunication) onGossipMessage(message lh.MessageTransporter) {
@@ -66,54 +46,27 @@ func (comm *InMemoryNetworkCommunication) onGossipMessage(message lh.MessageTran
 	}
 }
 
-func (comm *InMemoryNetworkCommunication) SendToMembers(publicKeys []Ed25519PublicKey, messageType string, message []lh.MessageTransporter) {
-	panic("implement me")
-}
-
 func (comm *InMemoryNetworkCommunication) RequestOrderedCommittee(seed uint64) []Ed25519PublicKey {
 	return comm.discovery.AllGossipsPKs()
 }
 
 func (comm *InMemoryNetworkCommunication) IsMember(pk Ed25519PublicKey) bool {
-	panic("implement me")
+	_, ok := comm.discovery.GetGossipByPK(pk)
+	return ok
 }
 
-func (comm *InMemoryNetworkCommunication) SendPreprepare(pks []Ed25519PublicKey, message lh.PreprepareMessage) {
-	panic("implement me")
-}
+func NewInMemoryNetworkCommunication(discovery gossip.Discovery, gossip *gossip.Gossip) *InMemoryNetworkCommunication {
 
-func (comm *InMemoryNetworkCommunication) SendPrepare(pks []Ed25519PublicKey, message lh.PrepareMessage) {
-	panic("implement me")
-}
+	comm := &InMemoryNetworkCommunication{
+		discovery: discovery,
+		gossip:    gossip,
+	}
 
-func (comm *InMemoryNetworkCommunication) SendCommit(pks []Ed25519PublicKey, message lh.CommitMessage) {
-	panic("implement me")
-}
+	subscribeFunc := func(message lh.MessageTransporter) {
+		comm.onGossipMessage(message)
+	}
 
-func (comm *InMemoryNetworkCommunication) SendViewChange(pk Ed25519PublicKey, message lh.ViewChangeMessage) {
-	panic("implement me")
-}
+	comm.gossip.Subscribe(subscribeFunc)
 
-func (comm *InMemoryNetworkCommunication) SendNewView(pks []Ed25519PublicKey, message lh.NewViewMessage) {
-	panic("implement me")
-}
-
-func (comm *InMemoryNetworkCommunication) RegisterToPreprepare(cb func(message lh.PreprepareMessage)) {
-	panic("implement me")
-}
-
-func (comm *InMemoryNetworkCommunication) RegisterToPrepare(cb func(message lh.PrepareMessage)) {
-	panic("implement me")
-}
-
-func (comm *InMemoryNetworkCommunication) RegisterToCommit(cb func(message lh.CommitMessage)) {
-	panic("implement me")
-}
-
-func (comm *InMemoryNetworkCommunication) RegisterToViewChange(cb func(message lh.ViewChangeMessage)) {
-	panic("implement me")
-}
-
-func (comm *InMemoryNetworkCommunication) RegisterToNewView(cb func(message lh.NewViewMessage)) {
-	panic("implement me")
+	return comm
 }

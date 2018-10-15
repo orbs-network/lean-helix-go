@@ -3,18 +3,22 @@ package leanhelix
 import "github.com/orbs-network/lean-helix-go/primitives"
 
 type Block interface {
-	GetHeight() primitives.BlockHeight
-	GetBlockHash() primitives.Uint256
+	Height() primitives.BlockHeight
+	BlockHash() primitives.Uint256
+	PrevBlockHash() primitives.Uint256
 	//Body() []byte
 }
 
+type ConsensusMessage interface {
+	Content() []byte
+	Block() Block
+}
+
 type NetworkCommunication interface {
-	SendToMembers(publicKeys []primitives.Ed25519PublicKey, messageType string, message []MessageTransporter)
 	RequestOrderedCommittee(seed uint64) []primitives.Ed25519PublicKey
 	IsMember(pk primitives.Ed25519PublicKey) bool
 
-	Send(publicKeys []primitives.Ed25519PublicKey, message []byte) error
-	SendWithBlock(publicKeys []primitives.Ed25519PublicKey, message []byte, block Block) error
+	Send(targets []primitives.Ed25519PublicKey, message ConsensusMessage) error
 }
 
 type KeyManager interface {
