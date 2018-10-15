@@ -10,6 +10,22 @@ import (
 	"testing"
 )
 
+func TestBuildAndRead(t *testing.T) {
+	keyManager := NewMockKeyManager(Ed25519PublicKey("My PK"))
+	height := BlockHeight(math.Floor(rand.Float64() * 1000000))
+	view := View(math.Floor(rand.Float64() * 1000000))
+	block := CreateBlock(GenesisBlock)
+	fac := lh.NewMessageFactory(keyManager)
+
+	actualPPM := fac.CreatePreprepareMessage(height, view, block)
+
+	bytes1 := actualPPM.Raw()
+	newPPMC := lh.PreprepareMessageContentReader(bytes1)
+	bytes2 := newPPMC.Raw()
+
+	require.True(t, bytes.Compare(bytes1, bytes2) == 0)
+}
+
 func TestMessageFactory(t *testing.T) {
 	keyManager := NewMockKeyManager(Ed25519PublicKey("My PK"))
 	height := BlockHeight(math.Floor(rand.Float64() * 1000000))
