@@ -45,7 +45,7 @@ func TestAcceptPreprepareWithCurrentView(t *testing.T) {
 	// spy on storePrepare
 
 	keyManager := node1.Config.KeyManager
-	utils := node1.Config.BlockUtils.(builders.MockBlockUtils)
+	utils := node1.Config.BlockUtils.(*builders.MockBlockUtils)
 	mf1 := builders.NewMockMessageFactory(builders.CalculateBlockHash, keyManager)
 
 	ppmFromCurrentView := mf1.CreatePreprepareMessage(1, 1, block)

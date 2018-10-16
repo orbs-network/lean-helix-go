@@ -57,8 +57,8 @@ type PreprepareMessageImpl struct {
 	MyBlock Block
 }
 
-func (ppm *PreprepareMessageImpl) Block() Block {
-	return ppm.MyBlock
+func (ppm *PreprepareMessageImpl) MessageType() MessageType {
+	return LEAN_HELIX_PREPREPARE
 }
 
 func (ppm *PreprepareMessageImpl) SignedHeader() *BlockRef {
@@ -69,49 +69,73 @@ func (ppm *PreprepareMessageImpl) Sender() *SenderSignature {
 	return ppm.Sender()
 }
 
-func (ppm *PreprepareMessageImpl) MessageType() MessageType {
-	return LEAN_HELIX_PREPREPARE
-}
-
 func (ppm *PreprepareMessageImpl) Raw() []byte {
 	return ppm.Content.Raw()
 }
 
-type prepareMessage struct {
+func (ppm *PreprepareMessageImpl) Block() Block {
+	return ppm.MyBlock
+}
+
+type PrepareMessageImpl struct {
 	Content *PrepareMessageContent
 }
 
-func (pm *prepareMessage) MessageType() MessageType {
+func (pm *PrepareMessageImpl) MessageType() MessageType {
 	return LEAN_HELIX_PREPARE
 }
 
-func (pm *prepareMessage) Raw() []byte {
-	return pm.Raw()
+func (pm *PrepareMessageImpl) SignedHeader() *BlockRef {
+	return pm.SignedHeader()
 }
 
-type commitMessage struct {
+func (pm *PrepareMessageImpl) Sender() *SenderSignature {
+	return pm.Sender()
+}
+
+func (pm *PrepareMessageImpl) Raw() []byte {
+	return pm.Content.Raw()
+}
+
+type CommitMessageImpl struct {
 	Content *CommitMessageContent
 }
 
-func (cm *commitMessage) MessageType() MessageType {
+func (cm *CommitMessageImpl) MessageType() MessageType {
 	return LEAN_HELIX_COMMIT
 }
 
-func (cm *commitMessage) Raw() []byte {
-	return cm.Raw()
+func (cm *CommitMessageImpl) SignedHeader() *BlockRef {
+	return cm.SignedHeader()
 }
 
-type viewChangeMessage struct {
+func (cm *CommitMessageImpl) Sender() *SenderSignature {
+	return cm.Sender()
+}
+
+func (cm *CommitMessageImpl) Raw() []byte {
+	return cm.Content.Raw()
+}
+
+type ViewChangeMessageImpl struct {
 	Content *ViewChangeMessageContent
 	Block
 }
 
-func (vcm *viewChangeMessage) MessageType() MessageType {
+func (vcm *ViewChangeMessageImpl) MessageType() MessageType {
 	return LEAN_HELIX_VIEW_CHANGE
 }
 
-func (vcm *viewChangeMessage) Raw() []byte {
-	return vcm.Raw()
+func (vcm *ViewChangeMessageImpl) SignedHeader() *ViewChangeHeader {
+	return vcm.SignedHeader()
+}
+
+func (vcm *ViewChangeMessageImpl) Sender() *SenderSignature {
+	return vcm.Sender()
+}
+
+func (vcm *ViewChangeMessageImpl) Raw() []byte {
+	return vcm.Content.Raw()
 }
 
 type newViewMessage struct {

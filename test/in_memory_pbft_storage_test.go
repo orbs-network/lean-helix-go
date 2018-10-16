@@ -23,7 +23,7 @@ func TestClearAllStorageDataAfterCallingClearTermLogs(t *testing.T) {
 	blockHash := builders.CalculateBlockHash(block)
 	senderId := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	keyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId))
-	msgFactory := lh.NewMessageFactory(builders.CalculateBlockHash, keyManager)
+	msgFactory := lh.NewMessageFactory(keyManager)
 	myStorage.StorePreprepare(msgFactory.CreatePreprepareMessage(height, view, block))
 	myStorage.StorePrepare(msgFactory.CreatePrepareMessage(height, view, blockHash))
 	myStorage.StoreCommit(msgFactory.CreateCommitMessage(height, view, blockHash))

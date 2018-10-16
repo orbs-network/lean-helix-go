@@ -19,9 +19,47 @@ func verifyBlockRefMessage(blockRef *BlockRef, sender *SenderSignature, keyManag
 
 type CalcLeaderPk = func(view View) Ed25519PublicKey
 
-//func CreatePreparedProof(keyManager KeyManager, PreprepareMessageImpl PreprepareMessage, prepareMessages []PrepareMessage) *PreparedProof {
-func CreatePreparedProof(ppKeyManager KeyManager, pKeyManagers []KeyManager, height BlockHeight, view View, blockHash Uint256) *PreparedProof {
+// TODO low-quality name, find a better one
+func CreatePreparedProofBuilderFromPreparedMessages(preparedMessages *PreparedMessages) *PreparedProofBuilder {
 
+	preprepareMessage := preparedMessages.PreprepareMessage
+	prepareMessages := preparedMessages.PrepareMessages
+
+	var ppBlockRef, pBlockRef *BlockRefBuilder
+	var ppSender *SenderSignature
+	var pSenders *[]SenderSignature
+
+	if preprepareMessage == nil {
+		ppBlockRef = nil
+		ppSender = nil
+	} else {
+		ppBlockRef = preparedMessages.PreprepareMessage.SignedHeader() // TODO Need a builder here!
+		ppSender = preparedMessages.PreprepareMessage.Sender()
+	}
+
+	if prepareMessages == nil {
+		pBlockRef = nil
+		pSenders = nil
+	} else {
+		pBlockRef = prepareMessages[0].SignedHeader()
+		pSenders := make([]*SenderSignature, 0, len(prepareMessages))
+		for _, pm := range prepareMessages {
+			pSenders = append(pSenders, pm.Sender())
+		}
+	}
+
+	preparedProof := &PreparedProofBuilder{
+		PreprepareBlockRef: ppBlockRef,
+		PreprepareSender:   ppSender,
+		PrepareBlockRef:    pBlockRef,
+		PrepareSenders:     pSenders,
+	}
+
+	return preparedProof
+
+}
+
+func CreatePreparedProofBuilder(ppKeyManager KeyManager, pKeyManagers []KeyManager, height BlockHeight, view View, blockHash Uint256) *PreparedProofBuilder {
 	var pBlockRef *BlockRefBuilder
 	var pSenders []*SenderSignatureBuilder
 
@@ -63,7 +101,13 @@ func CreatePreparedProof(ppKeyManager KeyManager, pKeyManagers []KeyManager, hei
 		PrepareSenders:     pSenders,
 	}
 
-	return preparedProof.Build()
+	return preparedProof
+
+}
+
+//func CreatePreparedProof(keyManager KeyManager, PreprepareMessageImpl PreprepareMessage, prepareMessages []PrepareMessage) *PreparedProof {
+func CreatePreparedProof(ppKeyManager KeyManager, pKeyManagers []KeyManager, height BlockHeight, view View, blockHash Uint256) *PreparedProof {
+	return CreatePreparedProofBuilder(ppKeyManager, pKeyManagers, height, view, blockHash).Build()
 }
 
 func ValidatePreparedProof(

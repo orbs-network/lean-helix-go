@@ -28,9 +28,9 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	leaderKeyManager := builders.NewMockKeyManager(Ed25519PublicKey(leaderId))
 	sender1KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId1))
 	sender2KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId2))
-	leaderMsgFactory := lh.NewMessageFactory(builders.CalculateBlockHash, leaderKeyManager)
-	sender1MsgFactory := lh.NewMessageFactory(builders.CalculateBlockHash, sender1KeyManager)
-	sender2MsgFactory := lh.NewMessageFactory(builders.CalculateBlockHash, sender2KeyManager)
+	leaderMsgFactory := lh.NewMessageFactory(leaderKeyManager)
+	sender1MsgFactory := lh.NewMessageFactory(sender1KeyManager)
+	sender2MsgFactory := lh.NewMessageFactory(sender2KeyManager)
 
 	ppm := leaderMsgFactory.CreatePreprepareMessage(height, view, block)
 	pm1 := sender1MsgFactory.CreatePrepareMessage(height, view, blockHash)
