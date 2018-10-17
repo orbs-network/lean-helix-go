@@ -156,7 +156,7 @@ func (term *leanHelixTerm) OnReceiveNewView(nvm NewViewMessage) {
 	panic("convert ts->go")
 	signedHeader := nvm.SignedHeader()
 	sender := nvm.Sender()
-	preprepareMessage := nvm.PreprepareMessage()
+	preprepareMessageContent := nvm.PreprepareMessageContent()
 	viewChangeConfirmationsIter := signedHeader.ViewChangeConfirmationsIterator()
 	viewChangeConfirmations := make([]*ViewChangeConfirmation, 0, 1)
 	for {
@@ -186,12 +186,12 @@ func (term *leanHelixTerm) OnReceiveNewView(nvm NewViewMessage) {
 		return
 	}
 
-	if !preprepareMessage.SignedHeader().View().Equal(signedHeader.View()) {
+	if !preprepareMessageContent.SignedHeader().View().Equal(signedHeader.View()) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", view doesn't match PP.view` });
 		return
 	}
 
-	if !preprepareMessage.SignedHeader().BlockHeight().Equal(signedHeader.BlockHeight()) {
+	if !preprepareMessageContent.SignedHeader().BlockHeight().Equal(signedHeader.BlockHeight()) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", blockHeight doesn't match PP.blockHeight` });
 		return
 	}
@@ -207,7 +207,7 @@ func (term *leanHelixTerm) OnReceiveNewView(nvm NewViewMessage) {
 		// rewrite this mess
 		latestVoteBlockHash := latestVote.ViewChangeSignedHeader().PreparedProof().PreprepareBlockRef().BlockHash()
 		if latestVoteBlockHash != nil {
-			ppBlockHash := term.BlockUtils.CalculateBlockHash(preprepareMessage.Block())
+			ppBlockHash := term.BlockUtils.CalculateBlockHash(nvm.Block())
 			if !latestVoteBlockHash.Equal(ppBlockHash) {
 				//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", the given block (PP.block) doesn't match the best block from the VCProof` });
 				return
@@ -215,10 +215,15 @@ func (term *leanHelixTerm) OnReceiveNewView(nvm NewViewMessage) {
 		}
 	}
 
-	if term.validatePreprepare(preprepareMessage) {
+	ppm := &PreprepareMessageImpl{
+		Content: preprepareMessageContent,
+		MyBlock: nvm.Block(),
+	}
+
+	if term.validatePreprepare(ppm) {
 		term.newViewLocally = signedHeader.View()
 		term.SetView(signedHeader.View())
-		term.processPreprepare(preprepareMessage)
+		term.processPreprepare(ppm)
 	}
 }
 

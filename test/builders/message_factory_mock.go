@@ -1,19 +1,19 @@
 package builders
 
 import (
+	"github.com/orbs-network/go-mock"
 	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/primitives"
 )
 
 type MockMessageFactory struct {
-	CalculateBlockHash func(block leanhelix.Block) primitives.Uint256
-	KeyManager         leanhelix.KeyManager
+	mock.Mock
+	KeyManager leanhelix.KeyManager
 }
 
-func NewMockMessageFactory(calcHash func(block leanhelix.Block) primitives.Uint256, keyManager leanhelix.KeyManager) *MockMessageFactory {
+func NewMockMessageFactory(keyManager leanhelix.KeyManager) *MockMessageFactory {
 	return &MockMessageFactory{
-		CalculateBlockHash: calcHash,
-		KeyManager:         keyManager,
+		KeyManager: keyManager,
 	}
 }
 

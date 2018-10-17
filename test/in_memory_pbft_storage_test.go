@@ -13,6 +13,7 @@ import (
 )
 
 // TODO TestClearAllStorageDataAfterCallingClearTermLogs
+// TODO Ideally Messages should be mocked
 
 func TestClearAllStorageDataAfterCallingClearTermLogs(t *testing.T) {
 
@@ -66,9 +67,9 @@ func TestStorePrepareInStorage(t *testing.T) {
 	block2 := builders.CreateBlock(builders.GenesisBlock)
 	block1Hash := builders.CalculateBlockHash(block1)
 	block2Hash := builders.CalculateBlockHash(block2)
-	sender1MsgFactory := builders.NewMockMessageFactory(builders.CalculateBlockHash, sender1KeyManager)
-	sender2MsgFactory := builders.NewMockMessageFactory(builders.CalculateBlockHash, sender2KeyManager)
-	sender3MsgFactory := builders.NewMockMessageFactory(builders.CalculateBlockHash, sender3KeyManager)
+	sender1MsgFactory := lh.NewMessageFactory(sender1KeyManager)
+	sender2MsgFactory := lh.NewMessageFactory(sender2KeyManager)
+	sender3MsgFactory := lh.NewMessageFactory(sender3KeyManager)
 	myStorage.StorePrepare(sender1MsgFactory.CreatePrepareMessage(height1, view1, block1Hash))
 	myStorage.StorePrepare(sender2MsgFactory.CreatePrepareMessage(height1, view1, block1Hash))
 	myStorage.StorePrepare(sender2MsgFactory.CreatePrepareMessage(height1, view1, block2Hash))
@@ -96,9 +97,9 @@ func TestStoreCommitInStorage(t *testing.T) {
 	block2 := builders.CreateBlock(builders.GenesisBlock)
 	block1Hash := builders.CalculateBlockHash(block1)
 	block2Hash := builders.CalculateBlockHash(block2)
-	sender1MsgFactory := builders.NewMockMessageFactory(builders.CalculateBlockHash, sender1KeyManager)
-	sender2MsgFactory := builders.NewMockMessageFactory(builders.CalculateBlockHash, sender2KeyManager)
-	sender3MsgFactory := builders.NewMockMessageFactory(builders.CalculateBlockHash, sender3KeyManager)
+	sender1MsgFactory := lh.NewMessageFactory(sender1KeyManager)
+	sender2MsgFactory := lh.NewMessageFactory(sender2KeyManager)
+	sender3MsgFactory := lh.NewMessageFactory(sender3KeyManager)
 	myStorage.StoreCommit(sender1MsgFactory.CreateCommitMessage(height1, view1, block1Hash))
 	myStorage.StoreCommit(sender2MsgFactory.CreateCommitMessage(height1, view1, block1Hash))
 	myStorage.StoreCommit(sender2MsgFactory.CreateCommitMessage(height1, view1, block2Hash))
@@ -117,7 +118,7 @@ func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	view := View(math.Floor(rand.Float64() * 1000))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	keyManager := builders.NewMockKeyManager(Ed25519PublicKey("PK"))
-	mf := builders.NewMockMessageFactory(builders.CalculateBlockHash, keyManager)
+	mf := lh.NewMessageFactory(keyManager)
 	ppm := mf.CreatePreprepareMessage(height, view, block)
 
 	firstTime := myStorage.StorePreprepare(ppm)
@@ -137,8 +138,8 @@ func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	sender2KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId2))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	blockHash := builders.CalculateBlockHash(block)
-	sender1MsgFactory := builders.NewMockMessageFactory(builders.CalculateBlockHash, sender1KeyManager)
-	sender2MsgFactory := builders.NewMockMessageFactory(builders.CalculateBlockHash, sender2KeyManager)
+	sender1MsgFactory := lh.NewMessageFactory(sender1KeyManager)
+	sender2MsgFactory := lh.NewMessageFactory(sender2KeyManager)
 	p1 := sender1MsgFactory.CreatePrepareMessage(height, view, blockHash)
 	p2 := sender2MsgFactory.CreatePrepareMessage(height, view, blockHash)
 
@@ -162,8 +163,8 @@ func TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	sender2KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId2))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	blockHash := builders.CalculateBlockHash(block)
-	sender1MsgFactory := builders.NewMockMessageFactory(builders.CalculateBlockHash, sender1KeyManager)
-	sender2MsgFactory := builders.NewMockMessageFactory(builders.CalculateBlockHash, sender2KeyManager)
+	sender1MsgFactory := lh.NewMessageFactory(sender1KeyManager)
+	sender2MsgFactory := lh.NewMessageFactory(sender2KeyManager)
 
 	c1 := sender1MsgFactory.CreateCommitMessage(height, view, blockHash)
 	c2 := sender2MsgFactory.CreateCommitMessage(height, view, blockHash)
@@ -187,8 +188,8 @@ func TestStoreViewChangeReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	sender1KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId1))
 	sender2KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId2))
-	sender1MsgFactory := builders.NewMockMessageFactory(builders.CalculateBlockHash, sender1KeyManager)
-	sender2MsgFactory := builders.NewMockMessageFactory(builders.CalculateBlockHash, sender2KeyManager)
+	sender1MsgFactory := lh.NewMessageFactory(sender1KeyManager)
+	sender2MsgFactory := lh.NewMessageFactory(sender2KeyManager)
 	vc1 := sender1MsgFactory.CreateViewChangeMessage(height, view, nil)
 	vc2 := sender2MsgFactory.CreateViewChangeMessage(height, view, nil)
 
@@ -216,9 +217,9 @@ func TestStoreAndGetViewChangeProof(t *testing.T) {
 	sender1KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId1))
 	sender2KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId2))
 	sender3KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId3))
-	sender1MsgFactory := builders.NewMockMessageFactory(builders.CalculateBlockHash, sender1KeyManager)
-	sender2MsgFactory := builders.NewMockMessageFactory(builders.CalculateBlockHash, sender2KeyManager)
-	sender3MsgFactory := builders.NewMockMessageFactory(builders.CalculateBlockHash, sender3KeyManager)
+	sender1MsgFactory := lh.NewMessageFactory(sender1KeyManager)
+	sender2MsgFactory := lh.NewMessageFactory(sender2KeyManager)
+	sender3MsgFactory := lh.NewMessageFactory(sender3KeyManager)
 	vcs := make([]lh.ViewChangeMessage, 0, 4)
 	vcs = append(vcs, sender1MsgFactory.CreateViewChangeMessage(height1, view1, nil))
 	vcs = append(vcs, sender2MsgFactory.CreateViewChangeMessage(height1, view1, nil))

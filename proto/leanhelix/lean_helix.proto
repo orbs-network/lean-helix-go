@@ -85,10 +85,6 @@ message NewViewHeader {
     MessageType message_type = 1;
     primitives.BlockHeight block_height = 2;
     primitives.View view = 3;
-    repeated ViewChangeConfirmation view_change_confirmations = 4;
+    repeated ViewChangeMessageContent view_change_confirmations = 4;
 }
 
-message ViewChangeConfirmation {
-    ViewChangeHeader view_change_signed_header = 1;
-    SenderSignature view_change_sender = 2;
-}

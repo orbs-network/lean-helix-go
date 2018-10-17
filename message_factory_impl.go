@@ -1,6 +1,8 @@
 package leanhelix
 
-import . "github.com/orbs-network/lean-helix-go/primitives"
+import (
+	. "github.com/orbs-network/lean-helix-go/primitives"
+)
 
 // This is the ORBS side
 
@@ -78,11 +80,48 @@ func (f *MessageFactoryImpl) CreateCommitMessage(blockHeight BlockHeight, view V
 	return pm
 }
 
-func (f *MessageFactoryImpl) CreateViewChangeMessage(blockHeight BlockHeight, view View, preparedMessages *PreparedMessages) ViewChangeMessage {
-	panic("implement me")
+func (f *MessageFactoryImpl) CreateViewChangeMessageContentBuilder(blockHeight BlockHeight, view View, preparedMessages *PreparedMessages) *ViewChangeMessageContentBuilder {
+	preparedProofBuilder := CreatePreparedProofBuilderFromPreparedMessages(preparedMessages)
+
+	header := &ViewChangeHeaderBuilder{
+		MessageType:   LEAN_HELIX_VIEW_CHANGE,
+		BlockHeight:   blockHeight,
+		View:          view,
+		PreparedProof: preparedProofBuilder,
+	}
+	sig := Ed25519Sig(f.KeyManager.Sign(header.Build().Raw()))
+	me := Ed25519PublicKey(f.KeyManager.MyPublicKey())
+	sender := &SenderSignatureBuilder{
+		SenderPublicKey: me,
+		Signature:       sig,
+	}
+	cvmcb := ViewChangeMessageContentBuilder{
+		SignedHeader: header,
+		Sender:       sender,
+	}
+	return cvmcb
+
 }
 
-func (f *MessageFactoryImpl) CreateNewViewMessage(blockHeight BlockHeight, view View, ppm PreprepareMessage, confirmations []ViewChangeConfirmation) NewViewMessage {
+func (f *MessageFactoryImpl) CreateViewChangeMessage(blockHeight BlockHeight, view View, preparedMessages *PreparedMessages) ViewChangeMessage {
+
+	var block Block
+	if preparedMessages != nil && preparedMessages.PreprepareMessage != nil {
+		block = preparedMessages.PreprepareMessage.Block()
+	} else {
+		block = nil
+	}
+
+	vcmcb := f.CreateViewChangeMessageContentBuilder(blockHeight, view, preparedMessages)
+	vcm := &ViewChangeMessageImpl{
+		Content: vcmcb.Build(),
+		MyBlock: block,
+	}
+
+	return vcm
+}
+
+func (f *MessageFactoryImpl) CreateNewViewMessage(blockHeight BlockHeight, view View, ppm PreprepareMessage, confirmations []*ViewChangeConfirmation) NewViewMessage {
 	panic("implement me")
 }
 

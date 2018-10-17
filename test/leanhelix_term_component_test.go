@@ -46,7 +46,7 @@ func TestAcceptPreprepareWithCurrentView(t *testing.T) {
 
 	keyManager := node1.Config.KeyManager
 	utils := node1.Config.BlockUtils.(*builders.MockBlockUtils)
-	mf1 := builders.NewMockMessageFactory(builders.CalculateBlockHash, keyManager)
+	mf1 := builders.NewMockMessageFactory(keyManager)
 
 	ppmFromCurrentView := mf1.CreatePreprepareMessage(1, 1, block)
 	node1LeanHelixTerm.OnReceivePreprepare(ppmFromCurrentView)

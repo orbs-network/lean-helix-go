@@ -25,7 +25,6 @@ func (b *MockBlockUtils) CalculateBlockHash(block lh.Block) Uint256 {
 }
 
 func (b *MockBlockUtils) ProvideNextBlock() lh.Block {
-	b.Called()
 	var nextBlock lh.Block
 	if len(b.upcomingBlocks) > 0 {
 		// Simple queue impl, see https://github.com/golang/go/wiki/SliceTricks
@@ -47,7 +46,7 @@ func (b *MockBlockUtils) RequestCommittee() {
 }
 
 func (b *MockBlockUtils) RequestNewBlock(height BlockHeight) lh.Block {
-	b.Called(height)
+	//b.Called(height)
 	return b.ProvideNextBlock()
 }
 

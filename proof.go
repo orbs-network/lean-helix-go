@@ -22,29 +22,49 @@ type CalcLeaderPk = func(view View) Ed25519PublicKey
 // TODO low-quality name, find a better one
 func CreatePreparedProofBuilderFromPreparedMessages(preparedMessages *PreparedMessages) *PreparedProofBuilder {
 
+	if preparedMessages == nil {
+		return nil
+	}
+
 	preprepareMessage := preparedMessages.PreprepareMessage
 	prepareMessages := preparedMessages.PrepareMessages
 
 	var ppBlockRef, pBlockRef *BlockRefBuilder
-	var ppSender *SenderSignature
-	var pSenders *[]SenderSignature
+	var ppSender *SenderSignatureBuilder
+	var pSenders []*SenderSignatureBuilder
 
 	if preprepareMessage == nil {
 		ppBlockRef = nil
 		ppSender = nil
 	} else {
-		ppBlockRef = preparedMessages.PreprepareMessage.SignedHeader() // TODO Need a builder here!
-		ppSender = preparedMessages.PreprepareMessage.Sender()
+		ppBlockRef = &BlockRefBuilder{
+			MessageType: LEAN_HELIX_PREPREPARE,
+			BlockHeight: preprepareMessage.SignedHeader().BlockHeight(),
+			View:        preprepareMessage.SignedHeader().View(),
+			BlockHash:   preprepareMessage.SignedHeader().BlockHash(),
+		}
+		ppSender = &SenderSignatureBuilder{
+			SenderPublicKey: preprepareMessage.Sender().SenderPublicKey(),
+			Signature:       preprepareMessage.Sender().Signature(),
+		}
 	}
 
 	if prepareMessages == nil {
 		pBlockRef = nil
 		pSenders = nil
 	} else {
-		pBlockRef = prepareMessages[0].SignedHeader()
-		pSenders := make([]*SenderSignature, 0, len(prepareMessages))
+		pBlockRef = &BlockRefBuilder{
+			MessageType: LEAN_HELIX_PREPREPARE,
+			BlockHeight: prepareMessages[0].SignedHeader().BlockHeight(),
+			View:        prepareMessages[0].SignedHeader().View(),
+			BlockHash:   prepareMessages[0].SignedHeader().BlockHash(),
+		}
+		pSenders := make([]*SenderSignatureBuilder, 0, len(prepareMessages))
 		for _, pm := range prepareMessages {
-			pSenders = append(pSenders, pm.Sender())
+			pSenders = append(pSenders, &SenderSignatureBuilder{
+				SenderPublicKey: pm.Sender().SenderPublicKey(),
+				Signature:       pm.Sender().Signature(),
+			})
 		}
 	}
 
@@ -62,7 +82,6 @@ func CreatePreparedProofBuilderFromPreparedMessages(preparedMessages *PreparedMe
 func CreatePreparedProofBuilder(ppKeyManager KeyManager, pKeyManagers []KeyManager, height BlockHeight, view View, blockHash Uint256) *PreparedProofBuilder {
 	var pBlockRef *BlockRefBuilder
 	var pSenders []*SenderSignatureBuilder
-
 	if len(pKeyManagers) == 0 {
 		pBlockRef = nil
 		pSenders = nil
@@ -80,9 +99,7 @@ func CreatePreparedProofBuilder(ppKeyManager KeyManager, pKeyManagers []KeyManag
 				Signature:       mgr.Sign(pBlockRef.Build().Raw()),
 			}
 		}
-
 	}
-
 	ppBlockRef := &BlockRefBuilder{
 		MessageType: LEAN_HELIX_PREPREPARE,
 		BlockHeight: height,
@@ -93,16 +110,13 @@ func CreatePreparedProofBuilder(ppKeyManager KeyManager, pKeyManagers []KeyManag
 		SenderPublicKey: ppKeyManager.MyPublicKey(),
 		Signature:       ppKeyManager.Sign(ppBlockRef.Build().Raw()),
 	}
-
 	preparedProof := &PreparedProofBuilder{
 		PreprepareBlockRef: ppBlockRef,
 		PreprepareSender:   ppSender,
 		PrepareBlockRef:    pBlockRef,
 		PrepareSenders:     pSenders,
 	}
-
 	return preparedProof
-
 }
 
 //func CreatePreparedProof(keyManager KeyManager, PreprepareMessageImpl PreprepareMessage, prepareMessages []PrepareMessage) *PreparedProof {

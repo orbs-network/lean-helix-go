@@ -1714,7 +1714,7 @@ type NewViewHeader struct {
 	// MessageType MessageType
 	// BlockHeight primitives.BlockHeight
 	// View primitives.View
-	// ViewChangeConfirmations []ViewChangeConfirmation
+	// ViewChangeConfirmations []ViewChangeMessageContent
 
 	// internal
 	// implements membuffers.Message
@@ -1815,9 +1815,9 @@ func (i *NewViewHeaderViewChangeConfirmationsIterator) HasNext() bool {
 	return i.iterator.HasNext()
 }
 
-func (i *NewViewHeaderViewChangeConfirmationsIterator) NextViewChangeConfirmations() *ViewChangeConfirmation {
+func (i *NewViewHeaderViewChangeConfirmationsIterator) NextViewChangeConfirmations() *ViewChangeMessageContent {
 	b, s := i.iterator.NextMessage()
-	return ViewChangeConfirmationReader(b[:s])
+	return ViewChangeMessageContentReader(b[:s])
 }
 
 func (x *NewViewHeader) RawViewChangeConfirmationsArray() []byte {
@@ -1843,7 +1843,7 @@ type NewViewHeaderBuilder struct {
 	MessageType             MessageType
 	BlockHeight             primitives.BlockHeight
 	View                    primitives.View
-	ViewChangeConfirmations []*ViewChangeConfirmationBuilder
+	ViewChangeConfirmations []*ViewChangeMessageContentBuilder
 
 	// internal
 	// implements membuffers.Builder
@@ -1899,143 +1899,6 @@ func (w *NewViewHeaderBuilder) Build() *NewViewHeader {
 		return nil
 	}
 	return NewViewHeaderReader(buf)
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// message ViewChangeConfirmation
-
-// reader
-
-type ViewChangeConfirmation struct {
-	// ViewChangeSignedHeader ViewChangeHeader
-	// ViewChangeSender SenderSignature
-
-	// internal
-	// implements membuffers.Message
-	_message membuffers.InternalMessage
-}
-
-func (x *ViewChangeConfirmation) String() string {
-	if x == nil {
-		return "<nil>"
-	}
-	return fmt.Sprintf("{ViewChangeSignedHeader:%s,ViewChangeSender:%s,}", x.StringViewChangeSignedHeader(), x.StringViewChangeSender())
-}
-
-var _ViewChangeConfirmation_Scheme = []membuffers.FieldType{membuffers.TypeMessage, membuffers.TypeMessage}
-var _ViewChangeConfirmation_Unions = [][]membuffers.FieldType{}
-
-func ViewChangeConfirmationReader(buf []byte) *ViewChangeConfirmation {
-	x := &ViewChangeConfirmation{}
-	x._message.Init(buf, membuffers.Offset(len(buf)), _ViewChangeConfirmation_Scheme, _ViewChangeConfirmation_Unions)
-	return x
-}
-
-func (x *ViewChangeConfirmation) IsValid() bool {
-	return x._message.IsValid()
-}
-
-func (x *ViewChangeConfirmation) Raw() []byte {
-	return x._message.RawBuffer()
-}
-
-func (x *ViewChangeConfirmation) Equal(y *ViewChangeConfirmation) bool {
-	if x == nil && y == nil {
-		return true
-	}
-	if x == nil || y == nil {
-		return false
-	}
-	return bytes.Equal(x.Raw(), y.Raw())
-}
-
-func (x *ViewChangeConfirmation) ViewChangeSignedHeader() *ViewChangeHeader {
-	b, s := x._message.GetMessage(0)
-	return ViewChangeHeaderReader(b[:s])
-}
-
-func (x *ViewChangeConfirmation) RawViewChangeSignedHeader() []byte {
-	return x._message.RawBufferForField(0, 0)
-}
-
-func (x *ViewChangeConfirmation) RawViewChangeSignedHeaderWithHeader() []byte {
-	return x._message.RawBufferWithHeaderForField(0, 0)
-}
-
-func (x *ViewChangeConfirmation) StringViewChangeSignedHeader() string {
-	return x.ViewChangeSignedHeader().String()
-}
-
-func (x *ViewChangeConfirmation) ViewChangeSender() *SenderSignature {
-	b, s := x._message.GetMessage(1)
-	return SenderSignatureReader(b[:s])
-}
-
-func (x *ViewChangeConfirmation) RawViewChangeSender() []byte {
-	return x._message.RawBufferForField(1, 0)
-}
-
-func (x *ViewChangeConfirmation) RawViewChangeSenderWithHeader() []byte {
-	return x._message.RawBufferWithHeaderForField(1, 0)
-}
-
-func (x *ViewChangeConfirmation) StringViewChangeSender() string {
-	return x.ViewChangeSender().String()
-}
-
-// builder
-
-type ViewChangeConfirmationBuilder struct {
-	ViewChangeSignedHeader *ViewChangeHeaderBuilder
-	ViewChangeSender       *SenderSignatureBuilder
-
-	// internal
-	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
-}
-
-func (w *ViewChangeConfirmationBuilder) Write(buf []byte) (err error) {
-	if w == nil {
-		return
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = &membuffers.ErrBufferOverrun{}
-		}
-	}()
-	w._builder.Reset()
-	err = w._builder.WriteMessage(buf, w.ViewChangeSignedHeader)
-	if err != nil {
-		return
-	}
-	err = w._builder.WriteMessage(buf, w.ViewChangeSender)
-	if err != nil {
-		return
-	}
-	return nil
-}
-
-func (w *ViewChangeConfirmationBuilder) GetSize() membuffers.Offset {
-	if w == nil {
-		return 0
-	}
-	return w._builder.GetSize()
-}
-
-func (w *ViewChangeConfirmationBuilder) CalcRequiredSize() membuffers.Offset {
-	if w == nil {
-		return 0
-	}
-	w.Write(nil)
-	return w._builder.GetSize()
-}
-
-func (w *ViewChangeConfirmationBuilder) Build() *ViewChangeConfirmation {
-	buf := make([]byte, w.CalcRequiredSize())
-	if w.Write(buf) != nil {
-		return nil
-	}
-	return ViewChangeConfirmationReader(buf)
 }
 
 /////////////////////////////////////////////////////////////////////////////

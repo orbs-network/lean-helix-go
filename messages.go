@@ -1,12 +1,15 @@
 package leanhelix
 
-import "github.com/orbs-network/lean-helix-go/primitives"
+import (
+	"github.com/orbs-network/lean-helix-go/primitives"
+)
 
 type HasMessageType interface {
 	MessageType() MessageType
 }
 
 type Serializable interface {
+	String() string
 	Raw() []byte
 }
 
@@ -18,38 +21,38 @@ type MessageTransporter interface {
 type MessageContent interface {
 	HasMessageType
 	Serializable
-	SignedHeader() *BlockRef
+
 	Sender() *SenderSignature
 }
 
 // PP
 type PreprepareMessage interface {
 	MessageContent
+	SignedHeader() *BlockRef
 	Block() Block
 }
 
 type PrepareMessage interface {
 	MessageContent
+	SignedHeader() *BlockRef
 }
 
 type CommitMessage interface {
 	MessageContent
+	SignedHeader() *BlockRef
 }
 
 type ViewChangeMessage interface {
-	HasMessageType
-	Serializable
+	MessageContent
 	SignedHeader() *ViewChangeHeader
-	Sender() *SenderSignature
-	Block
+	Block() Block
 }
 
 type NewViewMessage interface {
-	HasMessageType
-	Serializable
+	MessageContent
 	SignedHeader() *NewViewHeader
-	Sender() *SenderSignature
-	PreprepareMessage() PreprepareMessage
+	PreprepareMessageContent() *PreprepareMessageContent
+	Block() Block
 }
 
 type PreprepareMessageImpl struct {
@@ -57,16 +60,20 @@ type PreprepareMessageImpl struct {
 	MyBlock Block
 }
 
+func (ppm *PreprepareMessageImpl) String() string {
+	return ppm.Content.String()
+}
+
 func (ppm *PreprepareMessageImpl) MessageType() MessageType {
 	return LEAN_HELIX_PREPREPARE
 }
 
 func (ppm *PreprepareMessageImpl) SignedHeader() *BlockRef {
-	return ppm.SignedHeader()
+	return ppm.Content.SignedHeader()
 }
 
 func (ppm *PreprepareMessageImpl) Sender() *SenderSignature {
-	return ppm.Sender()
+	return ppm.Content.Sender()
 }
 
 func (ppm *PreprepareMessageImpl) Raw() []byte {
@@ -81,16 +88,20 @@ type PrepareMessageImpl struct {
 	Content *PrepareMessageContent
 }
 
+func (pm *PrepareMessageImpl) String() string {
+	return pm.Content.String()
+}
+
 func (pm *PrepareMessageImpl) MessageType() MessageType {
 	return LEAN_HELIX_PREPARE
 }
 
 func (pm *PrepareMessageImpl) SignedHeader() *BlockRef {
-	return pm.SignedHeader()
+	return pm.Content.SignedHeader()
 }
 
 func (pm *PrepareMessageImpl) Sender() *SenderSignature {
-	return pm.Sender()
+	return pm.Content.Sender()
 }
 
 func (pm *PrepareMessageImpl) Raw() []byte {
@@ -101,16 +112,20 @@ type CommitMessageImpl struct {
 	Content *CommitMessageContent
 }
 
+func (cm *CommitMessageImpl) String() string {
+	return cm.Content.String()
+}
+
 func (cm *CommitMessageImpl) MessageType() MessageType {
 	return LEAN_HELIX_COMMIT
 }
 
 func (cm *CommitMessageImpl) SignedHeader() *BlockRef {
-	return cm.SignedHeader()
+	return cm.Content.SignedHeader()
 }
 
 func (cm *CommitMessageImpl) Sender() *SenderSignature {
-	return cm.Sender()
+	return cm.Content.Sender()
 }
 
 func (cm *CommitMessageImpl) Raw() []byte {
@@ -119,7 +134,15 @@ func (cm *CommitMessageImpl) Raw() []byte {
 
 type ViewChangeMessageImpl struct {
 	Content *ViewChangeMessageContent
-	Block
+	MyBlock Block
+}
+
+func (vcm *ViewChangeMessageImpl) String() string {
+	return vcm.Content.String()
+}
+
+func (vcm *ViewChangeMessageImpl) Block() Block {
+	return vcm.MyBlock
 }
 
 func (vcm *ViewChangeMessageImpl) MessageType() MessageType {
@@ -127,38 +150,47 @@ func (vcm *ViewChangeMessageImpl) MessageType() MessageType {
 }
 
 func (vcm *ViewChangeMessageImpl) SignedHeader() *ViewChangeHeader {
-	return vcm.SignedHeader()
+	return vcm.Content.SignedHeader()
 }
 
 func (vcm *ViewChangeMessageImpl) Sender() *SenderSignature {
-	return vcm.Sender()
+	return vcm.Content.Sender()
 }
 
 func (vcm *ViewChangeMessageImpl) Raw() []byte {
 	return vcm.Content.Raw()
 }
 
-type newViewMessage struct {
+type NewViewMessageImpl struct {
 	Content *NewViewMessageContent
+	MyBlock Block
 }
 
-func (nvm *newViewMessage) SignedHeader() BlockRef {
-	return nvm.SignedHeader()
+func (nvm *NewViewMessageImpl) String() string {
+	return nvm.Content.String()
 }
 
-func (nvm *newViewMessage) Sender() SenderSignature {
-	return nvm.Sender()
-}
-
-func (nvm *newViewMessage) PreprepareMessage() PreprepareMessage {
-	return nvm.PreprepareMessage()
-}
-
-func (nvm *newViewMessage) MessageType() MessageType {
+func (nvm *NewViewMessageImpl) MessageType() MessageType {
 	return LEAN_HELIX_NEW_VIEW
 }
 
-func (nvm *newViewMessage) Raw() []byte {
+func (nvm *NewViewMessageImpl) SignedHeader() *NewViewHeader {
+	return nvm.Content.SignedHeader()
+}
+
+func (nvm *NewViewMessageImpl) Sender() *SenderSignature {
+	return nvm.Content.Sender()
+}
+
+func (nvm *NewViewMessageImpl) PreprepareMessageContent() *PreprepareMessageContent {
+	return nvm.Content.PreprepareMessageContent()
+}
+
+func (nvm *NewViewMessageImpl) Block() Block {
+	return nvm.MyBlock
+}
+
+func (nvm *NewViewMessageImpl) Raw() []byte {
 	return nvm.Raw()
 }
 
@@ -171,7 +203,7 @@ type MessageFactory interface {
 	CreateCommitMessage(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.Uint256) CommitMessage
 	// TODO Add PreparedMessages
 	CreateViewChangeMessage(blockHeight primitives.BlockHeight, view primitives.View, preparedMessages *PreparedMessages) ViewChangeMessage
-	CreateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.View, ppm PreprepareMessage, confirmations []ViewChangeConfirmation) NewViewMessage
+	CreateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.View, ppm PreprepareMessage, confirmations []*ViewChangeConfirmation) NewViewMessage
 
 	// Auxiliary methods
 

@@ -6,7 +6,6 @@ type Block interface {
 	Height() primitives.BlockHeight
 	BlockHash() primitives.Uint256
 	PrevBlockHash() primitives.Uint256
-	//Body() []byte
 }
 
 type ConsensusMessage interface {
@@ -17,7 +16,6 @@ type ConsensusMessage interface {
 type NetworkCommunication interface {
 	RequestOrderedCommittee(seed uint64) []primitives.Ed25519PublicKey
 	IsMember(pk primitives.Ed25519PublicKey) bool
-
 	Send(targets []primitives.Ed25519PublicKey, message ConsensusMessage) error
 }
 
