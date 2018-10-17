@@ -10,7 +10,7 @@ type MessageFactoryImpl struct {
 	KeyManager
 }
 
-func (f *MessageFactoryImpl) CreatePreprepareMessage(blockHeight BlockHeight, view View, block Block) PreprepareMessage {
+func (f *MessageFactoryImpl) CreatePreprepareMessageContentBuilder(blockHeight BlockHeight, view View, block Block) *PreprepareMessageContentBuilder {
 	header := &BlockRefBuilder{
 		MessageType: LEAN_HELIX_PREPREPARE,
 		BlockHeight: blockHeight,
@@ -23,10 +23,15 @@ func (f *MessageFactoryImpl) CreatePreprepareMessage(blockHeight BlockHeight, vi
 		SenderPublicKey: me,
 		Signature:       sig,
 	}
-	ppmc := PreprepareMessageContentBuilder{
+	ppmc := &PreprepareMessageContentBuilder{
 		SignedHeader: header,
 		Sender:       sender,
 	}
+	return ppmc
+}
+
+func (f *MessageFactoryImpl) CreatePreprepareMessage(blockHeight BlockHeight, view View, block Block) PreprepareMessage {
+	ppmc := f.CreatePreprepareMessageContentBuilder(blockHeight, view, block)
 	ppm := &PreprepareMessageImpl{
 		Content: ppmc.Build(),
 		MyBlock: block,
@@ -95,7 +100,7 @@ func (f *MessageFactoryImpl) CreateViewChangeMessageContentBuilder(blockHeight B
 		SenderPublicKey: me,
 		Signature:       sig,
 	}
-	cvmcb := ViewChangeMessageContentBuilder{
+	cvmcb := &ViewChangeMessageContentBuilder{
 		SignedHeader: header,
 		Sender:       sender,
 	}
@@ -121,8 +126,35 @@ func (f *MessageFactoryImpl) CreateViewChangeMessage(blockHeight BlockHeight, vi
 	return vcm
 }
 
-func (f *MessageFactoryImpl) CreateNewViewMessage(blockHeight BlockHeight, view View, ppm PreprepareMessage, confirmations []*ViewChangeConfirmation) NewViewMessage {
-	panic("implement me")
+func (f *MessageFactoryImpl) CreateNewViewMessageContentBuilder(blockHeight BlockHeight, view View, ppmcb *PreprepareMessageContentBuilder, confirmations []*ViewChangeMessageContentBuilder) *NewViewMessageContentBuilder {
+
+	header := &NewViewHeaderBuilder{
+		MessageType: LEAN_HELIX_NEW_VIEW,
+		BlockHeight: blockHeight,
+		View:        view,
+		ViewChangeConfirmations: confirmations,
+	}
+
+	sig := Ed25519Sig(f.KeyManager.Sign(header.Build().Raw()))
+	me := Ed25519PublicKey(f.KeyManager.MyPublicKey())
+	sender := &SenderSignatureBuilder{
+		SenderPublicKey: me,
+		Signature:       sig,
+	}
+
+	return &NewViewMessageContentBuilder{
+		SignedHeader: header,
+		Sender:       sender,
+		PreprepareMessageContent: ppmcb,
+	}
+}
+
+func (f *MessageFactoryImpl) CreateNewViewMessage(blockHeight BlockHeight, view View, ppmcb *PreprepareMessageContentBuilder, confirmations []*ViewChangeMessageContentBuilder, block Block) NewViewMessage {
+	nvmcb := f.CreateNewViewMessageContentBuilder(blockHeight, view, ppmcb, confirmations).Build()
+	return &NewViewMessageImpl{
+		Content: nvmcb,
+		MyBlock: block,
+	}
 }
 
 func NewMessageFactory(keyManager KeyManager) MessageFactory {

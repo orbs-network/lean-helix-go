@@ -191,7 +191,7 @@ func (nvm *NewViewMessageImpl) Block() Block {
 }
 
 func (nvm *NewViewMessageImpl) Raw() []byte {
-	return nvm.Raw()
+	return nvm.Content.Raw()
 }
 
 type MessageFactory interface {
@@ -203,7 +203,7 @@ type MessageFactory interface {
 	CreateCommitMessage(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.Uint256) CommitMessage
 	// TODO Add PreparedMessages
 	CreateViewChangeMessage(blockHeight primitives.BlockHeight, view primitives.View, preparedMessages *PreparedMessages) ViewChangeMessage
-	CreateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.View, ppm PreprepareMessage, confirmations []*ViewChangeConfirmation) NewViewMessage
+	CreateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.View, ppmcb *PreprepareMessageContentBuilder, confirmations []*ViewChangeMessageContentBuilder, block Block) NewViewMessage
 
 	// Auxiliary methods
 

@@ -158,7 +158,7 @@ func (term *leanHelixTerm) OnReceiveNewView(nvm NewViewMessage) {
 	sender := nvm.Sender()
 	preprepareMessageContent := nvm.PreprepareMessageContent()
 	viewChangeConfirmationsIter := signedHeader.ViewChangeConfirmationsIterator()
-	viewChangeConfirmations := make([]*ViewChangeConfirmation, 0, 1)
+	viewChangeConfirmations := make([]*ViewChangeMessageContent, 0, 1)
 	for {
 		if viewChangeConfirmationsIter.HasNext() {
 			viewChangeConfirmations = append(viewChangeConfirmations, viewChangeConfirmationsIter.NextViewChangeConfirmations())
@@ -205,7 +205,7 @@ func (term *leanHelixTerm) OnReceiveNewView(nvm NewViewMessage) {
 		}
 
 		// rewrite this mess
-		latestVoteBlockHash := latestVote.ViewChangeSignedHeader().PreparedProof().PreprepareBlockRef().BlockHash()
+		latestVoteBlockHash := latestVote.SignedHeader().PreparedProof().PreprepareBlockRef().BlockHash()
 		if latestVoteBlockHash != nil {
 			ppBlockHash := term.BlockUtils.CalculateBlockHash(nvm.Block())
 			if !latestVoteBlockHash.Equal(ppBlockHash) {
@@ -269,17 +269,17 @@ func (term *leanHelixTerm) onLeaderChange(counter View) {
 }
 
 // TODO Unit-test this!!
-func (term *leanHelixTerm) latestViewChangeConfirmation(confirmations []*ViewChangeConfirmation) *ViewChangeConfirmation {
+func (term *leanHelixTerm) latestViewChangeConfirmation(confirmations []*ViewChangeMessageContent) *ViewChangeMessageContent {
 
-	res := make([]*ViewChangeConfirmation, 0, len(confirmations))
+	res := make([]*ViewChangeMessageContent, 0, len(confirmations))
 	for _, confirmation := range confirmations {
-		if confirmation.ViewChangeSignedHeader().PreparedProof() != nil {
+		if confirmation.SignedHeader().PreparedProof() != nil {
 			res = append(res, confirmation)
 		}
 	}
 
 	sort.Slice(res, func(i, j int) bool {
-		return res[j].ViewChangeSignedHeader().PreparedProof().PreprepareBlockRef().View() > res[i].ViewChangeSignedHeader().PreparedProof().PreprepareBlockRef().View()
+		return res[j].SignedHeader().PreparedProof().PreprepareBlockRef().View() > res[i].SignedHeader().PreparedProof().PreprepareBlockRef().View()
 	})
 
 	if len(res) > 0 {
@@ -288,12 +288,12 @@ func (term *leanHelixTerm) latestViewChangeConfirmation(confirmations []*ViewCha
 		return nil
 	}
 }
-func (term *leanHelixTerm) isViewChangeValid(targetLeaderPublicKey Ed25519PublicKey, view View, confirmation *ViewChangeConfirmation) bool {
+func (term *leanHelixTerm) isViewChangeValid(targetLeaderPublicKey Ed25519PublicKey, view View, confirmation *ViewChangeMessageContent) bool {
 
-	signedHeader := confirmation.ViewChangeSignedHeader()
+	signedHeader := confirmation.SignedHeader()
 	newView := signedHeader.View()
 	preparedProof := signedHeader.PreparedProof()
-	sender := confirmation.ViewChangeSender()
+	sender := confirmation.Sender()
 
 	if !term.KeyManager.Verify(signedHeader.Raw(), sender) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${newView}], onReceiveViewChange from "${senderPk}", ignored because the signature verification failed` });
@@ -327,7 +327,7 @@ func (term *leanHelixTerm) SetView(view View) {
 func (term *leanHelixTerm) GetF() int {
 	return int(math.Floor(float64(len(term.CommitteeMembersPublicKeys))-1) / 3)
 }
-func (term *leanHelixTerm) validateViewChangeConfirmations(targetBlockHeight BlockHeight, targetView View, confirmations []*ViewChangeConfirmation) bool {
+func (term *leanHelixTerm) validateViewChangeConfirmations(targetBlockHeight BlockHeight, targetView View, confirmations []*ViewChangeMessageContent) bool {
 
 	minimumConfirmations := int(term.GetF()*2 + 1)
 
@@ -340,11 +340,11 @@ func (term *leanHelixTerm) validateViewChangeConfirmations(targetBlockHeight Blo
 	// Verify that all block heights and views match, and all public keys are unique
 	// TODO consider refactor here, the purpose of this code is not apparent
 	for _, confirmation := range confirmations {
-		senderPublicKeyStr := string(confirmation.ViewChangeSender().SenderPublicKey())
-		if confirmation.ViewChangeSignedHeader().BlockHeight() != targetBlockHeight {
+		senderPublicKeyStr := string(confirmation.Sender().SenderPublicKey())
+		if confirmation.SignedHeader().BlockHeight() != targetBlockHeight {
 			return false
 		}
-		if confirmation.ViewChangeSignedHeader().View() != targetView {
+		if confirmation.SignedHeader().View() != targetView {
 			return false
 		}
 		if set[senderPublicKeyStr] {

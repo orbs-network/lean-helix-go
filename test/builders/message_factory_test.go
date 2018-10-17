@@ -78,16 +78,19 @@ func TestMessageFactory(t *testing.T) {
 		// TODO add test with preparedproof and do require.Equal on some of the proof's internal properties
 	})
 	t.Run("build and read NewViewMessage", func(t *testing.T) {
-		ppm := mf.CreatePreprepareMessage(height, view, b1)
+		ppmcb := mf.CreatePreprepareMessageContentBuilder(height, view, b1)
 		vcm1 := mf.CreateViewChangeMessageContentBuilder(height, view, nil)
 		vcm2 := mf.CreateViewChangeMessageContentBuilder(height, view, nil)
-		vcContent := &lh.ViewChangeMessageContentBuilder{
+		confirmation1 := &lh.ViewChangeMessageContentBuilder{
 			SignedHeader: vcm1.SignedHeader,
 			Sender:       vcm1.Sender,
 		}
 
-		confirmationBuilder := &lh.ViewChangeConfirmationBuilder{}
-		nvm := mf.CreateNewViewMessage(height, view, ppm, confirmations)
+		confirmation2 := &lh.ViewChangeMessageContentBuilder{
+			SignedHeader: vcm2.SignedHeader,
+			Sender:       vcm2.Sender,
+		}
+		nvm := mf.CreateNewViewMessage(height, view, ppmcb, []*lh.ViewChangeMessageContentBuilder{confirmation1, confirmation2}, block)
 		nvmBytes := nvm.Raw()
 		receivedNVMC := lh.NewViewMessageContentReader(nvmBytes)
 		require.Equal(t, receivedNVMC.SignedHeader().MessageType(), lh.LEAN_HELIX_NEW_VIEW, "Message type should be LEAN_HELIX_NEW_VIEW")

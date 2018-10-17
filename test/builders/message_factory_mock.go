@@ -33,6 +33,6 @@ func (f *MockMessageFactory) CreateViewChangeMessage(blockHeight primitives.Bloc
 	panic("implement me")
 }
 
-func (f *MockMessageFactory) CreateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.View, ppm leanhelix.PreprepareMessage, confirmations []leanhelix.ViewChangeConfirmation) leanhelix.NewViewMessage {
+func (f *MockMessageFactory) CreateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.View, ppm leanhelix.PreprepareMessage, confirmations []leanhelix.ViewChangeMessageContent) leanhelix.NewViewMessage {
 	panic("implement me")
 }
