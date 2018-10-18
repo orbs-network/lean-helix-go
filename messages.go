@@ -4,6 +4,20 @@ import (
 	. "github.com/orbs-network/lean-helix-go/primitives"
 )
 
+type MessageFactory interface {
+	// Message creation methods
+	CreatePreprepareMessage(blockHeight BlockHeight, view View, block Block) PreprepareMessage
+	CreatePrepareMessage(blockHeight BlockHeight, view View, blockHash Uint256) PrepareMessage
+	CreateCommitMessage(blockHeight BlockHeight, view View, blockHash Uint256) CommitMessage
+	CreateViewChangeMessage(blockHeight BlockHeight, view View, preparedMessages *PreparedMessages) ViewChangeMessage
+	CreateNewViewMessage(blockHeight BlockHeight, view View, ppmcb *PreprepareMessageContentBuilder, confirmations []*ViewChangeMessageContentBuilder, block Block) NewViewMessage
+
+	// Helper methods
+	CreatePreprepareMessageContentBuilder(blockHeight BlockHeight, view View, block Block) *PreprepareMessageContentBuilder
+	CreateViewChangeMessageContentBuilder(blockHeight BlockHeight, view View, preparedMessages *PreparedMessages) *ViewChangeMessageContentBuilder
+	CreateNewViewMessageContentBuilder(blockHeight BlockHeight, view View, ppmcb *PreprepareMessageContentBuilder, confirmations []*ViewChangeMessageContentBuilder) *NewViewMessageContentBuilder
+}
+
 type HasMessageType interface {
 	MessageType() MessageType
 }
@@ -193,115 +207,3 @@ func (nvm *NewViewMessageImpl) Block() Block {
 func (nvm *NewViewMessageImpl) Raw() []byte {
 	return nvm.Content.Raw()
 }
-
-type MessageFactory interface {
-	// Message creation methods
-
-	//CreatePreprepareMessage(blockRef BlockRef, sender SenderSignature, block Block) PreprepareMessage
-	CreatePreprepareMessage(blockHeight BlockHeight, view View, block Block) PreprepareMessage
-	CreatePrepareMessage(blockHeight BlockHeight, view View, blockHash Uint256) PrepareMessage
-	CreateCommitMessage(blockHeight BlockHeight, view View, blockHash Uint256) CommitMessage
-	// TODO Add PreparedMessages
-	CreateViewChangeMessage(blockHeight BlockHeight, view View, preparedMessages *PreparedMessages) ViewChangeMessage
-	CreateNewViewMessage(blockHeight BlockHeight, view View, ppmcb *PreprepareMessageContentBuilder, confirmations []*ViewChangeMessageContentBuilder, block Block) NewViewMessage
-
-	// Auxiliary methods
-
-	CreatePreprepareMessageContentBuilder(blockHeight BlockHeight, view View, block Block) *PreprepareMessageContentBuilder
-	CreateViewChangeMessageContentBuilder(blockHeight BlockHeight, view View, preparedMessages *PreparedMessages) *ViewChangeMessageContentBuilder
-	CreateNewViewMessageContentBuilder(blockHeight BlockHeight, view View, ppmcb *PreprepareMessageContentBuilder, confirmations []*ViewChangeMessageContentBuilder) *NewViewMessageContentBuilder
-
-	//CreateSenderSignature(sender []byte, signature []byte) SenderSignature
-	//CreateBlockRef(messageType int, blockHeight int, view int, blockHash []byte) BlockRef
-	//CreateNewViewHeader(messageType int, blockHeight int, view int, confirmations []ViewChangeConfirmation) NewViewHeader
-	//CreateViewChangeConfirmation(vcHeader ViewChangeHeader, sender SenderSignature) ViewChangeConfirmation
-	//CreateViewChangeHeader(blockHeight int, view int, proof PreparedProof) ViewChangeHeader
-	//CreatePreparedProof(ppBlockRef BlockRef, pBlockRef BlockRef, ppSender SenderSignature, pSenders []SenderSignature) PreparedProof
-
-	// TODO Remove old methods once not needed
-}
-
-//type MessageType string
-//
-//const (
-//	MESSAGE_TYPE_PREPREPARE  MessageType = "preprepare"
-//	MESSAGE_TYPE_PREPARE     MessageType = "prepare"
-//	MESSAGE_TYPE_COMMIT      MessageType = "commit"
-//	MESSAGE_TYPE_VIEW_CHANGE MessageType = "view-change"
-//	MESSAGE_TYPE_NEW_VIEW    MessageType = "new-view"
-//)
-
-//type Message interface {
-//	SignaturePair() SignaturePair
-//}
-//
-//type BlockRefMessage struct {
-//	SignaturePair *SignaturePair
-//	Content       *BlockMessageContent
-//}
-//
-//type PrePrepareMessage struct {
-//	*BlockRefMessage
-//	Block *primitives.Block
-//}
-//
-//type PrepareMessage struct {
-//	*BlockRefMessage
-//}
-//
-//type CommitMessage struct {
-//	*BlockRefMessage
-//}
-//
-//type ViewChangeMessage struct {
-//	Content       *ViewChangeMessageContent
-//	SignaturePair *SignaturePair
-//	Block         *primitives.Block // optional
-//}
-//
-//type NewViewMessage struct {
-//	SignaturePair     *SignaturePair
-//	PreprepareMessage *PrePrepareMessage
-//	Content           *NewViewContent
-//}
-//
-//type NewViewContent struct {
-//	MessageType   MessageType
-//	BlockHeight          primitives.BlockHeight
-//	View          primitives.View
-//	Confirmations []*ViewChangeConfirmation
-//}
-//
-//type ViewChangeConfirmation struct {
-//	Content       *ViewChangeMessageContent
-//	SignaturePair *SignaturePair
-//}
-//
-//type PreparedMessages struct {
-//	PreprepareMessage *PrePrepareMessage
-//	PrepareMessages   []*PrepareMessage
-//}
-//
-//type SignaturePair struct {
-//	SignerPublicKey  primitives.PublicKey
-//	ContentSignature string
-//}
-//
-//type BlockMessageContent struct {
-//	MessageType MessageType
-//	BlockHeight        primitives.BlockHeight
-//	View        primitives.View
-//	BlockHash   primitives.BlockHash
-//}
-//
-//type ViewChangeMessageContent struct {
-//	MessageType   MessageType
-//	BlockHeight          primitives.BlockHeight
-//	View          primitives.View
-//	PreparedProof *PreparedProof
-//}
-//
-//type PreparedProof struct {
-//	PreprepareBlockRefMessage *PrePrepareMessage
-//	PrepareBlockRefMessages   []*PrepareMessage
-//}

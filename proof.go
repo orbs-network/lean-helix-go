@@ -54,12 +54,12 @@ func CreatePreparedProofBuilderFromPreparedMessages(preparedMessages *PreparedMe
 		pSenders = nil
 	} else {
 		pBlockRef = &BlockRefBuilder{
-			MessageType: LEAN_HELIX_PREPREPARE,
+			MessageType: LEAN_HELIX_PREPARE,
 			BlockHeight: prepareMessages[0].SignedHeader().BlockHeight(),
 			View:        prepareMessages[0].SignedHeader().View(),
 			BlockHash:   prepareMessages[0].SignedHeader().BlockHash(),
 		}
-		pSenders := make([]*SenderSignatureBuilder, 0, len(prepareMessages))
+		pSenders = make([]*SenderSignatureBuilder, 0, len(prepareMessages))
 		for _, pm := range prepareMessages {
 			pSenders = append(pSenders, &SenderSignatureBuilder{
 				SenderPublicKey: pm.Sender().SenderPublicKey(),
