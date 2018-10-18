@@ -80,8 +80,12 @@ func CreatePreparedProofBuilderFromPreparedMessages(preparedMessages *PreparedMe
 }
 
 func CreatePreparedProofBuilder(ppKeyManager KeyManager, pKeyManagers []KeyManager, height BlockHeight, view View, blockHash Uint256) *PreparedProofBuilder {
+
+	var ppBlockRef *BlockRefBuilder
 	var pBlockRef *BlockRefBuilder
+	var ppSender *SenderSignatureBuilder
 	var pSenders []*SenderSignatureBuilder
+
 	if len(pKeyManagers) == 0 {
 		pBlockRef = nil
 		pSenders = nil
@@ -100,15 +104,20 @@ func CreatePreparedProofBuilder(ppKeyManager KeyManager, pKeyManagers []KeyManag
 			}
 		}
 	}
-	ppBlockRef := &BlockRefBuilder{
-		MessageType: LEAN_HELIX_PREPREPARE,
-		BlockHeight: height,
-		View:        view,
-		BlockHash:   blockHash,
-	}
-	ppSender := &SenderSignatureBuilder{
-		SenderPublicKey: ppKeyManager.MyPublicKey(),
-		Signature:       ppKeyManager.Sign(ppBlockRef.Build().Raw()),
+	if ppKeyManager == nil {
+		ppBlockRef = nil
+		ppSender = nil
+	} else {
+		ppBlockRef = &BlockRefBuilder{
+			MessageType: LEAN_HELIX_PREPREPARE,
+			BlockHeight: height,
+			View:        view,
+			BlockHash:   blockHash,
+		}
+		ppSender = &SenderSignatureBuilder{
+			SenderPublicKey: ppKeyManager.MyPublicKey(),
+			Signature:       ppKeyManager.Sign(ppBlockRef.Build().Raw()),
+		}
 	}
 	preparedProof := &PreparedProofBuilder{
 		PreprepareBlockRef: ppBlockRef,

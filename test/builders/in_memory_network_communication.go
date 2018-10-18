@@ -47,7 +47,7 @@ func (comm *InMemoryNetworkCommunication) onGossipMessage(message lh.ConsensusMe
 }
 
 func (comm *InMemoryNetworkCommunication) RequestOrderedCommittee(seed uint64) []Ed25519PublicKey {
-	return comm.discovery.AllGossipsPKs()
+	return comm.discovery.AllGossipsPublicKeys()
 }
 
 func (comm *InMemoryNetworkCommunication) IsMember(pk Ed25519PublicKey) bool {

@@ -33,7 +33,7 @@ func buildNode(ctx context.Context, publicKey Ed25519PublicKey, discovery gossip
 	nodeLogger := logger.For(log.Service("node"))
 	electionTrigger := NewMockElectionTrigger() // TODO TestNetworkBuilder.ts uses ElectionTriggerFactory here, maybe do it too
 	blockUtils := NewMockBlockUtils(nil)
-	gossip := gossip.NewGossip(discovery)
+	gossip := gossip.NewGossip(discovery, publicKey)
 	discovery.RegisterGossip(publicKey, gossip)
 	networkCommunication := NewInMemoryNetworkCommunication(discovery, gossip)
 

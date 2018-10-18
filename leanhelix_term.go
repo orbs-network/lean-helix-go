@@ -26,7 +26,7 @@ type leanHelixTerm struct {
 	MyPublicKey                   Ed25519PublicKey
 	CommitteeMembersPublicKeys    []Ed25519PublicKey
 	NonCommitteeMembersPublicKeys []Ed25519PublicKey
-	MessageFactory                MessageFactoryImpl
+	MessageFactory                MessageFactory
 	onCommittedBlock              func(block Block)
 	height                        BlockHeight
 	view                          View

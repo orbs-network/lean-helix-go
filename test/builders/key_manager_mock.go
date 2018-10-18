@@ -30,7 +30,8 @@ func (km *mockKeyManager) Sign(content []byte) []byte {
 }
 
 func (km *mockKeyManager) Verify(content []byte, sender *lh.SenderSignature) bool {
-	panic("implement me")
+	ret := km.Called(content, sender)
+	return ret.Bool(0)
 }
 
 func (km *mockKeyManager) MyPublicKey() Ed25519PublicKey {

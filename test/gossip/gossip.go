@@ -15,15 +15,17 @@ type SubscriptionValue struct {
 type Gossip struct {
 	mock.Mock
 	discovery            Discovery
+	publicKey            Ed25519PublicKey
 	totalSubscriptions   int
 	subscriptions        map[int]*SubscriptionValue
 	outgoingWhiteListPKs []Ed25519PublicKey
 	incomingWhiteListPKs []Ed25519PublicKey
 }
 
-func NewGossip(gd Discovery) *Gossip {
+func NewGossip(gd Discovery, publicKey Ed25519PublicKey) *Gossip {
 	return &Gossip{
 		discovery:            gd,
+		publicKey:            publicKey,
 		totalSubscriptions:   0,
 		subscriptions:        make(map[int]*SubscriptionValue),
 		outgoingWhiteListPKs: nil,

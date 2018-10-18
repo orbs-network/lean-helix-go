@@ -20,10 +20,13 @@ func TestReturnOkForMembersInCurrentHeight(t *testing.T) {
 	mockElectionTrigger := builders.NewMockElectionTrigger()
 	mockStorage := builders.NewMockStorage()
 	mockComm.When("RequestOrderedCommittee", mock.Any).Return([]Ed25519PublicKey{pk})
-	mockComm.When("SendPreprepare", mock.Any, mock.Any).Return()
+	mockComm.When("Send", mock.Any, mock.Any).Return()
 	mockStorage.When("StorePreprepare", mock.Any).Return(true)
+	mockKeyManager := builders.NewMockKeyManager(pk)
+	messageFactory := lh.NewMessageFactory(builders.NewMockKeyManager(pk))
 	config := &lh.TermConfig{
-		KeyManager:           builders.NewMockKeyManager(pk),
+		KeyManager:           mockKeyManager,
+		MessageFactory:       messageFactory,
 		NetworkCommunication: mockComm,
 		Logger:               log.GetLogger(log.String("ID", "ID")),
 		BlockUtils:           mockBlockUtils,
@@ -43,7 +46,7 @@ func TestReturnErrorIfNoMembersInCurrentHeight(t *testing.T) {
 	mockElectionTrigger := builders.NewMockElectionTrigger()
 	mockStorage := lh.NewInMemoryStorage()
 	mockComm.When("RequestOrderedCommittee", mock.Any).Return([]Ed25519PublicKey{})
-	mockComm.When("SendPreprepare", mock.Any, mock.Any).Return()
+	mockComm.When("Send", mock.Any, mock.Any).Return()
 	config := &lh.TermConfig{
 		KeyManager:           builders.NewMockKeyManager(pk),
 		NetworkCommunication: mockComm,

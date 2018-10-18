@@ -1,6 +1,7 @@
 package test
 
 import (
+	"github.com/orbs-network/go-mock"
 	lh "github.com/orbs-network/lean-helix-go"
 	. "github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
@@ -31,8 +32,9 @@ func TestProofsValidator(t *testing.T) {
 	goodPreparedProof := lh.CreatePreparedProof(leaderKeyManager, []lh.KeyManager{node1KeyManager, node2KeyManager}, height, view, blockHash)
 
 	t.Run("TestProofsValidatorHappyPath", func(t *testing.T) {
+		dummyKeyManager.When("Verify", mock.Any, mock.Any).Return(true)
 		result := lh.ValidatePreparedProof(targetHeight, targetView, goodPreparedProof, f, dummyKeyManager, membersPKs, calcLeaderPk)
-		require.False(t, result, "Did not approve a well-formed proof")
+		require.True(t, result, "Did not approve a well-formed proof")
 	})
 
 	t.Run("TestProofsValidatorWithNoPrePrepare", func(t *testing.T) {

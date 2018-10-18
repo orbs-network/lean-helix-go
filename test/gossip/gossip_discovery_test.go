@@ -10,7 +10,7 @@ import (
 )
 
 func TestGossipDiscovery(t *testing.T) {
-	genId := func() primitives.Ed25519PublicKey {
+	genPublicKey := func() primitives.Ed25519PublicKey {
 		return primitives.Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	}
 
@@ -20,33 +20,33 @@ func TestGossipDiscovery(t *testing.T) {
 	})
 
 	t.Run("get Gossip instance by ID", func(t *testing.T) {
-		id := genId()
+		id := genPublicKey()
 		gd := NewGossipDiscovery()
-		expectedGossip := NewGossip(gd)
+		expectedGossip := NewGossip(gd, id)
 		gd.RegisterGossip(id, expectedGossip)
 		actualGossip, _ := gd.GetGossipByPK(id)
 		require.Equal(t, expectedGossip, actualGossip, "received Gossip instance by ID")
 	})
 
 	t.Run("get all Gossip IDs", func(t *testing.T) {
-		id1 := genId()
-		id2 := genId()
-		id3 := genId()
+		id1 := genPublicKey()
+		id2 := genPublicKey()
+		id3 := genPublicKey()
 		gd := NewGossipDiscovery()
-		g1 := NewGossip(gd)
-		g2 := NewGossip(gd)
-		g3 := NewGossip(gd)
+		g1 := NewGossip(gd, id1)
+		g2 := NewGossip(gd, id2)
+		g3 := NewGossip(gd, id3)
 		gd.RegisterGossip(id1, g1)
 		gd.RegisterGossip(id2, g2)
 		gd.RegisterGossip(id3, g3)
-		expected := []primitives.Ed25519PublicKey{id1, id2, id3}
-		actual := gd.AllGossipsPKs()
+		expectedPublicKeyStrings := []string{id1.String(), id2.String(), id3.String()}
+		actualPublicKeyStrings := gd.AllGossipsPKs()
 
-		require.ElementsMatch(t, actual, expected)
+		require.ElementsMatch(t, actualPublicKeyStrings, expectedPublicKeyStrings)
 	})
 
 	t.Run("return ok=false if given Id was not registered", func(t *testing.T) {
-		id := genId()
+		id := genPublicKey()
 		gd := NewGossipDiscovery()
 		_, ok := gd.GetGossipByPK(id)
 
@@ -55,10 +55,10 @@ func TestGossipDiscovery(t *testing.T) {
 
 	t.Run("return a list of all gossips", func(t *testing.T) {
 		gd := NewGossipDiscovery()
-		id1 := genId()
-		id2 := genId()
-		g1 := NewGossip(gd)
-		g2 := NewGossip(gd)
+		id1 := genPublicKey()
+		id2 := genPublicKey()
+		g1 := NewGossip(gd, id1)
+		g2 := NewGossip(gd, id2)
 		gd.RegisterGossip(id1, g1)
 		gd.RegisterGossip(id2, g2)
 		actual := gd.Gossips(nil)
@@ -68,12 +68,12 @@ func TestGossipDiscovery(t *testing.T) {
 
 	t.Run("return a list of requested gossips", func(t *testing.T) {
 		gd := NewGossipDiscovery()
-		id1 := genId()
-		id2 := genId()
-		id3 := genId()
-		g1 := NewGossip(gd)
-		g2 := NewGossip(gd)
-		g3 := NewGossip(gd)
+		id1 := genPublicKey()
+		id2 := genPublicKey()
+		id3 := genPublicKey()
+		g1 := NewGossip(gd, id1)
+		g2 := NewGossip(gd, id2)
+		g3 := NewGossip(gd, id3)
 		gd.RegisterGossip(id1, g1)
 		gd.RegisterGossip(id2, g2)
 		gd.RegisterGossip(id3, g3)

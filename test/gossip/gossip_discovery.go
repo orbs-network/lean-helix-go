@@ -9,7 +9,8 @@ type PublicKeyStr string
 type Discovery interface {
 	GetGossipByPK(pk Ed25519PublicKey) (*Gossip, bool)
 	RegisterGossip(pk Ed25519PublicKey, gossip *Gossip)
-	AllGossipsPKs() []Ed25519PublicKey
+	AllGossipsPKs() []string
+	AllGossipsPublicKeys() []Ed25519PublicKey
 	Gossips(pks []Ed25519PublicKey) []*Gossip
 }
 
@@ -24,7 +25,11 @@ func NewGossipDiscovery() Discovery {
 }
 
 func (d *discovery) GetGossipByPK(pk Ed25519PublicKey) (*Gossip, bool) {
-	result, ok := d.gossips[pk.String()]
+	return d.GetGossipByPKStr(pk.String())
+}
+
+func (d *discovery) GetGossipByPKStr(pkStr string) (*Gossip, bool) {
+	result, ok := d.gossips[pkStr]
 	return result, ok
 }
 
@@ -39,24 +44,33 @@ func (d *discovery) Gossips(pks []Ed25519PublicKey) []*Gossip {
 	}
 
 	res := make([]*Gossip, 0, 1)
-	for _, key := range d.AllGossipsPKs() {
+	for key := range d.gossips {
 		if !indexOf(key, pks) {
 			continue
 		}
-		if gossip, ok := d.GetGossipByPK(key); ok {
+		if gossip, ok := d.GetGossipByPKStr(key); ok {
 			res = append(res, gossip)
 		}
 	}
 	return res
 }
 
-func indexOf(pk Ed25519PublicKey, pks []Ed25519PublicKey) bool {
-	for _, key := range pks {
-		if key.Equal(pk) {
+func indexOf(pkStr string, publicKeys []Ed25519PublicKey) bool {
+	for _, key := range publicKeys {
+		keyStr := key.String()
+		if keyStr == pkStr {
 			return true
 		}
 	}
 	return false
+}
+
+func (d *discovery) AllGossipsPublicKeys() []Ed25519PublicKey {
+	publicKeys := make([]Ed25519PublicKey, 0, len(d.gossips))
+	for _, val := range d.gossips {
+		publicKeys = append(publicKeys, val.publicKey)
+	}
+	return publicKeys
 }
 
 func (d *discovery) getAllGossips() []*Gossip {
@@ -67,10 +81,10 @@ func (d *discovery) getAllGossips() []*Gossip {
 	return gossips
 }
 
-func (d *discovery) AllGossipsPKs() []Ed25519PublicKey {
-	keys := make([]Ed25519PublicKey, 0, len(d.gossips))
+func (d *discovery) AllGossipsPKs() []string {
+	keys := make([]string, 0, len(d.gossips))
 	for key := range d.gossips {
-		keys = append(keys, Ed25519PublicKey(key))
+		keys = append(keys, key)
 	}
 	return keys
 }

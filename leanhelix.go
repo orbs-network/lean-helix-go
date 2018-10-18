@@ -27,7 +27,7 @@ type TermConfig struct {
 	Logger               log.BasicLogger
 	ElectionTrigger      ElectionTrigger
 	Storage              Storage
-	MessageFactory       MessageFactoryImpl
+	MessageFactory       MessageFactory
 }
 
 type leanHelix struct {
