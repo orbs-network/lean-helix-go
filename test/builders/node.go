@@ -16,8 +16,8 @@ type Node struct {
 	Gossip     *gossip.Gossip
 }
 
-func NewNode(ctx context.Context, publicKey Ed25519PublicKey, config *lh.Config) *Node {
-	pbft := lh.NewLeanHelix(ctx, config)
+func NewNode(ctx context.Context, ctxCancel context.CancelFunc, publicKey Ed25519PublicKey, config *lh.Config) *Node {
+	pbft := lh.NewLeanHelix(ctx, ctxCancel, config)
 	node := &Node{
 		PublicKey:  publicKey,
 		Config:     config,
@@ -28,7 +28,7 @@ func NewNode(ctx context.Context, publicKey Ed25519PublicKey, config *lh.Config)
 	return node
 }
 
-func buildNode(ctx context.Context, publicKey Ed25519PublicKey, discovery gossip.Discovery, logger log.BasicLogger) *Node {
+func buildNode(ctx context.Context, ctxCancel context.CancelFunc, publicKey Ed25519PublicKey, discovery gossip.Discovery, logger log.BasicLogger) *Node {
 
 	nodeLogger := logger.For(log.Service("node"))
 	electionTrigger := NewMockElectionTrigger() // TODO TestNetworkBuilder.ts uses ElectionTriggerFactory here, maybe do it too
@@ -38,7 +38,7 @@ func buildNode(ctx context.Context, publicKey Ed25519PublicKey, discovery gossip
 	networkCommunication := NewInMemoryNetworkCommunication(discovery, gossip)
 
 	return NewNodeBuilder().
-		WithContext(ctx).
+		WithContext(ctx, ctxCancel).
 		ThatIsPartOf(networkCommunication).
 		GettingBlocksVia(blockUtils).
 		ElectingLeaderUsing(electionTrigger).

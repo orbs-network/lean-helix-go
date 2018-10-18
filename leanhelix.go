@@ -36,11 +36,12 @@ type leanHelix struct {
 	log       log.BasicLogger
 }
 
-func NewLeanHelix(ctx context.Context, config *Config) LeanHelix {
+func NewLeanHelix(ctx context.Context, ctxCancel context.CancelFunc, config *Config) LeanHelix {
 
 	return &leanHelix{
-		ctx: ctx,
-		log: config.Logger.For(log.Service("leanhelix")),
+		ctx:       ctx,
+		ctxCancel: ctxCancel,
+		log:       config.Logger.For(log.Service("leanhelix")),
 	}
 }
 

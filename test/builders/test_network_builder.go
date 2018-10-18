@@ -18,6 +18,7 @@ const MINIMUM_NODES = 2
 
 type TestNetwork struct {
 	mock.Mock
+	ctx        context.Context
 	ctxCancel  context.CancelFunc
 	Nodes      []*Node
 	BlockUtils *MockBlockUtils
@@ -35,6 +36,12 @@ type TestNetworkBuilder struct {
 	blocksPool      []lh.Block
 	nodeCount       int
 	discovery       gossip.Discovery
+}
+
+func (builder *TestNetworkBuilder) WithContext(ctx context.Context, ctxCancel context.CancelFunc) *TestNetworkBuilder {
+	builder.ctx = ctx
+	builder.ctxCancel = ctxCancel
+	return builder
 }
 
 func (builder *TestNetworkBuilder) GettingBlocksVia(utils *MockBlockUtils) *TestNetworkBuilder {
@@ -55,6 +62,7 @@ func (builder *TestNetworkBuilder) ThatLogsToCustomLogger(logger log.BasicLogger
 func (builder *TestNetworkBuilder) Build() *TestNetwork {
 
 	testNet := &TestNetwork{
+		ctx:        builder.ctx,
 		ctxCancel:  builder.ctxCancel,
 		Nodes:      builder.createNodes(),
 		BlockUtils: builder.blockUtils,
@@ -69,6 +77,8 @@ func (builder *TestNetworkBuilder) Build() *TestNetwork {
 }
 
 func NewSimpleTestNetwork(nodeCount int, blocksPool []lh.Block) *TestNetwork {
+
+	ctx, ctxCancel := context.WithCancel(context.Background())
 
 	b1 := CreateBlock(GenesisBlock)
 	b2 := CreateBlock(b1)
@@ -85,6 +95,7 @@ func NewSimpleTestNetwork(nodeCount int, blocksPool []lh.Block) *TestNetwork {
 	mockBlockUtils := NewMockBlockUtils(blocks)
 
 	testNet := NewTestNetworkBuilder(nodeCount).
+		WithContext(ctx, ctxCancel).
 		GettingBlocksVia(mockBlockUtils).
 		Build()
 
@@ -93,7 +104,7 @@ func NewSimpleTestNetwork(nodeCount int, blocksPool []lh.Block) *TestNetwork {
 
 func NewTestNetworkBuilder(nodeCount int) *TestNetworkBuilder {
 
-	ctx, ctxCancel := context.WithCancel(context.Background())
+	//ctx, ctxCancel := context.WithCancel(context.Background())
 
 	var output io.Writer
 	output = os.Stdout
@@ -107,8 +118,8 @@ func NewTestNetworkBuilder(nodeCount int) *TestNetworkBuilder {
 	testLogger.Info("===========================================================================")
 
 	return &TestNetworkBuilder{
-		ctx:             ctx,
-		ctxCancel:       ctxCancel,
+		//ctx:             ctx,
+		//ctxCancel:       ctxCancel,
 		logger:          testLogger,
 		customNodes:     nil,
 		electionTrigger: nil,
@@ -123,7 +134,7 @@ func (builder *TestNetworkBuilder) createNodes() []*Node {
 	nodes := make([]*Node, builder.nodeCount)
 
 	for i := range nodes {
-		nodes[i] = buildNode(builder.ctx, Ed25519PublicKey(fmt.Sprintf("Node %d", i)), builder.discovery, builder.logger)
+		nodes[i] = buildNode(builder.ctx, builder.ctxCancel, Ed25519PublicKey(fmt.Sprintf("Node %d", i)), builder.discovery, builder.logger)
 	}
 
 	// TODO postpone handling custom nodes till needed by TDD (see TestNetworkBuilder.ts)

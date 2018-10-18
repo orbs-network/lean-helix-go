@@ -9,6 +9,7 @@ import (
 
 type NodeBuilder struct {
 	ctx                  context.Context
+	ctxCancel            context.CancelFunc
 	networkCommunication lh.NetworkCommunication
 	publicKey            Ed25519PublicKey
 	storage              lh.Storage
@@ -115,9 +116,10 @@ func (builder *NodeBuilder) ThatLogsTo(logger log.BasicLogger) *NodeBuilder {
 }
 
 func (builder *NodeBuilder) Build() *Node {
-	return NewNode(builder.ctx, builder.publicKey, builder.buildConfig())
+	return NewNode(builder.ctx, builder.ctxCancel, builder.publicKey, builder.buildConfig())
 }
-func (builder *NodeBuilder) WithContext(ctx context.Context) *NodeBuilder {
+func (builder *NodeBuilder) WithContext(ctx context.Context, ctxCancel context.CancelFunc) *NodeBuilder {
 	builder.ctx = ctx
+	builder.ctxCancel = ctxCancel
 	return builder
 }

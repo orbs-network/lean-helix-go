@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	lh "github.com/orbs-network/lean-helix-go"
 	. "github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
@@ -25,7 +26,11 @@ func TestAcceptPreprepareWithCurrentView(t *testing.T) {
 
 	t.Skip()
 
-	net := builders.NewTestNetworkBuilder(NODE_COUNT).Build()
+	ctx, ctxCancel := context.WithCancel(context.Background())
+
+	net := builders.NewTestNetworkBuilder(NODE_COUNT).
+		WithContext(ctx, ctxCancel).
+		Build()
 	node1 := net.Nodes[1]
 	termConfig1 := lh.BuildTermConfig(node1.Config)
 	mockStorage1 := builders.NewMockStorage()
