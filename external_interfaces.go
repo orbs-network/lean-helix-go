@@ -8,7 +8,8 @@ type Block interface {
 	PrevBlockHash() primitives.Uint256
 }
 
-type ConsensusMessage interface {
+type ConsensusRawMessage interface {
+	Header() []byte
 	Content() []byte
 	Block() Block
 }
@@ -16,7 +17,7 @@ type ConsensusMessage interface {
 type NetworkCommunication interface {
 	RequestOrderedCommittee(seed uint64) []primitives.Ed25519PublicKey
 	IsMember(pk primitives.Ed25519PublicKey) bool
-	Send(targets []primitives.Ed25519PublicKey, message ConsensusMessage) error
+	Send(targets []primitives.Ed25519PublicKey, message ConsensusRawMessage) error
 }
 
 type KeyManager interface {

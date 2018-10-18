@@ -17,7 +17,7 @@ type InMemoryNetworkCommunication struct {
 	gossip    *gossip.Gossip
 }
 
-func (comm *InMemoryNetworkCommunication) Send(targets []Ed25519PublicKey, message lh.ConsensusMessage) error {
+func (comm *InMemoryNetworkCommunication) Send(targets []Ed25519PublicKey, message lh.ConsensusRawMessage) error {
 	panic("implement me")
 }
 

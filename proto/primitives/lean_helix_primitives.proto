@@ -35,3 +35,4 @@ message View {
     uint64 value = 1;
     // size 8 bytes
 }
+

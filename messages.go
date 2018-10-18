@@ -32,6 +32,11 @@ type MessageTransporter interface {
 	Sender() *SenderSignature
 }
 
+type MessageWithSenderAndBlockHeight interface {
+	SenderPublicKey() Ed25519PublicKey
+	BlockHeight() BlockHeight
+}
+
 type MessageContent interface {
 	HasMessageType
 	Serializable
@@ -72,6 +77,14 @@ type NewViewMessage interface {
 type PreprepareMessageImpl struct {
 	Content *PreprepareMessageContent
 	MyBlock Block
+}
+
+func (ppm *PreprepareMessageImpl) SenderPublicKey() Ed25519PublicKey {
+	return ppm.Content.Sender().SenderPublicKey()
+}
+
+func (ppm *PreprepareMessageImpl) BlockHeight() BlockHeight {
+	return ppm.Content.SignedHeader().BlockHeight()
 }
 
 func (ppm *PreprepareMessageImpl) String() string {

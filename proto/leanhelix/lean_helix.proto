@@ -12,6 +12,9 @@ enum MessageType {
     LEAN_HELIX_NEW_VIEW = 4;
     LEAN_HELIX_VIEW_CHANGE = 5;
 }
+message ConsensusMessageHeader {
+    MessageType message_type = 1;
+}
 
 message BlockProof {
     BlockRef block_ref = 1;

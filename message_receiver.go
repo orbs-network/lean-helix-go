@@ -8,10 +8,30 @@ type MessageReceiver interface {
 type MessageReceiverImpl struct {
 }
 
-func (rec *MessageReceiverImpl) OnReceive(message []byte) error {
+func (rec *MessageReceiverImpl) OnReceive(rawMessage ConsensusRawMessage) error {
+
+	message := toMessageTransporter(rawMessage)
+
 	panic("implement me")
 }
+func toMessageTransporter(rawMessage ConsensusRawMessage) MessageTransporter {
+	header := ConsensusMessageHeaderReader(rawMessage.Header())
 
-func (rec *MessageReceiverImpl) OnReceiveWithBlock(message []byte, block Block) error {
-	panic("implement me")
+	var message MessageTransporter
+
+	switch header.MessageType() {
+	case LEAN_HELIX_PREPREPARE:
+		message = PreprepareMessageContentReader(rawMessage.Content())
+	case LEAN_HELIX_PREPARE:
+		message = PrepareMessageContentReader(rawMessage.Content())
+	case LEAN_HELIX_COMMIT:
+		message = CommitMessageContentReader(rawMessage.Content())
+	case LEAN_HELIX_VIEW_CHANGE:
+		message = ViewChangeMessageContentReader(rawMessage.Content())
+	case LEAN_HELIX_NEW_VIEW:
+		message = NewViewMessageContentReader(rawMessage.Content())
+
+	}
+	return message
+
 }

@@ -10,7 +10,7 @@ type MockNetworkCommunication struct {
 	mock.Mock
 }
 
-func (n *MockNetworkCommunication) Send(publicKeys []Ed25519PublicKey, message lh.ConsensusMessage) error {
+func (n *MockNetworkCommunication) Send(publicKeys []Ed25519PublicKey, message lh.ConsensusRawMessage) error {
 	ret := n.Called(publicKeys, message)
 	return ret.Error(0)
 }

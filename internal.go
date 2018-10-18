@@ -9,21 +9,26 @@ func (arr ViewCounters) Len() int           { return len(arr) }
 func (arr ViewCounters) Swap(i, j int)      { arr[i], arr[j] = arr[j], arr[i] }
 func (arr ViewCounters) Less(i, j int) bool { return arr[i] < arr[j] }
 
-type consensusMessage struct {
+type consensusRawMessage struct {
+	header  []byte
 	content []byte
 	block   Block
 }
 
-func (c *consensusMessage) Content() []byte {
+func (c *consensusRawMessage) Header() []byte {
+	return c.header
+}
+
+func (c *consensusRawMessage) Content() []byte {
 	return c.content
 }
 
-func (c *consensusMessage) Block() Block {
+func (c *consensusRawMessage) Block() Block {
 	return c.block
 }
 
-func CreateConsensusMessage(content []byte, block Block) ConsensusMessage {
-	return &consensusMessage{
+func CreateConsensusMessage(content []byte, block Block) ConsensusRawMessage {
+	return &consensusRawMessage{
 		content: content,
 		block:   block,
 	}

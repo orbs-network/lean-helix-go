@@ -9,6 +9,116 @@ import (
 )
 
 /////////////////////////////////////////////////////////////////////////////
+// message ConsensusMessageHeader
+
+// reader
+
+type ConsensusMessageHeader struct {
+	// MessageType MessageType
+
+	// internal
+	// implements membuffers.Message
+	_message membuffers.InternalMessage
+}
+
+func (x *ConsensusMessageHeader) String() string {
+	if x == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("{MessageType:%s,}", x.StringMessageType())
+}
+
+var _ConsensusMessageHeader_Scheme = []membuffers.FieldType{membuffers.TypeUint16}
+var _ConsensusMessageHeader_Unions = [][]membuffers.FieldType{}
+
+func ConsensusMessageHeaderReader(buf []byte) *ConsensusMessageHeader {
+	x := &ConsensusMessageHeader{}
+	x._message.Init(buf, membuffers.Offset(len(buf)), _ConsensusMessageHeader_Scheme, _ConsensusMessageHeader_Unions)
+	return x
+}
+
+func (x *ConsensusMessageHeader) IsValid() bool {
+	return x._message.IsValid()
+}
+
+func (x *ConsensusMessageHeader) Raw() []byte {
+	return x._message.RawBuffer()
+}
+
+func (x *ConsensusMessageHeader) Equal(y *ConsensusMessageHeader) bool {
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return bytes.Equal(x.Raw(), y.Raw())
+}
+
+func (x *ConsensusMessageHeader) MessageType() MessageType {
+	return MessageType(x._message.GetUint16(0))
+}
+
+func (x *ConsensusMessageHeader) RawMessageType() []byte {
+	return x._message.RawBufferForField(0, 0)
+}
+
+func (x *ConsensusMessageHeader) MutateMessageType(v MessageType) error {
+	return x._message.SetUint16(0, uint16(v))
+}
+
+func (x *ConsensusMessageHeader) StringMessageType() string {
+	return x.MessageType().String()
+}
+
+// builder
+
+type ConsensusMessageHeaderBuilder struct {
+	MessageType MessageType
+
+	// internal
+	// implements membuffers.Builder
+	_builder membuffers.InternalBuilder
+}
+
+func (w *ConsensusMessageHeaderBuilder) Write(buf []byte) (err error) {
+	if w == nil {
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	w._builder.Reset()
+	w._builder.WriteUint16(buf, uint16(w.MessageType))
+	return nil
+}
+
+func (w *ConsensusMessageHeaderBuilder) GetSize() membuffers.Offset {
+	if w == nil {
+		return 0
+	}
+	return w._builder.GetSize()
+}
+
+func (w *ConsensusMessageHeaderBuilder) CalcRequiredSize() membuffers.Offset {
+	if w == nil {
+		return 0
+	}
+	w.Write(nil)
+	return w._builder.GetSize()
+}
+
+func (w *ConsensusMessageHeaderBuilder) Build() *ConsensusMessageHeader {
+	buf := make([]byte, w.CalcRequiredSize())
+	if w.Write(buf) != nil {
+		return nil
+	}
+	return ConsensusMessageHeaderReader(buf)
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // message BlockProof
 
 // reader
