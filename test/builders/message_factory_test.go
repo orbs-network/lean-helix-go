@@ -173,6 +173,14 @@ func TestMessageFactory(t *testing.T) {
 
 	// TODO This needs further testing - no proof, no pp or no p's with the proof
 	t.Run("create ViewChangeMessage with PreparedProof", func(t *testing.T) {
+
+		preparedMessages := &lh.PreparedMessages{
+			PreprepareMessage: leaderFac.CreatePreprepareMessage(height, view, block),
+			PrepareMessages: []lh.PrepareMessage{
+				node1Fac.CreatePrepareMessage(height, view, blockHash),
+				node2Fac.CreatePrepareMessage(height, view, blockHash),
+			},
+		}
 		proofBuilder := lh.CreatePreparedProofBuilder(leaderKeyManager, []lh.KeyManager{node1KeyManager, node2KeyManager}, height, view, blockHash)
 
 		signedHeader := &lh.ViewChangeHeaderBuilder{
@@ -193,14 +201,6 @@ func TestMessageFactory(t *testing.T) {
 			MyBlock: block,
 		}
 
-		preparedMessages := &lh.PreparedMessages{
-			PreprepareMessage: leaderFac.CreatePreprepareMessage(height, view, block),
-			PrepareMessages: []lh.PrepareMessage{
-				node1Fac.CreatePrepareMessage(height, view, blockHash),
-				node2Fac.CreatePrepareMessage(height, view, blockHash),
-			},
-		}
-
 		actualVCM := leaderFac.CreateViewChangeMessage(height, view, preparedMessages)
 		fmt.Println(expectedVCM.String())
 		fmt.Println(actualVCM.String())
@@ -215,6 +215,69 @@ func TestMessageFactory(t *testing.T) {
 	})
 
 	t.Run("create NewViewMessage", func(t *testing.T) {
+
+		ppm := leaderFac.CreatePreprepareMessage(height, view, block)
+
+		preparedMessages := &lh.PreparedMessages{
+			PreprepareMessage: ppm,
+			PrepareMessages: []lh.PrepareMessage{
+				node1Fac.CreatePrepareMessage(height, view, blockHash),
+				node2Fac.CreatePrepareMessage(height, view, blockHash),
+			},
+		}
+
+		vc1 := node1Fac.CreateViewChangeMessageContentBuilder(height, view, preparedMessages)
+		vc2 := node2Fac.CreateViewChangeMessageContentBuilder(height, view, preparedMessages)
+
+		nvmContentBuilder := &lh.NewViewMessageContentBuilder{
+			SignedHeader: &lh.NewViewHeaderBuilder{
+				MessageType: lh.LEAN_HELIX_NEW_VIEW,
+				BlockHeight: height,
+				View:        view,
+				ViewChangeConfirmations: []*lh.ViewChangeMessageContentBuilder{
+					vc1, vc2,
+				},
+			},
+			Sender: &lh.SenderSignatureBuilder{
+				SenderPublicKey: nil,
+				Signature:       nil,
+			},
+			PreprepareMessageContent: &lh.PreprepareMessageContentBuilder{
+				SignedHeader: &lh.BlockRefBuilder{
+					MessageType: lh.LEAN_HELIX_PREPREPARE,
+					BlockHeight: height,
+					View:        view,
+					BlockHash:   blockHash,
+				},
+				Sender: &lh.SenderSignatureBuilder{
+					SenderPublicKey: nil,
+					Signature:       nil,
+				},
+			},
+		}
+
+		expectedNVM := &lh.NewViewMessageImpl{
+			Content: nvmContentBuilder.Build(),
+			MyBlock: block,
+		}
+
+		actualNVM := leaderFac.CreateNewViewMessage(
+			height,
+			view,
+			leaderFac.CreatePreprepareMessageContentBuilder(
+				height, view, block), []*lh.ViewChangeMessageContentBuilder{
+				node1Fac.CreateViewChangeMessageContentBuilder(
+					height, view, preparedMessages),
+				node2Fac.CreateViewChangeMessageContentBuilder(
+					height, view, preparedMessages),
+			},
+			block)
+
+		fmt.Println(expectedNVM.String())
+		fmt.Println(actualNVM.String())
+		expectedNVMRaw := expectedNVM.Raw()
+		actualNVMRaw := actualNVM.Raw()
+		require.True(t, bytes.Compare(expectedNVMRaw, actualNVMRaw) == 0, "compared bytes of NVM")
 
 	})
 

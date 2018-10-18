@@ -11,6 +11,10 @@ Spec location: TBD
 ## TODO
 * See [issues on Github](https://github.com/orbs-network/lean-helix-go/issues)
 
+## Installation
+* Download from Github
+* Run `./git-submodule-checkout.sh` - this will install all git submodules under `vendor` folder
+
 ## Design (Lean Helix fully serializes its messages internally)
 Uses orbs-spec
 * orbs-spec/interfaces/protocol/gossipmessages/lean-helix.proto

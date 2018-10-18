@@ -1,7 +1,7 @@
 package leanhelix
 
 import (
-	"github.com/orbs-network/lean-helix-go/primitives"
+	. "github.com/orbs-network/lean-helix-go/primitives"
 )
 
 type HasMessageType interface {
@@ -198,14 +198,18 @@ type MessageFactory interface {
 	// Message creation methods
 
 	//CreatePreprepareMessage(blockRef BlockRef, sender SenderSignature, block Block) PreprepareMessage
-	CreatePreprepareMessage(blockHeight primitives.BlockHeight, view primitives.View, block Block) PreprepareMessage
-	CreatePrepareMessage(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.Uint256) PrepareMessage
-	CreateCommitMessage(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.Uint256) CommitMessage
+	CreatePreprepareMessage(blockHeight BlockHeight, view View, block Block) PreprepareMessage
+	CreatePrepareMessage(blockHeight BlockHeight, view View, blockHash Uint256) PrepareMessage
+	CreateCommitMessage(blockHeight BlockHeight, view View, blockHash Uint256) CommitMessage
 	// TODO Add PreparedMessages
-	CreateViewChangeMessage(blockHeight primitives.BlockHeight, view primitives.View, preparedMessages *PreparedMessages) ViewChangeMessage
-	CreateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.View, ppmcb *PreprepareMessageContentBuilder, confirmations []*ViewChangeMessageContentBuilder, block Block) NewViewMessage
+	CreateViewChangeMessage(blockHeight BlockHeight, view View, preparedMessages *PreparedMessages) ViewChangeMessage
+	CreateNewViewMessage(blockHeight BlockHeight, view View, ppmcb *PreprepareMessageContentBuilder, confirmations []*ViewChangeMessageContentBuilder, block Block) NewViewMessage
 
 	// Auxiliary methods
+
+	CreatePreprepareMessageContentBuilder(blockHeight BlockHeight, view View, block Block) *PreprepareMessageContentBuilder
+	CreateViewChangeMessageContentBuilder(blockHeight BlockHeight, view View, preparedMessages *PreparedMessages) *ViewChangeMessageContentBuilder
+	CreateNewViewMessageContentBuilder(blockHeight BlockHeight, view View, ppmcb *PreprepareMessageContentBuilder, confirmations []*ViewChangeMessageContentBuilder) *NewViewMessageContentBuilder
 
 	//CreateSenderSignature(sender []byte, signature []byte) SenderSignature
 	//CreateBlockRef(messageType int, blockHeight int, view int, blockHash []byte) BlockRef
