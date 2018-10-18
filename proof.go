@@ -39,13 +39,13 @@ func CreatePreparedProofBuilderFromPreparedMessages(preparedMessages *PreparedMe
 	} else {
 		ppBlockRef = &BlockRefBuilder{
 			MessageType: LEAN_HELIX_PREPREPARE,
-			BlockHeight: preprepareMessage.SignedHeader().BlockHeight(),
-			View:        preprepareMessage.SignedHeader().View(),
-			BlockHash:   preprepareMessage.SignedHeader().BlockHash(),
+			BlockHeight: preprepareMessage.BlockHeight(),
+			View:        preprepareMessage.View(),
+			BlockHash:   preprepareMessage.Content().SignedHeader().BlockHash(),
 		}
 		ppSender = &SenderSignatureBuilder{
-			SenderPublicKey: preprepareMessage.Sender().SenderPublicKey(),
-			Signature:       preprepareMessage.Sender().Signature(),
+			SenderPublicKey: preprepareMessage.Content().Sender().SenderPublicKey(),
+			Signature:       preprepareMessage.Content().Sender().Signature(),
 		}
 	}
 
@@ -55,15 +55,15 @@ func CreatePreparedProofBuilderFromPreparedMessages(preparedMessages *PreparedMe
 	} else {
 		pBlockRef = &BlockRefBuilder{
 			MessageType: LEAN_HELIX_PREPARE,
-			BlockHeight: prepareMessages[0].SignedHeader().BlockHeight(),
-			View:        prepareMessages[0].SignedHeader().View(),
-			BlockHash:   prepareMessages[0].SignedHeader().BlockHash(),
+			BlockHeight: prepareMessages[0].BlockHeight(),
+			View:        prepareMessages[0].View(),
+			BlockHash:   prepareMessages[0].Content().SignedHeader().BlockHash(),
 		}
 		pSenders = make([]*SenderSignatureBuilder, 0, len(prepareMessages))
 		for _, pm := range prepareMessages {
 			pSenders = append(pSenders, &SenderSignatureBuilder{
-				SenderPublicKey: pm.Sender().SenderPublicKey(),
-				Signature:       pm.Sender().Signature(),
+				SenderPublicKey: pm.Content().Sender().SenderPublicKey(),
+				Signature:       pm.Content().Sender().Signature(),
 			})
 		}
 	}

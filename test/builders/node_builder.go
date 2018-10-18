@@ -91,7 +91,6 @@ func (builder *NodeBuilder) buildConfig() *lh.Config {
 	}
 
 	return &lh.Config{
-		Ctx:                  builder.ctx,
 		NetworkCommunication: builder.networkCommunication,
 		ElectionTrigger:      electionTrigger,
 		BlockUtils:           blockUtils,
@@ -116,7 +115,7 @@ func (builder *NodeBuilder) ThatLogsTo(logger log.BasicLogger) *NodeBuilder {
 }
 
 func (builder *NodeBuilder) Build() *Node {
-	return NewNode(builder.publicKey, builder.buildConfig())
+	return NewNode(builder.ctx, builder.publicKey, builder.buildConfig())
 }
 func (builder *NodeBuilder) WithContext(ctx context.Context) *NodeBuilder {
 	builder.ctx = ctx

@@ -21,7 +21,7 @@ func (comm *InMemoryNetworkCommunication) Send(targets []Ed25519PublicKey, messa
 	panic("implement me")
 }
 
-func (comm *InMemoryNetworkCommunication) onGossipMessage(message lh.MessageTransporter) {
+func (comm *InMemoryNetworkCommunication) onGossipMessage(message lh.ConsensusMessage) {
 	switch message.MessageType() {
 	case lh.LEAN_HELIX_PREPREPARE:
 		if comm.PPCallback != nil {
@@ -62,7 +62,7 @@ func NewInMemoryNetworkCommunication(discovery gossip.Discovery, gossip *gossip.
 		gossip:    gossip,
 	}
 
-	subscribeFunc := func(message lh.MessageTransporter) {
+	subscribeFunc := func(message lh.ConsensusMessage) {
 		comm.onGossipMessage(message)
 	}
 

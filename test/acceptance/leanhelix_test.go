@@ -33,7 +33,7 @@ func TestSendPreprepareOnlyIfLeader(t *testing.T) {
 	net := builders.NewSimpleTestNetwork(NODE_COUNT, nil) // Node 0 is leader
 
 	predicateMessageTypeIsPreprepare := func(msg interface{}) bool {
-		message := msg.(lh.MessageTransporter)
+		message := msg.(lh.ConsensusMessage)
 		return message.MessageType() == lh.LEAN_HELIX_PREPREPARE
 	}
 

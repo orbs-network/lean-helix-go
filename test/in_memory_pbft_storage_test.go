@@ -13,7 +13,8 @@ import (
 )
 
 // TODO TestClearAllStorageDataAfterCallingClearTermLogs
-// TODO Ideally Messages should be mocked
+// Ideally Messages should be mocked but it's too much code so using real messages
+// TODO 18-OCT-18 go over TS code and rewrite this file
 
 func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 

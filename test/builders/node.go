@@ -16,8 +16,8 @@ type Node struct {
 	Gossip     *gossip.Gossip
 }
 
-func NewNode(publicKey Ed25519PublicKey, config *lh.Config) *Node {
-	pbft := lh.NewLeanHelix(config)
+func NewNode(ctx context.Context, publicKey Ed25519PublicKey, config *lh.Config) *Node {
+	pbft := lh.NewLeanHelix(ctx, config)
 	node := &Node{
 		PublicKey:  publicKey,
 		Config:     config,

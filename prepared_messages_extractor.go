@@ -12,8 +12,8 @@ func ExtractPreparedMessages(blockHeight primitives.BlockHeight, storage Storage
 	if !ok {
 		return nil
 	}
-	lastView := ppm.SignedHeader().View()
-	prepareMessages, ok := storage.GetPrepares(blockHeight, lastView, ppm.SignedHeader().BlockHash())
+	lastView := ppm.View()
+	prepareMessages, ok := storage.GetPrepares(blockHeight, lastView, ppm.Content().SignedHeader().BlockHash())
 	if !ok {
 		return nil
 	}

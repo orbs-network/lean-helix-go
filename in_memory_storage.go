@@ -53,8 +53,8 @@ func (storage *InMemoryStorage) GetLatestPreprepare(blockHeight BlockHeight) (Pr
 
 func (storage *InMemoryStorage) StorePreprepare(ppm PreprepareMessage) bool {
 
-	height := ppm.SignedHeader().BlockHeight()
-	view := ppm.SignedHeader().View()
+	height := ppm.BlockHeight()
+	view := ppm.Content().SignedHeader().View()
 
 	views, ok := storage.preprepareStorage[height]
 	if !ok {
@@ -70,8 +70,8 @@ func (storage *InMemoryStorage) StorePreprepare(ppm PreprepareMessage) bool {
 }
 
 func (storage *InMemoryStorage) StorePrepare(pp PrepareMessage) bool {
-	height := pp.SignedHeader().BlockHeight()
-	view := pp.SignedHeader().View()
+	height := pp.BlockHeight()
+	view := pp.Content().SignedHeader().View()
 	// pps -> views ->
 	views, ok := storage.prepareStorage[height]
 	if !ok {
@@ -83,13 +83,13 @@ func (storage *InMemoryStorage) StorePrepare(pp PrepareMessage) bool {
 		blockHashes = make(map[BlockHashStr]map[PublicKeyStr]PrepareMessage)
 		views[view] = blockHashes
 	}
-	ppBlockHash := BlockHashStr(pp.SignedHeader().BlockHash())
+	ppBlockHash := BlockHashStr(pp.Content().SignedHeader().BlockHash())
 	senders, ok := blockHashes[ppBlockHash]
 	if !ok {
 		senders = make(map[PublicKeyStr]PrepareMessage)
 		blockHashes[ppBlockHash] = senders
 	}
-	pk := PublicKeyStr(pp.Sender().SenderPublicKey())
+	pk := PublicKeyStr(pp.Content().Sender().SenderPublicKey())
 	_, ok = senders[pk]
 	if ok {
 		return false
@@ -100,8 +100,8 @@ func (storage *InMemoryStorage) StorePrepare(pp PrepareMessage) bool {
 }
 
 func (storage *InMemoryStorage) StoreCommit(cm CommitMessage) bool {
-	height := cm.SignedHeader().BlockHeight()
-	view := cm.SignedHeader().View()
+	height := cm.Content().SignedHeader().BlockHeight()
+	view := cm.Content().SignedHeader().View()
 	// pps -> views ->
 	views, ok := storage.commitStorage[height]
 	if !ok {
@@ -113,13 +113,13 @@ func (storage *InMemoryStorage) StoreCommit(cm CommitMessage) bool {
 		blockHashes = make(map[BlockHashStr]map[PublicKeyStr]CommitMessage)
 		views[view] = blockHashes
 	}
-	cmBlockHash := BlockHashStr(cm.SignedHeader().BlockHash())
+	cmBlockHash := BlockHashStr(cm.Content().SignedHeader().BlockHash())
 	senders, ok := blockHashes[cmBlockHash]
 	if !ok {
 		senders = make(map[PublicKeyStr]CommitMessage)
 		blockHashes[cmBlockHash] = senders
 	}
-	pk := PublicKeyStr(cm.Sender().SenderPublicKey())
+	pk := PublicKeyStr(cm.Content().Sender().SenderPublicKey())
 	_, ok = senders[pk]
 	if ok {
 		return false
@@ -131,7 +131,7 @@ func (storage *InMemoryStorage) StoreCommit(cm CommitMessage) bool {
 }
 
 func (storage *InMemoryStorage) StoreViewChange(vcm ViewChangeMessage) bool {
-	height, view := vcm.SignedHeader().BlockHeight(), vcm.SignedHeader().View()
+	height, view := vcm.Content().SignedHeader().BlockHeight(), vcm.Content().SignedHeader().View()
 	// pps -> views ->
 	views, ok := storage.viewChangeStorage[height]
 	if !ok {
@@ -143,7 +143,7 @@ func (storage *InMemoryStorage) StoreViewChange(vcm ViewChangeMessage) bool {
 		views[view] = senders
 	}
 
-	pk := PublicKeyStr(vcm.Sender().SenderPublicKey())
+	pk := PublicKeyStr(vcm.Content().Sender().SenderPublicKey())
 	_, ok = senders[pk]
 	if ok {
 		return false

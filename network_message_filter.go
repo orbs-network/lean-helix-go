@@ -11,18 +11,18 @@ type NetworkMessageFilter interface {
 type NetworkMessageFilterImpl struct {
 	blockHeight  primitives.BlockHeight
 	MyPublicKey  primitives.Ed25519PublicKey
-	messageCache []MessageWithSenderAndBlockHeight
-	netComm      NetworkCommunication
+	messageCache []ConsensusMessage
+	comm         NetworkCommunication
 	Receiver     MessageReceiver
 }
 
-func NewNetworkMessageFilter(blockHeight primitives.BlockHeight, myPublicKey primitives.Ed25519PublicKey, messageReceiver MessageReceiver, netComm NetworkCommunication) NetworkMessageFilter {
+func NewNetworkMessageFilter(comm NetworkCommunication, blockHeight primitives.BlockHeight, myPublicKey primitives.Ed25519PublicKey, messageReceiver MessageReceiver) NetworkMessageFilter {
 	return &NetworkMessageFilterImpl{
 		blockHeight:  blockHeight,
 		MyPublicKey:  myPublicKey,
-		messageCache: make([]MessageWithSenderAndBlockHeight, 0, 10),
+		messageCache: make([]ConsensusMessage, 0, 10),
 		Receiver:     messageReceiver,
-		netComm:      netComm,
+		comm:         comm,
 	}
 }
 
@@ -35,35 +35,35 @@ func (filter *NetworkMessageFilterImpl) OnGossipMessage(rawMessage ConsensusRawM
 
 	switch header.MessageType() {
 	case LEAN_HELIX_PREPREPARE:
-		content := PreprepareMessageContentReader(rawMessage.Content())
+		content := BlockRefContentReader(rawMessage.Content())
 		message = &PreprepareMessageImpl{
-			Content: content,
-			block: rawMessage.Block(),
+			MyContent: content,
+			MyBlock:   rawMessage.Block(),
 		}
 
 	case LEAN_HELIX_PREPARE:
-		content := PrepareMessageContentReader(rawMessage.Content())
+		content := BlockRefContentReader(rawMessage.Content())
 		message = &PrepareMessageImpl{
-			Content: content,
+			MyContent: content,
 		}
 
 	case LEAN_HELIX_COMMIT:
-		content := CommitMessageContentReader(rawMessage.Content())
+		content := BlockRefContentReader(rawMessage.Content())
 		message = &CommitMessageImpl{
-			Content: content,
+			MyContent: content,
 		}
 	case LEAN_HELIX_VIEW_CHANGE:
 		content := ViewChangeMessageContentReader(rawMessage.Content())
 		message = &ViewChangeMessageImpl{
-			Content: content,
-			block: rawMessage.Block(),
+			MyContent: content,
+			MyBlock:   rawMessage.Block(),
 		}
 
 	case LEAN_HELIX_NEW_VIEW:
 		content := NewViewMessageContentReader(rawMessage.Content())
 		message = &NewViewMessageImpl{
-			Content: content,
-			block: rawMessage.Block(),
+			MyContent: content,
+			MyBlock:   rawMessage.Block(),
 		}
 	}
 
@@ -78,14 +78,18 @@ func (filter *NetworkMessageFilterImpl) OnGossipMessage(rawMessage ConsensusRawM
 	filter.ProcessGossipMessage(message)
 }
 
-func (filter *NetworkMessageFilterImpl) acceptMessage(message MessageWithSenderAndBlockHeight) bool {
+func (filter *NetworkMessageFilterImpl) pushToCache(message ConsensusMessage) {
+	filter.messageCache = append(filter.messageCache, message)
+}
+
+func (filter *NetworkMessageFilterImpl) acceptMessage(message ConsensusMessage) bool {
 
 	senderPublicKey := message.SenderPublicKey()
 	if senderPublicKey.Equal(filter.MyPublicKey) {
 		return false
 	}
 
-	if !filter.netComm.IsMember(senderPublicKey) {
+	if !filter.comm.IsMember(senderPublicKey) {
 		return false
 	}
 
@@ -95,27 +99,37 @@ func (filter *NetworkMessageFilterImpl) acceptMessage(message MessageWithSenderA
 	return true
 }
 
-	// TODO Callback
+// TODO Callback
 
 func (filter *NetworkMessageFilterImpl) ConsumeCacheMessage() {
 
 }
 
-func (filter *NetworkMessageFilterImpl) ProcessGossipMessage(message MessageTransporter) {
-func (filter* NetworkMessageFilter) ProcessGossipMessage(message interface{}) {
+func (filter *NetworkMessageFilterImpl) ProcessGossipMessage(consensusMessage ConsensusMessage) {
 
-	switch message.(type) {
-	case PreprepareMessageImpl {
+	switch message := consensusMessage.(type) {
+	case *PreprepareMessageImpl:
 		filter.Receiver.OnReceivePreprepareMessage(message)
-
-	}
-
+	case *PrepareMessageImpl:
+		filter.Receiver.OnReceivePrepareMessage(message)
 		// Send message to MessageReceiver
 	}
 }
 
-//public setBlockHeight(blockHeight: number, messagesHandler: MessagesHandler) {
-//this.blockHeight = blockHeight;
-//this.PBFTMessagesHandler = messagesHandler;
-//this.consumeCacheMessages();
-//}
+func (filter *NetworkMessageFilterImpl) SetBlockHeight(blockHeight primitives.BlockHeight, receiver MessageReceiver) {
+	filter.blockHeight = blockHeight
+	filter.Receiver = receiver
+	filter.consumeCacheMessage()
+}
+
+func (filter *NetworkMessageFilterImpl) consumeCacheMessage() {
+	unconsumed := make([]ConsensusMessage, 0, 1)
+	for _, msg := range filter.messageCache {
+		if msg.BlockHeight().Equal(filter.blockHeight) {
+			filter.ProcessGossipMessage(msg)
+		} else {
+			unconsumed = append(unconsumed, msg)
+		}
+	}
+	filter.messageCache = unconsumed
+}

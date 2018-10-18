@@ -44,7 +44,7 @@ func NewLeanHelixTerm(config *TermConfig, newBlockHeight BlockHeight, onCommitte
 	comm := config.NetworkCommunication
 	committeeMembers := comm.RequestOrderedCommittee(uint64(newBlockHeight))
 	if len(committeeMembers) == 0 {
-		return nil, fmt.Errorf("no members for block height %v", newBlockHeight)
+		return nil, fmt.Errorf("no members for _Block height %v", newBlockHeight)
 	}
 	nonCommitteeMembers := make([]Ed25519PublicKey, 0)
 	for _, member := range committeeMembers {
@@ -81,9 +81,9 @@ func (term *leanHelixTerm) startTerm() {
 		return
 	}
 	term.log.Info("StartTerm() is leader", log.Stringable("id", term.KeyManager.MyPublicKey()), log.Stringable("height", term.height))
-	// TODO This should block!!!
+	// TODO This should _Block!!!
 	block := term.BlockUtils.RequestNewBlock(term.height)
-	term.log.Info("StartTerm() generated new block", log.Stringable("id", term.KeyManager.MyPublicKey()), log.Stringable("height", term.height), log.Stringable("block-hash", block.BlockHash()))
+	term.log.Info("StartTerm() generated new _Block", log.Stringable("id", term.KeyManager.MyPublicKey()), log.Stringable("height", term.height), log.Stringable("_Block-hash", block.BlockHash()))
 	if term.disposed {
 		term.log.Debug("StartTerm() disposed, returning", log.Stringable("id", term.KeyManager.MyPublicKey()), log.Stringable("height", term.height))
 		return
@@ -105,27 +105,27 @@ func (term *leanHelixTerm) OnReceivePreprepare(ppm PreprepareMessage) {
 
 func (term *leanHelixTerm) validatePreprepare(ppm PreprepareMessage) bool {
 
-	blockHeight := ppm.SignedHeader().BlockHeight()
-	view := ppm.SignedHeader().View()
+	blockHeight := ppm.BlockHeight()
+	view := ppm.View()
 	if term.hasPreprepare(blockHeight, view) {
-		term.log.Info("PPM already received", log.Stringable("block-height", blockHeight), log.Stringable("view", view))
+		term.log.Info("PPM already received", log.Stringable("_Block-height", blockHeight), log.Stringable("view", view))
 		return false
 	}
-	if !term.KeyManager.Verify(ppm.Raw(), ppm.Sender()) {
+	if !term.KeyManager.Verify(ppm.Raw(), ppm.Content().Sender()) {
 		term.log.Info("PPM did not pass verification") // TODO Elaborate
 		return false
 	}
 
 	leaderPublicKey := term.calcLeaderPublicKey(view)
 
-	if !ppm.Sender().SenderPublicKey().Equal(leaderPublicKey) {
+	if !ppm.Content().Sender().SenderPublicKey().Equal(leaderPublicKey) {
 		// Log
 		return false
 	}
 
 	givenBlockHash := term.BlockUtils.CalculateBlockHash(ppm.Block())
-	if !ppm.SignedHeader().BlockHash().Equal(givenBlockHash) {
-		//term.log.Info({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceivePrePrepare from "${senderPk}", block rejected because it doesn't match the given blockHash (${view})` });
+	if !ppm.Content().SignedHeader().BlockHash().Equal(givenBlockHash) {
+		//term.log.Info({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceivePrePrepare from "${senderPk}", _Block rejected because it doesn't match the given blockHash (${view})` });
 		return false
 	}
 
@@ -135,7 +135,7 @@ func (term *leanHelixTerm) validatePreprepare(ppm PreprepareMessage) bool {
 	}
 
 	if !isValidBlock {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceivePrePrepare from "${senderPk}", block is invalid` });
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceivePrePrepare from "${senderPk}", _Block is invalid` });
 		return false
 	}
 
@@ -154,9 +154,9 @@ func (term *leanHelixTerm) processPreprepare(ppm PreprepareMessage) {
 func (term *leanHelixTerm) OnReceiveNewView(nvm NewViewMessage) {
 
 	panic("convert ts->go")
-	signedHeader := nvm.SignedHeader()
-	sender := nvm.Sender()
-	preprepareMessageContent := nvm.PreprepareMessageContent()
+	signedHeader := nvm.Content().SignedHeader()
+	sender := nvm.Content().Sender()
+	preprepareMessageContent := nvm.Content().PreprepareMessageContent()
 	viewChangeConfirmationsIter := signedHeader.ViewChangeConfirmationsIterator()
 	viewChangeConfirmations := make([]*ViewChangeMessageContent, 0, 1)
 	for {
@@ -209,15 +209,15 @@ func (term *leanHelixTerm) OnReceiveNewView(nvm NewViewMessage) {
 		if latestVoteBlockHash != nil {
 			ppBlockHash := term.BlockUtils.CalculateBlockHash(nvm.Block())
 			if !latestVoteBlockHash.Equal(ppBlockHash) {
-				//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", the given block (PP.block) doesn't match the best block from the VCProof` });
+				//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", the given _Block (PP._Block) doesn't match the best _Block from the VCProof` });
 				return
 			}
 		}
 	}
 
 	ppm := &PreprepareMessageImpl{
-		Content: preprepareMessageContent,
-		MyBlock: nvm.Block(),
+		MyContent: preprepareMessageContent,
+		MyBlock:   nvm.Block(),
 	}
 
 	if term.validatePreprepare(ppm) {
@@ -239,8 +239,8 @@ func (term *leanHelixTerm) sendPreprepare(message PreprepareMessage) {
 	term.log.Debug("GossipSend preprepare",
 		log.Stringable("senderPK", term.KeyManager.MyPublicKey()),
 		log.String("targetPKs", pksToString(term.NonCommitteeMembersPublicKeys)),
-		log.Stringable("height", message.SignedHeader().View()),
-		log.Stringable("blockHash", message.SignedHeader().BlockHash()),
+		log.Stringable("height", message.View()),
+		log.Stringable("blockHash", message.Content().SignedHeader().BlockHash()),
 	)
 }
 func pksToString(keys []Ed25519PublicKey) string {
@@ -337,7 +337,7 @@ func (term *leanHelixTerm) validateViewChangeConfirmations(targetBlockHeight Blo
 
 	set := make(map[string]bool)
 
-	// Verify that all block heights and views match, and all public keys are unique
+	// Verify that all _Block heights and views match, and all public keys are unique
 	// TODO consider refactor here, the purpose of this code is not apparent
 	for _, confirmation := range confirmations {
 		senderPublicKeyStr := string(confirmation.Sender().SenderPublicKey())

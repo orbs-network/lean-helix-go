@@ -18,7 +18,7 @@ go run $(ls -1 ../../membuffers/go/membufc/*.go | grep -v _test.go) --go --mock 
 #rm `find . -name "*.proto"`
 rm -f ./go/leanhelix/lean_helix.proto ./go/primitives/lean_helix_primitives.proto
 mv ./go/leanhelix/lean_helix.mb.go ..
-mv ./go/primitives/lean_helix_primitives.mb.go ..
+mv ./go/primitives/lean_helix_primitives.mb.go ../primitives
 
 echo ""
 echo "Building all packages with go build:"

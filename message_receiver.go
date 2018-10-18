@@ -1,37 +1,32 @@
 package leanhelix
 
 type MessageReceiver interface {
-	OnReceive(message []byte) error
-	OnReceiveWithBlock(message []byte, block Block) error
+	OnReceivePreprepareMessage(ppm PreprepareMessage) error
+	OnReceivePrepareMessage(pm PrepareMessage) error
+	OnReceiveCommitMessage(cm CommitMessage) error
+	OnReceiveViewChangeMessage(vcm ViewChangeMessage) error
+	OnReceiveNewViewMessage(nvm NewViewMessage) error
 }
 
 type MessageReceiverImpl struct {
 }
 
-func (rec *MessageReceiverImpl) OnReceive(rawMessage ConsensusRawMessage) error {
+func (rec *MessageReceiverImpl) OnReceivePreprepareMessage(ppm PreprepareMessage) error {
+	panic("Where is TS impl?")
+}
 
-	message := toMessageTransporter(rawMessage)
-
+func (rec *MessageReceiverImpl) OnReceivePrepareMessage(pm PrepareMessage) error {
 	panic("implement me")
 }
-func toMessageTransporter(rawMessage ConsensusRawMessage) MessageTransporter {
-	header := ConsensusMessageHeaderReader(rawMessage.Header())
 
-	var message MessageTransporter
+func (rec *MessageReceiverImpl) OnReceiveCommitMessage(cm CommitMessage) error {
+	panic("implement me")
+}
 
-	switch header.MessageType() {
-	case LEAN_HELIX_PREPREPARE:
-		message = PreprepareMessageContentReader(rawMessage.Content())
-	case LEAN_HELIX_PREPARE:
-		message = PrepareMessageContentReader(rawMessage.Content())
-	case LEAN_HELIX_COMMIT:
-		message = CommitMessageContentReader(rawMessage.Content())
-	case LEAN_HELIX_VIEW_CHANGE:
-		message = ViewChangeMessageContentReader(rawMessage.Content())
-	case LEAN_HELIX_NEW_VIEW:
-		message = NewViewMessageContentReader(rawMessage.Content())
+func (rec *MessageReceiverImpl) OnReceiveViewChangeMessage(vcm ViewChangeMessage) error {
+	panic("implement me")
+}
 
-	}
-	return message
-
+func (rec *MessageReceiverImpl) OnReceiveNewViewMessage(nvm NewViewMessage) error {
+	panic("implement me")
 }

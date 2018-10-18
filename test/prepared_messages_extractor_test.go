@@ -82,7 +82,7 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 		myStorage.StorePrepare(pm30b)
 
 		actualPPM, _ := myStorage.GetLatestPreprepare(1)
-		require.Equal(t, actualPPM.SignedHeader().View(), View(30), "View of preprepared message should be 30 (highest for this height)")
+		require.Equal(t, actualPPM.View(), View(30), "View of preprepared message should be 30 (highest for this height)")
 		//require.Equal(t, actualPPM.PrepareMessages()[0].SignedHeader().View(), View(30), "View of prepared message #1 should be 30 (highest for this height)")
 		//require.Equal(t, actualPPM.PrepareMessages()[1].SignedHeader().View(), View(30), "View of prepared message #2 should be 30 (highest for this height)")
 	})

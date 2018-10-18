@@ -6,7 +6,7 @@ import (
 	. "github.com/orbs-network/lean-helix-go/primitives"
 )
 
-type Callback func(message lh.MessageTransporter)
+type Callback func(message lh.ConsensusMessage)
 
 type SubscriptionValue struct {
 	cb Callback
@@ -55,9 +55,9 @@ func (g *Gossip) inOutgoingWhitelist(pk Ed25519PublicKey) bool {
 	return false
 }
 
-func (g *Gossip) onRemoteMessage(message lh.MessageTransporter) {
+func (g *Gossip) onRemoteMessage(message lh.ConsensusMessage) {
 	for _, s := range g.subscriptions {
-		if !g.inIncomingWhitelist(message.Sender().SenderPublicKey()) {
+		if !g.inIncomingWhitelist(message.SenderPublicKey()) {
 			return
 		}
 		s.cb(message)
@@ -76,7 +76,7 @@ func (g *Gossip) Unsubscribe(subscriptionToken int) {
 	delete(g.subscriptions, subscriptionToken)
 }
 
-func (g *Gossip) unicast(pk Ed25519PublicKey, message lh.MessageTransporter) {
+func (g *Gossip) unicast(pk Ed25519PublicKey, message lh.ConsensusMessage) {
 	if !g.inOutgoingWhitelist(pk) {
 		return
 	}
@@ -85,7 +85,7 @@ func (g *Gossip) unicast(pk Ed25519PublicKey, message lh.MessageTransporter) {
 	}
 }
 
-func (g *Gossip) Multicast(targetIds []Ed25519PublicKey, message lh.MessageTransporter) {
+func (g *Gossip) Multicast(targetIds []Ed25519PublicKey, message lh.ConsensusMessage) {
 	g.Mock.Called(targetIds, message)
 	for _, targetId := range targetIds {
 		g.unicast(targetId, message)
