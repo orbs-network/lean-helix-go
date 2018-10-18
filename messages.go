@@ -107,6 +107,14 @@ type PrepareMessageImpl struct {
 	Content *PrepareMessageContent
 }
 
+func (pm *PrepareMessageImpl) SenderPublicKey() Ed25519PublicKey {
+	return pm.Content.Sender().SenderPublicKey()
+}
+
+func (pm *PrepareMessageImpl) BlockHeight() BlockHeight {
+	return pm.Content.SignedHeader().BlockHeight()
+}
+
 func (pm *PrepareMessageImpl) Raw() []byte {
 	return pm.Content.Raw()
 }
@@ -132,6 +140,14 @@ func (pm *PrepareMessageImpl) BlockHeight() BlockHeight {
 //---------
 type CommitMessageImpl struct {
 	Content *CommitMessageContent
+}
+
+func (cm *CommitMessageImpl) SenderPublicKey() Ed25519PublicKey {
+	return cm.Content.Sender().SenderPublicKey()
+}
+
+func (cm *CommitMessageImpl) BlockHeight() BlockHeight {
+	return cm.Content.SignedHeader().BlockHeight()
 }
 
 func (cm *CommitMessageImpl) Raw() []byte {
@@ -166,6 +182,14 @@ func (vcm *ViewChangeMessageImpl) Raw() []byte {
 	return vcm.Content.Raw()
 }
 
+func (vcm *ViewChangeMessageImpl) SenderPublicKey() Ed25519PublicKey {
+	return vcm.Content.Sender().SenderPublicKey()
+}
+
+func (vcm *ViewChangeMessageImpl) BlockHeight() BlockHeight {
+	return vcm.Content.SignedHeader().BlockHeight()
+}
+
 func (vcm *ViewChangeMessageImpl) String() string {
 	return vcm.Content.String()
 }
@@ -196,6 +220,14 @@ type NewViewMessageImpl struct {
 
 func (nvm *NewViewMessageImpl) Raw() []byte {
 	return nvm.Content.Raw()
+}
+
+func (nvm *NewViewMessageImpl) SenderPublicKey() Ed25519PublicKey {
+	return nvm.Content.Sender().SenderPublicKey()
+}
+
+func (nvm *NewViewMessageImpl) BlockHeight() BlockHeight {
+	return nvm.Content.SignedHeader().BlockHeight()
 }
 
 func (nvm *NewViewMessageImpl) String() string {
