@@ -2,7 +2,6 @@ package log
 
 import (
 	"encoding/json"
-	"github.com/orbs-network/orbs-network-go/crypto/base58"
 	"strconv"
 	"strings"
 	"time"
@@ -75,8 +74,6 @@ func printParam(builder *strings.Builder, param *Field) {
 		value = strconv.FormatInt(param.Int, 10)
 	case UintType:
 		value = strconv.FormatUint(param.Uint, 10)
-	case BytesType:
-		value = string(base58.Encode(param.Bytes))
 	case FloatType:
 		value = strconv.FormatFloat(param.Float, 'f', -1, 64)
 	case ErrorType:
