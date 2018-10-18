@@ -7,7 +7,6 @@ import (
 	"github.com/orbs-network/lean-helix-go/instrumentation/log"
 	. "github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
-	"github.com/orbs-network/orbs-network-go/config"
 	"github.com/stretchr/testify/mock"
 	"io"
 	"os"
@@ -100,14 +99,6 @@ func NewTestNetworkBuilder(nodeCount int) *TestNetworkBuilder {
 	output = os.Stdout
 
 	testId := log.RandNumStr()
-
-	if os.Getenv("NO_LOG_STDOUT") == "true" {
-		logFile, err := os.OpenFile(config.GetProjectSourceRootPath()+"/logs/acceptance/"+testId+".log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			panic(err)
-		}
-		output = logFile
-	}
 	testLogger := log.GetLogger(log.String("test-id", testId)).
 		WithOutput(log.NewOutput(output).
 			WithFormatter(log.NewHumanReadableFormatter()))

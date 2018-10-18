@@ -15,6 +15,23 @@ import (
 // TODO TestClearAllStorageDataAfterCallingClearTermLogs
 // TODO Ideally Messages should be mocked
 
+func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
+
+	myStorage := lh.NewInMemoryStorage()
+	height := BlockHeight(math.Floor(rand.Float64() * 1000))
+	view := View(math.Floor(rand.Float64() * 1000))
+	block := builders.CreateBlock(builders.GenesisBlock)
+	keyManager := builders.NewMockKeyManager(Ed25519PublicKey("PK"))
+	mf := lh.NewMessageFactory(keyManager)
+	ppm := mf.CreatePreprepareMessage(height, view, block)
+
+	firstTime := myStorage.StorePreprepare(ppm)
+	require.True(t, firstTime, "StorePreprepare() returns true if storing a new value ")
+
+	secondTime := myStorage.StorePreprepare(ppm)
+	require.False(t, secondTime, "StorePreprepare() returns false if trying to store a value that already exists")
+}
+
 func TestClearAllStorageDataAfterCallingClearTermLogs(t *testing.T) {
 
 	myStorage := lh.NewInMemoryStorage()
@@ -109,23 +126,6 @@ func TestStoreCommitInStorage(t *testing.T) {
 	expected := []Ed25519PublicKey{senderId1, senderId2}
 	actual := myStorage.GetCommitSendersPKs(height1, view1, block1Hash)
 	require.ElementsMatch(t, expected, actual, "Storage stores unique PrePrepare values")
-}
-
-func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
-
-	myStorage := lh.NewInMemoryStorage()
-	height := BlockHeight(math.Floor(rand.Float64() * 1000))
-	view := View(math.Floor(rand.Float64() * 1000))
-	block := builders.CreateBlock(builders.GenesisBlock)
-	keyManager := builders.NewMockKeyManager(Ed25519PublicKey("PK"))
-	mf := lh.NewMessageFactory(keyManager)
-	ppm := mf.CreatePreprepareMessage(height, view, block)
-
-	firstTime := myStorage.StorePreprepare(ppm)
-	require.True(t, firstTime, "StorePreprepare() returns true if storing a new value ")
-
-	secondTime := myStorage.StorePreprepare(ppm)
-	require.False(t, secondTime, "StorePreprepare() returns false if trying to store a value that already exists")
 }
 
 func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
