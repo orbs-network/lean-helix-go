@@ -18,65 +18,78 @@ type MessageFactory interface {
 	CreateNewViewMessageContentBuilder(blockHeight BlockHeight, view View, ppmcb *PreprepareMessageContentBuilder, confirmations []*ViewChangeMessageContentBuilder) *NewViewMessageContentBuilder
 }
 
-type HasMessageType interface {
-	MessageType() MessageType
-}
-
+// SHARED interfaces //
 type Serializable interface {
 	String() string
 	Raw() []byte
 }
 
-type MessageTransporter interface {
-	HasMessageType
-	Sender() *SenderSignature
-}
-
-type MessageWithSenderAndBlockHeight interface {
+type ConsensusMessage interface {
+	Serializable
+	MessageType() MessageType
 	SenderPublicKey() Ed25519PublicKey
 	BlockHeight() BlockHeight
 }
 
-type MessageContent interface {
-	HasMessageType
-	Serializable
+/***************************************************/
+/*            CORE Consensus MESSAGES              */
+/***************************************************/
 
-	Sender() *SenderSignature
-}
-
-// PP
 type PreprepareMessage interface {
-	MessageContent
-	SignedHeader() *BlockRef
+	ConsensusMessage
+	Content() *BlockRefContent
 	Block() Block
 }
 
 type PrepareMessage interface {
-	MessageContent
-	SignedHeader() *BlockRef
+	ConsensusMessage
+	Content() *BlockRefContent
 }
 
 type CommitMessage interface {
-	MessageContent
-	SignedHeader() *BlockRef
+	ConsensusMessage
+	Content() *BlockRefContent
 }
 
 type ViewChangeMessage interface {
-	MessageContent
-	SignedHeader() *ViewChangeHeader
+	ConsensusMessage
+	Content() *ViewChangeMessageContent
 	Block() Block
 }
 
 type NewViewMessage interface {
-	MessageContent
-	SignedHeader() *NewViewHeader
-	PreprepareMessageContent() *PreprepareMessageContent
+	ConsensusMessage
+	Content() *NewViewMessageContent
 	Block() Block
 }
 
+/***************************************************/
+/*                 IMPLEMENTATIONS                 */
+/***************************************************/
+
+//------------
+// Preprepare
+//------------
+
 type PreprepareMessageImpl struct {
 	Content *PreprepareMessageContent
-	MyBlock Block
+	block   Block
+}
+
+func (ppm *PreprepareMessageImpl) Raw() []byte {
+	return ppm.Content.Raw()
+}
+
+func (ppm *PreprepareMessageImpl) String() string {
+	return ppm.Content.String()
+}
+
+func (ppm *PreprepareMessageImpl) Block() Block {
+	return ppm.block
+}
+
+func (ppm *PreprepareMessageImpl) MessageType() MessageType {
+	return ppm.Content.SignedHeader().MessageType()
 }
 
 func (ppm *PreprepareMessageImpl) SenderPublicKey() Ed25519PublicKey {
@@ -87,32 +100,15 @@ func (ppm *PreprepareMessageImpl) BlockHeight() BlockHeight {
 	return ppm.Content.SignedHeader().BlockHeight()
 }
 
-func (ppm *PreprepareMessageImpl) String() string {
-	return ppm.Content.String()
-}
-
-func (ppm *PreprepareMessageImpl) MessageType() MessageType {
-	return LEAN_HELIX_PREPREPARE
-}
-
-func (ppm *PreprepareMessageImpl) SignedHeader() *BlockRef {
-	return ppm.Content.SignedHeader()
-}
-
-func (ppm *PreprepareMessageImpl) Sender() *SenderSignature {
-	return ppm.Content.Sender()
-}
-
-func (ppm *PreprepareMessageImpl) Raw() []byte {
-	return ppm.Content.Raw()
-}
-
-func (ppm *PreprepareMessageImpl) Block() Block {
-	return ppm.MyBlock
-}
-
+//---------
+// Prepare
+//---------
 type PrepareMessageImpl struct {
 	Content *PrepareMessageContent
+}
+
+func (pm *PrepareMessageImpl) Raw() []byte {
+	return pm.Content.Raw()
 }
 
 func (pm *PrepareMessageImpl) String() string {
@@ -120,23 +116,26 @@ func (pm *PrepareMessageImpl) String() string {
 }
 
 func (pm *PrepareMessageImpl) MessageType() MessageType {
-	return LEAN_HELIX_PREPARE
+	return pm.Content.SignedHeader().MessageType()
 }
 
-func (pm *PrepareMessageImpl) SignedHeader() *BlockRef {
-	return pm.Content.SignedHeader()
+func (pm *PrepareMessageImpl) SenderPublicKey() Ed25519PublicKey {
+	return pm.Content.Sender().SenderPublicKey()
 }
 
-func (pm *PrepareMessageImpl) Sender() *SenderSignature {
-	return pm.Content.Sender()
+func (pm *PrepareMessageImpl) BlockHeight() BlockHeight {
+	return pm.Content.SignedHeader().BlockHeight()
 }
 
-func (pm *PrepareMessageImpl) Raw() []byte {
-	return pm.Content.Raw()
-}
-
+//---------
+// Commit
+//---------
 type CommitMessageImpl struct {
 	Content *CommitMessageContent
+}
+
+func (cm *CommitMessageImpl) Raw() []byte {
+	return cm.Content.Raw()
 }
 
 func (cm *CommitMessageImpl) String() string {
@@ -144,24 +143,27 @@ func (cm *CommitMessageImpl) String() string {
 }
 
 func (cm *CommitMessageImpl) MessageType() MessageType {
-	return LEAN_HELIX_COMMIT
+	return cm.Content.SignedHeader().MessageType()
 }
 
-func (cm *CommitMessageImpl) SignedHeader() *BlockRef {
-	return cm.Content.SignedHeader()
+func (cm *CommitMessageImpl) SenderPublicKey() Ed25519PublicKey {
+	return cm.Content.Sender().SenderPublicKey()
 }
 
-func (cm *CommitMessageImpl) Sender() *SenderSignature {
-	return cm.Content.Sender()
+func (cm *CommitMessageImpl) BlockHeight() BlockHeight {
+	return cm.Content.SignedHeader().BlockHeight()
 }
 
-func (cm *CommitMessageImpl) Raw() []byte {
-	return cm.Content.Raw()
-}
-
+//-------------
+// View Change
+//-------------
 type ViewChangeMessageImpl struct {
 	Content *ViewChangeMessageContent
-	MyBlock Block
+	block   Block
+}
+
+func (vcm *ViewChangeMessageImpl) Raw() []byte {
+	return vcm.Content.Raw()
 }
 
 func (vcm *ViewChangeMessageImpl) String() string {
@@ -169,54 +171,49 @@ func (vcm *ViewChangeMessageImpl) String() string {
 }
 
 func (vcm *ViewChangeMessageImpl) Block() Block {
-	return vcm.MyBlock
+	return vcm.block
 }
 
 func (vcm *ViewChangeMessageImpl) MessageType() MessageType {
-	return LEAN_HELIX_VIEW_CHANGE
+	return vcm.Content.SignedHeader().MessageType()
 }
 
-func (vcm *ViewChangeMessageImpl) SignedHeader() *ViewChangeHeader {
-	return vcm.Content.SignedHeader()
+func (vcm *ViewChangeMessageImpl) SenderPublicKey() Ed25519PublicKey {
+	return vcm.Content.Sender().SenderPublicKey()
 }
 
-func (vcm *ViewChangeMessageImpl) Sender() *SenderSignature {
-	return vcm.Content.Sender()
+func (vcm *ViewChangeMessageImpl) BlockHeight() BlockHeight {
+	return vcm.Content.SignedHeader().BlockHeight()
 }
 
-func (vcm *ViewChangeMessageImpl) Raw() []byte {
-	return vcm.Content.Raw()
-}
-
+//----------
+// New View
+//----------
 type NewViewMessageImpl struct {
 	Content *NewViewMessageContent
-	MyBlock Block
+	block   Block
+}
+
+func (nvm *NewViewMessageImpl) Raw() []byte {
+	return nvm.Content.Raw()
 }
 
 func (nvm *NewViewMessageImpl) String() string {
 	return nvm.Content.String()
 }
 
-func (nvm *NewViewMessageImpl) MessageType() MessageType {
-	return LEAN_HELIX_NEW_VIEW
-}
-
-func (nvm *NewViewMessageImpl) SignedHeader() *NewViewHeader {
-	return nvm.Content.SignedHeader()
-}
-
-func (nvm *NewViewMessageImpl) Sender() *SenderSignature {
-	return nvm.Content.Sender()
-}
-
-func (nvm *NewViewMessageImpl) PreprepareMessageContent() *PreprepareMessageContent {
-	return nvm.Content.PreprepareMessageContent()
-}
-
 func (nvm *NewViewMessageImpl) Block() Block {
-	return nvm.MyBlock
+	return nvm.block
 }
 
-func (nvm *NewViewMessageImpl) Raw() []byte {
-	return nvm.Content.Raw()
+func (nvm *NewViewMessageImpl) MessageType() MessageType {
+	return nvm.Content.SignedHeader().MessageType()
+}
+
+func (nvm *NewViewMessageImpl) SenderPublicKey() Ed25519PublicKey {
+	return nvm.Content.Sender().SenderPublicKey()
+}
+
+func (nvm *NewViewMessageImpl) BlockHeight() BlockHeight {
+	return nvm.Content.SignedHeader().BlockHeight()
 }

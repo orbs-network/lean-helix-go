@@ -12,8 +12,25 @@ enum MessageType {
     LEAN_HELIX_NEW_VIEW = 4;
     LEAN_HELIX_VIEW_CHANGE = 5;
 }
+
 message ConsensusMessageHeader {
     MessageType message_type = 1;
+}
+
+message BlockRefContent {
+    BlockRef signed_header = 1;
+    SenderSignature sender = 2; // signs on signed_header
+}
+
+message ViewChangeMessageContent {
+    ViewChangeHeader signed_header = 1;
+    SenderSignature sender = 2; // signs on signed_header
+}
+
+message NewViewMessageContent {
+    NewViewHeader signed_header = 1;
+    SenderSignature sender = 2; // signs on signed_header
+    BlockRefContent preprepare_message_content = 3;
 }
 
 message BlockProof {
@@ -31,43 +48,7 @@ message BlockRef {
     MessageType message_type = 1;
     primitives.BlockHeight block_height = 2;
     primitives.View view = 3;
-    primitives.Uint256 block_hash = 4; // primitives.sha256({primitives.sha256(TransactionBlockHeader,primitives.sha256(ResultsBlockHeader)})
-}
-// message format
-
-message PreprepareMessageContent {
-    BlockRef signed_header = 1;
-    SenderSignature sender = 2; // signs on signed_header
-//    BlockPairContainer block_pair = 3;
-}
-
-message PrepareMessageContent {
-    BlockRef signed_header = 1;
-    SenderSignature sender = 2; // signs on signed_header
-}
-
-message CommitMessageContent {
-    BlockRef signed_header = 1;
-    SenderSignature sender = 2; // signs on signed_header
-    RandomSeedShare share = 3;
-}
-
-message ViewChangeMessageContent {
-    ViewChangeHeader signed_header = 1;
-    SenderSignature sender = 2; // signs on signed_header
-//    protocol.BlockPairContainer block_pair = 3;
-}
-
-message NewViewMessageContent {
-    NewViewHeader signed_header = 1;
-    SenderSignature sender = 2; // signs on signed_header
-    PreprepareMessageContent preprepare_message_content = 3;
-}
-
-// message payloads (serializable)
-
-message RandomSeedShare {
-    primitives.Bls1_sig random_seed_share = 1;
+    primitives.Uint256 block_hash = 4;
 }
 
 message ViewChangeHeader {

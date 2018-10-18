@@ -14,14 +14,14 @@ type NetworkMessageFilter struct {
 func (filter* NetworkMessageFilter) OnGossipMessage(rawMessage ConsensusRawMessage) {
 
 	header := ConsensusMessageHeaderReader(rawMessage.Header())
-	var message MessageWithSenderAndBlockHeight
+	var message ConsensusMessage
 
 	switch header.MessageType() {
 	case LEAN_HELIX_PREPREPARE:
 		content := PreprepareMessageContentReader(rawMessage.Content())
 		message = &PreprepareMessageImpl{
 			Content: content,
-			MyBlock: rawMessage.Block(),
+			block: rawMessage.Block(),
 		}
 
 	case LEAN_HELIX_PREPARE:
@@ -39,14 +39,14 @@ func (filter* NetworkMessageFilter) OnGossipMessage(rawMessage ConsensusRawMessa
 		content := ViewChangeMessageContentReader(rawMessage.Content())
 		message = &ViewChangeMessageImpl{
 			Content: content,
-			MyBlock: rawMessage.Block(),
+			block: rawMessage.Block(),
 		}
 
 	case LEAN_HELIX_NEW_VIEW:
 		content := NewViewMessageContentReader(rawMessage.Content())
 		message = &NewViewMessageImpl{
 			Content: content,
-			MyBlock: rawMessage.Block(),
+			block: rawMessage.Block(),
 		}
 	}
 
@@ -59,7 +59,7 @@ func (filter* NetworkMessageFilter) OnGossipMessage(rawMessage ConsensusRawMessa
 func (filter* NetworkMessageFilter) ConsumeCacheMessage() {
 }
 
-func (filter* NetworkMessageFilter) ProcessGossipMessage(message MessageTransporter) {
+func (filter* NetworkMessageFilter) ProcessGossipMessage(message interface{}) {
 
 	switch message.(type) {
 	case PreprepareMessageImpl {
