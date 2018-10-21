@@ -155,6 +155,29 @@ func TestStoreViewChange(t *testing.T) {
 	require.ElementsMatch(t, actualViewChangeMessages, expectedMessages, "stored view-change messages should match the fetched view-change messages")
 }
 
+func TestLatestPreprepare(t *testing.T) {
+	var storage lh.Storage = lh.NewInMemoryStorage()
+	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000))
+	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	keyManager1 := builders.NewMockKeyManager(senderId1)
+	keyManager2 := builders.NewMockKeyManager(senderId2)
+	block := builders.CreateBlock(builders.GenesisBlock)
+
+	mf1 := lh.NewMessageFactory(keyManager1)
+	preprepareMessageOnView3 := mf1.CreatePreprepareMessage(blockHeight, 3, block)
+
+	mf2 := lh.NewMessageFactory(keyManager2)
+	preprepareMessageOnView2 := mf2.CreatePreprepareMessage(blockHeight, 2, block)
+
+	storage.StorePreprepare(preprepareMessageOnView3)
+	storage.StorePreprepare(preprepareMessageOnView2)
+
+	actualLatestPreprepareMessage, _ := storage.GetLatestPreprepare(blockHeight)
+
+	require.Equal(t, actualLatestPreprepareMessage, preprepareMessageOnView3, "fetching preprepare should return the latest preprepare")
+}
+
 func TestDuplicatePreprepare(t *testing.T) {
 	var storage lh.Storage = lh.NewInMemoryStorage()
 	block := builders.CreateBlock(builders.GenesisBlock)
