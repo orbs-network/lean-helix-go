@@ -4,20 +4,6 @@ import (
 	. "github.com/orbs-network/lean-helix-go/primitives"
 )
 
-type MessageFactory interface {
-	// Message creation methods
-	CreatePreprepareMessage(blockHeight BlockHeight, view View, block Block) PreprepareMessage
-	CreatePrepareMessage(blockHeight BlockHeight, view View, blockHash Uint256) PrepareMessage
-	CreateCommitMessage(blockHeight BlockHeight, view View, blockHash Uint256) CommitMessage
-	CreateViewChangeMessage(blockHeight BlockHeight, view View, preparedMessages *PreparedMessages) ViewChangeMessage
-	CreateNewViewMessage(blockHeight BlockHeight, view View, preprepareContentBuilder *PreprepareContentBuilder, confirmations []*ViewChangeMessageContentBuilder, block Block) NewViewMessage
-
-	// Helper methods
-	CreatePreprepareMessageContentBuilder(blockHeight BlockHeight, view View, block Block) *PreprepareContentBuilder
-	CreateViewChangeMessageContentBuilder(blockHeight BlockHeight, view View, preparedMessages *PreparedMessages) *ViewChangeMessageContentBuilder
-	CreateNewViewMessageContentBuilder(blockHeight BlockHeight, view View, blockRefBuilder *PreprepareContentBuilder, confirmations []*ViewChangeMessageContentBuilder) *NewViewMessageContentBuilder
-}
-
 // SHARED interfaces //
 type Serializable interface {
 	String() string
@@ -36,221 +22,219 @@ type ConsensusMessage interface {
 /*            CORE Consensus MESSAGES              */
 /***************************************************/
 
-type PreprepareMessage interface {
-	ConsensusMessage
-	Content() *PreprepareContent
-	Block() Block
-}
-
-type PrepareMessage interface {
-	ConsensusMessage
-	Content() *PrepareContent
-}
-
-type CommitMessage interface {
-	ConsensusMessage
-	Content() *CommitContent
-}
-
-type ViewChangeMessage interface {
-	ConsensusMessage
-	Content() *ViewChangeMessageContent
-	Block() Block
-}
-
-type NewViewMessage interface {
-	ConsensusMessage
-	Content() *NewViewMessageContent
-	Block() Block
-}
-
-/***************************************************/
-/*                 IMPLEMENTATIONS                 */
-/***************************************************/
-
 //------------
 // Preprepare
 //------------
 
-type PreprepareMessageImpl struct {
+type PreprepareMessage struct {
+	ConsensusMessage
 	content *PreprepareContent
 	block   Block
 }
 
-func (ppm *PreprepareMessageImpl) MessageType() MessageType {
+func (ppm *PreprepareMessage) MessageType() MessageType {
 	return ppm.content.SignedHeader().MessageType()
 }
 
-func (ppm *PreprepareMessageImpl) Content() *PreprepareContent {
+func (ppm *PreprepareMessage) Content() *PreprepareContent {
 	return ppm.content
 }
 
-func (ppm *PreprepareMessageImpl) Raw() []byte {
+func (ppm *PreprepareMessage) Raw() []byte {
 	return ppm.content.Raw()
 }
 
-func (ppm *PreprepareMessageImpl) String() string {
+func (ppm *PreprepareMessage) String() string {
 	return ppm.content.String()
 }
 
-func (ppm *PreprepareMessageImpl) Block() Block {
+func (ppm *PreprepareMessage) Block() Block {
 	return ppm.block
 }
 
-func (ppm *PreprepareMessageImpl) SenderPublicKey() Ed25519PublicKey {
+func (ppm *PreprepareMessage) SenderPublicKey() Ed25519PublicKey {
 	return ppm.content.Sender().SenderPublicKey()
 }
 
-func (ppm *PreprepareMessageImpl) BlockHeight() BlockHeight {
+func (ppm *PreprepareMessage) BlockHeight() BlockHeight {
 	return ppm.content.SignedHeader().BlockHeight()
 }
 
-func (ppm *PreprepareMessageImpl) View() View {
+func (ppm *PreprepareMessage) View() View {
 	return ppm.content.SignedHeader().View()
+}
+
+func NewPreprepareMessage(content *PreprepareContent, block Block) *PreprepareMessage {
+	return &PreprepareMessage{
+		content: content,
+		block:   block,
+	}
 }
 
 //---------
 // Prepare
 //---------
-type PrepareMessageImpl struct {
+type PrepareMessage struct {
 	content *PrepareContent
 }
 
-func (pm *PrepareMessageImpl) MessageType() MessageType {
+func (pm *PrepareMessage) MessageType() MessageType {
 	return pm.content.SignedHeader().MessageType()
 }
 
-func (pm *PrepareMessageImpl) Content() *PrepareContent {
+func (pm *PrepareMessage) Content() *PrepareContent {
 	return pm.content
 }
 
-func (pm *PrepareMessageImpl) Raw() []byte {
+func (pm *PrepareMessage) Raw() []byte {
 	return pm.content.Raw()
 }
 
-func (pm *PrepareMessageImpl) String() string {
+func (pm *PrepareMessage) String() string {
 	return pm.content.String()
 }
 
-func (pm *PrepareMessageImpl) SenderPublicKey() Ed25519PublicKey {
+func (pm *PrepareMessage) SenderPublicKey() Ed25519PublicKey {
 	return pm.content.Sender().SenderPublicKey()
 }
 
-func (pm *PrepareMessageImpl) BlockHeight() BlockHeight {
+func (pm *PrepareMessage) BlockHeight() BlockHeight {
 	return pm.content.SignedHeader().BlockHeight()
 }
-func (pm *PrepareMessageImpl) View() View {
+func (pm *PrepareMessage) View() View {
 	return pm.content.SignedHeader().View()
+}
+
+func NewPrepareMessage(content *PrepareContent) *PrepareMessage {
+	return &PrepareMessage{content: content}
 }
 
 //---------
 // Commit
 //---------
-type CommitMessageImpl struct {
+type CommitMessage struct {
 	content *CommitContent
 }
 
-func (cm *CommitMessageImpl) MessageType() MessageType {
+func (cm *CommitMessage) MessageType() MessageType {
 	return cm.content.SignedHeader().MessageType()
 }
 
-func (cm *CommitMessageImpl) Content() *CommitContent {
+func (cm *CommitMessage) Content() *CommitContent {
 	return cm.content
 }
 
-func (cm *CommitMessageImpl) Raw() []byte {
+func (cm *CommitMessage) Raw() []byte {
 	return cm.content.Raw()
 }
 
-func (cm *CommitMessageImpl) String() string {
+func (cm *CommitMessage) String() string {
 	return cm.content.String()
 }
 
-func (cm *CommitMessageImpl) SenderPublicKey() Ed25519PublicKey {
+func (cm *CommitMessage) SenderPublicKey() Ed25519PublicKey {
 	return cm.content.Sender().SenderPublicKey()
 }
 
-func (cm *CommitMessageImpl) BlockHeight() BlockHeight {
+func (cm *CommitMessage) BlockHeight() BlockHeight {
 	return cm.content.SignedHeader().BlockHeight()
 }
-func (cm *CommitMessageImpl) View() View {
+func (cm *CommitMessage) View() View {
 	return cm.content.SignedHeader().View()
+}
+
+func NewCommitMessage(content *CommitContent) *CommitMessage {
+	return &CommitMessage{content: content}
 }
 
 //-------------
 // View Change
 //-------------
-type ViewChangeMessageImpl struct {
+type ViewChangeMessage struct {
 	content *ViewChangeMessageContent
 	block   Block
 }
 
-func (vcm *ViewChangeMessageImpl) MessageType() MessageType {
+func (vcm *ViewChangeMessage) MessageType() MessageType {
 	return vcm.content.SignedHeader().MessageType()
 }
 
-func (vcm *ViewChangeMessageImpl) Content() *ViewChangeMessageContent {
+func (vcm *ViewChangeMessage) Content() *ViewChangeMessageContent {
 	return vcm.content
 }
 
-func (vcm *ViewChangeMessageImpl) Raw() []byte {
+func (vcm *ViewChangeMessage) Raw() []byte {
 	return vcm.content.Raw()
 }
 
-func (vcm *ViewChangeMessageImpl) String() string {
+func (vcm *ViewChangeMessage) String() string {
 	return vcm.content.String()
 }
 
-func (vcm *ViewChangeMessageImpl) SenderPublicKey() Ed25519PublicKey {
+func (vcm *ViewChangeMessage) SenderPublicKey() Ed25519PublicKey {
 	return vcm.content.Sender().SenderPublicKey()
 }
 
-func (vcm *ViewChangeMessageImpl) BlockHeight() BlockHeight {
+func (vcm *ViewChangeMessage) BlockHeight() BlockHeight {
 	return vcm.content.SignedHeader().BlockHeight()
 }
 
-func (vcm *ViewChangeMessageImpl) Block() Block {
+func (vcm *ViewChangeMessage) Block() Block {
 	return vcm.block
 }
-func (vcm *ViewChangeMessageImpl) View() View {
+func (vcm *ViewChangeMessage) View() View {
 	return vcm.content.SignedHeader().View()
+}
+
+func NewViewChangeMessage(content *ViewChangeMessageContent, block Block) *ViewChangeMessage {
+	return &ViewChangeMessage{
+		content: content,
+		block:   block,
+	}
 }
 
 //----------
 // New View
 //----------
-type NewViewMessageImpl struct {
+type NewViewMessage struct {
 	content *NewViewMessageContent
 	block   Block
 }
 
-func (nvm *NewViewMessageImpl) MessageType() MessageType {
+func (nvm *NewViewMessage) MessageType() MessageType {
 	return nvm.content.SignedHeader().MessageType()
 }
 
-func (nvm *NewViewMessageImpl) Content() *NewViewMessageContent {
+func (nvm *NewViewMessage) Content() *NewViewMessageContent {
 	return nvm.content
 }
 
-func (nvm *NewViewMessageImpl) Raw() []byte {
+func (nvm *NewViewMessage) Raw() []byte {
 	return nvm.content.Raw()
 }
 
-func (nvm *NewViewMessageImpl) String() string {
+func (nvm *NewViewMessage) String() string {
 	return nvm.content.String()
 }
 
-func (nvm *NewViewMessageImpl) SenderPublicKey() Ed25519PublicKey {
+func (nvm *NewViewMessage) SenderPublicKey() Ed25519PublicKey {
 	return nvm.content.Sender().SenderPublicKey()
 }
 
-func (nvm *NewViewMessageImpl) BlockHeight() BlockHeight {
+func (nvm *NewViewMessage) BlockHeight() BlockHeight {
 	return nvm.content.SignedHeader().BlockHeight()
 }
 
-func (nvm *NewViewMessageImpl) Block() Block {
+func (nvm *NewViewMessage) Block() Block {
 	return nvm.block
 }
-func (nvm *NewViewMessageImpl) View() View {
+func (nvm *NewViewMessage) View() View {
 	return nvm.content.SignedHeader().View()
+}
+
+func NewNewViewMessage(content *NewViewMessageContent, block Block) *NewViewMessage {
+	return &NewViewMessage{
+		content: content,
+		block:   block,
+	}
 }

@@ -12,9 +12,32 @@ import (
 	"testing"
 )
 
-// TODO TestClearAllStorageDataAfterCallingClearTermLogs
-// Ideally Messages should be mocked but it's too much code so using real messages
-// TODO 18-OCT-18 go over TS code and rewrite this file
+func TestStorePreprepare(t *testing.T) {
+
+	var storage lh.Storage = lh.NewInMemoryStorage()
+	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000))
+	view := View(math.Floor(rand.Float64() * 1000))
+	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	keyManager1 := builders.NewMockKeyManager(senderId1)
+	keyManager2 := builders.NewMockKeyManager(senderId2)
+	block := builders.CreateBlock(builders.GenesisBlock)
+
+	mf1 := lh.NewMessageFactory(keyManager1)
+	preprepareMessage1 := mf1.CreatePreprepareMessage(blockHeight, view, block)
+
+	mf2 := lh.NewMessageFactory(keyManager2)
+	preprepareMessage2 := mf2.CreatePreprepareMessage(blockHeight, view, block)
+
+	storage.StorePreprepare(preprepareMessage1)
+	storage.StorePreprepare(preprepareMessage2)
+
+	actualPreprepareMessage, _ := storage.GetPreprepare(blockHeight, view)
+	actualPreprepareBlock, _ := storage.GetPreprepareBlock(blockHeight, view)
+
+	require.Equal(t, actualPreprepareMessage, preprepareMessage1, "stored preprepare message should match the fetched preprepare message")
+	require.Equal(t, actualPreprepareBlock, block, "stored preprepare block should match the fetched preprepare block")
+}
 
 func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 
@@ -221,7 +244,7 @@ func TestStoreAndGetViewChangeProof(t *testing.T) {
 	sender1MsgFactory := lh.NewMessageFactory(sender1KeyManager)
 	sender2MsgFactory := lh.NewMessageFactory(sender2KeyManager)
 	sender3MsgFactory := lh.NewMessageFactory(sender3KeyManager)
-	vcs := make([]lh.ViewChangeMessage, 0, 4)
+	vcs := make([]*lh.ViewChangeMessage, 0, 4)
 	vcs = append(vcs, sender1MsgFactory.CreateViewChangeMessage(height1, view1, nil))
 	vcs = append(vcs, sender2MsgFactory.CreateViewChangeMessage(height1, view1, nil))
 	vcs = append(vcs, sender3MsgFactory.CreateViewChangeMessage(height1, view1, nil))

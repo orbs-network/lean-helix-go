@@ -6,11 +6,11 @@ import (
 
 // This is the ORBS side
 
-type MessageFactoryImpl struct {
+type MessageFactory struct {
 	KeyManager
 }
 
-func (f *MessageFactoryImpl) CreatePreprepareMessageContentBuilder(
+func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
 	blockHeight BlockHeight,
 	view View,
 	block Block) *PreprepareContentBuilder {
@@ -34,23 +34,23 @@ func (f *MessageFactoryImpl) CreatePreprepareMessageContentBuilder(
 	return ppContentBuilder
 }
 
-func (f *MessageFactoryImpl) CreatePreprepareMessage(
+func (f *MessageFactory) CreatePreprepareMessage(
 	blockHeight BlockHeight,
 	view View,
-	block Block) PreprepareMessage {
+	block Block) *PreprepareMessage {
 
 	ppmc := f.CreatePreprepareMessageContentBuilder(blockHeight, view, block)
-	ppm := &PreprepareMessageImpl{
+	ppm := &PreprepareMessage{
 		content: ppmc.Build(),
 		block:   block,
 	}
 	return ppm
 }
 
-func (f *MessageFactoryImpl) CreatePrepareMessage(
+func (f *MessageFactory) CreatePrepareMessage(
 	blockHeight BlockHeight,
 	view View,
-	blockHash Uint256) PrepareMessage {
+	blockHash Uint256) *PrepareMessage {
 
 	header := &BlockRefBuilder{
 		MessageType: LEAN_HELIX_PREPARE,
@@ -68,16 +68,16 @@ func (f *MessageFactoryImpl) CreatePrepareMessage(
 		SignedHeader: header,
 		Sender:       sender,
 	}
-	pm := &PrepareMessageImpl{
+	pm := &PrepareMessage{
 		content: pContentBuilder.Build(),
 	}
 	return pm
 }
 
-func (f *MessageFactoryImpl) CreateCommitMessage(
+func (f *MessageFactory) CreateCommitMessage(
 	blockHeight BlockHeight,
 	view View,
-	blockHash Uint256) CommitMessage {
+	blockHash Uint256) *CommitMessage {
 
 	header := &BlockRefBuilder{
 		MessageType: LEAN_HELIX_COMMIT,
@@ -95,13 +95,13 @@ func (f *MessageFactoryImpl) CreateCommitMessage(
 		SignedHeader: header,
 		Sender:       sender,
 	}
-	cm := &CommitMessageImpl{
+	cm := &CommitMessage{
 		content: cContentBuilder.Build(),
 	}
 	return cm
 }
 
-func (f *MessageFactoryImpl) CreateViewChangeMessageContentBuilder(
+func (f *MessageFactory) CreateViewChangeMessageContentBuilder(
 	blockHeight BlockHeight,
 	view View,
 	preparedMessages *PreparedMessages) *ViewChangeMessageContentBuilder {
@@ -127,10 +127,10 @@ func (f *MessageFactoryImpl) CreateViewChangeMessageContentBuilder(
 
 }
 
-func (f *MessageFactoryImpl) CreateViewChangeMessage(
+func (f *MessageFactory) CreateViewChangeMessage(
 	blockHeight BlockHeight,
 	view View,
-	preparedMessages *PreparedMessages) ViewChangeMessage {
+	preparedMessages *PreparedMessages) *ViewChangeMessage {
 
 	var block Block
 	if preparedMessages != nil && preparedMessages.PreprepareMessage != nil {
@@ -140,7 +140,7 @@ func (f *MessageFactoryImpl) CreateViewChangeMessage(
 	}
 
 	vcmcb := f.CreateViewChangeMessageContentBuilder(blockHeight, view, preparedMessages)
-	vcm := &ViewChangeMessageImpl{
+	vcm := &ViewChangeMessage{
 		content: vcmcb.Build(),
 		block:   block,
 	}
@@ -148,7 +148,7 @@ func (f *MessageFactoryImpl) CreateViewChangeMessage(
 	return vcm
 }
 
-func (f *MessageFactoryImpl) CreateNewViewMessageContentBuilder(
+func (f *MessageFactory) CreateNewViewMessageContentBuilder(
 	blockHeight BlockHeight,
 	view View,
 	ppContentBuilder *PreprepareContentBuilder,
@@ -175,22 +175,22 @@ func (f *MessageFactoryImpl) CreateNewViewMessageContentBuilder(
 	}
 }
 
-func (f *MessageFactoryImpl) CreateNewViewMessage(
+func (f *MessageFactory) CreateNewViewMessage(
 	blockHeight BlockHeight,
 	view View,
 	ppContentBuilder *PreprepareContentBuilder,
 	confirmations []*ViewChangeMessageContentBuilder,
-	block Block) NewViewMessage {
+	block Block) *NewViewMessage {
 
 	nvmcb := f.CreateNewViewMessageContentBuilder(blockHeight, view, ppContentBuilder, confirmations).Build()
-	return &NewViewMessageImpl{
+	return &NewViewMessage{
 		content: nvmcb,
 		block:   block,
 	}
 }
 
-func NewMessageFactory(keyManager KeyManager) MessageFactory {
-	return &MessageFactoryImpl{
+func NewMessageFactory(keyManager KeyManager) *MessageFactory {
+	return &MessageFactory{
 		KeyManager: keyManager,
 	}
 }

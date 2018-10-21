@@ -45,7 +45,7 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 
 		expectedProof := &lh.PreparedMessages{
 			PreprepareMessage: ppm,
-			PrepareMessages:   []lh.PrepareMessage{pm1, pm2},
+			PrepareMessages:   []*lh.PrepareMessage{pm1, pm2},
 		}
 
 		actualProof := lh.ExtractPreparedMessages(height, myStorage, 1)

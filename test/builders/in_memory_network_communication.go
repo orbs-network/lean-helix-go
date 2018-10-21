@@ -23,28 +23,28 @@ func (comm *InMemoryNetworkCommunication) Send(ctx context.Context, targets []Ed
 }
 
 func (comm *InMemoryNetworkCommunication) onGossipMessage(message lh.ConsensusMessage) {
-	switch message.MessageType() {
-	case lh.LEAN_HELIX_PREPREPARE:
-		if comm.PPCallback != nil {
-			comm.PPCallback(message.(lh.PreprepareMessage))
-		}
-	case lh.LEAN_HELIX_PREPARE:
-		if comm.PCallback != nil {
-			comm.PCallback(message.(lh.PrepareMessage))
-		}
-	case lh.LEAN_HELIX_COMMIT:
-		if comm.CCallback != nil {
-			comm.CCallback(message.(lh.CommitMessage))
-		}
-	case lh.LEAN_HELIX_VIEW_CHANGE:
-		if comm.VCCallback != nil {
-			comm.VCCallback(message.(lh.ViewChangeMessage))
-		}
-	case lh.LEAN_HELIX_NEW_VIEW:
-		if comm.NVCallback != nil {
-			comm.NVCallback(message.(lh.NewViewMessage))
-		}
-	}
+	//switch message.MessageType() {
+	//case lh.LEAN_HELIX_PREPREPARE:
+	//	if comm.PPCallback != nil {
+	//		comm.PPCallback(message.(lh.PreprepareMessage))
+	//	}
+	//case lh.LEAN_HELIX_PREPARE:
+	//	if comm.PCallback != nil {
+	//		comm.PCallback(message.(lh.PrepareMessage))
+	//	}
+	//case lh.LEAN_HELIX_COMMIT:
+	//	if comm.CCallback != nil {
+	//		comm.CCallback(message.(lh.CommitMessage))
+	//	}
+	//case lh.LEAN_HELIX_VIEW_CHANGE:
+	//	if comm.VCCallback != nil {
+	//		comm.VCCallback(message.(lh.ViewChangeMessage))
+	//	}
+	//case lh.LEAN_HELIX_NEW_VIEW:
+	//	if comm.NVCallback != nil {
+	//		comm.NVCallback(message.(lh.NewViewMessage))
+	//	}
+	//}
 }
 
 func (comm *InMemoryNetworkCommunication) RequestOrderedCommittee(seed uint64) []Ed25519PublicKey {

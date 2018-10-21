@@ -26,7 +26,7 @@ type leanHelixTerm struct {
 	MyPublicKey                   Ed25519PublicKey
 	CommitteeMembersPublicKeys    []Ed25519PublicKey
 	NonCommitteeMembersPublicKeys []Ed25519PublicKey
-	MessageFactory                MessageFactory
+	MessageFactory                *MessageFactory
 	onCommittedBlock              func(block Block)
 	height                        BlockHeight
 	view                          View
@@ -96,7 +96,7 @@ func (term *leanHelixTerm) startTerm(ctx context.Context) {
 
 }
 
-func (term *leanHelixTerm) OnReceivePreprepare(ctx context.Context, ppm PreprepareMessage) error {
+func (term *leanHelixTerm) OnReceivePreprepare(ctx context.Context, ppm *PreprepareMessage) error {
 	ok := term.validatePreprepare(ppm)
 	if !ok {
 		panic("throw some error here") // TODO nicer error & log
@@ -106,19 +106,19 @@ func (term *leanHelixTerm) OnReceivePreprepare(ctx context.Context, ppm Preprepa
 	return nil
 }
 
-func (term *leanHelixTerm) OnReceivePrepare(ctx context.Context, pm PrepareMessage) error {
+func (term *leanHelixTerm) OnReceivePrepare(ctx context.Context, pm *PrepareMessage) error {
 	panic("not impl")
 }
 
-func (term *leanHelixTerm) OnReceiveCommit(ctx context.Context, cm CommitMessage) error {
+func (term *leanHelixTerm) OnReceiveCommit(ctx context.Context, cm *CommitMessage) error {
 	panic("not impl")
 }
 
-func (term *leanHelixTerm) OnReceiveViewChange(ctx context.Context, vcm ViewChangeMessage) error {
+func (term *leanHelixTerm) OnReceiveViewChange(ctx context.Context, vcm *ViewChangeMessage) error {
 	panic("implement me")
 }
 
-func (term *leanHelixTerm) OnReceiveNewView(ctx context.Context, nvm NewViewMessage) error {
+func (term *leanHelixTerm) OnReceiveNewView(ctx context.Context, nvm *NewViewMessage) error {
 
 	panic("convert ts->go")
 	signedHeader := nvm.Content().SignedHeader()
@@ -182,7 +182,7 @@ func (term *leanHelixTerm) OnReceiveNewView(ctx context.Context, nvm NewViewMess
 		}
 	}
 
-	ppm := &PreprepareMessageImpl{
+	ppm := &PreprepareMessage{
 		content: preprepareMessageContent,
 		block:   nvm.Block(),
 	}
@@ -196,7 +196,7 @@ func (term *leanHelixTerm) OnReceiveNewView(ctx context.Context, nvm NewViewMess
 	return nil
 }
 
-func (term *leanHelixTerm) validatePreprepare(ppm PreprepareMessage) bool {
+func (term *leanHelixTerm) validatePreprepare(ppm *PreprepareMessage) bool {
 
 	blockHeight := ppm.BlockHeight()
 	view := ppm.View()
@@ -240,14 +240,14 @@ func (term *leanHelixTerm) hasPreprepare(blockHeight BlockHeight, view View) boo
 	return ok
 }
 
-func (term *leanHelixTerm) processPreprepare(ppm PreprepareMessage) {
+func (term *leanHelixTerm) processPreprepare(ppm *PreprepareMessage) {
 	panic("impl me - create Prepare etc.")
 }
 
 func (term *leanHelixTerm) GetView() View {
 	return term.view
 }
-func (term *leanHelixTerm) sendPreprepare(ctx context.Context, message PreprepareMessage) {
+func (term *leanHelixTerm) sendPreprepare(ctx context.Context, message *PreprepareMessage) {
 
 	consensusMessage := CreateConsensusMessage(message.Raw(), message.Block())
 

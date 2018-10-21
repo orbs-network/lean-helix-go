@@ -39,10 +39,7 @@ func TestMessageFactory(t *testing.T) {
 			},
 		}
 
-		expectedPPM := &lh.PreprepareMessageImpl{
-			content: ppmcb.Build(),
-			block:   block,
-		}
+		expectedPPM := lh.NewPreprepareMessage(ppmcb.Build(), block)
 
 		actualPPM := leaderFac.CreatePreprepareMessage(height, view, block)
 		expectedPPMRaw := expectedPPM.Raw()
@@ -65,9 +62,7 @@ func TestMessageFactory(t *testing.T) {
 				Signature:       leaderKeyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
-		expectedPM := &lh.PrepareMessageImpl{
-			content: prepareContentBuilder.Build(),
-		}
+		expectedPM := lh.NewPrepareMessage(prepareContentBuilder.Build())
 		actualPM := leaderFac.CreatePrepareMessage(height, view, blockHash)
 		expectedPMRaw := expectedPM.Raw()
 		actualPMRaw := actualPM.Raw()
@@ -87,9 +82,7 @@ func TestMessageFactory(t *testing.T) {
 				Signature:       leaderKeyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
-		expectedCM := &lh.CommitMessageImpl{
-			content: cmcb.Build(),
-		}
+		expectedCM := lh.NewCommitMessage(cmcb.Build())
 		actualCM := leaderFac.CreateCommitMessage(height, view, blockHash)
 		expectedCMRaw := expectedCM.Raw()
 		actualCMRaw := actualCM.Raw()
@@ -151,14 +144,11 @@ func TestMessageFactory(t *testing.T) {
 				Signature:       senderKeyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
-		expectedVCM := &lh.ViewChangeMessageImpl{
-			content: vcmContentBuilder.Build(),
-			block:   block,
-		}
 
+		expectedVCM := lh.NewViewChangeMessage(vcmContentBuilder.Build(), block)
 		preparedMessages := &lh.PreparedMessages{
 			PreprepareMessage: leaderFac.CreatePreprepareMessage(height, view, block),
-			PrepareMessages: []lh.PrepareMessage{
+			PrepareMessages: []*lh.PrepareMessage{
 				node1Fac.CreatePrepareMessage(height, view, blockHash),
 				node2Fac.CreatePrepareMessage(height, view, blockHash),
 			},
@@ -257,16 +247,13 @@ func TestMessageFactory(t *testing.T) {
 			},
 		}
 
-		expectedNVM := &lh.NewViewMessageImpl{
-			content: nvmContentBuilder.Build(),
-			block:   block,
-		}
+		expectedNVM := lh.NewNewViewMessage(nvmContentBuilder.Build(), block)
 
 		// Construct "actual" message with message factories
 		ppm := leaderFac.CreatePreprepareMessage(height, view, block)
 		preparedMessages := &lh.PreparedMessages{
 			PreprepareMessage: ppm,
-			PrepareMessages: []lh.PrepareMessage{
+			PrepareMessages: []*lh.PrepareMessage{
 				node1Fac.CreatePrepareMessage(height, view, blockHash),
 				node2Fac.CreatePrepareMessage(height, view, blockHash),
 			},

@@ -5,11 +5,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/primitives"
 )
 
-type NetworkMessageFilter interface {
-	OnGossipMessage(ctx context.Context, rawMessage ConsensusRawMessage)
-}
-
-type NetworkMessageFilterImpl struct {
+type NetworkMessageFilter struct {
 	blockHeight  primitives.BlockHeight
 	MyPublicKey  primitives.Ed25519PublicKey
 	messageCache []ConsensusMessage
@@ -17,8 +13,8 @@ type NetworkMessageFilterImpl struct {
 	Receiver     MessageReceiver
 }
 
-func NewNetworkMessageFilter(comm NetworkCommunication, blockHeight primitives.BlockHeight, myPublicKey primitives.Ed25519PublicKey, messageReceiver MessageReceiver) NetworkMessageFilter {
-	return &NetworkMessageFilterImpl{
+func NewNetworkMessageFilter(comm NetworkCommunication, blockHeight primitives.BlockHeight, myPublicKey primitives.Ed25519PublicKey, messageReceiver MessageReceiver) *NetworkMessageFilter {
+	return &NetworkMessageFilter{
 		blockHeight:  blockHeight,
 		MyPublicKey:  myPublicKey,
 		messageCache: make([]ConsensusMessage, 0, 10),
@@ -29,38 +25,38 @@ func NewNetworkMessageFilter(comm NetworkCommunication, blockHeight primitives.B
 
 // Entry point of messages for consensus messages
 
-func (filter *NetworkMessageFilterImpl) OnGossipMessage(ctx context.Context, rawMessage ConsensusRawMessage) {
+func (filter *NetworkMessageFilter) OnGossipMessage(ctx context.Context, rawMessage ConsensusRawMessage) {
 
 	var message ConsensusMessage
 	switch rawMessage.MessageType() {
 	case LEAN_HELIX_PREPREPARE:
 		content := PreprepareContentReader(rawMessage.Content())
-		message = &PreprepareMessageImpl{
+		message = &PreprepareMessage{
 			content: content,
 			block:   rawMessage.Block(),
 		}
 
 	case LEAN_HELIX_PREPARE:
 		content := PrepareContentReader(rawMessage.Content())
-		message = &PrepareMessageImpl{
+		message = &PrepareMessage{
 			content: content,
 		}
 
 	case LEAN_HELIX_COMMIT:
 		content := CommitContentReader(rawMessage.Content())
-		message = &CommitMessageImpl{
+		message = &CommitMessage{
 			content: content,
 		}
 	case LEAN_HELIX_VIEW_CHANGE:
 		content := ViewChangeMessageContentReader(rawMessage.Content())
-		message = &ViewChangeMessageImpl{
+		message = &ViewChangeMessage{
 			content: content,
 			block:   rawMessage.Block(),
 		}
 
 	case LEAN_HELIX_NEW_VIEW:
 		content := NewViewMessageContentReader(rawMessage.Content())
-		message = &NewViewMessageImpl{
+		message = &NewViewMessage{
 			content: content,
 			block:   rawMessage.Block(),
 		}
@@ -77,11 +73,11 @@ func (filter *NetworkMessageFilterImpl) OnGossipMessage(ctx context.Context, raw
 	filter.ProcessGossipMessage(ctx, message)
 }
 
-func (filter *NetworkMessageFilterImpl) pushToCache(message ConsensusMessage) {
+func (filter *NetworkMessageFilter) pushToCache(message ConsensusMessage) {
 	filter.messageCache = append(filter.messageCache, message)
 }
 
-func (filter *NetworkMessageFilterImpl) acceptMessage(message ConsensusMessage) bool {
+func (filter *NetworkMessageFilter) acceptMessage(message ConsensusMessage) bool {
 
 	senderPublicKey := message.SenderPublicKey()
 	if senderPublicKey.Equal(filter.MyPublicKey) {
@@ -98,30 +94,24 @@ func (filter *NetworkMessageFilterImpl) acceptMessage(message ConsensusMessage) 
 	return true
 }
 
-// TODO Callback
-
-func (filter *NetworkMessageFilterImpl) ConsumeCacheMessage() {
-
-}
-
-func (filter *NetworkMessageFilterImpl) ProcessGossipMessage(ctx context.Context, consensusMessage ConsensusMessage) {
+func (filter *NetworkMessageFilter) ProcessGossipMessage(ctx context.Context, consensusMessage ConsensusMessage) {
 
 	switch message := consensusMessage.(type) {
-	case *PreprepareMessageImpl:
+	case *PreprepareMessage:
 		filter.Receiver.OnReceivePreprepare(ctx, message)
-	case *PrepareMessageImpl:
+	case *PrepareMessage:
 		filter.Receiver.OnReceivePrepare(ctx, message)
 		// Send message to MessageReceiver
 	}
 }
 
-func (filter *NetworkMessageFilterImpl) SetBlockHeight(ctx context.Context, blockHeight primitives.BlockHeight, receiver MessageReceiver) {
+func (filter *NetworkMessageFilter) SetBlockHeight(ctx context.Context, blockHeight primitives.BlockHeight, receiver MessageReceiver) {
 	filter.blockHeight = blockHeight
 	filter.Receiver = receiver
 	filter.consumeCacheMessage(ctx)
 }
 
-func (filter *NetworkMessageFilterImpl) consumeCacheMessage(ctx context.Context) {
+func (filter *NetworkMessageFilter) consumeCacheMessage(ctx context.Context) {
 	unconsumed := make([]ConsensusMessage, 0, 1)
 	for _, msg := range filter.messageCache {
 		if msg.BlockHeight().Equal(filter.blockHeight) {

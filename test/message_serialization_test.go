@@ -16,7 +16,7 @@ func TestMessageBuilderAndReader(t *testing.T) {
 	block := builders.CreateBlock(builders.GenesisBlock)
 	b1 := builders.CreateBlock(builders.GenesisBlock)
 	mockKeyManager := builders.NewMockKeyManager(Ed25519PublicKey("PK"), nil)
-	mf := &lh.MessageFactoryImpl{
+	mf := &lh.MessageFactory{
 		KeyManager: mockKeyManager,
 	}
 
