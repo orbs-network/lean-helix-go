@@ -9,7 +9,6 @@ type BlockHashStr string
 type PublicKeyStr string
 
 type InMemoryStorage struct {
-	// TODO Refactor this mess - in the least create some intermediate primitives
 	preprepareStorage map[BlockHeight]map[View]*PreprepareMessage
 	prepareStorage    map[BlockHeight]map[View]map[BlockHashStr]map[PublicKeyStr]*PrepareMessage
 	commitStorage     map[BlockHeight]map[View]map[BlockHashStr]map[PublicKeyStr]*CommitMessage
@@ -18,7 +17,6 @@ type InMemoryStorage struct {
 
 // Preprepare
 func (storage *InMemoryStorage) StorePreprepare(ppm *PreprepareMessage) bool {
-
 	height := ppm.BlockHeight()
 	view := ppm.Content().SignedHeader().View()
 

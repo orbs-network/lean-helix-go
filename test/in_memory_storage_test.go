@@ -71,10 +71,89 @@ func TestStorePrepare(t *testing.T) {
 	storage.StorePrepare(message5)
 	storage.StorePrepare(message6)
 
+	actualPrepareMessages, _ := storage.GetPrepareMessages(blockHeight1, view1, block1.BlockHash())
+	expectedMessages := []*lh.PrepareMessage{message1, message2, message3}
+	require.ElementsMatch(t, actualPrepareMessages, expectedMessages, "stored prepare messages should match the fetched prepare messages")
+
 	actualPrepareSendersPks := storage.GetPrepareSendersPKs(blockHeight1, view1, block1.BlockHash())
 	expectedPks := []Ed25519PublicKey{senderId1, senderId2, senderId3}
+	require.ElementsMatch(t, actualPrepareSendersPks, expectedPks, "stored prepare messages senders should match the fetched prepare messages senders")
+}
 
-	require.Equal(t, actualPrepareSendersPks, expectedPks, "stored prepare messages should match the fetched prepare messaged")
+func TestStoreCommit(t *testing.T) {
+	var storage lh.Storage = lh.NewInMemoryStorage()
+	blockHeight1 := BlockHeight(math.Floor(rand.Float64() * 1000))
+	blockHeight2 := BlockHeight(math.Floor(rand.Float64() * 1000))
+	view1 := View(math.Floor(rand.Float64() * 1000))
+	view2 := View(math.Floor(rand.Float64() * 1000))
+	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId3 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	keyManager1 := builders.NewMockKeyManager(senderId1)
+	keyManager2 := builders.NewMockKeyManager(senderId2)
+	keyManager3 := builders.NewMockKeyManager(senderId3)
+	block1 := builders.CreateBlock(builders.GenesisBlock)
+	block2 := builders.CreateBlock(builders.GenesisBlock)
+
+	mf1 := lh.NewMessageFactory(keyManager1)
+	mf2 := lh.NewMessageFactory(keyManager2)
+	mf3 := lh.NewMessageFactory(keyManager3)
+
+	message1 := mf1.CreateCommitMessage(blockHeight1, view1, block1.BlockHash())
+	message2 := mf2.CreateCommitMessage(blockHeight1, view1, block1.BlockHash())
+	message3 := mf3.CreateCommitMessage(blockHeight1, view1, block1.BlockHash())
+	message4 := mf1.CreateCommitMessage(blockHeight2, view1, block1.BlockHash())
+	message5 := mf1.CreateCommitMessage(blockHeight1, view2, block1.BlockHash())
+	message6 := mf1.CreateCommitMessage(blockHeight1, view1, block2.BlockHash())
+
+	storage.StoreCommit(message1)
+	storage.StoreCommit(message2)
+	storage.StoreCommit(message3)
+	storage.StoreCommit(message4)
+	storage.StoreCommit(message5)
+	storage.StoreCommit(message6)
+
+	actualCommitMessages, _ := storage.GetCommitMessages(blockHeight1, view1, block1.BlockHash())
+	expectedMessages := []*lh.CommitMessage{message1, message2, message3}
+	require.ElementsMatch(t, actualCommitMessages, expectedMessages, "stored commit messages should match the fetched commit messages")
+
+	actualCommitSendersPks := storage.GetCommitSendersPKs(blockHeight1, view1, block1.BlockHash())
+	expectedPks := []Ed25519PublicKey{senderId1, senderId2, senderId3}
+	require.ElementsMatch(t, actualCommitSendersPks, expectedPks, "stored commit messages senders should match the fetched commit messages senders")
+}
+
+func TestStoreViewChange(t *testing.T) {
+	var storage lh.Storage = lh.NewInMemoryStorage()
+	blockHeight1 := BlockHeight(math.Floor(rand.Float64() * 1000))
+	blockHeight2 := BlockHeight(math.Floor(rand.Float64() * 1000))
+	view1 := View(math.Floor(rand.Float64() * 1000))
+	view2 := View(math.Floor(rand.Float64() * 1000))
+	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	senderId3 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	keyManager1 := builders.NewMockKeyManager(senderId1)
+	keyManager2 := builders.NewMockKeyManager(senderId2)
+	keyManager3 := builders.NewMockKeyManager(senderId3)
+
+	mf1 := lh.NewMessageFactory(keyManager1)
+	mf2 := lh.NewMessageFactory(keyManager2)
+	mf3 := lh.NewMessageFactory(keyManager3)
+
+	message1 := mf1.CreateViewChangeMessage(blockHeight1, view1, nil)
+	message2 := mf2.CreateViewChangeMessage(blockHeight1, view1, nil)
+	message3 := mf3.CreateViewChangeMessage(blockHeight1, view1, nil)
+	message4 := mf1.CreateViewChangeMessage(blockHeight2, view1, nil)
+	message5 := mf1.CreateViewChangeMessage(blockHeight1, view2, nil)
+
+	storage.StoreViewChange(message1)
+	storage.StoreViewChange(message2)
+	storage.StoreViewChange(message3)
+	storage.StoreViewChange(message4)
+	storage.StoreViewChange(message5)
+
+	actualViewChangeMessages := storage.GetViewChangeMessages(blockHeight1, view1)
+	expectedMessages := []*lh.ViewChangeMessage{message1, message2, message3}
+	require.ElementsMatch(t, actualViewChangeMessages, expectedMessages, "stored view-change messages should match the fetched view-change messages")
 }
 
 func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
@@ -124,9 +203,6 @@ func TestClearAllStorageDataAfterCallingClearBlockHeightLogs(t *testing.T) {
 	require.Equal(t, 0, len(storage.GetCommitSendersPKs(height, view, blockHash)), "Length of GetCommitSendersPKs() result array should be 0")
 	require.Equal(t, 0, len(storage.GetViewChangeMessages(height, view)), "Length of GetViewChangeMessages() result array should be 0")
 }
-
-// TODO func TestStorePrePrepareInStorage
-// TODO Do we need TestStorePrePrepareInStorage(t *testing.T) ?
 
 func TestStorePrepareInStorage(t *testing.T) {
 	var storage lh.Storage = lh.NewInMemoryStorage()
