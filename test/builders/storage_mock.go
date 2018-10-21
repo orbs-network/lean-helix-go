@@ -10,15 +10,16 @@ type mockStorage struct {
 	mock.Mock
 }
 
-func (s *mockStorage) GetPrepareSendersPKs(blockHeight BlockHeight, view View, blockHash Uint256) []Ed25519PublicKey {
+func (s *mockStorage) StorePreprepare(ppm *leanhelix.PreprepareMessage) bool {
+	ret := s.Called(ppm)
+	return ret.Get(0).(bool)
+}
+
+func (s *mockStorage) GetPreprepareMessage(blockHeight BlockHeight, view View) (*leanhelix.PreprepareMessage, bool) {
 	panic("implement me")
 }
 
-func (s *mockStorage) GetCommitSendersPKs(blockHeight BlockHeight, view View, blockHash Uint256) []Ed25519PublicKey {
-	panic("implement me")
-}
-
-func (s *mockStorage) GetPrepares(blockHeight BlockHeight, view View, blockHash Uint256) ([]*leanhelix.PrepareMessage, bool) {
+func (s *mockStorage) GetPreprepareBlock(blockHeight BlockHeight, view View) (leanhelix.Block, bool) {
 	panic("implement me")
 }
 
@@ -26,16 +27,15 @@ func (s *mockStorage) GetLatestPreprepare(blockHeight BlockHeight) (*leanhelix.P
 	panic("implement me")
 }
 
-func (s *mockStorage) StorePreprepare(ppm *leanhelix.PreprepareMessage) bool {
-	ret := s.Called(ppm)
-	return ret.Get(0).(bool)
-}
-
-func (s *mockStorage) GetPreprepareBlock(blockHeight BlockHeight, view View) (leanhelix.Block, bool) {
+func (s *mockStorage) StorePrepare(pp *leanhelix.PrepareMessage) bool {
 	panic("implement me")
 }
 
-func (s *mockStorage) StorePrepare(pp *leanhelix.PrepareMessage) bool {
+func (s *mockStorage) GetPrepareMessages(blockHeight BlockHeight, view View, blockHash Uint256) ([]*leanhelix.PrepareMessage, bool) {
+	panic("implement me")
+}
+
+func (s *mockStorage) GetPrepareSendersPKs(blockHeight BlockHeight, view View, blockHash Uint256) []Ed25519PublicKey {
 	panic("implement me")
 }
 
@@ -43,23 +43,23 @@ func (s *mockStorage) StoreCommit(cm *leanhelix.CommitMessage) bool {
 	panic("implement me")
 }
 
+func (s *mockStorage) GetCommitMessages(blockHeight BlockHeight, view View, blockHash Uint256) ([]*leanhelix.CommitMessage, bool) {
+	panic("implement me")
+}
+
+func (s *mockStorage) GetCommitSendersPKs(blockHeight BlockHeight, view View, blockHash Uint256) []Ed25519PublicKey {
+	panic("implement me")
+}
+
 func (s *mockStorage) StoreViewChange(vcm *leanhelix.ViewChangeMessage) bool {
 	panic("implement me")
 }
 
-func (s *mockStorage) GetViewChangeMessages(blockHeight BlockHeight, view View, f int) []*leanhelix.ViewChangeMessage {
+func (s *mockStorage) GetViewChangeMessages(blockHeight BlockHeight, view View) []*leanhelix.ViewChangeMessage {
 	panic("implement me")
 }
 
-func (s *mockStorage) GetPreprepare(blockHeight BlockHeight, view View) (*leanhelix.PreprepareMessage, bool) {
-	panic("implement me")
-}
-
-func (s *mockStorage) GetLatestPrepared(blockHeight BlockHeight, f int) (*leanhelix.PreparedProof, bool) {
-	panic("implement me")
-}
-
-func (s *mockStorage) ClearTermLogs(blockHeight BlockHeight) {
+func (s *mockStorage) ClearBlockHeightLogs(blockHeight BlockHeight) {
 	panic("implement me")
 }
 

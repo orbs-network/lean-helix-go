@@ -236,7 +236,7 @@ func (term *leanHelixTerm) validatePreprepare(ppm *PreprepareMessage) bool {
 }
 
 func (term *leanHelixTerm) hasPreprepare(blockHeight BlockHeight, view View) bool {
-	_, ok := term.GetPreprepare(blockHeight, view)
+	_, ok := term.GetPreprepareMessage(blockHeight, view)
 	return ok
 }
 

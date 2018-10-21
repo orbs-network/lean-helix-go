@@ -16,6 +16,43 @@ type InMemoryStorage struct {
 	viewChangeStorage map[BlockHeight]map[View]map[PublicKeyStr]*ViewChangeMessage
 }
 
+// Preprepare
+func (storage *InMemoryStorage) StorePreprepare(ppm *PreprepareMessage) bool {
+
+	height := ppm.BlockHeight()
+	view := ppm.Content().SignedHeader().View()
+
+	views, ok := storage.preprepareStorage[height]
+	if !ok {
+		views = storage.resetPreprepareStorage(height)
+	}
+
+	_, ok = views[view]
+	if ok {
+		return false
+	}
+	views[view] = ppm
+	return true
+}
+
+func (storage *InMemoryStorage) GetPreprepareMessage(blockHeight BlockHeight, view View) (*PreprepareMessage, bool) {
+	views, ok := storage.preprepareStorage[blockHeight]
+	if !ok {
+		return nil, false
+	}
+	result, ok := views[view]
+	return result, ok
+}
+
+func (storage *InMemoryStorage) GetPreprepareBlock(blockHeight BlockHeight, view View) (Block, bool) {
+	views, ok := storage.preprepareStorage[blockHeight]
+	if !ok {
+		return nil, false
+	}
+	result, ok := views[view]
+	return result.Block(), ok
+}
+
 func (storage *InMemoryStorage) GetLatestPreprepare(blockHeight BlockHeight) (*PreprepareMessage, bool) {
 
 	views, ok := storage.preprepareStorage[blockHeight]
@@ -37,24 +74,7 @@ func (storage *InMemoryStorage) GetLatestPreprepare(blockHeight BlockHeight) (*P
 	return views[lastView], true
 }
 
-func (storage *InMemoryStorage) StorePreprepare(ppm *PreprepareMessage) bool {
-
-	height := ppm.BlockHeight()
-	view := ppm.Content().SignedHeader().View()
-
-	views, ok := storage.preprepareStorage[height]
-	if !ok {
-		views = storage.resetPreprepareStorage(height)
-	}
-
-	_, ok = views[view]
-	if ok {
-		return false
-	}
-	views[view] = ppm
-	return true
-}
-
+// Prepare
 func (storage *InMemoryStorage) StorePrepare(pp *PrepareMessage) bool {
 	height := pp.BlockHeight()
 	view := pp.Content().SignedHeader().View()
@@ -85,6 +105,45 @@ func (storage *InMemoryStorage) StorePrepare(pp *PrepareMessage) bool {
 	return true
 }
 
+func (storage *InMemoryStorage) getPrepare(blockHeight BlockHeight, view View, blockHash Uint256) (map[PublicKeyStr]*PrepareMessage, bool) {
+	views, ok := storage.prepareStorage[blockHeight]
+	if !ok {
+		return nil, false
+	}
+	blockHashes, ok := views[view]
+	if !ok {
+		return nil, false
+	}
+	return blockHashes[BlockHashStr(blockHash)], true
+}
+
+func (storage *InMemoryStorage) GetPrepareMessages(blockHeight BlockHeight, view View, blockHash Uint256) ([]*PrepareMessage, bool) {
+	senders, ok := storage.getPrepare(blockHeight, view, blockHash)
+	if !ok {
+		return nil, false
+	}
+	values := make([]*PrepareMessage, 0, len(senders))
+	for _, v := range senders {
+		values = append(values, v)
+	}
+	return values, true
+}
+
+func (storage *InMemoryStorage) GetPrepareSendersPKs(blockHeight BlockHeight, view View, blockHash Uint256) []Ed25519PublicKey {
+	senders, ok := storage.getPrepare(blockHeight, view, blockHash)
+	if !ok {
+		return []Ed25519PublicKey{}
+	}
+	keys := make([]Ed25519PublicKey, len(senders))
+	i := 0
+	for k := range senders {
+		keys[i] = Ed25519PublicKey(k)
+		i++
+	}
+	return keys
+}
+
+// Commit
 func (storage *InMemoryStorage) StoreCommit(cm *CommitMessage) bool {
 	height := cm.Content().SignedHeader().BlockHeight()
 	view := cm.Content().SignedHeader().View()
@@ -116,6 +175,45 @@ func (storage *InMemoryStorage) StoreCommit(cm *CommitMessage) bool {
 
 }
 
+func (storage *InMemoryStorage) getCommit(blockHeight BlockHeight, view View, blockHash Uint256) (map[PublicKeyStr]*CommitMessage, bool) {
+	views, ok := storage.commitStorage[blockHeight]
+	if !ok {
+		return nil, false
+	}
+	blockHashes, ok := views[view]
+	if !ok {
+		return nil, false
+	}
+	return blockHashes[BlockHashStr(blockHash)], true
+}
+
+func (storage *InMemoryStorage) GetCommitMessages(blockHeight BlockHeight, view View, blockHash Uint256) ([]*CommitMessage, bool) {
+	senders, ok := storage.getCommit(blockHeight, view, blockHash)
+	if !ok {
+		return nil, false
+	}
+	values := make([]*CommitMessage, 0, len(senders))
+	for _, v := range senders {
+		values = append(values, v)
+	}
+	return values, true
+}
+
+func (storage *InMemoryStorage) GetCommitSendersPKs(blockHeight BlockHeight, view View, blockHash Uint256) []Ed25519PublicKey {
+	senders, ok := storage.getCommit(blockHeight, view, blockHash)
+	if !ok {
+		return []Ed25519PublicKey{}
+	}
+	keys := make([]Ed25519PublicKey, len(senders))
+	i := 0
+	for k := range senders {
+		keys[i] = Ed25519PublicKey(k)
+		i++
+	}
+	return keys
+}
+
+// View Change
 func (storage *InMemoryStorage) StoreViewChange(vcm *ViewChangeMessage) bool {
 	height, view := vcm.Content().SignedHeader().BlockHeight(), vcm.Content().SignedHeader().View()
 	// pps -> views ->
@@ -140,58 +238,7 @@ func (storage *InMemoryStorage) StoreViewChange(vcm *ViewChangeMessage) bool {
 
 }
 
-func (storage *InMemoryStorage) getPrepare(blockHeight BlockHeight, view View, blockHash Uint256) (map[PublicKeyStr]*PrepareMessage, bool) {
-	views, ok := storage.prepareStorage[blockHeight]
-	if !ok {
-		return nil, false
-	}
-	blockHashes, ok := views[view]
-	if !ok {
-		return nil, false
-	}
-	return blockHashes[BlockHashStr(blockHash)], true
-}
-
-func (storage *InMemoryStorage) GetPrepareSendersPKs(blockHeight BlockHeight, view View, blockHash Uint256) []Ed25519PublicKey {
-	senders, ok := storage.getPrepare(blockHeight, view, blockHash)
-	if !ok {
-		return []Ed25519PublicKey{}
-	}
-	keys := make([]Ed25519PublicKey, len(senders))
-	i := 0
-	for k := range senders {
-		keys[i] = Ed25519PublicKey(k)
-		i++
-	}
-	return keys
-}
-
-func (storage *InMemoryStorage) getCommit(blockHeight BlockHeight, view View, blockHash Uint256) (map[PublicKeyStr]*CommitMessage, bool) {
-	views, ok := storage.commitStorage[blockHeight]
-	if !ok {
-		return nil, false
-	}
-	blockHashes, ok := views[view]
-	if !ok {
-		return nil, false
-	}
-	return blockHashes[BlockHashStr(blockHash)], true
-}
-
-func (storage *InMemoryStorage) GetCommitSendersPKs(blockHeight BlockHeight, view View, blockHash Uint256) []Ed25519PublicKey {
-	senders, ok := storage.getCommit(blockHeight, view, blockHash)
-	if !ok {
-		return []Ed25519PublicKey{}
-	}
-	keys := make([]Ed25519PublicKey, len(senders))
-	i := 0
-	for k := range senders {
-		keys[i] = Ed25519PublicKey(k)
-		i++
-	}
-	return keys
-}
-func (storage *InMemoryStorage) GetViewChangeMessages(blockHeight BlockHeight, view View, f int) []*ViewChangeMessage {
+func (storage *InMemoryStorage) GetViewChangeMessages(blockHeight BlockHeight, view View) []*ViewChangeMessage {
 	views, ok := storage.viewChangeStorage[blockHeight]
 	if !ok {
 		return nil
@@ -200,85 +247,17 @@ func (storage *InMemoryStorage) GetViewChangeMessages(blockHeight BlockHeight, v
 	if !ok {
 		return nil
 	}
-	minimumNodes := f*2 + 1
-	if len(senders) < minimumNodes {
-		return nil
-	}
 
-	result := make([]*ViewChangeMessage, minimumNodes)
+	result := make([]*ViewChangeMessage, len(senders))
 	i := 0
 	for _, value := range senders {
-		if i >= minimumNodes {
-			break
-		}
 		result[i] = value
 		i++
 	}
 	return result
 }
 
-func (storage *InMemoryStorage) GetPreprepare(blockHeight BlockHeight, view View) (*PreprepareMessage, bool) {
-	views, ok := storage.preprepareStorage[blockHeight]
-	if !ok {
-		return nil, false
-	}
-	result, ok := views[view]
-	return result, ok
-}
-
-func (storage *InMemoryStorage) GetPreprepareBlock(blockHeight BlockHeight, view View) (Block, bool) {
-	views, ok := storage.preprepareStorage[blockHeight]
-	if !ok {
-		return nil, false
-	}
-	result, ok := views[view]
-	return result.Block(), ok
-}
-
-// TODO Whether to use ptr for string (BlockHash)
-func (storage *InMemoryStorage) GetPrepares(blockHeight BlockHeight, view View, blockHash Uint256) ([]*PrepareMessage, bool) {
-	senders, ok := storage.getPrepare(blockHeight, view, blockHash)
-	if !ok {
-		return nil, false
-	}
-	values := make([]*PrepareMessage, 0, len(senders))
-	for _, v := range senders {
-		values = append(values, v)
-	}
-	return values, true
-}
-
-//func (storage *InMemoryStorage) GetLatestPrepared(blockHeight BlockHeight, f int) (PreparedProof, bool) {
-//	views, ok := storage.preprepareStorage[blockHeight]
-//	if !ok {
-//		return nil, false
-//	}
-//	if len(views) == 0 {
-//		return nil, false
-//	}
-//	viewKeys := make([]View, 0, len(views))
-//	for key := range views {
-//		viewKeys = append(viewKeys, key)
-//	}
-//	sort.Sort(ViewCounters(viewKeys))
-//	lastView := viewKeys[len(viewKeys)-1]
-//
-//	lastViewPpm, ok := storage.GetPreprepare(blockHeight, lastView)
-//	if !ok {
-//		return nil, false
-//	}
-//	prepareMessages, ok := storage.GetPrepares(blockHeight, lastView, lastViewPpm.SignedHeader().BlockHash())
-//	if len(prepareMessages) < f*2 {
-//		return nil, false
-//	}
-//
-//	proof := CreatePreparedProof(lastViewPpm, prepareMessages)
-//	return proof, true
-//
-//}
-
-// TODO Keep this name? it means the same as Term in LeanHelixTerm
-func (storage *InMemoryStorage) ClearTermLogs(blockHeight BlockHeight) {
+func (storage *InMemoryStorage) ClearBlockHeightLogs(blockHeight BlockHeight) {
 	storage.resetPreprepareStorage(blockHeight)
 	storage.resetPrepareStorage(blockHeight)
 	storage.resetCommitStorage(blockHeight)
