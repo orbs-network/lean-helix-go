@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"github.com/orbs-network/go-mock"
 	lh "github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/instrumentation/log"
@@ -14,6 +15,7 @@ import (
 
 func TestReturnOkForMembersInCurrentHeight(t *testing.T) {
 	// Instantiate, provide no members, and expect error
+	ctx := context.Background()
 	pk := Ed25519PublicKey("PK")
 	mockComm := builders.NewMockNetworkCommunication()
 	mockBlockUtils := builders.NewMockBlockUtils(nil)
@@ -33,13 +35,13 @@ func TestReturnOkForMembersInCurrentHeight(t *testing.T) {
 		ElectionTrigger:      mockElectionTrigger,
 		Storage:              mockStorage,
 	}
-	term, _ := lh.NewLeanHelixTerm(config, 1, nil)
+	term, _ := lh.NewLeanHelixTerm(ctx, config, 1, nil)
 	require.NotNil(t, term, "should return new term if there are members in current height")
 }
 
 func TestReturnErrorIfNoMembersInCurrentHeight(t *testing.T) {
 	// Instantiate, provide no members, and expect error
-
+	ctx := context.Background()
 	pk := Ed25519PublicKey("PK")
 	mockComm := builders.NewMockNetworkCommunication()
 	mockBlockUtils := builders.NewMockBlockUtils(nil)
@@ -55,7 +57,7 @@ func TestReturnErrorIfNoMembersInCurrentHeight(t *testing.T) {
 		ElectionTrigger:      mockElectionTrigger,
 		Storage:              mockStorage,
 	}
-	_, err := lh.NewLeanHelixTerm(config, 1, nil)
+	_, err := lh.NewLeanHelixTerm(ctx, config, 1, nil)
 	require.NotNil(t, err, "should return error if no members in current height")
 
 }

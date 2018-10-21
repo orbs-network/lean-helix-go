@@ -147,7 +147,7 @@ func (net *TestNetwork) GetNodeGossip(pk Ed25519PublicKey) (*gossip.Gossip, bool
 }
 
 func (net *TestNetwork) StartConsensusOnAllNodes() error {
-	if len(net.Nodes) < 2 {
+	if len(net.Nodes) < MINIMUM_NODES {
 		return fmt.Errorf("not enough nodes in test network - found %d but minimum is %d", len(net.Nodes), MINIMUM_NODES)
 	}
 	for _, node := range net.Nodes {

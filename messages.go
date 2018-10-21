@@ -10,12 +10,12 @@ type MessageFactory interface {
 	CreatePrepareMessage(blockHeight BlockHeight, view View, blockHash Uint256) PrepareMessage
 	CreateCommitMessage(blockHeight BlockHeight, view View, blockHash Uint256) CommitMessage
 	CreateViewChangeMessage(blockHeight BlockHeight, view View, preparedMessages *PreparedMessages) ViewChangeMessage
-	CreateNewViewMessage(blockHeight BlockHeight, view View, blockRefContentBuilder *BlockRefContentBuilder, confirmations []*ViewChangeMessageContentBuilder, block Block) NewViewMessage
+	CreateNewViewMessage(blockHeight BlockHeight, view View, preprepareContentBuilder *PreprepareContentBuilder, confirmations []*ViewChangeMessageContentBuilder, block Block) NewViewMessage
 
 	// Helper methods
-	CreatePreprepareMessageContentBuilder(blockHeight BlockHeight, view View, block Block) *BlockRefContentBuilder
+	CreatePreprepareMessageContentBuilder(blockHeight BlockHeight, view View, block Block) *PreprepareContentBuilder
 	CreateViewChangeMessageContentBuilder(blockHeight BlockHeight, view View, preparedMessages *PreparedMessages) *ViewChangeMessageContentBuilder
-	CreateNewViewMessageContentBuilder(blockHeight BlockHeight, view View, blockRefBuilder *BlockRefContentBuilder, confirmations []*ViewChangeMessageContentBuilder) *NewViewMessageContentBuilder
+	CreateNewViewMessageContentBuilder(blockHeight BlockHeight, view View, blockRefBuilder *PreprepareContentBuilder, confirmations []*ViewChangeMessageContentBuilder) *NewViewMessageContentBuilder
 }
 
 // SHARED interfaces //
@@ -38,18 +38,18 @@ type ConsensusMessage interface {
 
 type PreprepareMessage interface {
 	ConsensusMessage
-	Content() *BlockRefContent
+	Content() *PreprepareContent
 	Block() Block
 }
 
 type PrepareMessage interface {
 	ConsensusMessage
-	Content() *BlockRefContent
+	Content() *PrepareContent
 }
 
 type CommitMessage interface {
 	ConsensusMessage
-	Content() *BlockRefContent
+	Content() *CommitContent
 }
 
 type ViewChangeMessage interface {
@@ -73,184 +73,184 @@ type NewViewMessage interface {
 //------------
 
 type PreprepareMessageImpl struct {
-	MyContent *BlockRefContent
-	MyBlock   Block
+	content *PreprepareContent
+	block   Block
 }
 
 func (ppm *PreprepareMessageImpl) MessageType() MessageType {
-	return ppm.MyContent.SignedHeader().MessageType()
+	return ppm.content.SignedHeader().MessageType()
 }
 
-func (ppm *PreprepareMessageImpl) Content() *BlockRefContent {
-	return ppm.MyContent
+func (ppm *PreprepareMessageImpl) Content() *PreprepareContent {
+	return ppm.content
 }
 
 func (ppm *PreprepareMessageImpl) Raw() []byte {
-	return ppm.MyContent.Raw()
+	return ppm.content.Raw()
 }
 
 func (ppm *PreprepareMessageImpl) String() string {
-	return ppm.MyContent.String()
+	return ppm.content.String()
 }
 
 func (ppm *PreprepareMessageImpl) Block() Block {
-	return ppm.MyBlock
+	return ppm.block
 }
 
 func (ppm *PreprepareMessageImpl) SenderPublicKey() Ed25519PublicKey {
-	return ppm.MyContent.Sender().SenderPublicKey()
+	return ppm.content.Sender().SenderPublicKey()
 }
 
 func (ppm *PreprepareMessageImpl) BlockHeight() BlockHeight {
-	return ppm.MyContent.SignedHeader().BlockHeight()
+	return ppm.content.SignedHeader().BlockHeight()
 }
 
 func (ppm *PreprepareMessageImpl) View() View {
-	return ppm.MyContent.SignedHeader().View()
+	return ppm.content.SignedHeader().View()
 }
 
 //---------
 // Prepare
 //---------
 type PrepareMessageImpl struct {
-	MyContent *BlockRefContent
+	content *PrepareContent
 }
 
 func (pm *PrepareMessageImpl) MessageType() MessageType {
-	return pm.MyContent.SignedHeader().MessageType()
+	return pm.content.SignedHeader().MessageType()
 }
 
-func (pm *PrepareMessageImpl) Content() *BlockRefContent {
-	return pm.MyContent
+func (pm *PrepareMessageImpl) Content() *PrepareContent {
+	return pm.content
 }
 
 func (pm *PrepareMessageImpl) Raw() []byte {
-	return pm.MyContent.Raw()
+	return pm.content.Raw()
 }
 
 func (pm *PrepareMessageImpl) String() string {
-	return pm.MyContent.String()
+	return pm.content.String()
 }
 
 func (pm *PrepareMessageImpl) SenderPublicKey() Ed25519PublicKey {
-	return pm.MyContent.Sender().SenderPublicKey()
+	return pm.content.Sender().SenderPublicKey()
 }
 
 func (pm *PrepareMessageImpl) BlockHeight() BlockHeight {
-	return pm.MyContent.SignedHeader().BlockHeight()
+	return pm.content.SignedHeader().BlockHeight()
 }
 func (pm *PrepareMessageImpl) View() View {
-	return pm.MyContent.SignedHeader().View()
+	return pm.content.SignedHeader().View()
 }
 
 //---------
 // Commit
 //---------
 type CommitMessageImpl struct {
-	MyContent *BlockRefContent
+	content *CommitContent
 }
 
 func (cm *CommitMessageImpl) MessageType() MessageType {
-	return cm.MyContent.SignedHeader().MessageType()
+	return cm.content.SignedHeader().MessageType()
 }
 
-func (cm *CommitMessageImpl) Content() *BlockRefContent {
-	return cm.MyContent
+func (cm *CommitMessageImpl) Content() *CommitContent {
+	return cm.content
 }
 
 func (cm *CommitMessageImpl) Raw() []byte {
-	return cm.MyContent.Raw()
+	return cm.content.Raw()
 }
 
 func (cm *CommitMessageImpl) String() string {
-	return cm.MyContent.String()
+	return cm.content.String()
 }
 
 func (cm *CommitMessageImpl) SenderPublicKey() Ed25519PublicKey {
-	return cm.MyContent.Sender().SenderPublicKey()
+	return cm.content.Sender().SenderPublicKey()
 }
 
 func (cm *CommitMessageImpl) BlockHeight() BlockHeight {
-	return cm.MyContent.SignedHeader().BlockHeight()
+	return cm.content.SignedHeader().BlockHeight()
 }
 func (cm *CommitMessageImpl) View() View {
-	return cm.MyContent.SignedHeader().View()
+	return cm.content.SignedHeader().View()
 }
 
 //-------------
 // View Change
 //-------------
 type ViewChangeMessageImpl struct {
-	MyContent *ViewChangeMessageContent
-	MyBlock   Block
+	content *ViewChangeMessageContent
+	block   Block
 }
 
 func (vcm *ViewChangeMessageImpl) MessageType() MessageType {
-	return vcm.MyContent.SignedHeader().MessageType()
+	return vcm.content.SignedHeader().MessageType()
 }
 
 func (vcm *ViewChangeMessageImpl) Content() *ViewChangeMessageContent {
-	return vcm.MyContent
+	return vcm.content
 }
 
 func (vcm *ViewChangeMessageImpl) Raw() []byte {
-	return vcm.MyContent.Raw()
+	return vcm.content.Raw()
 }
 
 func (vcm *ViewChangeMessageImpl) String() string {
-	return vcm.MyContent.String()
+	return vcm.content.String()
 }
 
 func (vcm *ViewChangeMessageImpl) SenderPublicKey() Ed25519PublicKey {
-	return vcm.MyContent.Sender().SenderPublicKey()
+	return vcm.content.Sender().SenderPublicKey()
 }
 
 func (vcm *ViewChangeMessageImpl) BlockHeight() BlockHeight {
-	return vcm.MyContent.SignedHeader().BlockHeight()
+	return vcm.content.SignedHeader().BlockHeight()
 }
 
 func (vcm *ViewChangeMessageImpl) Block() Block {
-	return vcm.MyBlock
+	return vcm.block
 }
 func (vcm *ViewChangeMessageImpl) View() View {
-	return vcm.MyContent.SignedHeader().View()
+	return vcm.content.SignedHeader().View()
 }
 
 //----------
 // New View
 //----------
 type NewViewMessageImpl struct {
-	MyContent *NewViewMessageContent
-	MyBlock   Block
+	content *NewViewMessageContent
+	block   Block
 }
 
 func (nvm *NewViewMessageImpl) MessageType() MessageType {
-	return nvm.MyContent.SignedHeader().MessageType()
+	return nvm.content.SignedHeader().MessageType()
 }
 
 func (nvm *NewViewMessageImpl) Content() *NewViewMessageContent {
-	return nvm.MyContent
+	return nvm.content
 }
 
 func (nvm *NewViewMessageImpl) Raw() []byte {
-	return nvm.MyContent.Raw()
+	return nvm.content.Raw()
 }
 
 func (nvm *NewViewMessageImpl) String() string {
-	return nvm.MyContent.String()
+	return nvm.content.String()
 }
 
 func (nvm *NewViewMessageImpl) SenderPublicKey() Ed25519PublicKey {
-	return nvm.MyContent.Sender().SenderPublicKey()
+	return nvm.content.Sender().SenderPublicKey()
 }
 
 func (nvm *NewViewMessageImpl) BlockHeight() BlockHeight {
-	return nvm.MyContent.SignedHeader().BlockHeight()
+	return nvm.content.SignedHeader().BlockHeight()
 }
 
 func (nvm *NewViewMessageImpl) Block() Block {
-	return nvm.MyBlock
+	return nvm.block
 }
 func (nvm *NewViewMessageImpl) View() View {
-	return nvm.MyContent.SignedHeader().View()
+	return nvm.content.SignedHeader().View()
 }

@@ -23,7 +23,7 @@ func TestMessageBuilderAndReader(t *testing.T) {
 	t.Run("build and read PreprepareMessage", func(t *testing.T) {
 		ppm := mf.CreatePreprepareMessage(height, view, b1)
 		ppmBytes := ppm.Raw()
-		receivedPPMC := lh.BlockRefContentReader(ppmBytes)
+		receivedPPMC := lh.PreprepareContentReader(ppmBytes)
 		require.Equal(t, receivedPPMC.SignedHeader().MessageType(), lh.LEAN_HELIX_PREPREPARE, "Message type should be LEAN_HELIX_PREPREPARE")
 		require.True(t, receivedPPMC.SignedHeader().BlockHeight().Equal(height), "Height = %v", height)
 		require.True(t, receivedPPMC.SignedHeader().View().Equal(view), "View = %v", view)
@@ -31,7 +31,7 @@ func TestMessageBuilderAndReader(t *testing.T) {
 	t.Run("build and read PrepareMessage", func(t *testing.T) {
 		pm := mf.CreatePrepareMessage(height, view, b1.BlockHash())
 		pmBytes := pm.Raw()
-		receivedPMC := lh.BlockRefContentReader(pmBytes)
+		receivedPMC := lh.PrepareContentReader(pmBytes)
 		require.Equal(t, receivedPMC.SignedHeader().MessageType(), lh.LEAN_HELIX_PREPARE, "Message type should be LEAN_HELIX_PREPARE")
 		require.True(t, receivedPMC.SignedHeader().BlockHeight().Equal(height), "Height = %v", height)
 		require.True(t, receivedPMC.SignedHeader().View().Equal(view), "View = %v", view)
@@ -39,7 +39,7 @@ func TestMessageBuilderAndReader(t *testing.T) {
 	t.Run("build and read CommitMessage", func(t *testing.T) {
 		cm := mf.CreateCommitMessage(height, view, b1.BlockHash())
 		cmBytes := cm.Raw()
-		receivedCMC := lh.BlockRefContentReader(cmBytes)
+		receivedCMC := lh.CommitContentReader(cmBytes)
 		require.Equal(t, receivedCMC.SignedHeader().MessageType(), lh.LEAN_HELIX_COMMIT, "Message type should be LEAN_HELIX_COMMIT")
 		require.True(t, receivedCMC.SignedHeader().BlockHeight().Equal(height), "Height = %v", height)
 		require.True(t, receivedCMC.SignedHeader().View().Equal(view), "View = %v", view)

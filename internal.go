@@ -10,13 +10,13 @@ func (arr ViewCounters) Swap(i, j int)      { arr[i], arr[j] = arr[j], arr[i] }
 func (arr ViewCounters) Less(i, j int) bool { return arr[i] < arr[j] }
 
 type consensusRawMessage struct {
-	header  []byte
-	content []byte
-	block   Block
+	messageType MessageType
+	content     []byte
+	block       Block
 }
 
-func (c *consensusRawMessage) Header() []byte {
-	return c.header
+func (c *consensusRawMessage) MessageType() MessageType {
+	return c.messageType
 }
 
 func (c *consensusRawMessage) Content() []byte {

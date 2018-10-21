@@ -1,6 +1,7 @@
 package builders
 
 import (
+	"context"
 	lh "github.com/orbs-network/lean-helix-go"
 	. "github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
@@ -17,7 +18,7 @@ type InMemoryNetworkCommunication struct {
 	gossip    *gossip.Gossip
 }
 
-func (comm *InMemoryNetworkCommunication) Send(targets []Ed25519PublicKey, message lh.ConsensusRawMessage) error {
+func (comm *InMemoryNetworkCommunication) Send(ctx context.Context, targets []Ed25519PublicKey, message lh.ConsensusRawMessage) error {
 	panic("implement me")
 }
 

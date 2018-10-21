@@ -13,7 +13,7 @@ type MessageFactoryImpl struct {
 func (f *MessageFactoryImpl) CreatePreprepareMessageContentBuilder(
 	blockHeight BlockHeight,
 	view View,
-	block Block) *BlockRefContentBuilder {
+	block Block) *PreprepareContentBuilder {
 
 	header := &BlockRefBuilder{
 		MessageType: LEAN_HELIX_PREPREPARE,
@@ -27,11 +27,11 @@ func (f *MessageFactoryImpl) CreatePreprepareMessageContentBuilder(
 		SenderPublicKey: me,
 		Signature:       sig,
 	}
-	blockRefContentBuilder := &BlockRefContentBuilder{
+	ppContentBuilder := &PreprepareContentBuilder{
 		SignedHeader: header,
 		Sender:       sender,
 	}
-	return blockRefContentBuilder
+	return ppContentBuilder
 }
 
 func (f *MessageFactoryImpl) CreatePreprepareMessage(
@@ -41,8 +41,8 @@ func (f *MessageFactoryImpl) CreatePreprepareMessage(
 
 	ppmc := f.CreatePreprepareMessageContentBuilder(blockHeight, view, block)
 	ppm := &PreprepareMessageImpl{
-		MyContent: ppmc.Build(),
-		MyBlock:   block,
+		content: ppmc.Build(),
+		block:   block,
 	}
 	return ppm
 }
@@ -64,12 +64,12 @@ func (f *MessageFactoryImpl) CreatePrepareMessage(
 		SenderPublicKey: me,
 		Signature:       sig,
 	}
-	blockRefContentBuilder := BlockRefContentBuilder{
+	pContentBuilder := PrepareContentBuilder{
 		SignedHeader: header,
 		Sender:       sender,
 	}
 	pm := &PrepareMessageImpl{
-		MyContent: blockRefContentBuilder.Build(),
+		content: pContentBuilder.Build(),
 	}
 	return pm
 }
@@ -91,12 +91,12 @@ func (f *MessageFactoryImpl) CreateCommitMessage(
 		SenderPublicKey: me,
 		Signature:       sig,
 	}
-	blockRefContentBuilder := BlockRefContentBuilder{
+	cContentBuilder := CommitContentBuilder{
 		SignedHeader: header,
 		Sender:       sender,
 	}
 	cm := &CommitMessageImpl{
-		MyContent: blockRefContentBuilder.Build(),
+		content: cContentBuilder.Build(),
 	}
 	return cm
 }
@@ -141,8 +141,8 @@ func (f *MessageFactoryImpl) CreateViewChangeMessage(
 
 	vcmcb := f.CreateViewChangeMessageContentBuilder(blockHeight, view, preparedMessages)
 	vcm := &ViewChangeMessageImpl{
-		MyContent: vcmcb.Build(),
-		MyBlock:   block,
+		content: vcmcb.Build(),
+		block:   block,
 	}
 
 	return vcm
@@ -151,7 +151,7 @@ func (f *MessageFactoryImpl) CreateViewChangeMessage(
 func (f *MessageFactoryImpl) CreateNewViewMessageContentBuilder(
 	blockHeight BlockHeight,
 	view View,
-	blockRefContentBuilder *BlockRefContentBuilder,
+	ppContentBuilder *PreprepareContentBuilder,
 	confirmations []*ViewChangeMessageContentBuilder) *NewViewMessageContentBuilder {
 
 	header := &NewViewHeaderBuilder{
@@ -171,21 +171,21 @@ func (f *MessageFactoryImpl) CreateNewViewMessageContentBuilder(
 	return &NewViewMessageContentBuilder{
 		SignedHeader: header,
 		Sender:       sender,
-		PreprepareMessageContent: blockRefContentBuilder,
+		PreprepareMessageContent: ppContentBuilder,
 	}
 }
 
 func (f *MessageFactoryImpl) CreateNewViewMessage(
 	blockHeight BlockHeight,
 	view View,
-	blockRefContentBuilder *BlockRefContentBuilder,
+	ppContentBuilder *PreprepareContentBuilder,
 	confirmations []*ViewChangeMessageContentBuilder,
 	block Block) NewViewMessage {
 
-	nvmcb := f.CreateNewViewMessageContentBuilder(blockHeight, view, blockRefContentBuilder, confirmations).Build()
+	nvmcb := f.CreateNewViewMessageContentBuilder(blockHeight, view, ppContentBuilder, confirmations).Build()
 	return &NewViewMessageImpl{
-		MyContent: nvmcb,
-		MyBlock:   block,
+		content: nvmcb,
+		block:   block,
 	}
 }
 

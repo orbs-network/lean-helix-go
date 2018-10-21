@@ -1,6 +1,7 @@
 package builders
 
 import (
+	"context"
 	"github.com/orbs-network/go-mock"
 	lh "github.com/orbs-network/lean-helix-go"
 	. "github.com/orbs-network/lean-helix-go/primitives"
@@ -45,7 +46,7 @@ func (b *MockBlockUtils) RequestCommittee() {
 	panic("implement me")
 }
 
-func (b *MockBlockUtils) RequestNewBlock(height BlockHeight) lh.Block {
+func (b *MockBlockUtils) RequestNewBlock(ctx context.Context, height BlockHeight) lh.Block {
 	//b.Called(height)
 	return b.ProvideNextBlock()
 }

@@ -31,7 +31,7 @@ func TestMessageFactory(t *testing.T) {
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		ppmcb := &lh.BlockRefContentBuilder{
+		ppmcb := &lh.PreprepareContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &lh.SenderSignatureBuilder{
 				SenderPublicKey: leaderKeyManager.MyPublicKey(),
@@ -40,9 +40,8 @@ func TestMessageFactory(t *testing.T) {
 		}
 
 		expectedPPM := &lh.PreprepareMessageImpl{
-
-			MyContent: ppmcb.Build(),
-			MyBlock:   block,
+			content: ppmcb.Build(),
+			block:   block,
 		}
 
 		actualPPM := leaderFac.CreatePreprepareMessage(height, view, block)
@@ -59,7 +58,7 @@ func TestMessageFactory(t *testing.T) {
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		blockRefContentBuilder := &lh.BlockRefContentBuilder{
+		prepareContentBuilder := &lh.PrepareContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &lh.SenderSignatureBuilder{
 				SenderPublicKey: leaderKeyManager.MyPublicKey(),
@@ -67,7 +66,7 @@ func TestMessageFactory(t *testing.T) {
 			},
 		}
 		expectedPM := &lh.PrepareMessageImpl{
-			MyContent: blockRefContentBuilder.Build(),
+			content: prepareContentBuilder.Build(),
 		}
 		actualPM := leaderFac.CreatePrepareMessage(height, view, blockHash)
 		expectedPMRaw := expectedPM.Raw()
@@ -81,7 +80,7 @@ func TestMessageFactory(t *testing.T) {
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		cmcb := &lh.BlockRefContentBuilder{
+		cmcb := &lh.CommitContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &lh.SenderSignatureBuilder{
 				SenderPublicKey: leaderKeyManager.MyPublicKey(),
@@ -89,7 +88,7 @@ func TestMessageFactory(t *testing.T) {
 			},
 		}
 		expectedCM := &lh.CommitMessageImpl{
-			MyContent: cmcb.Build(),
+			content: cmcb.Build(),
 		}
 		actualCM := leaderFac.CreateCommitMessage(height, view, blockHash)
 		expectedCMRaw := expectedCM.Raw()
@@ -153,8 +152,8 @@ func TestMessageFactory(t *testing.T) {
 			},
 		}
 		expectedVCM := &lh.ViewChangeMessageImpl{
-			MyContent: vcmContentBuilder.Build(),
-			MyBlock:   block,
+			content: vcmContentBuilder.Build(),
+			block:   block,
 		}
 
 		preparedMessages := &lh.PreparedMessages{
@@ -252,15 +251,15 @@ func TestMessageFactory(t *testing.T) {
 		nvmContentBuilder := &lh.NewViewMessageContentBuilder{
 			SignedHeader: nvmHeader,
 			Sender:       nvmSender,
-			PreprepareMessageContent: &lh.BlockRefContentBuilder{
+			PreprepareMessageContent: &lh.PreprepareContentBuilder{
 				SignedHeader: ppBlockRefBuilder,
 				Sender:       ppSender,
 			},
 		}
 
 		expectedNVM := &lh.NewViewMessageImpl{
-			MyContent: nvmContentBuilder.Build(),
-			MyBlock:   block,
+			content: nvmContentBuilder.Build(),
+			block:   block,
 		}
 
 		// Construct "actual" message with message factories

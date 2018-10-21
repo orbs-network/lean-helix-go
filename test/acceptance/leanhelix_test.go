@@ -26,9 +26,8 @@ const NODE_COUNT = 4
 func TestSendPreprepareOnlyIfLeader(t *testing.T) {
 
 	// TODO This is a big test, it is not ready yet - it is pending some LeanHelixTerm tests to pass
-	t.Skip()
 
-	//
+	t.Skip()
 
 	net := builders.NewSimpleTestNetwork(NODE_COUNT, nil) // Node 0 is leader
 

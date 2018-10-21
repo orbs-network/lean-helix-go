@@ -1,4 +1,4 @@
-// AUTO GENERATED FILE (by membufc proto compiler v0.0.19)
+// AUTO GENERATED FILE (by membufc proto compiler v0.0.20)
 package leanhelix
 
 import (
@@ -9,121 +9,11 @@ import (
 )
 
 /////////////////////////////////////////////////////////////////////////////
-// message ConsensusMessageHeader
+// message PreprepareContent
 
 // reader
 
-type ConsensusMessageHeader struct {
-	// MessageType MessageType
-
-	// internal
-	// implements membuffers.Message
-	_message membuffers.InternalMessage
-}
-
-func (x *ConsensusMessageHeader) String() string {
-	if x == nil {
-		return "<nil>"
-	}
-	return fmt.Sprintf("{MessageType:%s,}", x.StringMessageType())
-}
-
-var _ConsensusMessageHeader_Scheme = []membuffers.FieldType{membuffers.TypeUint16}
-var _ConsensusMessageHeader_Unions = [][]membuffers.FieldType{}
-
-func ConsensusMessageHeaderReader(buf []byte) *ConsensusMessageHeader {
-	x := &ConsensusMessageHeader{}
-	x._message.Init(buf, membuffers.Offset(len(buf)), _ConsensusMessageHeader_Scheme, _ConsensusMessageHeader_Unions)
-	return x
-}
-
-func (x *ConsensusMessageHeader) IsValid() bool {
-	return x._message.IsValid()
-}
-
-func (x *ConsensusMessageHeader) Raw() []byte {
-	return x._message.RawBuffer()
-}
-
-func (x *ConsensusMessageHeader) Equal(y *ConsensusMessageHeader) bool {
-	if x == nil && y == nil {
-		return true
-	}
-	if x == nil || y == nil {
-		return false
-	}
-	return bytes.Equal(x.Raw(), y.Raw())
-}
-
-func (x *ConsensusMessageHeader) MessageType() MessageType {
-	return MessageType(x._message.GetUint16(0))
-}
-
-func (x *ConsensusMessageHeader) RawMessageType() []byte {
-	return x._message.RawBufferForField(0, 0)
-}
-
-func (x *ConsensusMessageHeader) MutateMessageType(v MessageType) error {
-	return x._message.SetUint16(0, uint16(v))
-}
-
-func (x *ConsensusMessageHeader) StringMessageType() string {
-	return x.MessageType().String()
-}
-
-// builder
-
-type ConsensusMessageHeaderBuilder struct {
-	MessageType MessageType
-
-	// internal
-	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
-}
-
-func (w *ConsensusMessageHeaderBuilder) Write(buf []byte) (err error) {
-	if w == nil {
-		return
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = &membuffers.ErrBufferOverrun{}
-		}
-	}()
-	w._builder.Reset()
-	w._builder.WriteUint16(buf, uint16(w.MessageType))
-	return nil
-}
-
-func (w *ConsensusMessageHeaderBuilder) GetSize() membuffers.Offset {
-	if w == nil {
-		return 0
-	}
-	return w._builder.GetSize()
-}
-
-func (w *ConsensusMessageHeaderBuilder) CalcRequiredSize() membuffers.Offset {
-	if w == nil {
-		return 0
-	}
-	w.Write(nil)
-	return w._builder.GetSize()
-}
-
-func (w *ConsensusMessageHeaderBuilder) Build() *ConsensusMessageHeader {
-	buf := make([]byte, w.CalcRequiredSize())
-	if w.Write(buf) != nil {
-		return nil
-	}
-	return ConsensusMessageHeaderReader(buf)
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// message BlockRefContent
-
-// reader
-
-type BlockRefContent struct {
+type PreprepareContent struct {
 	// SignedHeader BlockRef
 	// Sender SenderSignature
 
@@ -132,31 +22,31 @@ type BlockRefContent struct {
 	_message membuffers.InternalMessage
 }
 
-func (x *BlockRefContent) String() string {
+func (x *PreprepareContent) String() string {
 	if x == nil {
 		return "<nil>"
 	}
 	return fmt.Sprintf("{SignedHeader:%s,Sender:%s,}", x.StringSignedHeader(), x.StringSender())
 }
 
-var _BlockRefContent_Scheme = []membuffers.FieldType{membuffers.TypeMessage, membuffers.TypeMessage}
-var _BlockRefContent_Unions = [][]membuffers.FieldType{}
+var _PreprepareContent_Scheme = []membuffers.FieldType{membuffers.TypeMessage, membuffers.TypeMessage}
+var _PreprepareContent_Unions = [][]membuffers.FieldType{}
 
-func BlockRefContentReader(buf []byte) *BlockRefContent {
-	x := &BlockRefContent{}
-	x._message.Init(buf, membuffers.Offset(len(buf)), _BlockRefContent_Scheme, _BlockRefContent_Unions)
+func PreprepareContentReader(buf []byte) *PreprepareContent {
+	x := &PreprepareContent{}
+	x._message.Init(buf, membuffers.Offset(len(buf)), _PreprepareContent_Scheme, _PreprepareContent_Unions)
 	return x
 }
 
-func (x *BlockRefContent) IsValid() bool {
+func (x *PreprepareContent) IsValid() bool {
 	return x._message.IsValid()
 }
 
-func (x *BlockRefContent) Raw() []byte {
+func (x *PreprepareContent) Raw() []byte {
 	return x._message.RawBuffer()
 }
 
-func (x *BlockRefContent) Equal(y *BlockRefContent) bool {
+func (x *PreprepareContent) Equal(y *PreprepareContent) bool {
 	if x == nil && y == nil {
 		return true
 	}
@@ -166,43 +56,43 @@ func (x *BlockRefContent) Equal(y *BlockRefContent) bool {
 	return bytes.Equal(x.Raw(), y.Raw())
 }
 
-func (x *BlockRefContent) SignedHeader() *BlockRef {
+func (x *PreprepareContent) SignedHeader() *BlockRef {
 	b, s := x._message.GetMessage(0)
 	return BlockRefReader(b[:s])
 }
 
-func (x *BlockRefContent) RawSignedHeader() []byte {
+func (x *PreprepareContent) RawSignedHeader() []byte {
 	return x._message.RawBufferForField(0, 0)
 }
 
-func (x *BlockRefContent) RawSignedHeaderWithHeader() []byte {
+func (x *PreprepareContent) RawSignedHeaderWithHeader() []byte {
 	return x._message.RawBufferWithHeaderForField(0, 0)
 }
 
-func (x *BlockRefContent) StringSignedHeader() string {
+func (x *PreprepareContent) StringSignedHeader() string {
 	return x.SignedHeader().String()
 }
 
-func (x *BlockRefContent) Sender() *SenderSignature {
+func (x *PreprepareContent) Sender() *SenderSignature {
 	b, s := x._message.GetMessage(1)
 	return SenderSignatureReader(b[:s])
 }
 
-func (x *BlockRefContent) RawSender() []byte {
+func (x *PreprepareContent) RawSender() []byte {
 	return x._message.RawBufferForField(1, 0)
 }
 
-func (x *BlockRefContent) RawSenderWithHeader() []byte {
+func (x *PreprepareContent) RawSenderWithHeader() []byte {
 	return x._message.RawBufferWithHeaderForField(1, 0)
 }
 
-func (x *BlockRefContent) StringSender() string {
+func (x *PreprepareContent) StringSender() string {
 	return x.Sender().String()
 }
 
 // builder
 
-type BlockRefContentBuilder struct {
+type PreprepareContentBuilder struct {
 	SignedHeader *BlockRefBuilder
 	Sender       *SenderSignatureBuilder
 
@@ -211,7 +101,7 @@ type BlockRefContentBuilder struct {
 	_builder membuffers.InternalBuilder
 }
 
-func (w *BlockRefContentBuilder) Write(buf []byte) (err error) {
+func (w *PreprepareContentBuilder) Write(buf []byte) (err error) {
 	if w == nil {
 		return
 	}
@@ -232,14 +122,14 @@ func (w *BlockRefContentBuilder) Write(buf []byte) (err error) {
 	return nil
 }
 
-func (w *BlockRefContentBuilder) GetSize() membuffers.Offset {
+func (w *PreprepareContentBuilder) GetSize() membuffers.Offset {
 	if w == nil {
 		return 0
 	}
 	return w._builder.GetSize()
 }
 
-func (w *BlockRefContentBuilder) CalcRequiredSize() membuffers.Offset {
+func (w *PreprepareContentBuilder) CalcRequiredSize() membuffers.Offset {
 	if w == nil {
 		return 0
 	}
@@ -247,12 +137,286 @@ func (w *BlockRefContentBuilder) CalcRequiredSize() membuffers.Offset {
 	return w._builder.GetSize()
 }
 
-func (w *BlockRefContentBuilder) Build() *BlockRefContent {
+func (w *PreprepareContentBuilder) Build() *PreprepareContent {
 	buf := make([]byte, w.CalcRequiredSize())
 	if w.Write(buf) != nil {
 		return nil
 	}
-	return BlockRefContentReader(buf)
+	return PreprepareContentReader(buf)
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// message PrepareContent
+
+// reader
+
+type PrepareContent struct {
+	// SignedHeader BlockRef
+	// Sender SenderSignature
+
+	// internal
+	// implements membuffers.Message
+	_message membuffers.InternalMessage
+}
+
+func (x *PrepareContent) String() string {
+	if x == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("{SignedHeader:%s,Sender:%s,}", x.StringSignedHeader(), x.StringSender())
+}
+
+var _PrepareContent_Scheme = []membuffers.FieldType{membuffers.TypeMessage, membuffers.TypeMessage}
+var _PrepareContent_Unions = [][]membuffers.FieldType{}
+
+func PrepareContentReader(buf []byte) *PrepareContent {
+	x := &PrepareContent{}
+	x._message.Init(buf, membuffers.Offset(len(buf)), _PrepareContent_Scheme, _PrepareContent_Unions)
+	return x
+}
+
+func (x *PrepareContent) IsValid() bool {
+	return x._message.IsValid()
+}
+
+func (x *PrepareContent) Raw() []byte {
+	return x._message.RawBuffer()
+}
+
+func (x *PrepareContent) Equal(y *PrepareContent) bool {
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return bytes.Equal(x.Raw(), y.Raw())
+}
+
+func (x *PrepareContent) SignedHeader() *BlockRef {
+	b, s := x._message.GetMessage(0)
+	return BlockRefReader(b[:s])
+}
+
+func (x *PrepareContent) RawSignedHeader() []byte {
+	return x._message.RawBufferForField(0, 0)
+}
+
+func (x *PrepareContent) RawSignedHeaderWithHeader() []byte {
+	return x._message.RawBufferWithHeaderForField(0, 0)
+}
+
+func (x *PrepareContent) StringSignedHeader() string {
+	return x.SignedHeader().String()
+}
+
+func (x *PrepareContent) Sender() *SenderSignature {
+	b, s := x._message.GetMessage(1)
+	return SenderSignatureReader(b[:s])
+}
+
+func (x *PrepareContent) RawSender() []byte {
+	return x._message.RawBufferForField(1, 0)
+}
+
+func (x *PrepareContent) RawSenderWithHeader() []byte {
+	return x._message.RawBufferWithHeaderForField(1, 0)
+}
+
+func (x *PrepareContent) StringSender() string {
+	return x.Sender().String()
+}
+
+// builder
+
+type PrepareContentBuilder struct {
+	SignedHeader *BlockRefBuilder
+	Sender       *SenderSignatureBuilder
+
+	// internal
+	// implements membuffers.Builder
+	_builder membuffers.InternalBuilder
+}
+
+func (w *PrepareContentBuilder) Write(buf []byte) (err error) {
+	if w == nil {
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	w._builder.Reset()
+	err = w._builder.WriteMessage(buf, w.SignedHeader)
+	if err != nil {
+		return
+	}
+	err = w._builder.WriteMessage(buf, w.Sender)
+	if err != nil {
+		return
+	}
+	return nil
+}
+
+func (w *PrepareContentBuilder) GetSize() membuffers.Offset {
+	if w == nil {
+		return 0
+	}
+	return w._builder.GetSize()
+}
+
+func (w *PrepareContentBuilder) CalcRequiredSize() membuffers.Offset {
+	if w == nil {
+		return 0
+	}
+	w.Write(nil)
+	return w._builder.GetSize()
+}
+
+func (w *PrepareContentBuilder) Build() *PrepareContent {
+	buf := make([]byte, w.CalcRequiredSize())
+	if w.Write(buf) != nil {
+		return nil
+	}
+	return PrepareContentReader(buf)
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// message CommitContent
+
+// reader
+
+type CommitContent struct {
+	// SignedHeader BlockRef
+	// Sender SenderSignature
+
+	// internal
+	// implements membuffers.Message
+	_message membuffers.InternalMessage
+}
+
+func (x *CommitContent) String() string {
+	if x == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("{SignedHeader:%s,Sender:%s,}", x.StringSignedHeader(), x.StringSender())
+}
+
+var _CommitContent_Scheme = []membuffers.FieldType{membuffers.TypeMessage, membuffers.TypeMessage}
+var _CommitContent_Unions = [][]membuffers.FieldType{}
+
+func CommitContentReader(buf []byte) *CommitContent {
+	x := &CommitContent{}
+	x._message.Init(buf, membuffers.Offset(len(buf)), _CommitContent_Scheme, _CommitContent_Unions)
+	return x
+}
+
+func (x *CommitContent) IsValid() bool {
+	return x._message.IsValid()
+}
+
+func (x *CommitContent) Raw() []byte {
+	return x._message.RawBuffer()
+}
+
+func (x *CommitContent) Equal(y *CommitContent) bool {
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return bytes.Equal(x.Raw(), y.Raw())
+}
+
+func (x *CommitContent) SignedHeader() *BlockRef {
+	b, s := x._message.GetMessage(0)
+	return BlockRefReader(b[:s])
+}
+
+func (x *CommitContent) RawSignedHeader() []byte {
+	return x._message.RawBufferForField(0, 0)
+}
+
+func (x *CommitContent) RawSignedHeaderWithHeader() []byte {
+	return x._message.RawBufferWithHeaderForField(0, 0)
+}
+
+func (x *CommitContent) StringSignedHeader() string {
+	return x.SignedHeader().String()
+}
+
+func (x *CommitContent) Sender() *SenderSignature {
+	b, s := x._message.GetMessage(1)
+	return SenderSignatureReader(b[:s])
+}
+
+func (x *CommitContent) RawSender() []byte {
+	return x._message.RawBufferForField(1, 0)
+}
+
+func (x *CommitContent) RawSenderWithHeader() []byte {
+	return x._message.RawBufferWithHeaderForField(1, 0)
+}
+
+func (x *CommitContent) StringSender() string {
+	return x.Sender().String()
+}
+
+// builder
+
+type CommitContentBuilder struct {
+	SignedHeader *BlockRefBuilder
+	Sender       *SenderSignatureBuilder
+
+	// internal
+	// implements membuffers.Builder
+	_builder membuffers.InternalBuilder
+}
+
+func (w *CommitContentBuilder) Write(buf []byte) (err error) {
+	if w == nil {
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	w._builder.Reset()
+	err = w._builder.WriteMessage(buf, w.SignedHeader)
+	if err != nil {
+		return
+	}
+	err = w._builder.WriteMessage(buf, w.Sender)
+	if err != nil {
+		return
+	}
+	return nil
+}
+
+func (w *CommitContentBuilder) GetSize() membuffers.Offset {
+	if w == nil {
+		return 0
+	}
+	return w._builder.GetSize()
+}
+
+func (w *CommitContentBuilder) CalcRequiredSize() membuffers.Offset {
+	if w == nil {
+		return 0
+	}
+	w.Write(nil)
+	return w._builder.GetSize()
+}
+
+func (w *CommitContentBuilder) Build() *CommitContent {
+	buf := make([]byte, w.CalcRequiredSize())
+	if w.Write(buf) != nil {
+		return nil
+	}
+	return CommitContentReader(buf)
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -400,7 +564,7 @@ func (w *ViewChangeMessageContentBuilder) Build() *ViewChangeMessageContent {
 type NewViewMessageContent struct {
 	// SignedHeader NewViewHeader
 	// Sender SenderSignature
-	// PreprepareMessageContent BlockRefContent
+	// PreprepareMessageContent PreprepareContent
 
 	// internal
 	// implements membuffers.Message
@@ -475,9 +639,9 @@ func (x *NewViewMessageContent) StringSender() string {
 	return x.Sender().String()
 }
 
-func (x *NewViewMessageContent) PreprepareMessageContent() *BlockRefContent {
+func (x *NewViewMessageContent) PreprepareMessageContent() *PreprepareContent {
 	b, s := x._message.GetMessage(2)
-	return BlockRefContentReader(b[:s])
+	return PreprepareContentReader(b[:s])
 }
 
 func (x *NewViewMessageContent) RawPreprepareMessageContent() []byte {
@@ -497,7 +661,7 @@ func (x *NewViewMessageContent) StringPreprepareMessageContent() string {
 type NewViewMessageContentBuilder struct {
 	SignedHeader             *NewViewHeaderBuilder
 	Sender                   *SenderSignatureBuilder
-	PreprepareMessageContent *BlockRefContentBuilder
+	PreprepareMessageContent *PreprepareContentBuilder
 
 	// internal
 	// implements membuffers.Builder

@@ -38,7 +38,7 @@ func TestAcceptPreprepareWithCurrentView(t *testing.T) {
 	// TODO This is smelly - maybe wait till correct config architecture
 	// emerges from future tests
 	termConfig1.Storage = mockStorage1
-	node1LeanHelixTerm, err := lh.NewLeanHelixTerm(termConfig1, 0, nil)
+	node1LeanHelixTerm, err := lh.NewLeanHelixTerm(ctx, termConfig1, 0, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -54,21 +54,21 @@ func TestAcceptPreprepareWithCurrentView(t *testing.T) {
 	mf1 := lh.NewMessageFactory(keyManager)
 
 	ppmFromCurrentView := mf1.CreatePreprepareMessage(1, 1, block)
-	node1LeanHelixTerm.OnReceivePreprepare(ppmFromCurrentView)
+	node1LeanHelixTerm.OnReceivePreprepare(ctx, ppmFromCurrentView)
 	utils.ResolveAllValidations(true)
 	mockStorage1.When("StorePrepare").Times(1)
 	mockStorage1.Verify()
 	mockStorage1.Reset()
 
 	ppmFromFutureView := mf1.CreatePreprepareMessage(1, 2, block)
-	node1LeanHelixTerm.OnReceivePreprepare(ppmFromFutureView)
+	node1LeanHelixTerm.OnReceivePreprepare(ctx, ppmFromFutureView)
 	utils.ResolveAllValidations(true)
 	mockStorage1.Never("StorePrepare")
 	mockStorage1.Verify()
 	mockStorage1.Reset()
 
 	ppmFromPastView := mf1.CreatePreprepareMessage(1, 0, block)
-	node1LeanHelixTerm.OnReceivePreprepare(ppmFromPastView)
+	node1LeanHelixTerm.OnReceivePreprepare(ctx, ppmFromPastView)
 	utils.ResolveAllValidations(true)
 	mockStorage1.Never("StorePrepare")
 	mockStorage1.Verify()
