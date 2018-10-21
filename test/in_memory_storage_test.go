@@ -1,7 +1,6 @@
 package test
 
 import (
-	"bytes"
 	lh "github.com/orbs-network/lean-helix-go"
 	. "github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
@@ -156,14 +155,12 @@ func TestStoreViewChange(t *testing.T) {
 	require.ElementsMatch(t, actualViewChangeMessages, expectedMessages, "stored view-change messages should match the fetched view-change messages")
 }
 
-func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
+func TestDuplicatePreprepare(t *testing.T) {
 	var storage lh.Storage = lh.NewInMemoryStorage()
-	height := BlockHeight(math.Floor(rand.Float64() * 1000))
-	view := View(math.Floor(rand.Float64() * 1000))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	keyManager := builders.NewMockKeyManager(Ed25519PublicKey("PK"))
 	mf := lh.NewMessageFactory(keyManager)
-	ppm := mf.CreatePreprepareMessage(height, view, block)
+	ppm := mf.CreatePreprepareMessage(1, 1, block)
 
 	firstTime := storage.StorePreprepare(ppm)
 	require.True(t, firstTime, "StorePreprepare() returns true if storing a new value ")
@@ -172,112 +169,19 @@ func TestStorePreprepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	require.False(t, secondTime, "StorePreprepare() returns false if trying to store a value that already exists")
 }
 
-func TestClearAllStorageDataAfterCallingClearBlockHeightLogs(t *testing.T) {
+func TestDuplicatePrepare(t *testing.T) {
 	var storage lh.Storage = lh.NewInMemoryStorage()
-	height := BlockHeight(math.Floor(rand.Float64() * 1000))
-	view := View(math.Floor(rand.Float64() * 1000))
-	block := builders.CreateBlock(builders.GenesisBlock)
-	blockHash := builders.CalculateBlockHash(block)
-	senderId := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	keyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId))
-	msgFactory := lh.NewMessageFactory(keyManager)
-	storage.StorePreprepare(msgFactory.CreatePreprepareMessage(height, view, block))
-	storage.StorePrepare(msgFactory.CreatePrepareMessage(height, view, blockHash))
-	storage.StoreCommit(msgFactory.CreateCommitMessage(height, view, blockHash))
-	storage.StoreViewChange(msgFactory.CreateViewChangeMessage(height, view, nil))
-
-	pp, _ := storage.GetPreprepareMessage(height, view)
-	ps, _ := storage.GetPrepareMessages(height, view, blockHash)
-	require.NotNil(t, pp, "GetPreprepareMessage() should return the store preprepare message")
-	require.Equal(t, 1, len(ps), "Length of GetPrepareMessages() result array should be 1")
-	require.Equal(t, 1, len(storage.GetCommitSendersPKs(height, view, blockHash)), "Length of GetCommitSendersPKs() result array should be 1")
-	require.Equal(t, 1, len(storage.GetViewChangeMessages(height, view)), "Length of GetViewChangeMessages() result array should be 1")
-
-	storage.ClearBlockHeightLogs(height)
-
-	pp, _ = storage.GetPreprepareMessage(height, view)
-	ps, _ = storage.GetPrepareMessages(height, view, blockHash)
-
-	require.Nil(t, pp, "GetPreprepareMessage() should return nil after ClearBlockHeightLogs()")
-	require.Equal(t, 0, len(ps), "Length of GetPrepareMessages() result array should be 0")
-	require.Equal(t, 0, len(storage.GetCommitSendersPKs(height, view, blockHash)), "Length of GetCommitSendersPKs() result array should be 0")
-	require.Equal(t, 0, len(storage.GetViewChangeMessages(height, view)), "Length of GetViewChangeMessages() result array should be 0")
-}
-
-func TestStorePrepareInStorage(t *testing.T) {
-	var storage lh.Storage = lh.NewInMemoryStorage()
-	height1 := BlockHeight(math.Floor(rand.Float64() * 1000))
-	height2 := BlockHeight(math.Floor(rand.Float64() * 1000))
-	view1 := View(math.Floor(rand.Float64() * 1000))
-	view2 := View(math.Floor(rand.Float64() * 1000))
-	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	senderId3 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	sender1KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId1))
-	sender2KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId2))
-	sender3KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId3))
-	block1 := builders.CreateBlock(builders.GenesisBlock)
-	block2 := builders.CreateBlock(builders.GenesisBlock)
-	block1Hash := builders.CalculateBlockHash(block1)
-	block2Hash := builders.CalculateBlockHash(block2)
-	sender1MsgFactory := lh.NewMessageFactory(sender1KeyManager)
-	sender2MsgFactory := lh.NewMessageFactory(sender2KeyManager)
-	sender3MsgFactory := lh.NewMessageFactory(sender3KeyManager)
-	storage.StorePrepare(sender1MsgFactory.CreatePrepareMessage(height1, view1, block1Hash))
-	storage.StorePrepare(sender2MsgFactory.CreatePrepareMessage(height1, view1, block1Hash))
-	storage.StorePrepare(sender2MsgFactory.CreatePrepareMessage(height1, view1, block2Hash))
-	storage.StorePrepare(sender3MsgFactory.CreatePrepareMessage(height1, view2, block1Hash))
-	storage.StorePrepare(sender3MsgFactory.CreatePrepareMessage(height2, view1, block2Hash))
-
-	expected := []Ed25519PublicKey{senderId1, senderId2}
-	actual := storage.GetPrepareSendersPKs(height1, view1, block1Hash)
-	require.ElementsMatch(t, expected, actual, "Storage stores unique PrePrepare values")
-}
-
-func TestStoreCommitInStorage(t *testing.T) {
-	var storage lh.Storage = lh.NewInMemoryStorage()
-	height1 := BlockHeight(math.Floor(rand.Float64() * 1000))
-	height2 := BlockHeight(math.Floor(rand.Float64() * 1000))
-	view1 := View(math.Floor(rand.Float64() * 1000))
-	view2 := View(math.Floor(rand.Float64() * 1000))
-	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	senderId3 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	sender1KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId1))
-	sender2KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId2))
-	sender3KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId3))
-	block1 := builders.CreateBlock(builders.GenesisBlock)
-	block2 := builders.CreateBlock(builders.GenesisBlock)
-	block1Hash := builders.CalculateBlockHash(block1)
-	block2Hash := builders.CalculateBlockHash(block2)
-	sender1MsgFactory := lh.NewMessageFactory(sender1KeyManager)
-	sender2MsgFactory := lh.NewMessageFactory(sender2KeyManager)
-	sender3MsgFactory := lh.NewMessageFactory(sender3KeyManager)
-	storage.StoreCommit(sender1MsgFactory.CreateCommitMessage(height1, view1, block1Hash))
-	storage.StoreCommit(sender2MsgFactory.CreateCommitMessage(height1, view1, block1Hash))
-	storage.StoreCommit(sender2MsgFactory.CreateCommitMessage(height1, view1, block2Hash))
-	storage.StoreCommit(sender3MsgFactory.CreateCommitMessage(height1, view2, block1Hash))
-	storage.StoreCommit(sender3MsgFactory.CreateCommitMessage(height2, view1, block2Hash))
-
-	expected := []Ed25519PublicKey{senderId1, senderId2}
-	actual := storage.GetCommitSendersPKs(height1, view1, block1Hash)
-	require.ElementsMatch(t, expected, actual, "Storage stores unique PrePrepare values")
-}
-
-func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
-	var storage lh.Storage = lh.NewInMemoryStorage()
-	height := BlockHeight(math.Floor(rand.Float64() * 1000))
+	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000))
 	view := View(math.Floor(rand.Float64() * 1000))
 	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	sender1KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId1))
-	sender2KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId2))
+	sender1KeyManager := builders.NewMockKeyManager(senderId1)
+	sender2KeyManager := builders.NewMockKeyManager(senderId2)
 	block := builders.CreateBlock(builders.GenesisBlock)
-	blockHash := builders.CalculateBlockHash(block)
 	sender1MsgFactory := lh.NewMessageFactory(sender1KeyManager)
 	sender2MsgFactory := lh.NewMessageFactory(sender2KeyManager)
-	p1 := sender1MsgFactory.CreatePrepareMessage(height, view, blockHash)
-	p2 := sender2MsgFactory.CreatePrepareMessage(height, view, blockHash)
+	p1 := sender1MsgFactory.CreatePrepareMessage(blockHeight, view, block.BlockHash())
+	p2 := sender2MsgFactory.CreatePrepareMessage(blockHeight, view, block.BlockHash())
 
 	firstTime := storage.StorePrepare(p1)
 	require.True(t, firstTime, "StorePrepare() returns true if storing a new value (1 of 2)")
@@ -289,21 +193,20 @@ func TestStorePrepareReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 	require.False(t, thirdTime, "StorePrepare() returns false if trying to store a value that already exists")
 }
 
-func TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
+func TestDuplicateCommit(t *testing.T) {
 	var storage lh.Storage = lh.NewInMemoryStorage()
-	height := BlockHeight(math.Floor(rand.Float64() * 1000))
+	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000))
 	view := View(math.Floor(rand.Float64() * 1000))
 	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	sender1KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId1))
-	sender2KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId2))
+	sender1KeyManager := builders.NewMockKeyManager(senderId1)
+	sender2KeyManager := builders.NewMockKeyManager(senderId2)
 	block := builders.CreateBlock(builders.GenesisBlock)
-	blockHash := builders.CalculateBlockHash(block)
 	sender1MsgFactory := lh.NewMessageFactory(sender1KeyManager)
 	sender2MsgFactory := lh.NewMessageFactory(sender2KeyManager)
 
-	c1 := sender1MsgFactory.CreateCommitMessage(height, view, blockHash)
-	c2 := sender2MsgFactory.CreateCommitMessage(height, view, blockHash)
+	c1 := sender1MsgFactory.CreateCommitMessage(blockHeight, view, block.BlockHash())
+	c2 := sender2MsgFactory.CreateCommitMessage(blockHeight, view, block.BlockHash())
 
 	firstTime := storage.StoreCommit(c1)
 	require.True(t, firstTime, "StoreCommit() returns true if storing a new value (1 of 2)")
@@ -316,18 +219,18 @@ func TestStoreCommitReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 
 }
 
-func TestStoreViewChangeReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
+func TestDuplicateViewChange(t *testing.T) {
 	var storage lh.Storage = lh.NewInMemoryStorage()
-	height := BlockHeight(math.Floor(rand.Float64() * 1000))
+	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000))
 	view := View(math.Floor(rand.Float64() * 1000))
 	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	sender1KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId1))
-	sender2KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId2))
+	sender1KeyManager := builders.NewMockKeyManager(senderId1)
+	sender2KeyManager := builders.NewMockKeyManager(senderId2)
 	sender1MsgFactory := lh.NewMessageFactory(sender1KeyManager)
 	sender2MsgFactory := lh.NewMessageFactory(sender2KeyManager)
-	vc1 := sender1MsgFactory.CreateViewChangeMessage(height, view, nil)
-	vc2 := sender2MsgFactory.CreateViewChangeMessage(height, view, nil)
+	vc1 := sender1MsgFactory.CreateViewChangeMessage(blockHeight, view, nil)
+	vc2 := sender2MsgFactory.CreateViewChangeMessage(blockHeight, view, nil)
 
 	firstTime := storage.StoreViewChange(vc1)
 	require.True(t, firstTime, "StoreViewChange() returns true if storing a new value (1 of 2)")
@@ -340,35 +243,43 @@ func TestStoreViewChangeReturnsTrueIfNewOrFalseIfAlreadyExists(t *testing.T) {
 
 }
 
-// Proofs
+func TestClearBlockHeightLogs(t *testing.T) {
+	var storage lh.Storage = lh.NewInMemoryStorage()
+	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000))
+	view := View(math.Floor(rand.Float64() * 1000))
+	block := builders.CreateBlock(builders.GenesisBlock)
+	blockHash := builders.CalculateBlockHash(block)
+	keyManager := builders.NewMockKeyManager(Ed25519PublicKey("PK"))
 
-//func TestStoreAndGetViewChangeProof(t *testing.T) {
-//	var storage lh.Storage = lh.NewInMemoryStorage()
-//	height1 := BlockHeight(math.Floor(rand.Float64() * 1000))
-//	height2 := BlockHeight(math.Floor(rand.Float64() * 1000))
-//	view1 := View(math.Floor(rand.Float64() * 1000))
-//	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-//	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-//	senderId3 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-//	sender1KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId1))
-//	sender2KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId2))
-//	sender3KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId3))
-//	sender1MsgFactory := lh.NewMessageFactory(sender1KeyManager)
-//	sender2MsgFactory := lh.NewMessageFactory(sender2KeyManager)
-//	sender3MsgFactory := lh.NewMessageFactory(sender3KeyManager)
-//	vcs := make([]*lh.ViewChangeMessage, 0, 4)
-//	vcs = append(vcs, sender1MsgFactory.CreateViewChangeMessage(height1, view1, nil))
-//	vcs = append(vcs, sender2MsgFactory.CreateViewChangeMessage(height1, view1, nil))
-//	vcs = append(vcs, sender3MsgFactory.CreateViewChangeMessage(height1, view1, nil))
-//	vcs = append(vcs, sender3MsgFactory.CreateViewChangeMessage(height2, view1, nil))
-//	for _, k := range vcs {
-//		storage.StoreViewChange(k)
-//	}
-//	actual := storage.GetViewChangeMessages(height1, view1)
-//	expected := 2*10 + 1                                                     // TODO why this?
-//	require.Equal(t, expected, len(actual), "return the view-change proof") // TODO bad explanation!
-//}
+	msgFactory := lh.NewMessageFactory(keyManager)
+	ppMsg := msgFactory.CreatePreprepareMessage(blockHeight, view, block)
+	pMsg := msgFactory.CreatePrepareMessage(blockHeight, view, blockHash)
+	cMsg := msgFactory.CreateCommitMessage(blockHeight, view, blockHash)
+	vcMsg := msgFactory.CreateViewChangeMessage(blockHeight, view, nil)
 
-func compPrepareProof(t *testing.T, a, b lh.PreparedProof, msg string) {
-	require.True(t, bytes.Compare(a.Raw(), b.Raw()) == 0)
+	storage.StorePreprepare(ppMsg)
+	storage.StorePrepare(pMsg)
+	storage.StoreCommit(cMsg)
+	storage.StoreViewChange(vcMsg)
+
+	actualPP, _ := storage.GetPreprepareMessage(blockHeight, view)
+	actualP, _ := storage.GetPrepareMessages(blockHeight, view, blockHash)
+	actualC, _ := storage.GetCommitMessages(blockHeight, view, blockHash)
+	actualVC := storage.GetViewChangeMessages(blockHeight, view)
+	require.Equal(t, actualPP, ppMsg, "stored preprepare message should match the fetched preprepare message")
+	require.Equal(t, 1, len(actualP), "Length of GetPrepareMessages() result array should be 1")
+	require.Equal(t, 1, len(actualC), "Length of GetCommitSendersPKs() result array should be 1")
+	require.Equal(t, 1, len(actualVC), "Length of GetViewChangeMessages() result array should be 1")
+
+	storage.ClearBlockHeightLogs(blockHeight)
+
+	actualPP, _ = storage.GetPreprepareMessage(blockHeight, view)
+	actualP, _ = storage.GetPrepareMessages(blockHeight, view, blockHash)
+	actualC, _ = storage.GetCommitMessages(blockHeight, view, blockHash)
+	actualVC = storage.GetViewChangeMessages(blockHeight, view)
+
+	require.Nil(t, actualPP, "GetPreprepareMessage() should return nil after ClearBlockHeightLogs()")
+	require.Equal(t, 0, len(actualP), "Length of GetPrepareMessages() result array should be 0")
+	require.Equal(t, 0, len(actualC), "Length of GetCommitSendersPKs() result array should be 0")
+	require.Equal(t, 0, len(actualVC), "Length of GetViewChangeMessages() result array should be 0")
 }
