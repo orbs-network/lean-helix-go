@@ -9,17 +9,17 @@ import (
 )
 
 type Node struct {
-	PublicKey  Ed25519PublicKey
+	KeyManager lh.KeyManager
 	Config     *lh.Config
 	leanHelix  lh.LeanHelix
 	blockChain *InMemoryBlockChain
 	Gossip     *gossip.Gossip
 }
 
-func NewNode(ctx context.Context, ctxCancel context.CancelFunc, publicKey Ed25519PublicKey, config *lh.Config) *Node {
+func NewNode(ctx context.Context, ctxCancel context.CancelFunc, keyManager lh.KeyManager, config *lh.Config) *Node {
 	pbft := lh.NewLeanHelix(ctx, ctxCancel, config)
 	node := &Node{
-		PublicKey:  publicKey,
+		KeyManager: keyManager,
 		Config:     config,
 		leanHelix:  pbft,
 		blockChain: NewInMemoryBlockChain(),
@@ -35,14 +35,13 @@ func buildNode(ctx context.Context, ctxCancel context.CancelFunc, publicKey Ed25
 	blockUtils := NewMockBlockUtils(nil)
 	gossip := gossip.NewGossip(discovery, publicKey)
 	discovery.RegisterGossip(publicKey, gossip)
-	networkCommunication := NewInMemoryNetworkCommunication(discovery, gossip)
 
 	return NewNodeBuilder().
 		WithContext(ctx, ctxCancel).
-		ThatIsPartOf(networkCommunication).
+		ThatIsPartOf(gossip).
 		GettingBlocksVia(blockUtils).
 		ElectingLeaderUsing(electionTrigger).
-		WithPK(publicKey).
+		WithPublicKey(publicKey).
 		ThatLogsTo(nodeLogger).
 		Build()
 }

@@ -11,7 +11,7 @@ type NodeBuilder struct {
 	ctx                  context.Context
 	ctxCancel            context.CancelFunc
 	networkCommunication lh.NetworkCommunication
-	publicKey            Ed25519PublicKey
+	keyManager           lh.KeyManager
 	storage              lh.Storage
 	logger               log.BasicLogger
 	electionTrigger      lh.ElectionTrigger
@@ -22,7 +22,7 @@ type NodeBuilder struct {
 func NewNodeBuilder() *NodeBuilder {
 	return &NodeBuilder{
 		networkCommunication: nil,
-		publicKey:            nil,
+		keyManager:           nil,
 		storage:              nil,
 		logger:               nil,
 		electionTrigger:      nil,
@@ -45,9 +45,9 @@ func (builder *NodeBuilder) ElectingLeaderUsing(electionTrigger lh.ElectionTrigg
 	return builder
 }
 
-func (builder *NodeBuilder) WithPK(publicKey Ed25519PublicKey) *NodeBuilder {
-	if builder.publicKey.Equal(Ed25519PublicKey("")) {
-		builder.publicKey = publicKey
+func (builder *NodeBuilder) WithPublicKey(publicKey Ed25519PublicKey) *NodeBuilder {
+	if builder.keyManager == nil {
+		builder.keyManager = NewMockKeyManager(publicKey)
 	}
 	return builder
 }
@@ -95,7 +95,7 @@ func (builder *NodeBuilder) buildConfig() *lh.Config {
 		NetworkCommunication: builder.networkCommunication,
 		ElectionTrigger:      electionTrigger,
 		BlockUtils:           blockUtils,
-		KeyManager:           NewMockKeyManager(builder.publicKey),
+		KeyManager:           builder.keyManager,
 		Logger:               builder.logger.For(log.Service("node")),
 		Storage:              storage,
 	}
@@ -116,7 +116,7 @@ func (builder *NodeBuilder) ThatLogsTo(logger log.BasicLogger) *NodeBuilder {
 }
 
 func (builder *NodeBuilder) Build() *Node {
-	return NewNode(builder.ctx, builder.ctxCancel, builder.publicKey, builder.buildConfig())
+	return NewNode(builder.ctx, builder.ctxCancel, builder.keyManager, builder.buildConfig())
 }
 func (builder *NodeBuilder) WithContext(ctx context.Context, ctxCancel context.CancelFunc) *NodeBuilder {
 	builder.ctx = ctx

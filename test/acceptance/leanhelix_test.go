@@ -45,9 +45,9 @@ func TestSendPreprepareOnlyIfLeader(t *testing.T) {
 		gossips = append(gossips, gossip)
 	}
 
-	gossips[0].When("Multicast", mock.Any, mock.AnyIf("gossip sends preprepare", predicateMessageTypeIsPreprepare)).Times(1)
+	gossips[0].When("SendMessage", mock.Any, mock.AnyIf("gossip sends preprepare", predicateMessageTypeIsPreprepare)).Times(1)
 	for i := 1; i < NODE_COUNT; i++ {
-		gossips[i].Never("Multicast", mock.Any, mock.AnyIf("gossip sends preprepare", predicateMessageTypeIsPreprepare))
+		gossips[i].Never("SendMessage", mock.Any, mock.AnyIf("gossip sends preprepare", predicateMessageTypeIsPreprepare))
 	}
 
 	defer net.Stop()

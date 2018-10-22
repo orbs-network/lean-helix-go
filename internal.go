@@ -27,9 +27,10 @@ func (c *consensusRawMessage) Block() Block {
 	return c.block
 }
 
-func CreateConsensusMessage(content []byte, block Block) ConsensusRawMessage {
+func CreateConsensusRawMessage(messageType MessageType, content []byte, block Block) ConsensusRawMessage {
 	return &consensusRawMessage{
-		content: content,
-		block:   block,
+		messageType: messageType,
+		content:     content,
+		block:       block,
 	}
 }

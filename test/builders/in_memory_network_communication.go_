@@ -52,8 +52,8 @@ func (comm *InMemoryNetworkCommunication) RequestOrderedCommittee(seed uint64) [
 }
 
 func (comm *InMemoryNetworkCommunication) IsMember(pk Ed25519PublicKey) bool {
-	_, ok := comm.discovery.GetGossipByPK(pk)
-	return ok
+	res := comm.discovery.GetGossipByPK(pk)
+	return res != nil
 }
 
 func NewInMemoryNetworkCommunication(discovery gossip.Discovery, gossip *gossip.Gossip) *InMemoryNetworkCommunication {
@@ -67,7 +67,7 @@ func NewInMemoryNetworkCommunication(discovery gossip.Discovery, gossip *gossip.
 		comm.onGossipMessage(message)
 	}
 
-	comm.gossip.Subscribe(subscribeFunc)
+	comm.gossip.RegisterOnMessage(subscribeFunc)
 
 	return comm
 }

@@ -128,7 +128,6 @@ func CreatePreparedProofBuilder(ppKeyManager KeyManager, pKeyManagers []KeyManag
 	return preparedProof
 }
 
-//func CreatePreparedProof(keyManager KeyManager, PreprepareMessageImpl PreprepareMessage, prepareMessages []PrepareMessage) *PreparedProof {
 func CreatePreparedProof(ppKeyManager KeyManager, pKeyManagers []KeyManager, height BlockHeight, view View, blockHash Uint256) *PreparedProof {
 	return CreatePreparedProofBuilder(ppKeyManager, pKeyManagers, height, view, blockHash).Build()
 }

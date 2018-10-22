@@ -249,9 +249,9 @@ func (term *leanHelixTerm) GetView() View {
 }
 func (term *leanHelixTerm) sendPreprepare(ctx context.Context, message *PreprepareMessage) {
 
-	consensusMessage := CreateConsensusMessage(message.Raw(), message.Block())
+	rawMessage := message.ToConsensusRawMessage()
 
-	term.NetworkCommunication.Send(ctx, term.NonCommitteeMembersPublicKeys, consensusMessage)
+	term.NetworkCommunication.SendMessage(ctx, term.NonCommitteeMembersPublicKeys, rawMessage)
 
 	term.log.Debug("GossipSend preprepare",
 		log.Stringable("senderPK", term.KeyManager.MyPublicKey()),

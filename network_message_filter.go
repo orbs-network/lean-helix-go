@@ -2,6 +2,7 @@ package leanhelix
 
 import (
 	"context"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/primitives"
 )
 
@@ -14,17 +15,19 @@ type NetworkMessageFilter struct {
 }
 
 func NewNetworkMessageFilter(comm NetworkCommunication, blockHeight primitives.BlockHeight, myPublicKey primitives.Ed25519PublicKey, messageReceiver MessageReceiver) *NetworkMessageFilter {
-	return &NetworkMessageFilter{
+	res := &NetworkMessageFilter{
 		blockHeight:  blockHeight,
 		MyPublicKey:  myPublicKey,
 		messageCache: make([]ConsensusMessage, 0, 10),
 		Receiver:     messageReceiver,
 		comm:         comm,
 	}
+
+	res.comm.RegisterOnMessage(res.OnGossipMessage)
+	return res
 }
 
 // Entry point of messages for consensus messages
-
 func (filter *NetworkMessageFilter) OnGossipMessage(ctx context.Context, rawMessage ConsensusRawMessage) {
 
 	var message ConsensusMessage
@@ -94,20 +97,30 @@ func (filter *NetworkMessageFilter) acceptMessage(message ConsensusMessage) bool
 	return true
 }
 
-func (filter *NetworkMessageFilter) ProcessGossipMessage(ctx context.Context, consensusMessage ConsensusMessage) {
+func (filter *NetworkMessageFilter) ProcessGossipMessage(ctx context.Context, consensusMessage ConsensusMessage) error {
 
+	if filter.Receiver == nil {
+		panic("no receiver")
+	}
 	switch message := consensusMessage.(type) {
 	case *PreprepareMessage:
-		filter.Receiver.OnReceivePreprepare(ctx, message)
+		filter.Receiver.OnReceivePreprepare(ctx, message) // filter.Receiver is actually the LeanHelixTerm
 	case *PrepareMessage:
 		filter.Receiver.OnReceivePrepare(ctx, message)
-		// Send message to MessageReceiver
+	case *CommitMessage:
+		filter.Receiver.OnReceiveCommit(ctx, message)
+	case *ViewChangeMessage:
+		filter.Receiver.OnReceiveViewChange(ctx, message)
+	case *NewViewMessage:
+		filter.Receiver.OnReceiveNewView(ctx, message)
+	default:
+		return fmt.Errorf("unknown message type: %T", consensusMessage)
 	}
+	return nil
 }
 
-func (filter *NetworkMessageFilter) SetBlockHeight(ctx context.Context, blockHeight primitives.BlockHeight, receiver MessageReceiver) {
+func (filter *NetworkMessageFilter) SetBlockHeight(ctx context.Context, blockHeight primitives.BlockHeight) {
 	filter.blockHeight = blockHeight
-	filter.Receiver = receiver
 	filter.consumeCacheMessage(ctx)
 }
 

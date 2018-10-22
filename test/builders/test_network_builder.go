@@ -23,7 +23,7 @@ type TestNetwork struct {
 	Nodes      []*Node
 	BlockUtils *MockBlockUtils
 	Transport  *MockNetworkCommunication
-	discovery  gossip.Discovery
+	Discovery  gossip.Discovery
 }
 
 type TestNetworkBuilder struct {
@@ -67,7 +67,7 @@ func (builder *TestNetworkBuilder) Build() *TestNetwork {
 		Nodes:      builder.createNodes(),
 		BlockUtils: builder.blockUtils,
 		//Transport:  builder.transport,
-		discovery: builder.discovery,
+		Discovery: builder.discovery,
 	}
 
 	// TODO Why we need this?? it does nothing on TS code
@@ -142,8 +142,8 @@ func (builder *TestNetworkBuilder) createNodes() []*Node {
 	return nodes
 }
 
-func (net *TestNetwork) GetNodeGossip(pk Ed25519PublicKey) (*gossip.Gossip, bool) {
-	return net.discovery.GetGossipByPK(pk)
+func (net *TestNetwork) GetNodeGossip(pk Ed25519PublicKey) *gossip.Gossip {
+	return net.Discovery.GetGossipByPK(pk)
 }
 
 func (net *TestNetwork) StartConsensusOnAllNodes() error {

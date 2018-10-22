@@ -11,6 +11,14 @@ type MockNetworkCommunication struct {
 	mock.Mock
 }
 
+func (n *MockNetworkCommunication) RegisterOnMessage(func(ctx context.Context, message lh.ConsensusRawMessage)) int {
+	panic("implement me")
+}
+
+func (n *MockNetworkCommunication) SendMessage(ctx context.Context, targets []Ed25519PublicKey, message lh.ConsensusRawMessage) error {
+	panic("implement me")
+}
+
 func (n *MockNetworkCommunication) Send(ctx context.Context, publicKeys []Ed25519PublicKey, message lh.ConsensusRawMessage) error {
 	ret := n.Called(publicKeys, message)
 	return ret.Error(0)

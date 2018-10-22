@@ -7,9 +7,8 @@ import (
 type PublicKeyStr string
 
 type Discovery interface {
-	GetGossipByPK(pk Ed25519PublicKey) (*Gossip, bool)
+	GetGossipByPK(pk Ed25519PublicKey) *Gossip
 	RegisterGossip(pk Ed25519PublicKey, gossip *Gossip)
-	AllGossipsPKs() []string
 	AllGossipsPublicKeys() []Ed25519PublicKey
 	Gossips(pks []Ed25519PublicKey) []*Gossip
 }
@@ -24,13 +23,16 @@ func NewGossipDiscovery() Discovery {
 	}
 }
 
-func (d *discovery) GetGossipByPK(pk Ed25519PublicKey) (*Gossip, bool) {
+func (d *discovery) GetGossipByPK(pk Ed25519PublicKey) *Gossip {
 	return d.GetGossipByPKStr(pk.String())
 }
 
-func (d *discovery) GetGossipByPKStr(pkStr string) (*Gossip, bool) {
+func (d *discovery) GetGossipByPKStr(pkStr string) *Gossip {
 	result, ok := d.gossips[pkStr]
-	return result, ok
+	if !ok {
+		return nil
+	}
+	return result
 }
 
 func (d *discovery) RegisterGossip(pk Ed25519PublicKey, gossip *Gossip) {
@@ -48,7 +50,7 @@ func (d *discovery) Gossips(pks []Ed25519PublicKey) []*Gossip {
 		if !indexOf(key, pks) {
 			continue
 		}
-		if gossip, ok := d.GetGossipByPKStr(key); ok {
+		if gossip := d.GetGossipByPKStr(key); gossip != nil {
 			res = append(res, gossip)
 		}
 	}
@@ -79,12 +81,4 @@ func (d *discovery) getAllGossips() []*Gossip {
 		gossips = append(gossips, val)
 	}
 	return gossips
-}
-
-func (d *discovery) AllGossipsPKs() []string {
-	keys := make([]string, 0, len(d.gossips))
-	for key := range d.gossips {
-		keys = append(keys, key)
-	}
-	return keys
 }

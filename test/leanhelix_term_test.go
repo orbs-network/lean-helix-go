@@ -22,7 +22,7 @@ func TestReturnOkForMembersInCurrentHeight(t *testing.T) {
 	mockElectionTrigger := builders.NewMockElectionTrigger()
 	mockStorage := builders.NewMockStorage()
 	mockComm.When("RequestOrderedCommittee", mock.Any).Return([]Ed25519PublicKey{pk})
-	mockComm.When("Send", mock.Any, mock.Any).Return()
+	mockComm.When("SendMessage", mock.Any, mock.Any).Return()
 	mockStorage.When("StorePreprepare", mock.Any).Return(true)
 	mockKeyManager := builders.NewMockKeyManager(pk)
 	messageFactory := lh.NewMessageFactory(builders.NewMockKeyManager(pk))
@@ -48,7 +48,7 @@ func TestReturnErrorIfNoMembersInCurrentHeight(t *testing.T) {
 	mockElectionTrigger := builders.NewMockElectionTrigger()
 	mockStorage := lh.NewInMemoryStorage()
 	mockComm.When("RequestOrderedCommittee", mock.Any).Return([]Ed25519PublicKey{})
-	mockComm.When("Send", mock.Any, mock.Any).Return()
+	mockComm.When("SendMessage", mock.Any, mock.Any).Return()
 	config := &lh.TermConfig{
 		KeyManager:           builders.NewMockKeyManager(pk),
 		NetworkCommunication: mockComm,

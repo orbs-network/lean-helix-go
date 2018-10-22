@@ -76,7 +76,7 @@ func (lh *leanHelix) IsLeader() bool {
 	return false
 }
 func (lh *leanHelix) GracefulShutdown() {
-	lh.log.Info("GracefulShutdown() called")
+	lh.log.Info("LeanHelix.GracefulShutdown() called")
 	lh.ctxCancel()
 }
 

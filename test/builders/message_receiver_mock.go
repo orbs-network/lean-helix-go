@@ -1,6 +1,7 @@
 package builders
 
 import (
+	"context"
 	"github.com/orbs-network/go-mock"
 	"github.com/orbs-network/lean-helix-go"
 )
@@ -9,16 +10,31 @@ type MockMessageReceiver struct {
 	mock.Mock
 }
 
+func (rec *MockMessageReceiver) OnReceivePreprepare(ctx context.Context, ppm *leanhelix.PreprepareMessage) error {
+	ret := rec.Called(ctx, ppm)
+	return ret.Error(0)
+}
+
+func (rec *MockMessageReceiver) OnReceivePrepare(ctx context.Context, pm *leanhelix.PrepareMessage) error {
+	ret := rec.Called(ctx, pm)
+	return ret.Error(0)
+}
+
+func (rec *MockMessageReceiver) OnReceiveCommit(ctx context.Context, cm *leanhelix.CommitMessage) error {
+	ret := rec.Called(ctx, cm)
+	return ret.Error(0)
+}
+
+func (rec *MockMessageReceiver) OnReceiveViewChange(ctx context.Context, vcm *leanhelix.ViewChangeMessage) error {
+	ret := rec.Called(ctx, vcm)
+	return ret.Error(0)
+}
+
+func (rec *MockMessageReceiver) OnReceiveNewView(ctx context.Context, nvm *leanhelix.NewViewMessage) error {
+	ret := rec.Called(ctx, nvm)
+	return ret.Error(0)
+}
+
 func NewMockMessageReceiver() *MockMessageReceiver {
 	return &MockMessageReceiver{}
-}
-
-func (rec *MockMessageReceiver) OnReceive(message []byte) error {
-	ret := rec.Called(message)
-	return ret.Error(0)
-}
-
-func (rec *MockMessageReceiver) OnReceiveWithBlock(message []byte, block leanhelix.Block) error {
-	ret := rec.Called(message, block)
-	return ret.Error(0)
 }

@@ -10,8 +10,13 @@ type Serializable interface {
 	Raw() []byte
 }
 
+type ConsensusRawMessageConverter interface {
+	ToConsensusRawMessage() ConsensusRawMessage
+}
+
 type ConsensusMessage interface {
 	Serializable
+	ConsensusRawMessageConverter
 	MessageType() MessageType
 	SenderPublicKey() Ed25519PublicKey
 	BlockHeight() BlockHeight
@@ -64,6 +69,10 @@ func (ppm *PreprepareMessage) View() View {
 	return ppm.content.SignedHeader().View()
 }
 
+func (ppm *PreprepareMessage) ToConsensusRawMessage() ConsensusRawMessage {
+	return CreateConsensusRawMessage(LEAN_HELIX_PREPREPARE, ppm.content.Raw(), ppm.block)
+}
+
 func NewPreprepareMessage(content *PreprepareContent, block Block) *PreprepareMessage {
 	return &PreprepareMessage{
 		content: content,
@@ -105,6 +114,10 @@ func (pm *PrepareMessage) View() View {
 	return pm.content.SignedHeader().View()
 }
 
+func (pm *PrepareMessage) ToConsensusRawMessage() ConsensusRawMessage {
+	return CreateConsensusRawMessage(LEAN_HELIX_PREPARE, pm.content.Raw(), nil)
+}
+
 func NewPrepareMessage(content *PrepareContent) *PrepareMessage {
 	return &PrepareMessage{content: content}
 }
@@ -141,6 +154,10 @@ func (cm *CommitMessage) BlockHeight() BlockHeight {
 }
 func (cm *CommitMessage) View() View {
 	return cm.content.SignedHeader().View()
+}
+
+func (cm *CommitMessage) ToConsensusRawMessage() ConsensusRawMessage {
+	return CreateConsensusRawMessage(LEAN_HELIX_COMMIT, cm.content.Raw(), nil)
 }
 
 func NewCommitMessage(content *CommitContent) *CommitMessage {
@@ -184,6 +201,10 @@ func (vcm *ViewChangeMessage) Block() Block {
 }
 func (vcm *ViewChangeMessage) View() View {
 	return vcm.content.SignedHeader().View()
+}
+
+func (vcm *ViewChangeMessage) ToConsensusRawMessage() ConsensusRawMessage {
+	return CreateConsensusRawMessage(LEAN_HELIX_VIEW_CHANGE, vcm.content.Raw(), vcm.block)
 }
 
 func NewViewChangeMessage(content *ViewChangeMessageContent, block Block) *ViewChangeMessage {
@@ -230,6 +251,10 @@ func (nvm *NewViewMessage) Block() Block {
 }
 func (nvm *NewViewMessage) View() View {
 	return nvm.content.SignedHeader().View()
+}
+
+func (nvm *NewViewMessage) ToConsensusRawMessage() ConsensusRawMessage {
+	return CreateConsensusRawMessage(LEAN_HELIX_NEW_VIEW, nvm.content.Raw(), nvm.block)
 }
 
 func NewNewViewMessage(content *NewViewMessageContent, block Block) *NewViewMessage {

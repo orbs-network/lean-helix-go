@@ -1,15 +1,15 @@
 package gossip
 
 import (
+	"context"
+	"fmt"
 	"github.com/orbs-network/go-mock"
 	lh "github.com/orbs-network/lean-helix-go"
 	. "github.com/orbs-network/lean-helix-go/primitives"
 )
 
-type Callback func(message lh.ConsensusMessage)
-
 type SubscriptionValue struct {
-	cb Callback
+	cb func(ctx context.Context, message lh.ConsensusRawMessage)
 }
 
 type Gossip struct {
@@ -33,9 +33,27 @@ func NewGossip(gd Discovery, publicKey Ed25519PublicKey) *Gossip {
 	}
 }
 
+func (g *Gossip) RequestOrderedCommittee(seed uint64) []Ed25519PublicKey {
+	return g.discovery.AllGossipsPublicKeys()
+}
+
+func (g *Gossip) IsMember(pk Ed25519PublicKey) bool {
+	return g.discovery.GetGossipByPK(pk) != nil
+}
+
+func (g *Gossip) SendMessage(ctx context.Context, targets []Ed25519PublicKey, message lh.ConsensusRawMessage) error {
+	g.Called(targets, message)
+	for _, targetId := range targets {
+		if err := g.SendToNode(ctx, targetId, message); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (g *Gossip) inIncomingWhitelist(pk Ed25519PublicKey) bool {
 	if g.incomingWhiteListPKs == nil {
-		return false
+		return true
 	}
 	for _, currentPK := range g.incomingWhiteListPKs {
 		if currentPK.Equal(pk) {
@@ -47,7 +65,7 @@ func (g *Gossip) inIncomingWhitelist(pk Ed25519PublicKey) bool {
 
 func (g *Gossip) inOutgoingWhitelist(pk Ed25519PublicKey) bool {
 	if g.outgoingWhiteListPKs == nil {
-		return false
+		return true
 	}
 	for _, currentPK := range g.outgoingWhiteListPKs {
 		if currentPK.Equal(pk) {
@@ -57,16 +75,17 @@ func (g *Gossip) inOutgoingWhitelist(pk Ed25519PublicKey) bool {
 	return false
 }
 
-func (g *Gossip) onRemoteMessage(message lh.ConsensusMessage) {
+func (g *Gossip) onRemoteMessage(ctx context.Context, targetPublicKey Ed25519PublicKey, rawMessage lh.ConsensusRawMessage) {
 	for _, s := range g.subscriptions {
-		if !g.inIncomingWhitelist(message.SenderPublicKey()) {
+
+		if !g.inIncomingWhitelist(targetPublicKey) {
 			return
 		}
-		s.cb(message)
+		s.cb(ctx, rawMessage)
 	}
 }
 
-func (g *Gossip) Subscribe(cb Callback) int {
+func (g *Gossip) RegisterOnMessage(cb func(ctx context.Context, message lh.ConsensusRawMessage)) int {
 	g.totalSubscriptions++
 	g.subscriptions[g.totalSubscriptions] = &SubscriptionValue{
 		cb,
@@ -74,22 +93,16 @@ func (g *Gossip) Subscribe(cb Callback) int {
 	return g.totalSubscriptions
 }
 
-func (g *Gossip) Unsubscribe(subscriptionToken int) {
+func (g *Gossip) UnregisterOnMessage(subscriptionToken int) {
 	delete(g.subscriptions, subscriptionToken)
 }
 
-func (g *Gossip) unicast(pk Ed25519PublicKey, message lh.ConsensusMessage) {
-	if !g.inOutgoingWhitelist(pk) {
-		return
+func (g *Gossip) SendToNode(ctx context.Context, targetPublicKey Ed25519PublicKey, message lh.ConsensusRawMessage) error {
+	if !g.inOutgoingWhitelist(targetPublicKey) {
+		return fmt.Errorf("PK %s not in outgoing whitelist", targetPublicKey)
 	}
-	if targetGossip, ok := g.discovery.GetGossipByPK(pk); ok {
-		targetGossip.onRemoteMessage(message)
+	if targetGossip := g.discovery.GetGossipByPK(targetPublicKey); targetGossip != nil {
+		targetGossip.onRemoteMessage(ctx, targetPublicKey, message)
 	}
-}
-
-func (g *Gossip) Multicast(targetIds []Ed25519PublicKey, message lh.ConsensusMessage) {
-	g.Mock.Called(targetIds, message)
-	for _, targetId := range targetIds {
-		g.unicast(targetId, message)
-	}
+	return nil
 }
