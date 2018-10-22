@@ -20,17 +20,18 @@ func TestSetBlockHeightAndReceiveGossipMessages(t *testing.T) {
 	node1 := net.Nodes[1]
 	node1MessageFactory := leanhelix.NewMessageFactory(node1.KeyManager)
 	mockReceiver := builders.NewMockMessageReceiver()
+	gossip := net.GetNodeGossip(node1.KeyManager.MyPublicKey())
 
 	mockReceiver.When("OnReceivePreprepare", mock.Any, mock.Any).Times(1)
 	mockReceiver.When("OnReceivePrepare", mock.Any, mock.Any).Times(1)
 	mockReceiver.When("OnReceiveCommit", mock.Any, mock.Any).Times(1)
 	mockReceiver.When("OnReceiveViewChange", mock.Any, mock.Any).Times(1)
 	mockReceiver.When("OnReceiveNewView", mock.Any, mock.Any).Times(1)
-
-	gossip := net.GetNodeGossip(node1.KeyManager.MyPublicKey())
 	gossip.When("SendMessage", mock.Any, mock.Any).Times(5)
+
 	filter := leanhelix.NewNetworkMessageFilter(gossip, height, node0.KeyManager.MyPublicKey(), mockReceiver)
 	filter.SetBlockHeight(ctx, 3)
+
 	block := builders.CreateBlock(builders.GenesisBlock)
 	allNetworkPublicKeys := net.Discovery.AllGossipsPublicKeys()
 
@@ -47,7 +48,6 @@ func TestSetBlockHeightAndReceiveGossipMessages(t *testing.T) {
 			t.Error(err)
 		}
 	}
-
 	ok, err := mockReceiver.Verify()
 	if !ok {
 		t.Error(err)
@@ -58,24 +58,25 @@ func TestIgnoreMessagesNotFromCurrentBlockHeight(t *testing.T) {
 	ctx := context.Background()
 
 	height := primitives.BlockHeight(2)
+	heightToAccept := primitives.BlockHeight(3)
 	view := primitives.View(0)
 	net := builders.NewSimpleTestNetwork(NODE_COUNT, nil) // Node 0 is leader
-
 	node0 := net.Nodes[0]
-	node1 := net.Nodes[1]
-	node1MessageFactory := leanhelix.NewMessageFactory(node1.KeyManager)
+	senderNode := net.Nodes[1]
+	node1MessageFactory := leanhelix.NewMessageFactory(senderNode.KeyManager)
 	mockReceiver := builders.NewMockMessageReceiver()
+	gossip := net.GetNodeGossip(senderNode.KeyManager.MyPublicKey())
 
 	mockReceiver.When("OnReceivePreprepare", mock.Any, mock.Any).Times(0)
 	mockReceiver.When("OnReceivePrepare", mock.Any, mock.Any).Times(0)
 	mockReceiver.When("OnReceiveCommit", mock.Any, mock.Any).Times(0)
 	mockReceiver.When("OnReceiveViewChange", mock.Any, mock.Any).Times(0)
 	mockReceiver.When("OnReceiveNewView", mock.Any, mock.Any).Times(0)
-
-	gossip := net.GetNodeGossip(node1.KeyManager.MyPublicKey())
 	gossip.When("SendMessage", mock.Any, mock.Any).Times(5)
+
 	filter := leanhelix.NewNetworkMessageFilter(gossip, height, node0.KeyManager.MyPublicKey(), mockReceiver)
-	filter.SetBlockHeight(ctx, 3)
+	filter.SetBlockHeight(ctx, heightToAccept)
+
 	block := builders.CreateBlock(builders.GenesisBlock)
 	allNetworkPublicKeys := net.Discovery.AllGossipsPublicKeys()
 
@@ -92,7 +93,96 @@ func TestIgnoreMessagesNotFromCurrentBlockHeight(t *testing.T) {
 			t.Error(err)
 		}
 	}
+	ok, err := mockReceiver.Verify()
+	if !ok {
+		t.Error(err)
+	}
+}
 
+func TestIgnoreMessagesFromMyself(t *testing.T) {
+	ctx := context.Background()
+
+	height := primitives.BlockHeight(3)
+	view := primitives.View(0)
+	net := builders.NewSimpleTestNetwork(NODE_COUNT, nil) // Node 0 is leader
+
+	senderNode := net.Nodes[0]
+	messageFactory := leanhelix.NewMessageFactory(senderNode.KeyManager)
+	mockReceiver := builders.NewMockMessageReceiver()
+	gossip := net.GetNodeGossip(senderNode.KeyManager.MyPublicKey())
+
+	mockReceiver.When("OnReceivePreprepare", mock.Any, mock.Any).Times(0)
+	mockReceiver.When("OnReceivePrepare", mock.Any, mock.Any).Times(0)
+	mockReceiver.When("OnReceiveCommit", mock.Any, mock.Any).Times(0)
+	mockReceiver.When("OnReceiveViewChange", mock.Any, mock.Any).Times(0)
+	mockReceiver.When("OnReceiveNewView", mock.Any, mock.Any).Times(0)
+	gossip.When("SendMessage", mock.Any, mock.Any).Times(5)
+
+	filter := leanhelix.NewNetworkMessageFilter(gossip, height, senderNode.KeyManager.MyPublicKey(), mockReceiver)
+	filter.SetBlockHeight(ctx, 3)
+
+	block := builders.CreateBlock(builders.GenesisBlock)
+	allNetworkPublicKeys := net.Discovery.AllGossipsPublicKeys()
+
+	messages := make([]leanhelix.ConsensusMessage, 5)
+	messages[0] = messageFactory.CreatePreprepareMessage(height, view, block)
+	messages[1] = messageFactory.CreatePrepareMessage(height, view, block.BlockHash())
+	messages[2] = messageFactory.CreateCommitMessage(height, view, block.BlockHash())
+	messages[3] = messageFactory.CreateViewChangeMessage(height, view, nil)
+	messages[4] = messageFactory.CreateNewViewMessage(height, view, nil, nil, block)
+
+	for _, msg := range messages {
+		rawMsg := msg.ToConsensusRawMessage()
+		if err := gossip.SendMessage(ctx, allNetworkPublicKeys, rawMsg); err != nil {
+			t.Error(err)
+		}
+	}
+	ok, err := mockReceiver.Verify()
+	if !ok {
+		t.Error(err)
+	}
+
+}
+
+func TestIgnoreMessagesFromNodesNotPartOfTheNetwork(t *testing.T) {
+	ctx := context.Background()
+
+	height := primitives.BlockHeight(3)
+	view := primitives.View(0)
+	net := builders.NewSimpleTestNetwork(NODE_COUNT, nil) // Node 0 is leader
+
+	node0 := net.Nodes[0]
+	externalKeyManager := builders.NewMockKeyManager(primitives.Ed25519PublicKey("EXTERNAL"))
+	messageFactory := leanhelix.NewMessageFactory(externalKeyManager)
+	mockReceiver := builders.NewMockMessageReceiver()
+	gossip := net.GetNodeGossip(node0.KeyManager.MyPublicKey())
+
+	mockReceiver.When("OnReceivePreprepare", mock.Any, mock.Any).Times(0)
+	mockReceiver.When("OnReceivePrepare", mock.Any, mock.Any).Times(0)
+	mockReceiver.When("OnReceiveCommit", mock.Any, mock.Any).Times(0)
+	mockReceiver.When("OnReceiveViewChange", mock.Any, mock.Any).Times(0)
+	mockReceiver.When("OnReceiveNewView", mock.Any, mock.Any).Times(0)
+	gossip.When("SendMessage", mock.Any, mock.Any).Times(5)
+
+	filter := leanhelix.NewNetworkMessageFilter(gossip, height, node0.KeyManager.MyPublicKey(), mockReceiver)
+	filter.SetBlockHeight(ctx, 3)
+
+	block := builders.CreateBlock(builders.GenesisBlock)
+	allNetworkPublicKeys := net.Discovery.AllGossipsPublicKeys()
+
+	messages := make([]leanhelix.ConsensusMessage, 5)
+	messages[0] = messageFactory.CreatePreprepareMessage(height, view, block)
+	messages[1] = messageFactory.CreatePrepareMessage(height, view, block.BlockHash())
+	messages[2] = messageFactory.CreateCommitMessage(height, view, block.BlockHash())
+	messages[3] = messageFactory.CreateViewChangeMessage(height, view, nil)
+	messages[4] = messageFactory.CreateNewViewMessage(height, view, nil, nil, block)
+
+	for _, msg := range messages {
+		rawMsg := msg.ToConsensusRawMessage()
+		if err := gossip.SendMessage(ctx, allNetworkPublicKeys, rawMsg); err != nil {
+			t.Error(err)
+		}
+	}
 	ok, err := mockReceiver.Verify()
 	if !ok {
 		t.Error(err)
