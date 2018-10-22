@@ -13,18 +13,18 @@ func NewMockElectionTrigger() *ElectionTriggerMock {
 	return &ElectionTriggerMock{}
 }
 
-func (tbet *ElectionTriggerMock) RegisterOnTrigger(view View, cb func(view View)) {
-	tbet.view = view
-	tbet.cb = cb
+func (electionTrigger *ElectionTriggerMock) RegisterOnTrigger(view View, cb func(view View)) {
+	electionTrigger.view = view
+	electionTrigger.cb = cb
 }
 
-func (tbet *ElectionTriggerMock) UnregisterOnTrigger() {
-	tbet.cb = nil
+func (electionTrigger *ElectionTriggerMock) UnregisterOnTrigger() {
+	electionTrigger.cb = nil
 }
 
 // TODO: Gil - what to put as arg to cb()
-func (tbet *ElectionTriggerMock) Trigger() {
-	if tbet.cb != nil {
-		tbet.cb(tbet.view)
+func (electionTrigger *ElectionTriggerMock) Trigger() {
+	if electionTrigger.cb != nil {
+		electionTrigger.cb(electionTrigger.view)
 	}
 }

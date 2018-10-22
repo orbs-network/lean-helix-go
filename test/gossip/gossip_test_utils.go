@@ -1,6 +1,7 @@
 package gossip
 
 //import "github.com/orbs-network/lean-helix-go"
+//import "github.com/orbs-network/lean-helix-go"
 
 //func MessageToGossip(message leanhelix.ConsensusMessage) leanhelix.ConsensusRawMessage {
 //
