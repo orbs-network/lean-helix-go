@@ -11,11 +11,11 @@
   * Including filtering old messages and subsequently relaying future messages at appropriate times.
   * Including, generating the BlockProof and new random_seed
 * Configuration related queries are goverened by height - e.g. all known federation members at given height.
-* The committee memebers are derived at each block height using an aggregated threshold (set to 2f+1) signature on previous height's random seed.
+* The committee memebers are derived at each block height using an aggregated threshold (set to QuorumSize) signature on previous height's random seed.
 * The threshold signatrues are passed as part of the COMMIT messaage.
 * COMMIT message is passed to one-height after signature on random seed is verified and signer matches COMMIT signer _(committee member of current height handled at one-height members and discarded + reported )
 * COMMIT message holds only one Signer - for both COMMIT BlockRef signature and random seed signature.
-* When a block is committed the aggregated signature is comprised matching the 2f+1 COMMIT signed messages _(same members)
+* When a block is committed the aggregated signature is comprised matching the QuorumSize COMMIT signed messages _(same members)
 * Syncing is perfromed by the consuming service (e.g. BlockStorage), but its validity is justified on BlockProof being verified by LeanHelix library.
 * The consensus algo doesn't keep PBFT logs of past block_height (erased on commit). A sync of the blockchain history is perfromed by block sync.
 
