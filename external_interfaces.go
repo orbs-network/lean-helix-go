@@ -16,6 +16,7 @@ type ConsensusRawMessage interface {
 	MessageType() MessageType
 	Content() []byte
 	Block() Block
+	ToConsensusMessage() ConsensusMessage
 }
 
 // Implemented by external service

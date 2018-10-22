@@ -30,40 +30,7 @@ func NewNetworkMessageFilter(comm NetworkCommunication, blockHeight primitives.B
 // Entry point of messages for consensus messages
 func (filter *NetworkMessageFilter) OnGossipMessage(ctx context.Context, rawMessage ConsensusRawMessage) {
 
-	var message ConsensusMessage
-	switch rawMessage.MessageType() {
-	case LEAN_HELIX_PREPREPARE:
-		content := PreprepareContentReader(rawMessage.Content())
-		message = &PreprepareMessage{
-			content: content,
-			block:   rawMessage.Block(),
-		}
-
-	case LEAN_HELIX_PREPARE:
-		content := PrepareContentReader(rawMessage.Content())
-		message = &PrepareMessage{
-			content: content,
-		}
-
-	case LEAN_HELIX_COMMIT:
-		content := CommitContentReader(rawMessage.Content())
-		message = &CommitMessage{
-			content: content,
-		}
-	case LEAN_HELIX_VIEW_CHANGE:
-		content := ViewChangeMessageContentReader(rawMessage.Content())
-		message = &ViewChangeMessage{
-			content: content,
-			block:   rawMessage.Block(),
-		}
-
-	case LEAN_HELIX_NEW_VIEW:
-		content := NewViewMessageContentReader(rawMessage.Content())
-		message = &NewViewMessage{
-			content: content,
-			block:   rawMessage.Block(),
-		}
-	}
+	message := rawMessage.ToConsensusMessage()
 
 	if !filter.acceptMessage(message) {
 		return
@@ -80,10 +47,12 @@ func (filter *NetworkMessageFilter) pushToCache(message ConsensusMessage) {
 	filter.messageCache = append(filter.messageCache, message)
 }
 
+// TODO unit-test this
 func (filter *NetworkMessageFilter) acceptMessage(message ConsensusMessage) bool {
 
+	fmt.Printf("acceptMessage: type: %T\n", message)
 	senderPublicKey := message.SenderPublicKey()
-	if senderPublicKey.Equal(filter.MyPublicKey) {
+	if filter.isSameNodeAs(senderPublicKey) {
 		return false
 	}
 
@@ -95,6 +64,12 @@ func (filter *NetworkMessageFilter) acceptMessage(message ConsensusMessage) bool
 		return false
 	}
 	return true
+}
+
+func (filter *NetworkMessageFilter) isSameNodeAs(sender primitives.Ed25519PublicKey) bool {
+	myPublicKeyStr := filter.MyPublicKey.String()
+	senderPublicKeyStr := sender.String()
+	return myPublicKeyStr == senderPublicKeyStr
 }
 
 func (filter *NetworkMessageFilter) ProcessGossipMessage(ctx context.Context, consensusMessage ConsensusMessage) error {
