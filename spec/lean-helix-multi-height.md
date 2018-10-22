@@ -22,12 +22,12 @@
 
 ## Archietcture - components and inetrfaces
 * Main component Interface:
-  * `UpdateState(contextBlockHeaders)` - start infinite consensus. Derive next height, prevBlockHash and random_seed from contextBlockHeaders (called by the ConsensusService).
-  * `VerifyBlockConsensus (block, contextBlockHeaders, blockProof)` - called by the ConsensusService - e.g. by blockstorage as part of block sync. Assumes block valid , verifies the blockProof is valid
-  * `Stop(height)` - stops consensus performed on blocks when reaching height.
+  * `UpdateState(previousBlockProof)` - start infinite consensus. Derive next height, prevBlockHash and random_seed from contextBlockHeaders (called by the ConsensusService).
+  * `ValidateBlockConsensus(block, blockProof, prevBlockProof)` - called by the ConsensusService - e.g. by blockstorage as part of block sync. Validates block and verifies the blockProof is valid
+  * `StopAt(height)` - stops consensus performed on blocks when reaching height.
 
   * Dependent Interfaces:
-    * `ConsensusService.Commit(block)` - notify consumer service of committed block.
+    * `ConsensusService.Commit(block, blockProof)` - notify consumer service of committed block.
     * BlockUtils:
         * `BlockUtils.RequestNewBlock(height, prevBlockHash) : block` - called by the OneHeight, returns a block proposal.
         * `BlockUtils.ValidateBlock(height, block) : valid` - called by the OneHeight, valdiates a block proposal.
@@ -62,7 +62,7 @@
 
 ## Configuration:
 > Provided on creation. Holds all necessary functionalities to run. \
-> Mostly passed to one-height.
+> Mostly passed to one-height with context tweaks.
   * `ConsensusService.Commit(block)` - Callback on committed block event.
   * BlockUtils (RequestNewBlock, ValidateBlock, CalcBlockHash)
   * Communication (SendConsensusMessage, OnConsensusMessage, BroadcastPostConsensusMessage)
@@ -176,7 +176,7 @@
 
 
 &nbsp;
-## `ValidateBloc(block)`
+## `ValidateBlock(block)`
 > Override BlockUtils.ValidateBlock for OneHeight consensus.
 #### Check the hash pointers
 * Height = my_state.OneHeightContext.Current_block_height.
@@ -239,8 +239,7 @@
 > called by the OneHieght. \
 > Generates a block_proof, propagates the commit, broadcasts block and starts new consesnus round.
 * LeanHelixBlockProof = Get by Calling `GenerateLeanHelixBlockProof(commits_list)`
-* Append the corresponding LeanHelixBlockProof to block.
-* Commit the BlockPair to consuming service by calling `Config.ConsensusService.Commit(block)`
+* Commit the BlockPair to consuming service by calling `Config.ConsensusService.Commit(block, LeanHelixBlockProof)`
 * Broadcast to all nodes message with block by calling `Config.Communication.BroadcastPostConsensusMessage(height, message(block))`
 * Trigger next consensus round by Calling `UpdateState(LeanHelixBlockProof)`
 
@@ -282,7 +281,7 @@
 
 
 &nbsp;
-## `ValidateBlockConsensus (block, blockProof, prevBlockProof)`
+## `ValidateBlockConsensus(block, blockProof, prevBlockProof)`
 > Called by the ConsensusService - e.g. by blockstorage as part of block sync. \
 > Assumes block content valid , verifies the blockProof is valid.
 * From blockProof Extract (Block_height, View, Block_hash, SignaturesPairs)
