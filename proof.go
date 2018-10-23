@@ -136,7 +136,7 @@ func ValidatePreparedProof(
 	targetHeight BlockHeight,
 	targetView View,
 	preparedProof *PreparedProof,
-	f int,
+	q int,
 	keyManager KeyManager,
 	membersPKs []Ed25519PublicKey,
 	calcLeaderPk CalcLeaderPk) bool {
@@ -180,7 +180,7 @@ func ValidatePreparedProof(
 		return false
 	}
 
-	if len(pSenders) < 2*f {
+	if len(pSenders) < q-1 {
 		return false
 	}
 
