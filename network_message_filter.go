@@ -52,11 +52,8 @@ func (filter *NetworkMessageFilter) acceptMessage(message ConsensusMessage) bool
 
 	fmt.Printf("acceptMessage? type: %T\n", message)
 	senderPublicKey := message.SenderPublicKey()
-	if filter.isSameNodeAs(senderPublicKey) {
-		return false
-	}
 
-	if !filter.comm.IsMember(senderPublicKey) {
+	if !filter.AllowedToReceiveMessageFrom(senderPublicKey) {
 		return false
 	}
 
@@ -64,6 +61,14 @@ func (filter *NetworkMessageFilter) acceptMessage(message ConsensusMessage) bool
 		return false
 	}
 	return true
+}
+
+func (filter *NetworkMessageFilter) AllowedToReceiveMessageFrom(senderPublicKey primitives.Ed25519PublicKey) bool {
+	if filter.isSameNodeAs(senderPublicKey) {
+		return false
+	}
+
+	return filter.comm.IsMember(senderPublicKey)
 }
 
 func (filter *NetworkMessageFilter) isSameNodeAs(sender primitives.Ed25519PublicKey) bool {

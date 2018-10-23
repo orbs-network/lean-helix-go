@@ -75,7 +75,11 @@ func (builder *TestNetworkBuilder) Build() *TestNetwork {
 	//return testNet
 }
 
-func NewSimpleTestNetwork(nodeCount int, nodesBlockHeight BlockHeight, blocksPool []lh.Block, nonMemberNodeIndices []int) *TestNetwork {
+func NewSimpleTestNetwork(
+	nodeCount int,
+	nodesBlockHeight BlockHeight,
+	blocksPool []lh.Block,
+	nonMemberNodeIndices []int) *TestNetwork {
 
 	ctx, ctxCancel := context.WithCancel(context.Background())
 

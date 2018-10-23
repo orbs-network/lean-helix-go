@@ -82,6 +82,11 @@ func (h *harness) ExpectEachMessageToBeReceivedXTimes(times int, excludedNodes [
 }
 
 func thisNodeCannotReceiveMessages(index int, excludedNodes []int) bool {
+
+	if len(excludedNodes) == 0 {
+		return false
+	}
+
 	for _, n := range excludedNodes {
 		if index == n {
 			return true
