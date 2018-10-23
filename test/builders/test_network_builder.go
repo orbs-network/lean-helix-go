@@ -27,15 +27,16 @@ type TestNetwork struct {
 }
 
 type TestNetworkBuilder struct {
-	ctx             context.Context
-	ctxCancel       context.CancelFunc
-	logger          log.BasicLogger
-	customNodes     []NodeBuilder
-	electionTrigger lh.ElectionTrigger
-	blockUtils      *MockBlockUtils
-	blocksPool      []lh.Block
-	nodeCount       int
-	discovery       gossip.Discovery
+	ctx                  context.Context
+	ctxCancel            context.CancelFunc
+	nodeCount            int
+	electionTrigger      lh.ElectionTrigger
+	blockUtils           *MockBlockUtils
+	blocksPool           []lh.Block
+	nonMemberNodeIndices []int
+	discovery            gossip.Discovery
+	logger               log.BasicLogger
+	nodesBlockHeight     BlockHeight
 }
 
 func (builder *TestNetworkBuilder) WithContext(ctx context.Context, ctxCancel context.CancelFunc) *TestNetworkBuilder {
@@ -44,7 +45,7 @@ func (builder *TestNetworkBuilder) WithContext(ctx context.Context, ctxCancel co
 	return builder
 }
 
-func (builder *TestNetworkBuilder) GettingBlocksVia(utils *MockBlockUtils) *TestNetworkBuilder {
+func (builder *TestNetworkBuilder) RequestBlocksWith(utils *MockBlockUtils) *TestNetworkBuilder {
 	builder.blockUtils = utils
 	return builder
 }
@@ -61,22 +62,20 @@ func (builder *TestNetworkBuilder) ThatLogsToCustomLogger(logger log.BasicLogger
 
 func (builder *TestNetworkBuilder) Build() *TestNetwork {
 
-	testNet := &TestNetwork{
+	return &TestNetwork{
 		ctx:        builder.ctx,
 		ctxCancel:  builder.ctxCancel,
-		Nodes:      builder.createNodes(),
+		Nodes:      builder.CreateNodes(),
 		BlockUtils: builder.blockUtils,
-		//Transport:  builder.transport,
-		Discovery: builder.discovery,
+		Discovery:  builder.discovery,
 	}
 
 	// TODO Why we need this?? it does nothing on TS code
 	//testNet.registerNodes()
-
-	return testNet
+	//return testNet
 }
 
-func NewSimpleTestNetwork(nodeCount int, blocksPool []lh.Block) *TestNetwork {
+func NewSimpleTestNetwork(nodeCount int, nodesBlockHeight BlockHeight, blocksPool []lh.Block, nonMemberNodeIndices []int) *TestNetwork {
 
 	ctx, ctxCancel := context.WithCancel(context.Background())
 
@@ -94,12 +93,12 @@ func NewSimpleTestNetwork(nodeCount int, blocksPool []lh.Block) *TestNetwork {
 
 	mockBlockUtils := NewMockBlockUtils(blocks)
 
-	testNet := NewTestNetworkBuilder(nodeCount).
+	return NewTestNetworkBuilder(nodeCount).
+		WithBlockHeight(nodesBlockHeight).
 		WithContext(ctx, ctxCancel).
-		GettingBlocksVia(mockBlockUtils).
+		ExcludeNodesFromDiscovery(nonMemberNodeIndices).
+		RequestBlocksWith(mockBlockUtils).
 		Build()
-
-	return testNet
 }
 
 func NewTestNetworkBuilder(nodeCount int) *TestNetworkBuilder {
@@ -118,28 +117,37 @@ func NewTestNetworkBuilder(nodeCount int) *TestNetworkBuilder {
 	testLogger.Info("===========================================================================")
 
 	return &TestNetworkBuilder{
-		//ctx:             ctx,
-		//ctxCancel:       ctxCancel,
-		logger:          testLogger,
-		customNodes:     nil,
-		electionTrigger: nil,
-		blockUtils:      nil,
-		blocksPool:      nil,
-		nodeCount:       nodeCount,
-		discovery:       gossip.NewGossipDiscovery(),
+		nodeCount:            nodeCount,
+		electionTrigger:      nil,
+		blockUtils:           nil,
+		blocksPool:           nil,
+		nonMemberNodeIndices: nil,
+		discovery:            gossip.NewGossipDiscovery(),
+		logger:               testLogger,
 	}
 }
 
-func (builder *TestNetworkBuilder) createNodes() []*Node {
+func (builder *TestNetworkBuilder) CreateNodes() []*Node {
 	nodes := make([]*Node, builder.nodeCount)
 
 	for i := range nodes {
-		nodes[i] = buildNode(builder.ctx, builder.ctxCancel, Ed25519PublicKey(fmt.Sprintf("Node %d", i)), builder.discovery, builder.logger)
+		nodes[i] = buildNode(builder.ctx, builder.ctxCancel, Ed25519PublicKey(fmt.Sprintf("Node %d", i)), builder.nodesBlockHeight, builder.discovery, builder.logger)
 	}
-
-	// TODO postpone handling custom nodes till needed by TDD (see TestNetworkBuilder.ts)
-
+	for _, idx := range builder.nonMemberNodeIndices {
+		builder.discovery.UnregisterGossip(nodes[idx].KeyManager.MyPublicKey())
+	}
 	return nodes
+}
+
+func (builder *TestNetworkBuilder) ExcludeNodesFromDiscovery(nonMemberNodeIndices []int) *TestNetworkBuilder {
+	if nonMemberNodeIndices != nil {
+		builder.nonMemberNodeIndices = nonMemberNodeIndices
+	}
+	return builder
+}
+func (builder *TestNetworkBuilder) WithBlockHeight(height BlockHeight) *TestNetworkBuilder {
+	builder.nodesBlockHeight = height
+	return builder
 }
 
 func (net *TestNetwork) GetNodeGossip(pk Ed25519PublicKey) *gossip.Gossip {

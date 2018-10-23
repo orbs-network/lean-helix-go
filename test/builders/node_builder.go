@@ -16,6 +16,7 @@ type NodeBuilder struct {
 	logger               log.BasicLogger
 	electionTrigger      lh.ElectionTrigger
 	blockUtils           lh.BlockUtils
+	filter               *lh.NetworkMessageFilter
 	logsToConsole        bool
 }
 
@@ -27,6 +28,7 @@ func NewNodeBuilder() *NodeBuilder {
 		logger:               nil,
 		electionTrigger:      nil,
 		blockUtils:           nil,
+		filter:               nil,
 		logsToConsole:        false,
 	}
 }
@@ -116,10 +118,28 @@ func (builder *NodeBuilder) ThatLogsTo(logger log.BasicLogger) *NodeBuilder {
 }
 
 func (builder *NodeBuilder) Build() *Node {
-	return NewNode(builder.ctx, builder.ctxCancel, builder.keyManager, builder.buildConfig())
+
+	//func NewNode(ctx context.Context, ctxCancel context.CancelFunc, keyManager lh.KeyManager, config *lh.Config) *Node {
+	nodeConfig := builder.buildConfig()
+	leanHelix := lh.NewLeanHelix(builder.ctx, builder.ctxCancel, nodeConfig)
+	node := &Node{
+		KeyManager: builder.keyManager,
+		Filter:     builder.filter,
+		Config:     nodeConfig,
+		leanHelix:  leanHelix,
+		blockChain: NewInMemoryBlockChain(),
+	}
+	leanHelix.RegisterOnCommitted(node.onCommittedBlock)
+	return node
 }
+
 func (builder *NodeBuilder) WithContext(ctx context.Context, ctxCancel context.CancelFunc) *NodeBuilder {
 	builder.ctx = ctx
 	builder.ctxCancel = ctxCancel
+	return builder
+}
+
+func (builder *NodeBuilder) WithFilter(filter *lh.NetworkMessageFilter) *NodeBuilder {
+	builder.filter = filter
 	return builder
 }

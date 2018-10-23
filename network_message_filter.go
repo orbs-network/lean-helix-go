@@ -14,9 +14,9 @@ type NetworkMessageFilter struct {
 	Receiver     MessageReceiver
 }
 
-func NewNetworkMessageFilter(comm NetworkCommunication, blockHeight primitives.BlockHeight, myPublicKey primitives.Ed25519PublicKey, messageReceiver MessageReceiver) *NetworkMessageFilter {
+func NewNetworkMessageFilter(comm NetworkCommunication, myPublicKey primitives.Ed25519PublicKey, messageReceiver MessageReceiver) *NetworkMessageFilter {
 	res := &NetworkMessageFilter{
-		blockHeight:  blockHeight,
+		blockHeight:  0,
 		MyPublicKey:  myPublicKey,
 		messageCache: make([]ConsensusMessage, 0, 10),
 		Receiver:     messageReceiver,
@@ -50,7 +50,7 @@ func (filter *NetworkMessageFilter) pushToCache(message ConsensusMessage) {
 // TODO unit-test this
 func (filter *NetworkMessageFilter) acceptMessage(message ConsensusMessage) bool {
 
-	fmt.Printf("acceptMessage: type: %T\n", message)
+	fmt.Printf("acceptMessage? type: %T\n", message)
 	senderPublicKey := message.SenderPublicKey()
 	if filter.isSameNodeAs(senderPublicKey) {
 		return false

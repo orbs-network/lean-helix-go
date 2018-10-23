@@ -16,11 +16,7 @@ func (n *MockNetworkCommunication) RegisterOnMessage(func(ctx context.Context, m
 }
 
 func (n *MockNetworkCommunication) SendMessage(ctx context.Context, targets []Ed25519PublicKey, message lh.ConsensusRawMessage) error {
-	panic("implement me")
-}
-
-func (n *MockNetworkCommunication) Send(ctx context.Context, publicKeys []Ed25519PublicKey, message lh.ConsensusRawMessage) error {
-	ret := n.Called(publicKeys, message)
+	ret := n.Called(ctx, message)
 	return ret.Error(0)
 }
 

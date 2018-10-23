@@ -22,8 +22,12 @@ type ConsensusRawMessage interface {
 // Implemented by external service
 type NetworkCommunication interface {
 	RequestOrderedCommittee(seed uint64) []primitives.Ed25519PublicKey
+
 	IsMember(pk primitives.Ed25519PublicKey) bool
+
+	// External service calls this when a new message is available
 	RegisterOnMessage(func(ctx context.Context, message ConsensusRawMessage)) int
+
 	SendMessage(ctx context.Context, targets []primitives.Ed25519PublicKey, message ConsensusRawMessage) error
 }
 

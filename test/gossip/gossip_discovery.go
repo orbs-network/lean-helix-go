@@ -9,6 +9,7 @@ type PublicKeyStr string
 type Discovery interface {
 	GetGossipByPK(pk Ed25519PublicKey) *Gossip
 	RegisterGossip(pk Ed25519PublicKey, gossip *Gossip)
+	UnregisterGossip(pk Ed25519PublicKey)
 	AllGossipsPublicKeys() []Ed25519PublicKey
 	Gossips(pks []Ed25519PublicKey) []*Gossip
 }
@@ -37,6 +38,9 @@ func (d *discovery) GetGossipByPKStr(pkStr string) *Gossip {
 
 func (d *discovery) RegisterGossip(pk Ed25519PublicKey, gossip *Gossip) {
 	d.gossips[pk.String()] = gossip
+}
+func (d *discovery) UnregisterGossip(pk Ed25519PublicKey) {
+	delete(d.gossips, pk.String())
 }
 
 func (d *discovery) Gossips(pks []Ed25519PublicKey) []*Gossip {

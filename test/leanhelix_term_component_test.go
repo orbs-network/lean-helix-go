@@ -24,6 +24,8 @@ func triggerElection(testnet *builders.TestNetwork) {
 // Based on "onReceivePrePrepare should accept views that match its current view"
 func TestAcceptPreprepareWithCurrentView(t *testing.T) {
 
+	t.Skip()
+
 	ctx, ctxCancel := context.WithCancel(context.Background())
 
 	net := builders.NewTestNetworkBuilder(NODE_COUNT).

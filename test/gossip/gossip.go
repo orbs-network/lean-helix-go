@@ -18,7 +18,7 @@ type Gossip struct {
 	publicKey            Ed25519PublicKey
 	totalSubscriptions   int
 	subscriptions        map[int]*SubscriptionValue
-	outgoingWhiteListPKs []Ed25519PublicKey
+	outgoingWhitelist    []Ed25519PublicKey
 	incomingWhiteListPKs []Ed25519PublicKey
 }
 
@@ -28,7 +28,7 @@ func NewGossip(gd Discovery, publicKey Ed25519PublicKey) *Gossip {
 		publicKey:            publicKey,
 		totalSubscriptions:   0,
 		subscriptions:        make(map[int]*SubscriptionValue),
-		outgoingWhiteListPKs: nil,
+		outgoingWhitelist:    nil,
 		incomingWhiteListPKs: nil,
 	}
 }
@@ -64,10 +64,10 @@ func (g *Gossip) inIncomingWhitelist(pk Ed25519PublicKey) bool {
 }
 
 func (g *Gossip) inOutgoingWhitelist(pk Ed25519PublicKey) bool {
-	if g.outgoingWhiteListPKs == nil {
+	if g.outgoingWhitelist == nil {
 		return true
 	}
-	for _, currentPK := range g.outgoingWhiteListPKs {
+	for _, currentPK := range g.outgoingWhitelist {
 		if currentPK.Equal(pk) {
 			return true
 		}
@@ -105,4 +105,20 @@ func (g *Gossip) SendToNode(ctx context.Context, targetPublicKey Ed25519PublicKe
 		targetGossip.onRemoteMessage(ctx, targetPublicKey, message)
 	}
 	return nil
+}
+
+func (g *Gossip) SetOutgoingWhitelist(outgoingWhitelist []Ed25519PublicKey) {
+	g.outgoingWhitelist = outgoingWhitelist
+}
+
+func (g *Gossip) ClearOutgoingWhitelist(outgoingWhitelist []Ed25519PublicKey) {
+	g.SetOutgoingWhitelist(nil)
+}
+
+func (g *Gossip) SetIncomingWhitelist(incomingWhitelist []Ed25519PublicKey) {
+	g.incomingWhiteListPKs = incomingWhitelist
+}
+
+func (g *Gossip) ClearIncomingWhitelist(incomingWhitelist []Ed25519PublicKey) {
+	g.SetIncomingWhitelist(nil)
 }

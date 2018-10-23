@@ -14,30 +14,29 @@ type Node struct {
 	leanHelix  lh.LeanHelix
 	blockChain *InMemoryBlockChain
 	Gossip     *gossip.Gossip
+	Filter     *lh.NetworkMessageFilter
 }
 
-func NewNode(ctx context.Context, ctxCancel context.CancelFunc, keyManager lh.KeyManager, config *lh.Config) *Node {
-	pbft := lh.NewLeanHelix(ctx, ctxCancel, config)
-	node := &Node{
-		KeyManager: keyManager,
-		Config:     config,
-		leanHelix:  pbft,
-		blockChain: NewInMemoryBlockChain(),
-	}
-	pbft.RegisterOnCommitted(node.onCommittedBlock)
-	return node
-}
-
-func buildNode(ctx context.Context, ctxCancel context.CancelFunc, publicKey Ed25519PublicKey, discovery gossip.Discovery, logger log.BasicLogger) *Node {
+func buildNode(
+	ctx context.Context,
+	ctxCancel context.CancelFunc,
+	publicKey Ed25519PublicKey,
+	nodeBlockHeight BlockHeight,
+	discovery gossip.Discovery,
+	logger log.BasicLogger) *Node {
 
 	nodeLogger := logger.For(log.Service("node"))
 	electionTrigger := NewMockElectionTrigger() // TODO TestNetworkBuilder.ts uses ElectionTriggerFactory here, maybe do it too
 	blockUtils := NewMockBlockUtils(nil)
 	gossip := gossip.NewGossip(discovery, publicKey)
 	discovery.RegisterGossip(publicKey, gossip)
+	mockReceiver := NewMockMessageReceiver()
+	filter := lh.NewNetworkMessageFilter(gossip, publicKey, mockReceiver)
+	filter.SetBlockHeight(ctx, nodeBlockHeight)
 
 	return NewNodeBuilder().
 		WithContext(ctx, ctxCancel).
+		WithFilter(filter).
 		ThatIsPartOf(gossip).
 		GettingBlocksVia(blockUtils).
 		ElectingLeaderUsing(electionTrigger).

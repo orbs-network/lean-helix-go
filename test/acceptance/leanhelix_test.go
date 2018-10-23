@@ -29,7 +29,7 @@ func TestSendPreprepareOnlyIfLeader(t *testing.T) {
 
 	t.Skip()
 
-	net := builders.NewSimpleTestNetwork(NODE_COUNT, nil) // Node 0 is leader
+	net := builders.NewSimpleTestNetwork(NODE_COUNT, 0, nil, nil) // Node 0 is leader
 
 	predicateMessageTypeIsPreprepare := func(msg interface{}) bool {
 		message := msg.(lh.ConsensusMessage)
@@ -38,9 +38,9 @@ func TestSendPreprepareOnlyIfLeader(t *testing.T) {
 
 	gossips := make([]*gossip.Gossip, 0, len(net.Nodes))
 	for i := range net.Nodes {
-		gossip, ok := net.GetNodeGossip(net.Nodes[i].PublicKey)
-		if !ok {
-			t.Errorf("Cannot find Gossip for node #%v: %v", i, net.Nodes[i].PublicKey)
+		gossip := net.GetNodeGossip(net.Nodes[i].KeyManager.MyPublicKey())
+		if gossip == nil {
+			t.Errorf("Cannot find Gossip for node #%v: %v", i, net.Nodes[i].KeyManager.MyPublicKey())
 		}
 		gossips = append(gossips, gossip)
 	}
