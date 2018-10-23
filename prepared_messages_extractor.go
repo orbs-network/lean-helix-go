@@ -7,7 +7,7 @@ type PreparedMessages struct {
 	PrepareMessages   []*PrepareMessage
 }
 
-func ExtractPreparedMessages(blockHeight primitives.BlockHeight, storage Storage, f int) *PreparedMessages {
+func ExtractPreparedMessages(blockHeight primitives.BlockHeight, storage Storage, q int) *PreparedMessages {
 	ppm, ok := storage.GetLatestPreprepare(blockHeight)
 	if !ok {
 		return nil
@@ -17,7 +17,7 @@ func ExtractPreparedMessages(blockHeight primitives.BlockHeight, storage Storage
 	if !ok {
 		return nil
 	}
-	if len(prepareMessages) >= 2*f {
+	if len(prepareMessages) >= q-1 {
 		return &PreparedMessages{
 			PreprepareMessage: ppm,
 			PrepareMessages:   prepareMessages,
