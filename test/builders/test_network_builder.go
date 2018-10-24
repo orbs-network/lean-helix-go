@@ -158,6 +158,12 @@ func (net *TestNetwork) GetNodeGossip(pk Ed25519PublicKey) *gossip.Gossip {
 	return net.Discovery.GetGossipByPK(pk)
 }
 
+func (net *TestNetwork) TriggerElection() {
+	for _, node := range net.Nodes {
+		node.TriggerElection()
+	}
+}
+
 func (net *TestNetwork) StartConsensusOnAllNodes() error {
 	if len(net.Nodes) < MINIMUM_NODES {
 		return fmt.Errorf("not enough nodes in test network - found %d but minimum is %d", len(net.Nodes), MINIMUM_NODES)

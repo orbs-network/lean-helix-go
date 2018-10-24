@@ -13,13 +13,53 @@ import (
 
 const NODE_COUNT = 4
 
-func triggerElection(testnet *builders.TestNetwork) {
-	for _, node := range testnet.Nodes {
-		node.TriggerElection()
+// Based on
+
+func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
+
+	ctx, ctxCancel := context.WithCancel(context.Background())
+
+	net := builders.NewTestNetworkBuilder(NODE_COUNT).
+		WithContext(ctx, ctxCancel).
+		Build()
+
+	termConfig := lh.BuildTermConfig(net.Nodes[0].Config)
+	term, err := lh.NewLeanHelixTerm(ctx, termConfig, 0, func(block lh.Block) {})
+	if err != nil {
+		t.Fatal(err)
 	}
+	require.Equal(t, View(0), term.GetView(), "Term should have view=0 on init")
+	net.TriggerElection()
+	require.Equal(t, View(1), term.GetView(), "Term should have view=1 after one election")
 }
 
-// Based on
+func TestRejectNewViewMessagesFromPast(t *testing.T) {
+
+	ctx, ctxCancel := context.WithCancel(context.Background())
+
+	height := BlockHeight(0)
+	view := View(0)
+	block := builders.CreateBlock(builders.GenesisBlock)
+	net := builders.NewTestNetworkBuilder(NODE_COUNT).
+		WithContext(ctx, ctxCancel).
+		Build()
+
+	node := net.Nodes[0]
+	messageFactory := lh.NewMessageFactory(node.KeyManager)
+	ppmContentBuilder := messageFactory.CreatePreprepareMessageContentBuilder(height, view, block)
+	nvm := messageFactory.CreateNewViewMessage(height, view, ppmContentBuilder, nil, block)
+	termConfig := lh.BuildTermConfig(node.Config)
+	term, err := lh.NewLeanHelixTerm(ctx, termConfig, height, func(block lh.Block) {})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//require.Equal(t, View(0), term.GetView(), "Term should have view=0 on init")
+	net.TriggerElection()
+	//require.Equal(t, View(1), term.GetView(), "Term should have view=1 after one election")
+	term.OnReceiveNewView(ctx, nvm)
+	require.Equal(t, View(1), term.GetView(), "Term should have view=1")
+}
 
 // Based on "onReceivePrePrepare should accept views that match its current view"
 func TestAcceptPreprepareWithCurrentView(t *testing.T) {
@@ -43,7 +83,7 @@ func TestAcceptPreprepareWithCurrentView(t *testing.T) {
 		t.Error(err)
 	}
 	require.Equal(t, node1LeanHelixTerm.GetView(), View(0), "Node 1 view should be 0")
-	triggerElection(net)
+	net.TriggerElection()
 	require.Equal(t, node1LeanHelixTerm.GetView(), View(1), "Node 1 view should be 1")
 
 	block := builders.CreateBlock(builders.GenesisBlock)
