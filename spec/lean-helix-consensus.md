@@ -267,7 +267,7 @@
 > Stops consensus performed on blocks when reaching height.
 * my_state.StopHeight = height
 * If my_state.OneHeightContext.Current_block_height >= my_state.StopHeight
-    * Stop the OneHeight consensus round by calling `my_state.OneHeight.Dispose(w```````````````````````1`)`
+    * Stop the OneHeight consensus round by calling `my_state.OneHeight.Dispose()`
 
 
 
