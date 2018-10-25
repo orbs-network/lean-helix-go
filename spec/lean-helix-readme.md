@@ -28,7 +28,7 @@
 * `UpdateState(previousBlockProof)`
   Initiates particiaption in a consensus round and terminate particiaption in an on-going round. Called upon block sync upon processing of a block with height higher than the current one.
 * `ValidateBlockConsensus(block, blockProof, prevBlockProof)`
-  Validates block that the blockProof is valid to the given block. Called as part of the block sync flow upon receiptin of a new block.
+  Validates given block against its blockProof and its parent BlockProof _(prevBlockProof)_. Called as part of the block sync flow upon receiptin of a new block.
 * `StopAt(height)`
   Stops the participation in the consensus when the target height is reached.
 * `OnConsensusMessage(message)` - called upon reception of a consensus message.
