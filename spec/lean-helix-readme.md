@@ -1,11 +1,11 @@
 # LeanHelix Consensus Algo
 > This document describes LeanHelix consensus library interfaces and APIs.
-> LeanHelix is a PBFT based algorithm providing block finality based committees, that are randomely selected rotating for each block and actively participate in the block consensus.
-> LeanHelix is based on [Helix consensus algorithm paper](https://orbs.com/helix-consensus-whitepaper/ "Helix consensus algorithm paper"). LeanHelix does not implements Helix selection fairness properties.
+> LeanHelix is a PBFT based algorithm, providing block finality based on committees. A new ordered committee, and its leader, is randomly selected for each block. The committee members actively participate in the block consensus.
+> LeanHelix is based on [Helix consensus algorithm paper](https://orbs.com/helix-consensus-whitepaper/ "Helix consensus algorithm paper"). LeanHelix does not implement Helix selection fairness properties.
 
 ## Design Notes
-* Consensus is performed in an infinte loop triggered at a given context state. A sync scenario flow, e.g. might shift the consensus loop to a different height.
-* This library is dependent on "consumer service" with several context provided functionalities, detailed below (which could alter its behaviour).
+* Consensus is performed in an infinte loop triggered at a given context state (a BlockProof which holds all necessary information to start next consensus round). A sync scenario flow, e.g. might shift the consensus loop to a different height.
+* This library is dependent on "consumer service" with several context (height based) provided functionalities, detailed below (which could alter its behaviour).
 * The proposed design involves another partition into an inner constrained module - "LeanHelixOneHeight" - explicitly devoted to a single round PBFT consensus, further detailed in a seperated file.
   * The "multi-height" library is responsible for looping through the correct term _(height)_, setting the relevant context
   * Including filtering old messages and subsequently relaying future messages at appropriate times.
@@ -18,6 +18,7 @@
 * When a block is committed the aggregated signature is comprised matching the QuorumSize COMMIT signed messages _(same members)
 * Syncing is perfromed by the consuming service (e.g. BlockStorage), but its validity is justified on BlockProof being verified by LeanHelix library.
 * The consensus algo doesn't keep PBFT logs of past block_height (erased on commit). A sync of the blockchain history is perfromed by block sync.
+* KeyManager holds a mapping between memberID and its (keyType, publicKey). MemberID = 0 corresponds to master keys _(e.g. in verifying signature aggregation)_.
 
 
 ## Archietcture - components and inetrfaces
@@ -39,7 +40,7 @@
 * `Commit(block, blockProof)` - Provides a block and a proof upon commit.
 
 #### BlockUtils
-* `RequestNewBlock(height, prevBlockHash) : block` - called by the OneHeight logic, returns a block interface with a block proposal.
+* `RequestNewBlock(height, prevBlockHash) : block` - called by the OneHeight logic, returns a block interface with a block proposal _(wait until)_.  
 * `ValidateBlock(height, block) : is_valid` - called by the OneHeight logic, valdiates a block proposal.
 * `CalcBlockHash(height, block) : block_hash` - called by the OneHeight logic, calculates the hash on a block based on the hashing scheme.
 
@@ -57,9 +58,9 @@
  -->
 
 #### KeyManager
-* `KeyManager.GetPublicKey(height, KeyType) : PublicKey` - Returnes the node public Public Key. KeyType indicates Consensus / RandomSeed.
+<!--  * `KeyManager.GetPublicKey(height, KeyType) : PublicKey` - Returnes the node public Public Key. KeyType indicates Consensus / RandomSeed. -->
 * `KeyManager.Sign(height, data, KeyType) : signature` - sign using the node's private key. KeyType indicates Consensus / RandomSeed.
-* `KeyManager.Verify(height, data, signature, PublicKey, KeyType) : valid` - verify the validity of a signature.
+* `KeyManager.Verify(height, data, signature, memberID, KeyType) : valid` - verify the validity of a signature.
 * `KeyManager.Aggregate(height, signature_list, public_keys_list) : signature` - aggregate the random_seed signatures.
 
 #### Logger and Monitor 
