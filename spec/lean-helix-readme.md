@@ -40,7 +40,7 @@
 * `NewBlockProof(blockProof_data): BlockProof` - Provides BlockProof serialization.
 
 #### BlockUtils
-* `RequestNewBlock(height, prevBlockHash) : block` - called by the OneHeight logic, returns a block interface with a block proposal _(wait until)_.  
+* `RequestNewBlock(height, prevBlockHash) : block` - called by the OneHeight logic, returns a block interface with a block proposal.  
 * `ValidateBlock(height, block) : is_valid` - called by the OneHeight logic, valdiates a block proposal.
 * `CalcBlockHash(height, block) : block_hash` - called by the OneHeight logic, calculates the hash on a block based on the hashing scheme.
 
