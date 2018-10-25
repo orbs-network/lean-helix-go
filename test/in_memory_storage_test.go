@@ -271,7 +271,7 @@ func TestClearBlockHeightLogs(t *testing.T) {
 	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000))
 	view := View(math.Floor(rand.Float64() * 1000))
 	block := builders.CreateBlock(builders.GenesisBlock)
-	blockHash := builders.CalculateBlockHash(block)
+	blockHash := block.BlockHash()
 	keyManager := builders.NewMockKeyManager(Ed25519PublicKey("PK"))
 
 	msgFactory := lh.NewMessageFactory(keyManager)

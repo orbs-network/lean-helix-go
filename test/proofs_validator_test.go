@@ -31,7 +31,7 @@ func TestProofsValidator(t *testing.T) {
 	const targetHeight = height
 	const targetView = view + 1
 	block := builders.CreateBlock(builders.GenesisBlock)
-	blockHash := builders.CalculateBlockHash(block)
+	blockHash := block.BlockHash()
 	goodPreparedProof := lh.CreatePreparedProof(leaderKeyManager, []lh.KeyManager{node1KeyManager, node2KeyManager}, height, view, blockHash)
 
 	t.Run("TestProofsValidatorHappyPath", func(t *testing.T) {

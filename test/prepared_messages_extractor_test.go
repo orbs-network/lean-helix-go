@@ -17,7 +17,7 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000))
 	view := View(math.Floor(rand.Float64() * 1000))
 	block := builders.CreateBlock(builders.GenesisBlock)
-	blockHash := builders.CalculateBlockHash(block)
+	blockHash := block.BlockHash()
 	leaderId := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
 	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
