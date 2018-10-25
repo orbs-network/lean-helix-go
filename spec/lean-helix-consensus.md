@@ -25,7 +25,7 @@
 > Used to reduce the chance for costly syncs.\
 > Discard if message.block_height > my_state.block_height + configurable future_block_height_window.
 * Accessed by (Block_height, View, Signer)
-* Persistent
+* Not Persistent _(TBD)_. 
 * Stores only one valid message per {Block_height, MessageType, Signer, View}
   _(avoid storing duplciates which may be sent as part of an attack)_
 
