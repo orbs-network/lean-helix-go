@@ -55,7 +55,7 @@
 
 
 &nbsp;
-## `Communication.OnConsensusMessage(message)`
+## `OnConsensusMessage(message)`
 > Demux message and filter by height.
 #### Filter message by block height
 * Current_block_height = my_state.OneHeightContext.Current_block_height
