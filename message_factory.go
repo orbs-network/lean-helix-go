@@ -21,7 +21,8 @@ func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
 		View:        view,
 		BlockHash:   block.BlockHash(),
 	}
-	sig := Ed25519Sig(f.KeyManager.Sign(header.Build().Raw()))
+	rawHeader := header.Build().Raw()
+	sig := Ed25519Sig(f.KeyManager.Sign(rawHeader))
 	me := Ed25519PublicKey(f.KeyManager.MyPublicKey())
 	sender := &SenderSignatureBuilder{
 		SenderPublicKey: me,

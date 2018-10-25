@@ -25,10 +25,8 @@ func TestReturnOkForMembersInCurrentHeight(t *testing.T) {
 	mockComm.When("SendMessage", mock.Any, mock.Any).Return()
 	mockStorage.When("StorePreprepare", mock.Any).Return(true)
 	mockKeyManager := builders.NewMockKeyManager(pk)
-	messageFactory := lh.NewMessageFactory(builders.NewMockKeyManager(pk))
 	config := &lh.TermConfig{
 		KeyManager:           mockKeyManager,
-		MessageFactory:       messageFactory,
 		NetworkCommunication: mockComm,
 		Logger:               log.GetLogger(log.String("ID", "ID")),
 		BlockUtils:           mockBlockUtils,

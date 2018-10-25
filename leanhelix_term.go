@@ -42,6 +42,7 @@ func NewLeanHelixTerm(ctx context.Context, config *TermConfig, newBlockHeight Bl
 	blockUtils := config.BlockUtils
 	myPK := keyManager.MyPublicKey()
 	comm := config.NetworkCommunication
+	messageFactory := NewMessageFactory(keyManager)
 	committeeMembers := comm.RequestOrderedCommittee(uint64(newBlockHeight))
 	if len(committeeMembers) == 0 {
 		return nil, fmt.Errorf("no members for _Block height %v", newBlockHeight)
@@ -63,7 +64,7 @@ func NewLeanHelixTerm(ctx context.Context, config *TermConfig, newBlockHeight Bl
 		electionTrigger:            config.ElectionTrigger,
 		BlockUtils:                 blockUtils,
 		CommitteeMembersPublicKeys: committeeMembers,
-		MessageFactory:             config.MessageFactory,
+		MessageFactory:             messageFactory,
 		onCommittedBlock:           onCommittedBlock,
 		MyPublicKey:                myPK,
 	}
@@ -75,7 +76,7 @@ func NewLeanHelixTerm(ctx context.Context, config *TermConfig, newBlockHeight Bl
 
 func (term *leanHelixTerm) startTerm(ctx context.Context) {
 	term.log.Info("StartTerm() ID=%s height=%d started", log.Stringable("my-id", term.KeyManager.MyPublicKey()), log.Stringable("height", term.height))
-	term.initView(0)
+	term.initView(ctx, 0)
 
 	if !term.IsLeader() {
 		term.log.Debug("StartTerm() is not leader, returning.", log.Stringable("id", term.KeyManager.MyPublicKey()), log.Stringable("height", term.height))
@@ -189,7 +190,7 @@ func (term *leanHelixTerm) OnReceiveNewView(ctx context.Context, nvm *NewViewMes
 
 	if term.validatePreprepare(ppm) {
 		term.newViewLocally = signedHeader.View()
-		term.SetView(signedHeader.View())
+		term.SetView(ctx, signedHeader.View())
 		term.processPreprepare(ppm)
 	}
 
@@ -268,11 +269,11 @@ func pksToString(keys []Ed25519PublicKey) string {
 	return strings.Join(pkStrings, ",")
 }
 
-func (term *leanHelixTerm) initView(view View) {
+func (term *leanHelixTerm) initView(ctx context.Context, view View) {
 	term.preparedLocally = false
 	term.view = view
 	term.leaderPublicKey = term.calcLeaderPublicKey(view)
-	term.electionTrigger.RegisterOnTrigger(view, func(v View) { term.onLeaderChange(v) })
+	term.electionTrigger.RegisterOnTrigger(view, func(ctx context.Context, v View) { term.onLeaderChange(ctx, v) })
 }
 func (term *leanHelixTerm) calcLeaderPublicKey(view View) Ed25519PublicKey {
 	index := int(view) % len(term.CommitteeMembersPublicKeys)
@@ -281,8 +282,36 @@ func (term *leanHelixTerm) calcLeaderPublicKey(view View) Ed25519PublicKey {
 func (term *leanHelixTerm) IsLeader() bool {
 	return term.MyPublicKey.Equal(term.leaderPublicKey)
 }
-func (term *leanHelixTerm) onLeaderChange(counter View) {
-	panic("not impl")
+func (term *leanHelixTerm) onLeaderChange(ctx context.Context, view View) {
+
+	if view != term.view {
+		return
+	}
+	term.view = term.view + 1
+	preparedMessages := ExtractPreparedMessages(term.height, term.Storage, term.quorumSize())
+	vcm := term.MessageFactory.CreateViewChangeMessage(term.height, term.view, preparedMessages)
+	term.Storage.StoreViewChange(vcm)
+	if term.IsLeader() {
+		term.checkElected(ctx, term.height, term.view)
+	} else {
+		term.sendViewChange(ctx, vcm)
+	}
+
+	//if (view !== this.view) {
+	//	return;
+	//}
+	//this.setView(this.view + 1);
+	//this.logger.log({ subject: "Flow", FlowType: "LeaderChange", leaderPk: this.leaderPk, blockHeight: this.blockHeight, newView: this.view });
+	//
+	//const prepared: PreparedMessages = extractPreparedMessages(this.blockHeight, this.pbftStorage, this.getQuorumSize());
+	//const message: ViewChangeMessage = this.messagesFactory.createViewChangeMessage(this.blockHeight, this.view, prepared);
+	//this.pbftStorage.storeViewChange(message);
+	//if (this.isLeader()) {
+	//	this.checkElected(this.blockHeight, this.view);
+	//} else {
+	//	this.sendViewChange(message);
+	//}
+
 }
 
 // TODO Unit-test this!!
@@ -336,9 +365,9 @@ func (term *leanHelixTerm) isViewChangeValid(targetLeaderPublicKey Ed25519Public
 	return true
 
 }
-func (term *leanHelixTerm) SetView(view View) {
+func (term *leanHelixTerm) SetView(ctx context.Context, view View) {
 	if term.view != view {
-		term.initView(view)
+		term.initView(ctx, view)
 	}
 }
 func (term *leanHelixTerm) GetF() int {
@@ -371,5 +400,47 @@ func (term *leanHelixTerm) validateViewChangeConfirmations(targetBlockHeight Blo
 	}
 
 	return true
+
+}
+func (term *leanHelixTerm) quorumSize() int {
+	committeeMembersCount := len(term.CommitteeMembersPublicKeys)
+	f := int(math.Floor(float64(committeeMembersCount-1) / 3))
+	return committeeMembersCount - f
+}
+func (term *leanHelixTerm) checkElected(ctx context.Context, height BlockHeight, view View) {
+	if term.newViewLocally < view {
+		vcms := term.Storage.GetViewChangeMessages(height, view)
+		minimumNodes := term.quorumSize()
+		if len(vcms) >= minimumNodes {
+			term.onElected(ctx, view, vcms[:minimumNodes])
+		}
+	}
+}
+func (term *leanHelixTerm) onElected(ctx context.Context, view View, viewChangeMessages []*ViewChangeMessage) {
+
+	// this.logger.log({ subject: "Flow", FlowType: "Elected", blockHeight: this.blockHeight, view });
+	term.newViewLocally = view
+	term.SetView(ctx, view)
+	block := GetLatestBlockFromViewChangeMessages(viewChangeMessages)
+	if block == nil {
+		block = term.BlockUtils.RequestNewBlock(term.ctx, term.height) // TODO Pass ctx from params? do channels?
+		if term.disposed {
+			return
+		}
+	}
+	ppmContentBuilder := term.MessageFactory.CreatePreprepareMessageContentBuilder(term.height, view, block)
+	// const viewChangeVotes: ViewChangeContent[] = viewChangeMessages.map(vc => ({ signedHeader: vc.content.signedHeader, sender: vc.content.sender }));
+	confirmations := extractConfirmationsFromViewChangeMessages(viewChangeMessages)
+
+	nvm := term.MessageFactory.CreateNewViewMessage(term.height, view, ppmContentBuilder, confirmations, block)
+	term.sendNewView(ctx, nvm)
+}
+
+func (term *leanHelixTerm) sendNewView(ctx context.Context, nvm *NewViewMessage) {
+	nvmRaw := nvm.ToConsensusRawMessage()
+	term.NetworkCommunication.SendMessage(ctx, term.NonCommitteeMembersPublicKeys, nvmRaw)
+	// log
+}
+func (term *leanHelixTerm) sendViewChange(ctx context.Context, viewChangeMessage *ViewChangeMessage) {
 
 }

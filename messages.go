@@ -10,6 +10,13 @@ type Serializable interface {
 	Raw() []byte
 }
 
+type ConsensusRawMessage interface {
+	MessageType() MessageType
+	Content() []byte
+	Block() Block
+	ToConsensusMessage() ConsensusMessage
+}
+
 type ConsensusRawMessageConverter interface {
 	ToConsensusRawMessage() ConsensusRawMessage
 }

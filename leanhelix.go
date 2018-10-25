@@ -7,17 +7,6 @@ import (
 )
 
 // PBFT.ts
-type LeanHelix interface {
-	RegisterOnCommitted(cb func(block Block))
-	Dispose()
-	Start(blockHeight primitives.BlockHeight)
-	IsLeader() bool
-
-	// OnPreprepareMessage(ppm PreprepareMessage)
-	// TODO: orbs will build a concrete type
-
-	// Add MessageHandler
-}
 
 // TODO looks identical to Config, why is this needed?
 type TermConfig struct {
@@ -27,22 +16,13 @@ type TermConfig struct {
 	Logger               log.BasicLogger
 	ElectionTrigger      ElectionTrigger
 	Storage              Storage
-	MessageFactory       *MessageFactory
+	//MessageFactory       *MessageFactory
 }
 
 type leanHelix struct {
 	ctx       context.Context
 	ctxCancel context.CancelFunc
 	log       log.BasicLogger
-}
-
-func NewLeanHelix(ctx context.Context, ctxCancel context.CancelFunc, config *Config) LeanHelix {
-
-	return &leanHelix{
-		ctx:       ctx,
-		ctxCancel: ctxCancel,
-		log:       config.Logger.For(log.Service("leanhelix")),
-	}
 }
 
 func (lh *leanHelix) RegisterOnCommitted(cb func(block Block)) {
