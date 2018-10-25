@@ -212,7 +212,7 @@
   * PBFT_proof
   * RandomSeed_signature
  &nbsp;
-* Return LeanHelixBlockProof
+* Return `Config.ConsensusService.NewBlockProof(LeanHelixBlockProof)` _(serialized by ConsensuService)_.
 
 
 &nbsp;
