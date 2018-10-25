@@ -1,5 +1,5 @@
 # LeanHelix Consensus Algo
-> This document details the LeanHelix plug-in specification, focusing  on switching between consensus rounds. The spec for consensus round is described in [LeanHelixOneHeight](/lean-helix-one-height.md).
+> This document details the LeanHelix plug-in specification, focusing  on switching between consensus rounds. The spec for consensus round is described in [LeanHelixOneHeight](/lean-helix-one-height.md). The public API can be found in [LeanHelix](/lean-helix-readme.md).
 
 
 ## Design Notes
