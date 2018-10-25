@@ -5,7 +5,6 @@
 
 ## Design Notes
 * Consensus is performed in an infinte loop triggered at a given context state (a BlockProof which holds all necessary information to start next consensus round). A sync scenario flow, e.g. might shift the consensus loop to a different height.
-* This library is dependent on "consumer service" with several context (height based) provided functionalities, detailed below (which could alter its behaviour).
 * The proposed design involves another partition into an inner constrained module - "LeanHelixOneHeight" - explicitly devoted to a single round PBFT consensus, further detailed in a seperated file.
   * The "multi-height" library is responsible for looping through the correct term _(height)_, setting the relevant context
   * Including filtering old messages and subsequently relaying future messages at appropriate times.
@@ -19,6 +18,9 @@
 * Syncing is perfromed by the consuming service (e.g. BlockStorage), but its validity is justified on BlockProof being verified by LeanHelix library.
 * The consensus algo doesn't keep PBFT logs of past block_height (erased on commit). A sync of the blockchain history is perfromed by block sync.
 * KeyManager holds a mapping between memberID and its (keyType, publicKey). MemberID = 0 corresponds to master keys _(e.g. in verifying signature aggregation)_.
+* Block and BlockProof are serialized by the Consumer service.
+* This library is dependent on "consumer service" with several context (height based) provided functionalities, detailed below (which could alter its behaviour).
+
 
 
 ## Archietcture - components and inetrfaces
@@ -38,6 +40,7 @@
 
 #### ConsensusService
 * `Commit(block, blockProof)` - Provides a block and a proof upon commit.
+* `NewBlockProof`
 
 #### BlockUtils
 * `RequestNewBlock(height, prevBlockHash) : block` - called by the OneHeight logic, returns a block interface with a block proposal _(wait until)_.  
@@ -74,8 +77,6 @@
 --->
 
 #### Additional configurations and inetrfaces
-* Local stroage
-  * By default he library uses in memory storage, option to connect a persistent storage.
 * Committee size
   * Desired committee size
   
