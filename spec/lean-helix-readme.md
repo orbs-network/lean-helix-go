@@ -40,7 +40,7 @@
 
 #### ConsensusService
 * `Commit(block, blockProof)` - Provides a block and a proof upon commit.
-* `NewBlockProof`
+* `NewBlockProof(blockProof_data): BlockProof` - Provides BlockProof serialization.
 
 #### BlockUtils
 * `RequestNewBlock(height, prevBlockHash) : block` - called by the OneHeight logic, returns a block interface with a block proposal _(wait until)_.  
