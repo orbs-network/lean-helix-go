@@ -1,6 +1,5 @@
 # LeanHelix Consensus Algo
-> This document describes the LeanHelix plug-in specification, PBFT based algorithm providing block finality, with a randomly per-round selected committee (ordered subset of nodes). \
-> Note: current spec does not involve "selection fairness".
+> This document details the LeanHelix plug-in specification, focusing  on switching between consensus rounds. The spec for consensus round is described in [LeanHelixOneHeight](/lean-helix-one-height.md)
 
 
 ## Design Notes
@@ -68,9 +67,9 @@
 * Determine the message type
 * If message type COMMIT:
     * KeyType = Get KeyType to verify for KeyManager.KEY_TYPES.RandomSeed
-    * PublicKey = `KeyManager.GetPublicKey(message.Signer, message.Block_height, KeyType)`
+    <!--  * PublicKey = `KeyManager.GetPublicKey(message.Signer, message.Block_height, KeyType)`  -->
     * Random_seed = my_state.OneHeightContext.Random_seed
-    * Validate the random_seed _(current block_height)_ signature by calling `KeyManager.Verify(Random_seed, message.Random_seed_share, PublicKey)`. If failed validation - discard.
+    * Validate the random_seed _(current block_height)_ signature by calling `KeyManager.Verify(message.Block_height, Random_seed, message.Random_seed_share, message.Signer, KeyType)`. If failed validation - discard.
     * Log info to random_seed_database:
         * random_seed_data.add({COMMIT message.Block_height, COMMIT message.Signer, COMMIT message.Random_seed_share, PublicKey})
 * Call the corresponding `my_state.OneHeight.On<XXX>`
@@ -122,17 +121,17 @@
 
 &nbsp;
 ## `ValidateBlock(block)`
-> Override BlockUtils.ValidateBlock for OneHeight consensus.
-#### Check the hash pointers
+> Override BlockUtils.ValidateBlock for OneHeight consensus. 
+> Validate against current OneHeightContext _(height, prev_block_hash)_.
 * Height = my_state.OneHeightContext.Current_block_height.
 * Prev_block_hash = my_state.OneHeightContext.Prev_block_hash
-* Return `ValidateBlockHelper(block, Height, Prev_block_hash)`
+* Return `ValidateBlockLogic(block, Height, Prev_block_hash)`
 
 
 
 &nbsp;
-## `ValidateBlockHelper(block, height, prev_block_hash)`
-> Override BlockUtils.ValidateBlock for OneHeight consensus.
+## `ValidateBlockLogic(block, height, prev_block_hash)`
+> Validate against given params _(height, prev_block_hash)_.
 #### Check the hash pointers
 * If block.Block_height does not match height Return False.
 * If block.prev_block_hash does not match prev_block_hash Return False.
@@ -155,8 +154,8 @@
 > Override KeyManager.Verify - PublicKey mapped as MemberID - for OneHeight consensus.
 * Height = my_state.OneHeightContext.Current_block_height
 * KeyType = Get KeyType to verify for KeyManager.KEY_TYPES.Consensus
-* PublicKey = Get PublicKey by calling `Config.KeyManager.GetPublicKey(memberID, Height, KeyType)`
-* Return `Config.KeyManager.Verify(object, signature, PublicKey, Height, KeyType)`
+<!-- * PublicKey = Get PublicKey by calling `Config.KeyManager.GetPublicKey(memberID, Height, KeyType)` -->
+* Return `Config.KeyManager.Verify(object, signature, memberID, Height, KeyType)`
 
 
 
@@ -185,7 +184,7 @@
 > Generates a block_proof, propagates the commit, broadcasts block and starts new consesnus round.
 * LeanHelixBlockProof = Get by Calling `GenerateLeanHelixBlockProof(commits_list)`
 * Commit the BlockPair to consuming service by calling `Config.ConsensusService.Commit(block, LeanHelixBlockProof)`
-* Broadcast to all nodes message with block by calling `Config.Communication.BroadcastPostConsensusMessage(height, message(block))`
+* Broadcast to all nodes message with block by calling `Config.Communication.SendConsensusMessage(height, message(block))`
 * Trigger next consensus round by Calling `UpdateState(LeanHelixBlockProof)`
 
 
@@ -256,8 +255,10 @@
     * PublicKey = call `KeyManager.GetPublicKey(memberID = 0, Block_height, KeyType)`
 * If `Config.KeyManager.Verify(Random_seed, Random_seed_signature, PublicKey, Block_height, KeyType)` fails Return False.
 #### validate block
-* If `ValidateBlockHelper(block, Block_height, prevBlockProof.Block_hash)` fails Return False.
-* Passed all validation Return Valid
+* If `ValidateBlockLogic(block, Block_height, prevBlockProof.Block_hash)` fails Return False.
+
+#### Passed all validation
+* Return Valid
 
 
 
@@ -266,7 +267,7 @@
 > Stops consensus performed on blocks when reaching height.
 * my_state.StopHeight = height
 * If my_state.OneHeightContext.Current_block_height >= my_state.StopHeight
-    * Stop the OneHeight consensus round by calling `my_state.OneHeight.Dispose()`
+    * Stop the OneHeight consensus round by calling `my_state.OneHeight.Dispose(w```````````````````````1`)`
 
 
 
