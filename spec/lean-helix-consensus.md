@@ -19,61 +19,6 @@
 * Syncing is perfromed by the consuming service (e.g. BlockStorage), but its validity is justified on BlockProof being verified by LeanHelix library.
 * The consensus algo doesn't keep PBFT logs of past block_height (erased on commit). A sync of the blockchain history is perfromed by block sync.
 
-
-## Archietcture - components and inetrfaces
-* Main component Interface:
-  * `UpdateState(previousBlockProof)` - start infinite consensus. Derive next height, prevBlockHash and random_seed from contextBlockHeaders (called by the ConsensusService).
-  * `ValidateBlockConsensus(block, blockProof, prevBlockProof)` - called by the ConsensusService - e.g. by blockstorage as part of block sync. Validates block and verifies the blockProof is valid
-  * `StopAt(height)` - stops consensus performed on blocks when reaching height.
-
-  * Dependent Interfaces:
-    * `ConsensusService.Commit(block, blockProof)` - notify consumer service of committed block.
-    * BlockUtils:
-        * `BlockUtils.RequestNewBlock(height, prevBlockHash) : block` - called by the OneHeight, returns a block proposal.
-        * `BlockUtils.ValidateBlock(height, block) : valid` - called by the OneHeight, valdiates a block proposal.
-        * `BlockUtils.CalcBlockHash(height, block) : block_hash` - called by the OneHeight, calculates the hash on a block based on the hashing scheme.
-    * Membership
-        * `Membership.MyID(height) : member` - obtain unique identifier used in consensus process.
-        * `Membership.RequestOrderedCommittee(height, random_seed, Config.commmittee_size) : member_list` -  called at the setup stage of each consensus round (random_seed for round r is determined from random_seed at round r-1, info is present at last_committed_block(r-1))_(Height provided in case of federation change)_.
-
-    * Communication:<!--  Note - lean-helix assumes filtering at the federation level (for 'height') -->
-        * `Communication.SendConsensusMessage(height, member_list, message)` - abstraction of sending all consensus related messages (ref. to git for a full list)
-        * `Communication.BroadcastPostConsensusMessage(height, message)` - e.g. notify all non committee members of committed block
-        * `Communication.OnConsensusMessage(message)` - relay message to filtering by height.
-
-    * KeyManager: Note - assume it obtains private key for 'height'
-        * `KeyManager.GetPublicKey(memberID, height, KeyType) : PublicKey` - map memberID used in _(KEY_TYPES := Consensus, RandomSeed, ...)_ to PublicKey _(for signature verification - where memberID is 0 refers to Master Public Key)_.
-        * `KeyManager.Sign(object, height, KeyType) : signature` - sign using private key number KeyType _(KEY_TYPES := Consensus, RandomSeed, ...)_
-        * `KeyManager.Verify(object, signature, PublicKey, height, KeyType) : valid` - verify validity of member signature at a given height
-        * `KeyManager.Aggregate(signature_list, public_keys_list) : signature` - aggregate the signatures on random_seed where each signature has a unique index - mapped in KeyManager with matching PublicKey _(necessary for aggregation)_.
-    * Logger:
-        * `Logger.Log(data)`
-    * Monitor:
-        * `Monitor.ReportStatus(data)`
-    * ElectionTrigger:
-        * `ElectionTrigger.RegisterOnTrigger(cb) : uid`
-        * `ElectionTrigger.unregisterOnTrigger(uid)`
-
-
-
-
-
-
-
-## Configuration:
-> Provided on creation. Holds all necessary functionalities to run. \
-> Mostly passed to one-height with context tweaks.
-  * `ConsensusService.Commit(block)` - Callback on committed block event.
-  * BlockUtils (RequestNewBlock, ValidateBlock, CalcBlockHash)
-  * Communication (SendConsensusMessage, OnConsensusMessage, BroadcastPostConsensusMessage)
-  * KeyManager (Sign, verify)
-  * Membership (myID, GetPublicKey, RequestOrderedCommittee)
-  * ElectionTrigger (default is timeout based )
-  * Logger (optional)
-  * Monitor (optional, if provided records stats during consensus round)
-  * LocalStorage (optional, default in memory - stores messages)
-  * Committee_size
-
 ## Databases
 
 #### Received Messages Cache
