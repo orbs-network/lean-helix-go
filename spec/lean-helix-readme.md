@@ -15,6 +15,7 @@
 * The consensus algo doesn't keep PBFT logs of past block_height (erased on commit). A sync of the blockchain history is perfromed by block sync.
 * KeyManager holds a mapping between memberID and its (keyType, publicKey). MemberID = 0 corresponds to master keys _(e.g. in verifying signature aggregation)_.
 * Block and BlockProof are serialized by the Consumer service.
+* Consensus messages _(excluding the Block, BlockProof)_ are serialized by the library. 
 * This library is dependent on "consumer service" with several context (height based) provided functionalities, detailed below (which could alter its behaviour).
 
 
@@ -48,7 +49,8 @@
 * `RequestOrderedCommittee(height, random_seed, Config.commmittee_size) : member_list` -  called at the setup stage of each consensus round (random_seed for round r is determined from the random_seed at round r-1).
 
 #### Communication
-* `SendConsensusMessage(height, member_list, message)` - abstraction of sending all consensus related messages [LeanHelix messages](../messages.go)
+* `SendConsensusMessage(height, member_list, message)` - abstraction of sending all consensus related messages [LeanHelix messages](../messages.go). Message may include a Block interface, indicating SendMessageWithBlock.
+
 <!-- I think it should be part fo the SendConsensusMessage, sent to a member list (non-committee)
 * `BroadcastPostConsensusMessage(height, message)` - e.g. notify all non committee members of committed block
 -->
