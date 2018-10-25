@@ -22,7 +22,6 @@ func (electionTrigger *ElectionTriggerMock) UnregisterOnTrigger() {
 	electionTrigger.cb = nil
 }
 
-// TODO: Gil - what to put as arg to cb()
 func (electionTrigger *ElectionTriggerMock) Trigger() {
 	if electionTrigger.cb != nil {
 		electionTrigger.cb(electionTrigger.view)
