@@ -28,7 +28,7 @@
 * `UpdateState(previousBlockProof)`
   Initiates particiaption in a consensus round and terminate particiaption in an on-going round. Called upon block sync upon processing of a block with height higher than the current one.
 * `ValidateBlockConsensus(block, blockProof, prevBlockProof)`
-  Validates given block against its blockProof and its parent BlockProof _(prevBlockProof)_. Called as part of the block sync flow upon receiptin of a new block.
+  Validates given block against its blockProof and its parent BlockProof _(prevBlockProof)_. Called as part of the block sync flow upon receiving a new block.
 * `StopAt(height)`
   Stops the participation in the consensus when the target height is reached.
 * `OnConsensusMessage(message)` - called upon reception of a consensus message.
@@ -61,7 +61,7 @@
 <!--  * `KeyManager.GetPublicKey(height, KeyType) : PublicKey` - Returnes the node public Public Key. KeyType indicates Consensus / RandomSeed. -->
 * `KeyManager.Sign(height, data, KeyType) : signature` - sign using the node's private key. KeyType indicates Consensus / RandomSeed.
 * `KeyManager.Verify(height, data, signature, memberID, KeyType) : valid` - verify the validity of a signature.
-* `KeyManager.Aggregate(height, signature_list, public_keys_list) : signature` - aggregate the random_seed signatures.
+* `KeyManager.Aggregate(height, signature_list, memberIDs_list) : signature` - aggregate the random_seed signatures.
 
 #### Logger and Monitor 
 * `Log(data)` - logs an log event. 
