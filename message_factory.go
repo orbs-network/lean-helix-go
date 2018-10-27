@@ -48,6 +48,14 @@ func (f *MessageFactory) CreatePreprepareMessage(
 	return ppm
 }
 
+func (f *MessageFactory) CreatePreprepareMessageFromContentBuilder(ppmc *PreprepareContentBuilder, block Block) *PreprepareMessage {
+	ppm := &PreprepareMessage{
+		content: ppmc.Build(),
+		block:   block,
+	}
+	return ppm
+}
+
 func (f *MessageFactory) CreatePrepareMessage(
 	blockHeight BlockHeight,
 	view View,

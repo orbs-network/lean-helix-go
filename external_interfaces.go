@@ -38,6 +38,7 @@ type Config struct {
 type Block interface {
 	Height() primitives.BlockHeight
 	BlockHash() primitives.Uint256
+	PrevBlockHash() primitives.Uint256
 }
 
 // Communication layer for sending & receiving messages, and requesting committee and checking committee membership

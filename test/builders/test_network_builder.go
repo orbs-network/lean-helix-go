@@ -158,9 +158,9 @@ func (net *TestNetwork) GetNodeGossip(pk Ed25519PublicKey) *gossip.Gossip {
 	return net.Discovery.GetGossipByPK(pk)
 }
 
-func (net *TestNetwork) TriggerElection() {
+func (net *TestNetwork) TriggerElection(ctx context.Context) {
 	for _, node := range net.Nodes {
-		node.TriggerElection()
+		node.TriggerElection(ctx)
 	}
 }
 

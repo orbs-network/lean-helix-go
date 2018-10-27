@@ -3,7 +3,7 @@
 
 
 ## Design Notes
-* Consensus is performed in an infinte loop triggered at a given context state. A sync scenario flow, e.g. might shift the consensus loop to a different height.
+* Consensus is performed in an infinite loop triggered at a given context state. A sync scenario flow, e.g. might shift the consensus loop to a different height.
 * This library is dependent on "consumer service" with several context provided functionalities, detailed below (which could alter its behaviour).
 * The proposed design involves another partition into an inner constrained module - "LeanHelixOneHeight" - explicitly devoted to a single round PBFT consensus, further detailed in a seperated file.
   * The "multi-height" library is responsible for looping through the correct term _(height)_, setting the relevant context

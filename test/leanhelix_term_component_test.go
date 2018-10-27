@@ -29,7 +29,7 @@ func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 		t.Fatal(err)
 	}
 	require.Equal(t, View(0), term.GetView(), "Term should have view=0 on init")
-	net.TriggerElection()
+	net.TriggerElection(ctx)
 	require.Equal(t, View(1), term.GetView(), "Term should have view=1 after one election")
 }
 
@@ -55,7 +55,7 @@ func TestRejectNewViewMessagesFromPast(t *testing.T) {
 	}
 
 	//require.Equal(t, View(0), term.GetView(), "Term should have view=0 on init")
-	net.TriggerElection()
+	net.TriggerElection(ctx)
 	//require.Equal(t, View(1), term.GetView(), "Term should have view=1 after one election")
 	term.OnReceiveNewView(ctx, nvm)
 	require.Equal(t, View(1), term.GetView(), "Term should have view=1")
@@ -83,7 +83,7 @@ func TestAcceptPreprepareWithCurrentView(t *testing.T) {
 		t.Error(err)
 	}
 	require.Equal(t, node1LeanHelixTerm.GetView(), View(0), "Node 1 view should be 0")
-	net.TriggerElection()
+	net.TriggerElection(ctx)
 	require.Equal(t, node1LeanHelixTerm.GetView(), View(1), "Node 1 view should be 1")
 
 	block := builders.CreateBlock(builders.GenesisBlock)

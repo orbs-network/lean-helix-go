@@ -270,3 +270,72 @@ func NewNewViewMessage(content *NewViewMessageContent, block Block) *NewViewMess
 		block:   block,
 	}
 }
+
+func extractConfirmationsFromViewChangeMessages(vcms []*ViewChangeMessage) []*ViewChangeMessageContentBuilder {
+
+	if len(vcms) == 0 {
+		return nil
+	}
+
+	res := make([]*ViewChangeMessageContentBuilder, 0, len(vcms))
+	for _, vcm := range vcms {
+		header := vcm.content.SignedHeader()
+		sender := vcm.content.Sender()
+		proof := header.PreparedProof()
+		ppBlockRefBuilder := &BlockRefBuilder{
+			MessageType: proof.PreprepareBlockRef().MessageType(),
+			BlockHeight: proof.PreprepareBlockRef().BlockHeight(),
+			View:        proof.PreprepareBlockRef().View(),
+			BlockHash:   proof.PreprepareBlockRef().BlockHash(),
+		}
+		ppSender := &SenderSignatureBuilder{
+			SenderPublicKey: proof.PreprepareSender().SenderPublicKey(),
+			Signature:       proof.PreprepareSender().Signature(),
+		}
+		pBlockRef := &BlockRefBuilder{
+			MessageType: proof.PrepareBlockRef().MessageType(),
+			BlockHeight: proof.PrepareBlockRef().BlockHeight(),
+			View:        proof.PrepareBlockRef().View(),
+			BlockHash:   proof.PrepareBlockRef().BlockHash(),
+		}
+		pSendersIter := proof.PrepareSendersIterator()
+		pSenders := make([]*SenderSignatureBuilder, 0, 1)
+
+		for {
+			if !pSendersIter.HasNext() {
+				break
+			}
+			nextPSender := pSendersIter.NextPrepareSenders()
+			pSender := &SenderSignatureBuilder{
+				SenderPublicKey: nextPSender.SenderPublicKey(),
+				Signature:       nextPSender.Signature(),
+			}
+
+			pSenders = append(pSenders, pSender)
+		}
+
+		viewChangeMessageContentBuilder := &ViewChangeMessageContentBuilder{
+			SignedHeader: &ViewChangeHeaderBuilder{
+				MessageType: header.MessageType(),
+				BlockHeight: header.BlockHeight(),
+				View:        header.View(),
+				PreparedProof: &PreparedProofBuilder{
+					PreprepareBlockRef: ppBlockRefBuilder,
+					PreprepareSender:   ppSender,
+					PrepareBlockRef:    pBlockRef,
+					PrepareSenders:     pSenders,
+				},
+			},
+			Sender: &SenderSignatureBuilder{
+				SenderPublicKey: sender.SenderPublicKey(),
+				Signature:       sender.Signature(),
+			},
+		}
+		res = append(res, viewChangeMessageContentBuilder)
+
+	}
+	return res
+	//const viewChangeVotes: ViewChangeContent[] =
+	//	viewChangeMessages.map(vc =>
+	//		({ signedHeader: vc.content.signedHeader, sender: vc.content.sender }));
+}

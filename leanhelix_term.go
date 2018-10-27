@@ -32,6 +32,7 @@ type leanHelixTerm struct {
 	view                          View
 	disposed                      bool
 	preparedLocally               bool
+	committedLocally              bool
 	leaderPublicKey               Ed25519PublicKey
 	newViewLocally                View
 }
@@ -102,30 +103,80 @@ func (term *leanHelixTerm) OnReceivePreprepare(ctx context.Context, ppm *Preprep
 	if !ok {
 		panic("throw some error here") // TODO nicer error & log
 	}
-	term.processPreprepare(ppm)
+	term.processPreprepare(ctx, ppm)
 
 	return nil
 }
 
 func (term *leanHelixTerm) OnReceivePrepare(ctx context.Context, pm *PrepareMessage) error {
-	panic("not impl")
+
+	header := pm.content.SignedHeader()
+	sender := pm.content.Sender()
+
+	signed := term.KeyManager.Sign(header.Raw())
+	if !term.KeyManager.Verify(signed, sender) {
+		return fmt.Errorf("verification failed for Prepare blockHeight=%v view=%v blockHash=%v", header.BlockHeight(), header.View(), header.BlockHash())
+	}
+	if term.view > header.View() {
+		return fmt.Errorf("prepare view %v is less than OneHeight's view %v", header.View(), term.view)
+	}
+	if term.leaderPublicKey.Equal(sender.SenderPublicKey()) {
+		return fmt.Errorf("prepare received from leader (only preprepare can be received from leader)")
+	}
+	term.Storage.StorePrepare(pm)
+	if term.view == header.View() {
+		term.checkPrepared(ctx, header.BlockHeight(), header.View(), header.BlockHash())
+	}
+	return nil
 }
 
 func (term *leanHelixTerm) OnReceiveCommit(ctx context.Context, cm *CommitMessage) error {
-	panic("not impl")
+	header := cm.content.SignedHeader()
+	sender := cm.content.Sender()
+
+	signed := term.KeyManager.Sign(header.Raw())
+	if !term.KeyManager.Verify(signed, sender) {
+		return fmt.Errorf("verification failed for Commit blockHeight=%v view=%v blockHash=%v", header.BlockHeight(), header.View(), header.BlockHash())
+	}
+	if term.view > header.View() {
+		return fmt.Errorf("message Commit view %v is less than OneHeight's view %v", header.View(), term.view)
+	}
+	if term.leaderPublicKey.Equal(sender.SenderPublicKey()) {
+		return fmt.Errorf("message Commit received from leader (only preprepare can be received from leader)")
+	}
+	term.Storage.StoreCommit(cm)
+	if term.view == header.View() {
+		term.checkCommitted(ctx, header.BlockHeight(), header.View(), header.BlockHash())
+	}
+	return nil
 }
 
 func (term *leanHelixTerm) OnReceiveViewChange(ctx context.Context, vcm *ViewChangeMessage) error {
-	panic("implement me")
+
+	header := vcm.content.SignedHeader()
+	if !term.isViewChangeValid(term.MyPublicKey, term.view, vcm.content) {
+		return fmt.Errorf("message ViewChange is not valid")
+	}
+	if vcm.block == nil || header.PreparedProof() == nil {
+		return fmt.Errorf("message ViewChange - block or prepared proof are nil")
+	}
+	calculatedBlockHash := term.BlockUtils.CalculateBlockHash(vcm.block)
+	isValidDigest := calculatedBlockHash.Equal(header.PreparedProof().PreprepareBlockRef().BlockHash())
+	if !isValidDigest {
+		return fmt.Errorf("different block hashes for block provided with message, and the block provided by the PPM in the PreparedProof of the message")
+	}
+	term.Storage.StoreViewChange(vcm)
+	term.checkElected(ctx, header.BlockHeight(), header.View())
+	return nil
 }
 
 func (term *leanHelixTerm) OnReceiveNewView(ctx context.Context, nvm *NewViewMessage) error {
 
 	panic("convert ts->go")
-	signedHeader := nvm.Content().SignedHeader()
+	header := nvm.Content().SignedHeader()
 	sender := nvm.Content().Sender()
-	preprepareMessageContent := nvm.Content().PreprepareMessageContent()
-	viewChangeConfirmationsIter := signedHeader.ViewChangeConfirmationsIterator()
+	ppMessageContent := nvm.Content().PreprepareMessageContent()
+	viewChangeConfirmationsIter := header.ViewChangeConfirmationsIterator()
 	viewChangeConfirmations := make([]*ViewChangeMessageContent, 0, 1)
 	for {
 		if viewChangeConfirmationsIter.HasNext() {
@@ -133,40 +184,40 @@ func (term *leanHelixTerm) OnReceiveNewView(ctx context.Context, nvm *NewViewMes
 		}
 	}
 
-	if !term.KeyManager.Verify(signedHeader.Raw(), sender) {
+	if !term.KeyManager.Verify(header.Raw(), sender) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", ignored because the signature verification failed` });
 		return fmt.Errorf("verify failed")
 	}
 
-	futureLeaderId := term.calcLeaderPublicKey(signedHeader.View())
+	futureLeaderId := term.calcLeaderPublicKey(header.View())
 	if !sender.SenderPublicKey().Equal(futureLeaderId) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", rejected because it match the new id (${view})` });
 		return fmt.Errorf("no match for future leader")
 	}
 
-	if !term.validateViewChangeConfirmations(signedHeader.BlockHeight(), signedHeader.View(), viewChangeConfirmations) {
+	if !term.validateViewChangeConfirmations(header.BlockHeight(), header.View(), viewChangeConfirmations) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", votes is invalid` });
 		return fmt.Errorf("validateViewChangeConfirmations failed")
 	}
 
-	if term.view > signedHeader.View() {
+	if term.view > header.View() {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", view is from the past` });
 		return fmt.Errorf("current view is higher than message view")
 	}
 
-	if !preprepareMessageContent.SignedHeader().View().Equal(signedHeader.View()) {
+	if !ppMessageContent.SignedHeader().View().Equal(header.View()) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", view doesn't match PP.view` });
 		return fmt.Errorf("NewView.view and NewView.Preprepare.view do not match")
 	}
 
-	if !preprepareMessageContent.SignedHeader().BlockHeight().Equal(signedHeader.BlockHeight()) {
+	if !ppMessageContent.SignedHeader().BlockHeight().Equal(header.BlockHeight()) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", blockHeight doesn't match PP.blockHeight` });
 		return fmt.Errorf("NewView.BlockHeight and NewView.Preprepare.BlockHeight do not match")
 	}
 
 	latestConfirmation := term.latestViewChangeConfirmation(viewChangeConfirmations)
 	if latestConfirmation != nil {
-		viewChangeMessageValid := term.isViewChangeValid(futureLeaderId, signedHeader.View(), latestConfirmation)
+		viewChangeMessageValid := term.isViewChangeValid(futureLeaderId, header.View(), latestConfirmation)
 		if !viewChangeMessageValid {
 			//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", view change votes are invalid` });
 			return fmt.Errorf("NewView.ViewChangeConfirmation (with latest view) is invalid")
@@ -184,14 +235,14 @@ func (term *leanHelixTerm) OnReceiveNewView(ctx context.Context, nvm *NewViewMes
 	}
 
 	ppm := &PreprepareMessage{
-		content: preprepareMessageContent,
+		content: ppMessageContent,
 		block:   nvm.Block(),
 	}
 
 	if term.validatePreprepare(ppm) {
-		term.newViewLocally = signedHeader.View()
-		term.SetView(ctx, signedHeader.View())
-		term.processPreprepare(ppm)
+		term.newViewLocally = header.View()
+		term.SetView(ctx, header.View())
+		term.processPreprepare(ctx, ppm)
 	}
 
 	return nil
@@ -241,19 +292,26 @@ func (term *leanHelixTerm) hasPreprepare(blockHeight BlockHeight, view View) boo
 	return ok
 }
 
-func (term *leanHelixTerm) processPreprepare(ppm *PreprepareMessage) {
-	panic("impl me - create Prepare etc.")
+func (term *leanHelixTerm) processPreprepare(ctx context.Context, ppm *PreprepareMessage) {
+	header := ppm.content.SignedHeader()
+	if term.view != header.View() {
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], processPrePrepare, view doesn't match` });
+		return
+	}
+
+	pm := term.MessageFactory.CreatePrepareMessage(header.BlockHeight(), header.View(), header.BlockHash())
+	term.Storage.StorePreprepare(ppm)
+	term.Storage.StorePrepare(pm)
+	term.sendPrepare(ctx, pm)
+	term.checkPrepared(ctx, header.BlockHeight(), header.View(), header.BlockHash())
 }
 
 func (term *leanHelixTerm) GetView() View {
 	return term.view
 }
 func (term *leanHelixTerm) sendPreprepare(ctx context.Context, message *PreprepareMessage) {
-
 	rawMessage := message.ToConsensusRawMessage()
-
 	term.NetworkCommunication.SendMessage(ctx, term.NonCommitteeMembersPublicKeys, rawMessage)
-
 	term.log.Debug("GossipSend preprepare",
 		log.Stringable("senderPK", term.KeyManager.MyPublicKey()),
 		log.String("targetPKs", pksToString(term.NonCommitteeMembersPublicKeys)),
@@ -261,6 +319,29 @@ func (term *leanHelixTerm) sendPreprepare(ctx context.Context, message *Preprepa
 		log.Stringable("blockHash", message.Content().SignedHeader().BlockHash()),
 	)
 }
+
+func (term *leanHelixTerm) sendPrepare(ctx context.Context, message *PrepareMessage) {
+	rawMessage := message.ToConsensusRawMessage()
+	term.NetworkCommunication.SendMessage(ctx, term.NonCommitteeMembersPublicKeys, rawMessage)
+	term.log.Debug("GossipSend prepare",
+		log.Stringable("senderPK", term.KeyManager.MyPublicKey()),
+		log.String("targetPKs", pksToString(term.NonCommitteeMembersPublicKeys)),
+		log.Stringable("height", message.View()),
+		log.Stringable("blockHash", message.Content().SignedHeader().BlockHash()),
+	)
+}
+
+func (term *leanHelixTerm) sendCommit(ctx context.Context, message *CommitMessage) {
+	rawMessage := message.ToConsensusRawMessage()
+	term.NetworkCommunication.SendMessage(ctx, term.NonCommitteeMembersPublicKeys, rawMessage)
+	term.log.Debug("GossipSend commit",
+		log.Stringable("senderPK", term.KeyManager.MyPublicKey()),
+		log.String("targetPKs", pksToString(term.NonCommitteeMembersPublicKeys)),
+		log.Stringable("height", message.View()),
+		log.Stringable("blockHash", message.Content().SignedHeader().BlockHash()),
+	)
+}
+
 func pksToString(keys []Ed25519PublicKey) string {
 	pkStrings := make([]string, len(keys))
 	for i := 0; i < len(keys); i++ {
@@ -288,7 +369,7 @@ func (term *leanHelixTerm) onLeaderChange(ctx context.Context, view View) {
 		return
 	}
 	term.view = term.view + 1
-	preparedMessages := ExtractPreparedMessages(term.height, term.Storage, term.quorumSize())
+	preparedMessages := ExtractPreparedMessages(term.height, term.Storage, term.QuorumSize())
 	vcm := term.MessageFactory.CreateViewChangeMessage(term.height, term.view, preparedMessages)
 	term.Storage.StoreViewChange(vcm)
 	if term.IsLeader() {
@@ -402,7 +483,7 @@ func (term *leanHelixTerm) validateViewChangeConfirmations(targetBlockHeight Blo
 	return true
 
 }
-func (term *leanHelixTerm) quorumSize() int {
+func (term *leanHelixTerm) QuorumSize() int {
 	committeeMembersCount := len(term.CommitteeMembersPublicKeys)
 	f := int(math.Floor(float64(committeeMembersCount-1) / 3))
 	return committeeMembersCount - f
@@ -410,7 +491,7 @@ func (term *leanHelixTerm) quorumSize() int {
 func (term *leanHelixTerm) checkElected(ctx context.Context, height BlockHeight, view View) {
 	if term.newViewLocally < view {
 		vcms := term.Storage.GetViewChangeMessages(height, view)
-		minimumNodes := term.quorumSize()
+		minimumNodes := term.QuorumSize()
 		if len(vcms) >= minimumNodes {
 			term.onElected(ctx, view, vcms[:minimumNodes])
 		}
@@ -429,10 +510,10 @@ func (term *leanHelixTerm) onElected(ctx context.Context, view View, viewChangeM
 		}
 	}
 	ppmContentBuilder := term.MessageFactory.CreatePreprepareMessageContentBuilder(term.height, view, block)
-	// const viewChangeVotes: ViewChangeContent[] = viewChangeMessages.map(vc => ({ signedHeader: vc.content.signedHeader, sender: vc.content.sender }));
+	ppm := term.MessageFactory.CreatePreprepareMessageFromContentBuilder(ppmContentBuilder, block)
 	confirmations := extractConfirmationsFromViewChangeMessages(viewChangeMessages)
-
 	nvm := term.MessageFactory.CreateNewViewMessage(term.height, view, ppmContentBuilder, confirmations, block)
+	term.Storage.StorePreprepare(ppm)
 	term.sendNewView(ctx, nvm)
 }
 
@@ -443,4 +524,75 @@ func (term *leanHelixTerm) sendNewView(ctx context.Context, nvm *NewViewMessage)
 }
 func (term *leanHelixTerm) sendViewChange(ctx context.Context, viewChangeMessage *ViewChangeMessage) {
 
+}
+func (term *leanHelixTerm) checkPrepared(ctx context.Context, blockHeight BlockHeight, view View, blockHash Uint256) {
+	if term.preparedLocally {
+		if term.isPreprepared(blockHeight, view, blockHash) {
+			countPrepared := term.countPrepared(blockHeight, view, blockHash)
+			//const metaData = {
+			//method: "checkPrepared",
+			//	height: this.blockHeight,
+			//		blockHash,
+			//		countPrepared
+			//};
+			//this.logger.log({ subject: "Info", message: `counting`, metaData });
+			if countPrepared >= term.QuorumSize()-1 {
+				term.onPrepared(ctx, blockHeight, view, blockHash)
+			}
+		}
+	}
+}
+func (term *leanHelixTerm) isPreprepared(blockHeight BlockHeight, view View, blockHash Uint256) bool {
+	ppm, ok := term.Storage.GetPreprepareMessage(blockHeight, view)
+	if !ok {
+		return false
+	}
+	ppmBlock := ppm.block
+	if ppmBlock == nil {
+		return false
+	}
+	ppmBlockHash := ppmBlock.BlockHash() // TODO Use CalcBlockHash here (as in ts code)?
+	//const metaData = {
+	//method: "isPrePrepared",
+	//	height: this.blockHeight,
+	//		prePreparedBlockHash,
+	//		blockHash,
+	//		eq: prePreparedBlockHash.equals(blockHash)
+	//};
+	//this.logger.log({ subject: "Info", message: `isPrePrepared`, metaData });
+	return ppmBlockHash.Equal(blockHash)
+}
+func (term *leanHelixTerm) countPrepared(height BlockHeight, view View, blockHash Uint256) int {
+	return len(term.Storage.GetPrepareSendersPKs(height, view, blockHash))
+}
+func (term *leanHelixTerm) onPrepared(ctx context.Context, blockHeight BlockHeight, view View, blockHash Uint256) {
+	term.preparedLocally = true
+	cm := term.MessageFactory.CreateCommitMessage(blockHeight, view, blockHash)
+	term.Storage.StoreCommit(cm)
+	term.sendCommit(ctx, cm)
+	term.checkCommitted(ctx, blockHeight, view, blockHash)
+}
+func (term *leanHelixTerm) checkCommitted(ctx context.Context, blockHeight BlockHeight, view View, blockHash Uint256) {
+	if term.committedLocally {
+		return
+	}
+	if !term.isPreprepared(blockHeight, view, blockHash) {
+		return
+	}
+	commits := term.Storage.GetCommitSendersPKs(blockHeight, view, blockHash)
+	if len(commits) < term.QuorumSize() {
+		return
+	}
+	ppm, ok := term.Storage.GetPreprepareMessage(blockHeight, view)
+	if !ok {
+		// log
+		return
+	}
+	term.commitBlock(ppm.block, blockHash)
+}
+func (term *leanHelixTerm) commitBlock(block Block, blockHash Uint256) {
+	term.committedLocally = true
+	//this.logger.log({ subject: "Flow", FlowType: "Commit", blockHeight: this.blockHeight, view: this.view, blockHash: blockHash.toString("Hex") });
+	term.electionTrigger.UnregisterOnTrigger()
+	term.onCommittedBlock(block)
 }
