@@ -5,37 +5,38 @@ import (
 	lh "github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/instrumentation/log"
 	. "github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/test/gossip"
 )
 
 type NodeBuilder struct {
-	ctx                  context.Context
-	ctxCancel            context.CancelFunc
-	networkCommunication lh.NetworkCommunication
-	keyManager           lh.KeyManager
-	storage              lh.Storage
-	logger               log.BasicLogger
-	electionTrigger      lh.ElectionTrigger
-	blockUtils           lh.BlockUtils
-	filter               *lh.NetworkMessageFilter
-	logsToConsole        bool
+	ctx             context.Context
+	ctxCancel       context.CancelFunc
+	gossip          *gossip.Gossip
+	keyManager      lh.KeyManager
+	storage         lh.Storage
+	logger          log.BasicLogger
+	electionTrigger lh.ElectionTrigger
+	blockUtils      lh.BlockUtils
+	filter          *lh.NetworkMessageFilter
+	logsToConsole   bool
 }
 
 func NewNodeBuilder() *NodeBuilder {
 	return &NodeBuilder{
-		networkCommunication: nil,
-		keyManager:           nil,
-		storage:              nil,
-		logger:               nil,
-		electionTrigger:      nil,
-		blockUtils:           nil,
-		filter:               nil,
-		logsToConsole:        false,
+		gossip:          nil,
+		keyManager:      nil,
+		storage:         nil,
+		logger:          nil,
+		electionTrigger: nil,
+		blockUtils:      nil,
+		filter:          nil,
+		logsToConsole:   false,
 	}
 }
 
-func (builder *NodeBuilder) ThatIsPartOf(networkCommunication lh.NetworkCommunication) *NodeBuilder {
-	if builder.networkCommunication == nil {
-		builder.networkCommunication = networkCommunication
+func (builder *NodeBuilder) ThatIsPartOf(gossip *gossip.Gossip) *NodeBuilder {
+	if builder.gossip == nil {
+		builder.gossip = gossip
 	}
 	return builder
 }
@@ -94,7 +95,7 @@ func (builder *NodeBuilder) buildConfig() *lh.Config {
 	}
 
 	return &lh.Config{
-		NetworkCommunication: builder.networkCommunication,
+		NetworkCommunication: builder.gossip,
 		ElectionTrigger:      electionTrigger,
 		BlockUtils:           blockUtils,
 		KeyManager:           builder.keyManager,
@@ -125,6 +126,7 @@ func (builder *NodeBuilder) Build() *Node {
 	node := &Node{
 		KeyManager: builder.keyManager,
 		Filter:     builder.filter,
+		Gossip:     builder.gossip,
 		Config:     nodeConfig,
 		leanHelix:  leanHelix,
 		blockChain: NewInMemoryBlockChain(),

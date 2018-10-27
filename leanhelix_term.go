@@ -172,7 +172,6 @@ func (term *leanHelixTerm) OnReceiveViewChange(ctx context.Context, vcm *ViewCha
 
 func (term *leanHelixTerm) OnReceiveNewView(ctx context.Context, nvm *NewViewMessage) error {
 
-	panic("convert ts->go")
 	header := nvm.Content().SignedHeader()
 	sender := nvm.Content().Sender()
 	ppMessageContent := nvm.Content().PreprepareMessageContent()

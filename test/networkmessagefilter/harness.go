@@ -63,7 +63,7 @@ func NewHarness(
 }
 
 func (h *harness) ExpectXMessagesToBeSent(times int) {
-	h.senderGossip.When("SendMessage", mock.Any, mock.Any).Times(times)
+	h.senderGossip.When("SendMessage", mock.Any, mock.Any, mock.Any).Times(times)
 }
 
 func (h *harness) ExpectEachMessageToBeReceivedXTimes(times int, excludedNodes []int) {

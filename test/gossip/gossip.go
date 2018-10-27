@@ -42,7 +42,7 @@ func (g *Gossip) IsMember(pk Ed25519PublicKey) bool {
 }
 
 func (g *Gossip) SendMessage(ctx context.Context, targets []Ed25519PublicKey, message lh.ConsensusRawMessage) error {
-	g.Called(targets, message)
+	g.Called(ctx, targets, message)
 	for _, targetId := range targets {
 		if err := g.SendToNode(ctx, targetId, message); err != nil {
 			return err
