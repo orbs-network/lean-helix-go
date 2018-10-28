@@ -2,10 +2,19 @@ package builders
 
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
 	"github.com/orbs-network/go-mock"
 	lh "github.com/orbs-network/lean-helix-go"
 	. "github.com/orbs-network/lean-helix-go/primitives"
 )
+
+func CalculateBlockHash(block lh.Block) Uint256 {
+	mockBlock := block.(*MockBlock)
+	str := fmt.Sprintf("%d_%s", mockBlock.Height(), mockBlock.Body())
+	hash := sha256.Sum256([]byte(str))
+	return hash[:]
+}
 
 type MockBlockUtils struct {
 	mock.Mock

@@ -1,33 +1,18 @@
 package builders
 
 import (
-	"crypto/sha256"
 	"fmt"
 	lh "github.com/orbs-network/lean-helix-go"
 	. "github.com/orbs-network/lean-helix-go/primitives"
 )
 
-var GenesisBlock = &MockBlock{
-	height:        0,
-	blockHash:     Uint256("The Genesis Block"),
-	prevBlockHash: nil,
-}
-
-func CalculateBlockHash(block lh.Block) Uint256 {
-	hash := sha256.Sum256(block.PrevBlockHash())
-	return hash[:]
-}
+var GenesisBlock = CreateBlock(nil)
 
 // MockBlock
 type MockBlock struct {
-	height        BlockHeight
-	blockHash     Uint256
-	prevBlockHash Uint256
-	body          []byte
-}
-
-func (b *MockBlock) PrevBlockHash() Uint256 {
-	return b.prevBlockHash
+	height    BlockHeight
+	blockHash Uint256
+	body      string
 }
 
 func (b *MockBlock) BlockHash() Uint256 {
@@ -38,19 +23,31 @@ func (b *MockBlock) Height() BlockHeight {
 	return b.height
 }
 
-var globalCounter = 0
+func (b *MockBlock) Body() string {
+	return b.body
+}
 
 func CreateBlock(previousBlock lh.Block) lh.Block {
+	var height BlockHeight = 0
+	if previousBlock != nil {
+		height = previousBlock.Height() + 1
+	}
 
 	block := &MockBlock{
-		height:    previousBlock.Height() + 1,
-		blockHash: CalculateBlockHash(previousBlock),
-		body:      genBody(),
+		height: height,
+		body:   genBody(height),
 	}
+	block.blockHash = CalculateBlockHash(block)
 	return block
 }
 
-func genBody() []byte {
-	globalCounter++
-	return []byte(fmt.Sprintf("Block %d", globalCounter))
+var blocksCounter = 0
+
+func genBody(height BlockHeight) string {
+	body := fmt.Sprintf("Block #%d Height:%d", blocksCounter, height)
+	if height == 0 {
+		body = body + " (Genesis)"
+	}
+	blocksCounter++
+	return body
 }
