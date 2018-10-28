@@ -259,16 +259,13 @@ func TestMessageFactory(t *testing.T) {
 			},
 		}
 		confirmations := []*lh.ViewChangeMessageContentBuilder{
-			node1Fac.CreateViewChangeMessageContentBuilder(
-				height, view, preparedMessages),
-			node2Fac.CreateViewChangeMessageContentBuilder(
-				height, view, preparedMessages),
+			node1Fac.CreateViewChangeMessageContentBuilder(height, view, preparedMessages),
+			node2Fac.CreateViewChangeMessageContentBuilder(height, view, preparedMessages),
 		}
 		actualNVM := leaderFac.CreateNewViewMessage(
 			height,
 			view,
-			leaderFac.CreatePreprepareMessageContentBuilder(
-				height, view, block),
+			leaderFac.CreatePreprepareMessageContentBuilder(height, view, block),
 			confirmations,
 			block)
 

@@ -19,66 +19,6 @@ func verifyBlockRefMessage(blockRef *BlockRef, sender *SenderSignature, keyManag
 
 type CalcLeaderPk = func(view View) Ed25519PublicKey
 
-// TODO low-quality name, find a better one
-func CreatePreparedProofBuilderFromPreparedMessages(preparedMessages *PreparedMessages) *PreparedProofBuilder {
-
-	if preparedMessages == nil {
-		return nil
-	}
-
-	preprepareMessage := preparedMessages.PreprepareMessage
-	prepareMessages := preparedMessages.PrepareMessages
-
-	var ppBlockRef, pBlockRef *BlockRefBuilder
-	var ppSender *SenderSignatureBuilder
-	var pSenders []*SenderSignatureBuilder
-
-	if preprepareMessage == nil {
-		ppBlockRef = nil
-		ppSender = nil
-	} else {
-		ppBlockRef = &BlockRefBuilder{
-			MessageType: LEAN_HELIX_PREPREPARE,
-			BlockHeight: preprepareMessage.BlockHeight(),
-			View:        preprepareMessage.View(),
-			BlockHash:   preprepareMessage.Content().SignedHeader().BlockHash(),
-		}
-		ppSender = &SenderSignatureBuilder{
-			SenderPublicKey: preprepareMessage.Content().Sender().SenderPublicKey(),
-			Signature:       preprepareMessage.Content().Sender().Signature(),
-		}
-	}
-
-	if prepareMessages == nil {
-		pBlockRef = nil
-		pSenders = nil
-	} else {
-		pBlockRef = &BlockRefBuilder{
-			MessageType: LEAN_HELIX_PREPARE,
-			BlockHeight: prepareMessages[0].BlockHeight(),
-			View:        prepareMessages[0].View(),
-			BlockHash:   prepareMessages[0].Content().SignedHeader().BlockHash(),
-		}
-		pSenders = make([]*SenderSignatureBuilder, 0, len(prepareMessages))
-		for _, pm := range prepareMessages {
-			pSenders = append(pSenders, &SenderSignatureBuilder{
-				SenderPublicKey: pm.Content().Sender().SenderPublicKey(),
-				Signature:       pm.Content().Sender().Signature(),
-			})
-		}
-	}
-
-	preparedProof := &PreparedProofBuilder{
-		PreprepareBlockRef: ppBlockRef,
-		PreprepareSender:   ppSender,
-		PrepareBlockRef:    pBlockRef,
-		PrepareSenders:     pSenders,
-	}
-
-	return preparedProof
-
-}
-
 func CreatePreparedProofBuilder(ppKeyManager KeyManager, pKeyManagers []KeyManager, height BlockHeight, view View, blockHash Uint256) *PreparedProofBuilder {
 
 	var ppBlockRef *BlockRefBuilder
