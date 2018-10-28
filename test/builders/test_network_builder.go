@@ -27,8 +27,6 @@ type TestNetwork struct {
 }
 
 type TestNetworkBuilder struct {
-	ctx                  context.Context
-	ctxCancel            context.CancelFunc
 	nodeCount            int
 	electionTrigger      lh.ElectionTrigger
 	blockUtils           *MockBlockUtils
@@ -37,12 +35,6 @@ type TestNetworkBuilder struct {
 	discovery            gossip.Discovery
 	logger               log.BasicLogger
 	nodesBlockHeight     BlockHeight
-}
-
-func (builder *TestNetworkBuilder) WithContext(ctx context.Context, ctxCancel context.CancelFunc) *TestNetworkBuilder {
-	builder.ctx = ctx
-	builder.ctxCancel = ctxCancel
-	return builder
 }
 
 func (builder *TestNetworkBuilder) RequestBlocksWith(utils *MockBlockUtils) *TestNetworkBuilder {
@@ -63,8 +55,6 @@ func (builder *TestNetworkBuilder) ThatLogsToCustomLogger(logger log.BasicLogger
 func (builder *TestNetworkBuilder) Build() *TestNetwork {
 
 	return &TestNetwork{
-		ctx:        builder.ctx,
-		ctxCancel:  builder.ctxCancel,
 		Nodes:      builder.CreateNodes(),
 		BlockUtils: builder.blockUtils,
 		Discovery:  builder.discovery,
@@ -80,8 +70,6 @@ func NewSimpleTestNetwork(
 	nodesBlockHeight BlockHeight,
 	blocksPool []lh.Block,
 	nonMemberNodeIndices []int) *TestNetwork {
-
-	ctx, ctxCancel := context.WithCancel(context.Background())
 
 	b1 := CreateBlock(GenesisBlock)
 	b2 := CreateBlock(b1)
@@ -99,7 +87,6 @@ func NewSimpleTestNetwork(
 
 	return NewTestNetworkBuilder(nodeCount).
 		WithBlockHeight(nodesBlockHeight).
-		WithContext(ctx, ctxCancel).
 		ExcludeNodesFromDiscovery(nonMemberNodeIndices).
 		RequestBlocksWith(mockBlockUtils).
 		Build()
@@ -135,7 +122,7 @@ func (builder *TestNetworkBuilder) CreateNodes() []*Node {
 	nodes := make([]*Node, builder.nodeCount)
 
 	for i := range nodes {
-		nodes[i] = buildNode(builder.ctx, builder.ctxCancel, Ed25519PublicKey(fmt.Sprintf("Node %d", i)), builder.nodesBlockHeight, builder.discovery, builder.logger)
+		nodes[i] = buildNode(Ed25519PublicKey(fmt.Sprintf("Node %d", i)), builder.nodesBlockHeight, builder.discovery, builder.logger)
 	}
 	for _, idx := range builder.nonMemberNodeIndices {
 		builder.discovery.UnregisterGossip(nodes[idx].KeyManager.MyPublicKey())

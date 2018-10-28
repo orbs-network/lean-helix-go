@@ -17,12 +17,9 @@ const NODE_COUNT = 4
 // Based on
 
 func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
+	ctx, _ := context.WithCancel(context.Background())
 
-	ctx, ctxCancel := context.WithCancel(context.Background())
-
-	net := builders.NewTestNetworkBuilder(NODE_COUNT).
-		WithContext(ctx, ctxCancel).
-		Build()
+	net := builders.NewTestNetworkBuilder(NODE_COUNT).Build()
 	node := net.Nodes[0]
 	node.Gossip.When("SendMessage", mock.Any, mock.Any, mock.Any).Return()
 	termConfig := lh.BuildTermConfig(net.Nodes[0].Config)
@@ -36,15 +33,12 @@ func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 }
 
 func TestRejectNewViewMessagesFromPast(t *testing.T) {
-
-	ctx, ctxCancel := context.WithCancel(context.Background())
+	ctx, _ := context.WithCancel(context.Background())
 
 	height := BlockHeight(0)
 	view := View(0)
 	block := builders.CreateBlock(builders.GenesisBlock)
-	net := builders.NewTestNetworkBuilder(NODE_COUNT).
-		WithContext(ctx, ctxCancel).
-		Build()
+	net := builders.NewTestNetworkBuilder(NODE_COUNT).Build()
 
 	node := net.Nodes[0]
 	node.Gossip.When("SendMessage", mock.Any, mock.Any, mock.Any).Return()
@@ -67,14 +61,11 @@ func TestRejectNewViewMessagesFromPast(t *testing.T) {
 
 // Based on "onReceivePrePrepare should accept views that match its current view"
 func TestAcceptPreprepareWithCurrentView(t *testing.T) {
-
 	t.Skip()
 
-	ctx, ctxCancel := context.WithCancel(context.Background())
+	ctx, _ := context.WithCancel(context.Background())
 
-	net := builders.NewTestNetworkBuilder(NODE_COUNT).
-		WithContext(ctx, ctxCancel).
-		Build()
+	net := builders.NewTestNetworkBuilder(NODE_COUNT).Build()
 	node1 := net.Nodes[1]
 	termConfig1 := lh.BuildTermConfig(node1.Config)
 	mockStorage1 := builders.NewMockStorage()

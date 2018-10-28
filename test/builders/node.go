@@ -18,8 +18,6 @@ type Node struct {
 }
 
 func buildNode(
-	ctx context.Context,
-	ctxCancel context.CancelFunc,
 	publicKey Ed25519PublicKey,
 	nodeBlockHeight BlockHeight,
 	discovery gossip.Discovery,
@@ -32,10 +30,10 @@ func buildNode(
 	discovery.RegisterGossip(publicKey, gossip)
 	mockReceiver := NewMockMessageReceiver()
 	filter := lh.NewNetworkMessageFilter(gossip, publicKey, mockReceiver)
+	ctx, _ := context.WithCancel(context.Background())
 	filter.SetBlockHeight(ctx, nodeBlockHeight)
 
 	return NewNodeBuilder().
-		WithContext(ctx, ctxCancel).
 		WithFilter(filter).
 		ThatIsPartOf(gossip).
 		GettingBlocksVia(blockUtils).
