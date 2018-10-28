@@ -9,7 +9,7 @@ import (
 )
 
 type Node struct {
-	KeyManager lh.KeyManager
+	KeyManager *mockKeyManager
 	Config     *lh.Config
 	leanHelix  lh.LeanHelix
 	blockChain *InMemoryBlockChain

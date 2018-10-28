@@ -178,9 +178,10 @@ func (term *leanHelixTerm) OnReceiveNewView(ctx context.Context, nvm *NewViewMes
 	viewChangeConfirmationsIter := header.ViewChangeConfirmationsIterator()
 	viewChangeConfirmations := make([]*ViewChangeMessageContent, 0, 1)
 	for {
-		if viewChangeConfirmationsIter.HasNext() {
-			viewChangeConfirmations = append(viewChangeConfirmations, viewChangeConfirmationsIter.NextViewChangeConfirmations())
+		if !viewChangeConfirmationsIter.HasNext() {
+			break
 		}
+		viewChangeConfirmations = append(viewChangeConfirmations, viewChangeConfirmationsIter.NextViewChangeConfirmations())
 	}
 
 	if !term.KeyManager.Verify(header.Raw(), sender) {
