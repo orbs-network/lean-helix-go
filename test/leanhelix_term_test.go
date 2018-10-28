@@ -14,6 +14,8 @@ import (
 // Unit tests for leanhelix_term
 
 func TestReturnOkForMembersInCurrentHeight(t *testing.T) {
+
+	t.Skip()
 	// Instantiate, provide no members, and expect error
 	ctx := context.Background()
 	pk := Ed25519PublicKey("PK")

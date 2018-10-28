@@ -12,7 +12,7 @@ type NodeBuilder struct {
 	ctx             context.Context
 	ctxCancel       context.CancelFunc
 	gossip          *gossip.Gossip
-	keyManager      lh.KeyManager
+	keyManager      *mockKeyManager
 	storage         lh.Storage
 	logger          log.BasicLogger
 	electionTrigger lh.ElectionTrigger

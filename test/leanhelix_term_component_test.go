@@ -23,7 +23,8 @@ func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 	net := builders.NewTestNetworkBuilder(NODE_COUNT).
 		WithContext(ctx, ctxCancel).
 		Build()
-
+	node := net.Nodes[0]
+	node.Gossip.When("SendMessage", mock.Any, mock.Any, mock.Any).Return()
 	termConfig := lh.BuildTermConfig(net.Nodes[0].Config)
 	term, err := lh.NewLeanHelixTerm(ctx, termConfig, 0, func(block lh.Block) {})
 	if err != nil {
@@ -36,8 +37,6 @@ func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 
 func TestRejectNewViewMessagesFromPast(t *testing.T) {
 
-	t.Skip() // this is stuck
-
 	ctx, ctxCancel := context.WithCancel(context.Background())
 
 	height := BlockHeight(0)
@@ -49,6 +48,7 @@ func TestRejectNewViewMessagesFromPast(t *testing.T) {
 
 	node := net.Nodes[0]
 	node.Gossip.When("SendMessage", mock.Any, mock.Any, mock.Any).Return()
+	node.KeyManager.When("Verify", mock.Any, mock.Any).Return(true)
 	messageFactory := lh.NewMessageFactory(node.KeyManager)
 	ppmContentBuilder := messageFactory.CreatePreprepareMessageContentBuilder(height, view, block)
 	nvm := messageFactory.CreateNewViewMessage(height, view, ppmContentBuilder, nil, block)
@@ -82,6 +82,8 @@ func TestAcceptPreprepareWithCurrentView(t *testing.T) {
 	// TODO This is smelly - maybe wait till correct config architecture
 	// emerges from future tests
 	termConfig1.Storage = mockStorage1
+	mockStorage1.When("StorePreprepare", mock.Any)
+	mockStorage1.When("GetLatestPreprepare", mock.Any)
 	node1LeanHelixTerm, err := lh.NewLeanHelixTerm(ctx, termConfig1, 0, nil)
 	if err != nil {
 		t.Error(err)
@@ -98,6 +100,7 @@ func TestAcceptPreprepareWithCurrentView(t *testing.T) {
 	mf1 := lh.NewMessageFactory(keyManager)
 
 	ppmFromCurrentView := mf1.CreatePreprepareMessage(1, 1, block)
+	// Manually receive this ppm
 	node1LeanHelixTerm.OnReceivePreprepare(ctx, ppmFromCurrentView)
 	utils.ResolveAllValidations(true)
 	mockStorage1.When("StorePrepare").Times(1)
