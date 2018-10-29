@@ -1,6 +1,7 @@
 package builders
 
 import (
+	"fmt"
 	lh "github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/instrumentation/log"
 	. "github.com/orbs-network/lean-helix-go/primitives"
@@ -9,7 +10,7 @@ import (
 
 type NodeBuilder struct {
 	networkCommunication lh.NetworkCommunication
-	keyManager           *mockKeyManager
+	publicKey            Ed25519PublicKey
 	storage              lh.Storage
 	logger               log.BasicLogger
 	electionTrigger      lh.ElectionTrigger
@@ -19,16 +20,7 @@ type NodeBuilder struct {
 }
 
 func NewNodeBuilder() *NodeBuilder {
-	return &NodeBuilder{
-		networkCommunication: nil,
-		keyManager:           nil,
-		storage:              nil,
-		logger:               nil,
-		electionTrigger:      nil,
-		blockUtils:           nil,
-		filter:               nil,
-		logsToConsole:        false,
-	}
+	return &NodeBuilder{}
 }
 
 func (builder *NodeBuilder) ThatIsPartOf(networkCommunication lh.NetworkCommunication) *NodeBuilder {
@@ -46,8 +38,8 @@ func (builder *NodeBuilder) ElectingLeaderUsing(electionTrigger lh.ElectionTrigg
 }
 
 func (builder *NodeBuilder) WithPublicKey(publicKey Ed25519PublicKey) *NodeBuilder {
-	if builder.keyManager == nil {
-		builder.keyManager = NewMockKeyManager(publicKey)
+	if builder.publicKey == nil {
+		builder.publicKey = publicKey
 	}
 	return builder
 }
@@ -59,6 +51,7 @@ func (builder *NodeBuilder) buildConfig() *lh.Config {
 		electionTrigger lh.ElectionTrigger
 		blockUtils      lh.BlockUtils
 		storage         lh.Storage
+		keyManager      lh.KeyManager
 	)
 
 	if builder.electionTrigger != nil {
@@ -79,11 +72,17 @@ func (builder *NodeBuilder) buildConfig() *lh.Config {
 		storage = lh.NewInMemoryStorage()
 	}
 
+	publicKey := builder.publicKey
+	if publicKey == nil {
+		publicKey = Ed25519PublicKey(fmt.Sprintf("Dummy PublicKey"))
+	}
+	keyManager = NewMockKeyManager(publicKey)
+
 	return &lh.Config{
 		NetworkCommunication: builder.networkCommunication,
 		ElectionTrigger:      electionTrigger,
 		BlockUtils:           blockUtils,
-		KeyManager:           builder.keyManager,
+		KeyManager:           keyManager,
 		Logger:               builder.logger.For(log.Service("node")),
 		Storage:              storage,
 	}

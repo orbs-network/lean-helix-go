@@ -7,19 +7,13 @@ import (
 	"github.com/orbs-network/lean-helix-go/instrumentation/log"
 	. "github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
-	"github.com/stretchr/testify/mock"
 	"io"
 	"os"
 )
 
-// The Lean Helix BlockHeight component tests in this file require a test network to run
-
 const MINIMUM_NODES = 2
 
 type TestNetwork struct {
-	mock.Mock
-	ctx        context.Context
-	ctxCancel  context.CancelFunc
 	Nodes      []*Node
 	BlockUtils *MockBlockUtils
 	Transport  *MockNetworkCommunication
@@ -91,9 +85,6 @@ func NewSimpleTestNetwork(
 }
 
 func NewTestNetworkBuilder(nodeCount int) *TestNetworkBuilder {
-
-	//ctx, ctxCancel := context.WithCancel(context.Background())
-
 	var output io.Writer
 	output = os.Stdout
 
@@ -101,9 +92,6 @@ func NewTestNetworkBuilder(nodeCount int) *TestNetworkBuilder {
 	testLogger := log.GetLogger(log.String("test-id", testId)).
 		WithOutput(log.NewOutput(output).
 			WithFormatter(log.NewHumanReadableFormatter()))
-	//WithFilter(log.String("flow", "MockBlock-sync")).
-	//WithFilter(log.String("service", "gossip"))
-	testLogger.Info("===========================================================================")
 
 	return &TestNetworkBuilder{
 		nodeCount:       nodeCount,
@@ -153,9 +141,6 @@ func (net *TestNetwork) StartConsensusOnAllNodes() error {
 }
 
 func (net *TestNetwork) Stop() {
-
-	net.ctxCancel()
-
 	// TODO Do we need this??
 	for _, node := range net.Nodes {
 		node.Dispose()
