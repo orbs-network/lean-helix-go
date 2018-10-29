@@ -16,8 +16,12 @@ type TermConfig struct {
 }
 
 type leanHelix struct {
-	ctx       context.Context
 	ctxCancel context.CancelFunc
+	config    *Config
+}
+
+func (lh *leanHelix) ValidateBlockConsensus(block Block, blockProof *BlockProof, prevBlockProof *BlockProof) {
+	panic("impl me")
 }
 
 func (lh *leanHelix) RegisterOnCommitted(cb func(block Block)) {
@@ -29,7 +33,10 @@ func (lh *leanHelix) Dispose() {
 	// TODO: implement
 }
 
-func (lh *leanHelix) Start(blockHeight primitives.BlockHeight) {
+func (lh *leanHelix) Start(parentCtx context.Context, blockHeight primitives.BlockHeight) {
+
+	ctx, ctxCancel := context.WithCancel(parentCtx)
+	lh.ctxCancel = ctxCancel
 
 	// TODO: create an infinite loop which can be stopped by context.Done()
 
@@ -37,7 +44,7 @@ func (lh *leanHelix) Start(blockHeight primitives.BlockHeight) {
 		select {
 
 		// case: some channel that fires when consensus completed successfully or with error
-		case <-lh.ctx.Done():
+		case <-ctx.Done():
 			lh.GracefulShutdown()
 
 		}
@@ -49,6 +56,7 @@ func (lh *leanHelix) IsLeader() bool {
 	// TODO: implement
 	return false
 }
+
 func (lh *leanHelix) GracefulShutdown() {
 	lh.ctxCancel()
 }

@@ -7,14 +7,18 @@ import (
 
 // first call - create an instance of Lean Helix library
 func NewLeanHelix(config *Config) LeanHelix {
-	return &leanHelix{}
+	return &leanHelix{
+		config: config,
+		log:    config.Logger.For(log.Service("leanhelix")),
+	}
 }
 
 type LeanHelix interface {
-	Start(blockHeight primitives.BlockHeight)
+	Start(ctx context.Context, blockHeight primitives.BlockHeight)
 	RegisterOnCommitted(cb func(block Block))
 	Dispose()
 	IsLeader() bool
+	ValidateBlockConsensus(block Block, blockProof *BlockProof, prevBlockProof *BlockProof)
 }
 
 type Config struct {
@@ -23,6 +27,7 @@ type Config struct {
 	KeyManager           KeyManager
 	ElectionTrigger      ElectionTrigger
 	Storage              Storage
+	Logger               log.BasicLogger
 }
 
 // Interfaces that must be implemented by the external service using this library
