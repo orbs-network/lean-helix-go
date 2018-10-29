@@ -1,7 +1,6 @@
 package builders
 
 import (
-	"context"
 	lh "github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/instrumentation/log"
 	. "github.com/orbs-network/lean-helix-go/primitives"
@@ -9,8 +8,6 @@ import (
 )
 
 type NodeBuilder struct {
-	ctx             context.Context
-	ctxCancel       context.CancelFunc
 	gossip          *gossip.Gossip
 	keyManager      *mockKeyManager
 	storage         lh.Storage
@@ -76,18 +73,6 @@ func (builder *NodeBuilder) buildConfig() *lh.Config {
 		blockUtils = NewMockBlockUtils(nil)
 	}
 
-	//if builder.logger != nil {
-	//	logger = builder.logger
-	//} else {
-	//	if builder.logsToConsole {
-	//		// TODO Find the silent logger
-	//		//logger = lh.NewConsoleLogger(string(builder.publicKey))
-	//		logger =
-	//	} else {
-	//		logger = log.BasicLogger.For(log.Service("node"))
-	//	}
-	//}
-
 	if builder.storage != nil {
 		storage = builder.storage
 	} else {
@@ -119,10 +104,8 @@ func (builder *NodeBuilder) ThatLogsTo(logger log.BasicLogger) *NodeBuilder {
 }
 
 func (builder *NodeBuilder) Build() *Node {
-
-	//func NewNode(ctx context.Context, ctxCancel context.CancelFunc, keyManager lh.KeyManager, config *lh.Config) *Node {
 	nodeConfig := builder.buildConfig()
-	leanHelix := lh.NewLeanHelix(builder.ctx, builder.ctxCancel, nodeConfig)
+	leanHelix := lh.NewLeanHelix(nodeConfig)
 	node := &Node{
 		KeyManager: builder.keyManager,
 		Gossip:     builder.gossip,
@@ -132,10 +115,4 @@ func (builder *NodeBuilder) Build() *Node {
 	}
 	leanHelix.RegisterOnCommitted(node.onCommittedBlock)
 	return node
-}
-
-func (builder *NodeBuilder) WithContext(ctx context.Context, ctxCancel context.CancelFunc) *NodeBuilder {
-	builder.ctx = ctx
-	builder.ctxCancel = ctxCancel
-	return builder
 }

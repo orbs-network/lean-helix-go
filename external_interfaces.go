@@ -7,12 +7,10 @@ import (
 )
 
 // first call - create an instance of Lean Helix library
-func NewLeanHelix(ctx context.Context, ctxCancel context.CancelFunc, config *Config) LeanHelix {
+func NewLeanHelix(config *Config) LeanHelix {
 
 	return &leanHelix{
-		ctx:       ctx,
-		ctxCancel: ctxCancel,
-		log:       config.Logger.For(log.Service("leanhelix")),
+		log: config.Logger.For(log.Service("leanhelix")),
 	}
 }
 

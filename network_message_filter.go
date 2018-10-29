@@ -46,7 +46,6 @@ func (filter *NetworkMessageFilter) pushToCache(message ConsensusMessage) {
 	filter.messageCache = append(filter.messageCache, message)
 }
 
-// TODO unit-test this
 func (filter *NetworkMessageFilter) acceptMessage(message ConsensusMessage) bool {
 	senderPublicKey := message.SenderPublicKey()
 
