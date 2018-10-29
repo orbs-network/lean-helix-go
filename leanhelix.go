@@ -2,7 +2,6 @@ package leanhelix
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go/instrumentation/log"
 	"github.com/orbs-network/lean-helix-go/primitives"
 )
 
@@ -11,7 +10,6 @@ type TermConfig struct {
 	NetworkCommunication NetworkCommunication
 	BlockUtils           BlockUtils
 	KeyManager           KeyManager
-	Logger               log.BasicLogger
 	ElectionTrigger      ElectionTrigger
 	Storage              Storage
 	//MessageFactory       *MessageFactory
@@ -61,7 +59,6 @@ func BuildTermConfig(config *Config) *TermConfig {
 		NetworkCommunication: config.NetworkCommunication,
 		Storage:              config.Storage, // TODO should this default to InMemoryStorage if nil??
 		KeyManager:           config.KeyManager,
-		Logger:               config.Logger,
 		BlockUtils:           config.BlockUtils,
 	}
 }

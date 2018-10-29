@@ -3,7 +3,6 @@ package builders
 import (
 	"fmt"
 	lh "github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/instrumentation/log"
 	. "github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
 )
@@ -12,7 +11,6 @@ type NodeBuilder struct {
 	networkCommunication lh.NetworkCommunication
 	publicKey            Ed25519PublicKey
 	storage              lh.Storage
-	logger               log.BasicLogger
 	electionTrigger      lh.ElectionTrigger
 	blockUtils           lh.BlockUtils
 }
@@ -56,13 +54,6 @@ func (builder *NodeBuilder) ElectingLeaderUsing(electionTrigger lh.ElectionTrigg
 	return builder
 }
 
-func (builder *NodeBuilder) ThatLogsTo(logger log.BasicLogger) *NodeBuilder {
-	if builder.logger == nil {
-		builder.logger = logger
-	}
-	return builder
-}
-
 func (builder *NodeBuilder) buildConfig() *lh.Config {
 	var (
 		electionTrigger lh.ElectionTrigger
@@ -100,7 +91,6 @@ func (builder *NodeBuilder) buildConfig() *lh.Config {
 		ElectionTrigger:      electionTrigger,
 		BlockUtils:           blockUtils,
 		KeyManager:           keyManager,
-		Logger:               nil,
 		Storage:              storage,
 	}
 }

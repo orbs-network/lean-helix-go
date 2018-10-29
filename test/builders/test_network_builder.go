@@ -4,11 +4,8 @@ import (
 	"context"
 	"fmt"
 	lh "github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/instrumentation/log"
 	. "github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
-	"io"
-	"os"
 )
 
 const MINIMUM_NODES = 2
@@ -27,7 +24,6 @@ type TestNetworkBuilder struct {
 	blocksPool           []lh.Block
 	nonMemberNodeIndices []int
 	discovery            gossip.Discovery
-	logger               log.BasicLogger
 	nodesBlockHeight     BlockHeight
 }
 
@@ -38,11 +34,6 @@ func (builder *TestNetworkBuilder) RequestBlocksWith(utils *MockBlockUtils) *Tes
 
 func (builder *TestNetworkBuilder) WithNodeCount(nodeCount int) *TestNetworkBuilder {
 	builder.nodeCount = nodeCount
-	return builder
-}
-
-func (builder *TestNetworkBuilder) ThatLogsToCustomLogger(logger log.BasicLogger) *TestNetworkBuilder {
-	builder.logger = logger
 	return builder
 }
 
@@ -85,21 +76,12 @@ func NewSimpleTestNetwork(
 }
 
 func NewTestNetworkBuilder(nodeCount int) *TestNetworkBuilder {
-	var output io.Writer
-	output = os.Stdout
-
-	testId := log.RandNumStr()
-	testLogger := log.GetLogger(log.String("test-id", testId)).
-		WithOutput(log.NewOutput(output).
-			WithFormatter(log.NewHumanReadableFormatter()))
-
 	return &TestNetworkBuilder{
 		nodeCount:       nodeCount,
 		electionTrigger: nil,
 		blockUtils:      nil,
 		blocksPool:      nil,
 		discovery:       gossip.NewGossipDiscovery(),
-		logger:          testLogger,
 	}
 }
 

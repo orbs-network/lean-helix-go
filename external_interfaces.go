@@ -2,7 +2,6 @@ package leanhelix
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go/instrumentation/log"
 	"github.com/orbs-network/lean-helix-go/primitives"
 )
 
@@ -22,7 +21,6 @@ type Config struct {
 	NetworkCommunication NetworkCommunication
 	BlockUtils           BlockUtils
 	KeyManager           KeyManager
-	Logger               log.BasicLogger
 	ElectionTrigger      ElectionTrigger
 	Storage              Storage
 }

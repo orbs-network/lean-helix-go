@@ -260,7 +260,6 @@ func (term *leanHelixTerm) validatePreprepare(ppm *PreprepareMessage) bool {
 
 	givenBlockHash := term.BlockUtils.CalculateBlockHash(ppm.Block())
 	if !ppm.Content().SignedHeader().BlockHash().Equal(givenBlockHash) {
-		//term.log.Info({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceivePrePrepare from "${senderPk}", _Block rejected because it doesn't match the given blockHash (${view})` });
 		return false
 	}
 
@@ -270,7 +269,6 @@ func (term *leanHelixTerm) validatePreprepare(ppm *PreprepareMessage) bool {
 	}
 
 	if !isValidBlock {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceivePrePrepare from "${senderPk}", _Block is invalid` });
 		return false
 	}
 
