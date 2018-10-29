@@ -22,7 +22,6 @@ type TermConfig struct {
 type leanHelix struct {
 	ctx       context.Context
 	ctxCancel context.CancelFunc
-	log       log.BasicLogger
 }
 
 func (lh *leanHelix) RegisterOnCommitted(cb func(block Block)) {
@@ -43,7 +42,6 @@ func (lh *leanHelix) Start(blockHeight primitives.BlockHeight) {
 
 		// case: some channel that fires when consensus completed successfully or with error
 		case <-lh.ctx.Done():
-			lh.log.Info("Context.done called")
 			lh.GracefulShutdown()
 
 		}
@@ -56,7 +54,6 @@ func (lh *leanHelix) IsLeader() bool {
 	return false
 }
 func (lh *leanHelix) GracefulShutdown() {
-	lh.log.Info("LeanHelix.GracefulShutdown() called")
 	lh.ctxCancel()
 }
 

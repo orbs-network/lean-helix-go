@@ -8,10 +8,7 @@ import (
 
 // first call - create an instance of Lean Helix library
 func NewLeanHelix(config *Config) LeanHelix {
-
-	return &leanHelix{
-		log: config.Logger.For(log.Service("leanhelix")),
-	}
+	return &leanHelix{}
 }
 
 type LeanHelix interface {

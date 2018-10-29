@@ -29,13 +29,6 @@ func (builder *NodeBuilder) ThatIsPartOf(networkCommunication lh.NetworkCommunic
 	return builder
 }
 
-func (builder *NodeBuilder) ElectingLeaderUsing(electionTrigger lh.ElectionTrigger) *NodeBuilder {
-	if builder.electionTrigger == nil {
-		builder.electionTrigger = electionTrigger
-	}
-	return builder
-}
-
 func (builder *NodeBuilder) WithPublicKey(publicKey Ed25519PublicKey) *NodeBuilder {
 	if builder.publicKey == nil {
 		builder.publicKey = publicKey
@@ -43,9 +36,35 @@ func (builder *NodeBuilder) WithPublicKey(publicKey Ed25519PublicKey) *NodeBuild
 	return builder
 }
 
-func (builder *NodeBuilder) buildConfig() *lh.Config {
-	// TODO consider using members of node builder in the config if they are defined, like in TS code (NodeBuilder.ts)
+func (builder *NodeBuilder) StoringOn(storage lh.Storage) *NodeBuilder {
+	if builder.storage == nil {
+		builder.storage = storage
+	}
+	return builder
+}
 
+func (builder *NodeBuilder) GettingBlocksVia(blockUtils lh.BlockUtils) *NodeBuilder {
+	if builder.blockUtils == nil {
+		builder.blockUtils = blockUtils
+	}
+	return builder
+}
+
+func (builder *NodeBuilder) ElectingLeaderUsing(electionTrigger lh.ElectionTrigger) *NodeBuilder {
+	if builder.electionTrigger == nil {
+		builder.electionTrigger = electionTrigger
+	}
+	return builder
+}
+
+func (builder *NodeBuilder) ThatLogsTo(logger log.BasicLogger) *NodeBuilder {
+	if builder.logger == nil {
+		builder.logger = logger
+	}
+	return builder
+}
+
+func (builder *NodeBuilder) buildConfig() *lh.Config {
 	var (
 		electionTrigger lh.ElectionTrigger
 		blockUtils      lh.BlockUtils
@@ -82,23 +101,9 @@ func (builder *NodeBuilder) buildConfig() *lh.Config {
 		ElectionTrigger:      electionTrigger,
 		BlockUtils:           blockUtils,
 		KeyManager:           keyManager,
-		Logger:               builder.logger.For(log.Service("node")),
+		Logger:               nil,
 		Storage:              storage,
 	}
-}
-
-func (builder *NodeBuilder) GettingBlocksVia(blockUtils lh.BlockUtils) *NodeBuilder {
-	if builder.blockUtils == nil {
-		builder.blockUtils = blockUtils
-	}
-	return builder
-}
-
-func (builder *NodeBuilder) ThatLogsTo(logger log.BasicLogger) *NodeBuilder {
-	if builder.logger == nil {
-		builder.logger = logger
-	}
-	return builder
 }
 
 func (builder *NodeBuilder) Build() *Node {
@@ -115,20 +120,13 @@ func (builder *NodeBuilder) Build() *Node {
 
 func buildNode(
 	publicKey Ed25519PublicKey,
-	discovery gossip.Discovery,
-	logger log.BasicLogger) *Node {
+	discovery gossip.Discovery) *Node {
 
-	nodeLogger := logger.For(log.Service("node"))
-	electionTrigger := NewMockElectionTrigger()
-	blockUtils := NewMockBlockUtils(nil)
 	gossip := gossip.NewGossip(discovery, publicKey)
 	discovery.RegisterGossip(publicKey, gossip)
 
 	return NewNodeBuilder().
 		ThatIsPartOf(gossip).
-		GettingBlocksVia(blockUtils).
-		ElectingLeaderUsing(electionTrigger).
 		WithPublicKey(publicKey).
-		ThatLogsTo(nodeLogger).
 		Build()
 }

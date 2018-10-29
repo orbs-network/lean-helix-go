@@ -3,7 +3,6 @@ package leanhelix
 import (
 	"context"
 	"fmt"
-	"github.com/orbs-network/lean-helix-go/instrumentation/log"
 	. "github.com/orbs-network/lean-helix-go/primitives"
 	"math"
 	"sort"
@@ -20,7 +19,6 @@ type leanHelixTerm struct {
 	KeyManager
 	NetworkCommunication
 	Storage
-	log             log.BasicLogger
 	electionTrigger ElectionTrigger
 	BlockUtils
 	MyPublicKey                   Ed25519PublicKey
@@ -61,7 +59,6 @@ func NewLeanHelixTerm(ctx context.Context, config *TermConfig, newBlockHeight Bl
 		KeyManager:                 keyManager,
 		NetworkCommunication:       comm,
 		Storage:                    config.Storage,
-		log:                        config.Logger.For(log.Service("leanhelix-height")),
 		electionTrigger:            config.ElectionTrigger,
 		BlockUtils:                 blockUtils,
 		CommitteeMembersPublicKeys: committeeMembers,
@@ -76,19 +73,14 @@ func NewLeanHelixTerm(ctx context.Context, config *TermConfig, newBlockHeight Bl
 }
 
 func (term *leanHelixTerm) startTerm(ctx context.Context) {
-	term.log.Info("StartTerm() ID=%s height=%d started", log.Stringable("my-id", term.KeyManager.MyPublicKey()), log.Stringable("height", term.height))
 	term.initView(ctx, 0)
 
 	if !term.IsLeader() {
-		term.log.Debug("StartTerm() is not leader, returning.", log.Stringable("id", term.KeyManager.MyPublicKey()), log.Stringable("height", term.height))
 		return
 	}
-	term.log.Info("StartTerm() is leader", log.Stringable("id", term.KeyManager.MyPublicKey()), log.Stringable("height", term.height))
 	// TODO This should _Block!!!
 	block := term.BlockUtils.RequestNewBlock(ctx, term.height)
-	term.log.Info("StartTerm() generated new _Block", log.Stringable("id", term.KeyManager.MyPublicKey()), log.Stringable("height", term.height), log.Stringable("_Block-hash", block.BlockHash()))
 	if term.disposed {
-		term.log.Debug("StartTerm() disposed, returning", log.Stringable("id", term.KeyManager.MyPublicKey()), log.Stringable("height", term.height))
 		return
 	}
 	ppm := term.MessageFactory.CreatePreprepareMessage(term.height, term.view, block)
@@ -253,11 +245,9 @@ func (term *leanHelixTerm) validatePreprepare(ppm *PreprepareMessage) bool {
 	blockHeight := ppm.BlockHeight()
 	view := ppm.View()
 	if term.hasPreprepare(blockHeight, view) {
-		term.log.Info("PPM already received", log.Stringable("_Block-height", blockHeight), log.Stringable("view", view))
 		return false
 	}
 	if !term.KeyManager.Verify(ppm.Raw(), ppm.Content().Sender()) {
-		term.log.Info("PPM did not pass verification") // TODO Elaborate
 		return false
 	}
 
@@ -312,34 +302,16 @@ func (term *leanHelixTerm) GetView() View {
 func (term *leanHelixTerm) sendPreprepare(ctx context.Context, message *PreprepareMessage) {
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.NonCommitteeMembersPublicKeys, rawMessage)
-	term.log.Debug("GossipSend preprepare",
-		log.Stringable("senderPK", term.KeyManager.MyPublicKey()),
-		log.String("targetPKs", pksToString(term.NonCommitteeMembersPublicKeys)),
-		log.Stringable("height", message.View()),
-		log.Stringable("blockHash", message.Content().SignedHeader().BlockHash()),
-	)
 }
 
 func (term *leanHelixTerm) sendPrepare(ctx context.Context, message *PrepareMessage) {
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.NonCommitteeMembersPublicKeys, rawMessage)
-	term.log.Debug("GossipSend prepare",
-		log.Stringable("senderPK", term.KeyManager.MyPublicKey()),
-		log.String("targetPKs", pksToString(term.NonCommitteeMembersPublicKeys)),
-		log.Stringable("height", message.View()),
-		log.Stringable("blockHash", message.Content().SignedHeader().BlockHash()),
-	)
 }
 
 func (term *leanHelixTerm) sendCommit(ctx context.Context, message *CommitMessage) {
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.NonCommitteeMembersPublicKeys, rawMessage)
-	term.log.Debug("GossipSend commit",
-		log.Stringable("senderPK", term.KeyManager.MyPublicKey()),
-		log.String("targetPKs", pksToString(term.NonCommitteeMembersPublicKeys)),
-		log.Stringable("height", message.View()),
-		log.Stringable("blockHash", message.Content().SignedHeader().BlockHash()),
-	)
 }
 
 func pksToString(keys []Ed25519PublicKey) string {
