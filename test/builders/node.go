@@ -9,11 +9,9 @@ import (
 )
 
 type Node struct {
-	KeyManager *mockKeyManager
 	Config     *lh.Config
 	leanHelix  lh.LeanHelix
 	blockChain *InMemoryBlockChain
-	Gossip     *gossip.Gossip
 }
 
 func buildNode(
@@ -22,7 +20,7 @@ func buildNode(
 	logger log.BasicLogger) *Node {
 
 	nodeLogger := logger.For(log.Service("node"))
-	electionTrigger := NewMockElectionTrigger() // TODO TestNetworkBuilder.ts uses ElectionTriggerFactory here, maybe do it too
+	electionTrigger := NewMockElectionTrigger()
 	blockUtils := NewMockBlockUtils(nil)
 	gossip := gossip.NewGossip(discovery, publicKey)
 	discovery.RegisterGossip(publicKey, gossip)

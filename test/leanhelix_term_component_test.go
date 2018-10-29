@@ -39,8 +39,7 @@ func TestRejectNewViewMessagesFromPast(t *testing.T) {
 	net := builders.NewTestNetworkBuilder(NODE_COUNT).Build()
 
 	node := net.Nodes[0]
-	node.KeyManager.When("Verify", mock.Any, mock.Any).Return(true)
-	messageFactory := lh.NewMessageFactory(node.KeyManager)
+	messageFactory := lh.NewMessageFactory(node.Config.KeyManager)
 	ppmContentBuilder := messageFactory.CreatePreprepareMessageContentBuilder(height, view, block)
 	nvm := messageFactory.CreateNewViewMessage(height, view, ppmContentBuilder, nil, block)
 	termConfig := lh.BuildTermConfig(node.Config)

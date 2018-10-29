@@ -38,9 +38,9 @@ func TestSendPreprepareOnlyIfLeader(t *testing.T) {
 
 	gossips := make([]*gossip.Gossip, 0, len(net.Nodes))
 	for i := range net.Nodes {
-		gossip := net.GetNodeGossip(net.Nodes[i].KeyManager.MyPublicKey())
+		gossip := net.GetNodeGossip(net.Nodes[i].Config.KeyManager.MyPublicKey())
 		if gossip == nil {
-			t.Errorf("Cannot find Gossip for node #%v: %v", i, net.Nodes[i].KeyManager.MyPublicKey())
+			t.Errorf("Cannot find Gossip for node #%v: %v", i, net.Nodes[i].Config.KeyManager.MyPublicKey())
 		}
 		gossips = append(gossips, gossip)
 	}

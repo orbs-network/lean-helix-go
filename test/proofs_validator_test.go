@@ -1,7 +1,6 @@
 package test
 
 import (
-	"github.com/orbs-network/go-mock"
 	lh "github.com/orbs-network/lean-helix-go"
 	. "github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
@@ -17,7 +16,6 @@ func TestProofsValidator(t *testing.T) {
 	node1KeyManager := builders.NewMockKeyManager(Ed25519PublicKey("Node 1"))
 	node2KeyManager := builders.NewMockKeyManager(Ed25519PublicKey("Node 2"))
 	badSignerKeyManager := builders.NewMockKeyManager(Ed25519PublicKey("Node 2"))
-	badSignerKeyManager.When("Sign").Return("") // Return empty signature
 
 	membersPKs := []Ed25519PublicKey{Ed25519PublicKey("Leader PK"), Ed25519PublicKey("Node 1"), Ed25519PublicKey("Node 2"), Ed25519PublicKey("Node 3")}
 	calcLeaderPk := func(view View) Ed25519PublicKey {
@@ -35,7 +33,6 @@ func TestProofsValidator(t *testing.T) {
 	goodPreparedProof := lh.CreatePreparedProof(leaderKeyManager, []lh.KeyManager{node1KeyManager, node2KeyManager}, height, view, blockHash)
 
 	t.Run("TestProofsValidatorHappyPath", func(t *testing.T) {
-		dummyKeyManager.When("Verify", mock.Any, mock.Any).Return(true)
 		result := lh.ValidatePreparedProof(targetHeight, targetView, goodPreparedProof, q, dummyKeyManager, membersPKs, calcLeaderPk)
 		require.True(t, result, "Did not approve a well-formed proof")
 	})

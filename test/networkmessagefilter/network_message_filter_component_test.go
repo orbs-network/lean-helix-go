@@ -14,7 +14,7 @@ func TestSetBlockHeightAndReceiveGossipMessages(t *testing.T) {
 	blockHeight := primitives.BlockHeight(3)
 
 	h := NewHarness(blockHeight)
-	h.GenerateMessages(messagesBlockHeight, h.senderNode.KeyManager)
+	h.GenerateMessages(messagesBlockHeight, h.senderNode.Config.KeyManager)
 	h.ExpectEachMessageToBeReceivedXTimes(1)
 
 	verify(h, t)
@@ -25,7 +25,7 @@ func TestIgnoreMessagesNotFromCurrentBlockHeight(t *testing.T) {
 	blockHeight := primitives.BlockHeight(3)
 
 	h := NewHarness(blockHeight)
-	h.GenerateMessages(messagesBlockHeight, h.senderNode.KeyManager)
+	h.GenerateMessages(messagesBlockHeight, h.senderNode.Config.KeyManager)
 	h.ExpectEachMessageToBeReceivedXTimes(0)
 
 	verify(h, t)
@@ -36,7 +36,7 @@ func TestIgnoreMessagesFromMyself(t *testing.T) {
 	blockHeight := primitives.BlockHeight(3)
 
 	h := NewHarness(blockHeight)
-	h.GenerateMessages(messagesBlockHeight, h.receiverNode.KeyManager)
+	h.GenerateMessages(messagesBlockHeight, h.receiverNode.Config.KeyManager)
 	h.ExpectEachMessageToBeReceivedXTimes(0)
 
 	verify(h, t)

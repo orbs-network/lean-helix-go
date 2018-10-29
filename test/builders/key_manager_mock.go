@@ -1,17 +1,13 @@
 package builders
 
 import (
-	"github.com/orbs-network/go-mock"
+	"bytes"
+	"fmt"
 	lh "github.com/orbs-network/lean-helix-go"
 	. "github.com/orbs-network/lean-helix-go/primitives"
 )
 
-// TODO Keys should not be strings - convert to our primitives
-
-const PRIVATE_KEY_PREFIX = "PRIVATE_KEY"
-
 type mockKeyManager struct {
-	mock.Mock
 	myPublicKey        Ed25519PublicKey
 	RejectedPublicKeys []Ed25519PublicKey
 }
@@ -23,15 +19,13 @@ func NewMockKeyManager(publicKey Ed25519PublicKey, rejectedPublicKeys ...Ed25519
 	}
 }
 
-var MOCK_SIG_PREFIX = []byte("SIG|")
-
 func (km *mockKeyManager) Sign(content []byte) []byte {
-	return append(MOCK_SIG_PREFIX, content...)
+	return []byte(fmt.Sprintf("SIG|%x|%x", km.myPublicKey, content))
 }
 
 func (km *mockKeyManager) Verify(content []byte, sender *lh.SenderSignature) bool {
-	ret := km.Called(content, sender)
-	return ret.Bool(0)
+	expected := []byte(fmt.Sprintf("SIG|%x|%x", sender.SenderPublicKey(), content))
+	return bytes.Equal(expected, sender.Signature())
 }
 
 func (km *mockKeyManager) MyPublicKey() Ed25519PublicKey {

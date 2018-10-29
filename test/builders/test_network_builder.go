@@ -122,7 +122,7 @@ func (builder *TestNetworkBuilder) CreateNodes() []*Node {
 		nodes[i] = buildNode(Ed25519PublicKey(fmt.Sprintf("Node %d", i)), builder.discovery, builder.logger)
 	}
 	for _, idx := range builder.nonMemberNodeIndices {
-		builder.discovery.UnregisterGossip(nodes[idx].KeyManager.MyPublicKey())
+		builder.discovery.UnregisterGossip(nodes[idx].Config.KeyManager.MyPublicKey())
 	}
 	return nodes
 }

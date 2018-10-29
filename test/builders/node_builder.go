@@ -4,36 +4,35 @@ import (
 	lh "github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/instrumentation/log"
 	. "github.com/orbs-network/lean-helix-go/primitives"
-	"github.com/orbs-network/lean-helix-go/test/gossip"
 )
 
 type NodeBuilder struct {
-	gossip          *gossip.Gossip
-	keyManager      *mockKeyManager
-	storage         lh.Storage
-	logger          log.BasicLogger
-	electionTrigger lh.ElectionTrigger
-	blockUtils      lh.BlockUtils
-	filter          *lh.NetworkMessageFilter
-	logsToConsole   bool
+	networkCommunication lh.NetworkCommunication
+	keyManager           *mockKeyManager
+	storage              lh.Storage
+	logger               log.BasicLogger
+	electionTrigger      lh.ElectionTrigger
+	blockUtils           lh.BlockUtils
+	filter               *lh.NetworkMessageFilter
+	logsToConsole        bool
 }
 
 func NewNodeBuilder() *NodeBuilder {
 	return &NodeBuilder{
-		gossip:          nil,
-		keyManager:      nil,
-		storage:         nil,
-		logger:          nil,
-		electionTrigger: nil,
-		blockUtils:      nil,
-		filter:          nil,
-		logsToConsole:   false,
+		networkCommunication: nil,
+		keyManager:           nil,
+		storage:              nil,
+		logger:               nil,
+		electionTrigger:      nil,
+		blockUtils:           nil,
+		filter:               nil,
+		logsToConsole:        false,
 	}
 }
 
-func (builder *NodeBuilder) ThatIsPartOf(gossip *gossip.Gossip) *NodeBuilder {
-	if builder.gossip == nil {
-		builder.gossip = gossip
+func (builder *NodeBuilder) ThatIsPartOf(networkCommunication lh.NetworkCommunication) *NodeBuilder {
+	if builder.networkCommunication == nil {
+		builder.networkCommunication = networkCommunication
 	}
 	return builder
 }
@@ -80,7 +79,7 @@ func (builder *NodeBuilder) buildConfig() *lh.Config {
 	}
 
 	return &lh.Config{
-		NetworkCommunication: builder.gossip,
+		NetworkCommunication: builder.networkCommunication,
 		ElectionTrigger:      electionTrigger,
 		BlockUtils:           blockUtils,
 		KeyManager:           builder.keyManager,
@@ -107,8 +106,6 @@ func (builder *NodeBuilder) Build() *Node {
 	nodeConfig := builder.buildConfig()
 	leanHelix := lh.NewLeanHelix(nodeConfig)
 	node := &Node{
-		KeyManager: builder.keyManager,
-		Gossip:     builder.gossip,
 		Config:     nodeConfig,
 		leanHelix:  leanHelix,
 		blockChain: NewInMemoryBlockChain(),
