@@ -3,7 +3,6 @@ package gossip
 import (
 	"context"
 	"fmt"
-	"github.com/orbs-network/go-mock"
 	lh "github.com/orbs-network/lean-helix-go"
 	. "github.com/orbs-network/lean-helix-go/primitives"
 )
@@ -13,13 +12,13 @@ type SubscriptionValue struct {
 }
 
 type Gossip struct {
-	mock.Mock
 	discovery            Discovery
 	publicKey            Ed25519PublicKey
 	totalSubscriptions   int
 	subscriptions        map[int]*SubscriptionValue
 	outgoingWhitelist    []Ed25519PublicKey
 	incomingWhiteListPKs []Ed25519PublicKey
+	statsSentMessages    []lh.ConsensusRawMessage
 }
 
 func NewGossip(gd Discovery, publicKey Ed25519PublicKey) *Gossip {
@@ -30,6 +29,7 @@ func NewGossip(gd Discovery, publicKey Ed25519PublicKey) *Gossip {
 		subscriptions:        make(map[int]*SubscriptionValue),
 		outgoingWhitelist:    nil,
 		incomingWhiteListPKs: nil,
+		statsSentMessages:    []lh.ConsensusRawMessage{},
 	}
 }
 
@@ -42,7 +42,7 @@ func (g *Gossip) IsMember(pk Ed25519PublicKey) bool {
 }
 
 func (g *Gossip) SendMessage(ctx context.Context, targets []Ed25519PublicKey, message lh.ConsensusRawMessage) error {
-	g.Called(ctx, targets, message)
+	g.statsSentMessages = append(g.statsSentMessages, message)
 	for _, targetId := range targets {
 		if err := g.SendToNode(ctx, targetId, message); err != nil {
 			return err
@@ -121,4 +121,14 @@ func (g *Gossip) SetIncomingWhitelist(incomingWhitelist []Ed25519PublicKey) {
 
 func (g *Gossip) ClearIncomingWhitelist(incomingWhitelist []Ed25519PublicKey) {
 	g.SetIncomingWhitelist(nil)
+}
+
+func (g *Gossip) StatsNumSentMessages(predicate func(msg interface{}) bool) int {
+	res := 0
+	for _, msg := range g.statsSentMessages {
+		if predicate(msg) {
+			res++
+		}
+	}
+	return res
 }

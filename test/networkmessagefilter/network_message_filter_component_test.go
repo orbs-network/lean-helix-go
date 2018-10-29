@@ -2,85 +2,60 @@ package networkmessagefilter
 
 import (
 	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/test/builders"
+	"math"
+	"math/rand"
+	"strconv"
 	"testing"
 )
 
-const NODE_COUNT = 4
-
 func TestSetBlockHeightAndReceiveGossipMessages(t *testing.T) {
 	messagesBlockHeight := primitives.BlockHeight(3)
-	nodesBlockHeight := primitives.BlockHeight(3)
-	messagesView := primitives.View(0)
-	senderNodeIndex := 0
+	blockHeight := primitives.BlockHeight(3)
 
-	h := NewHarness(NODE_COUNT, senderNodeIndex, messagesBlockHeight, nodesBlockHeight, messagesView, nil)
-	h.ExpectEachMessageToBeReceivedXTimes(1, []int{senderNodeIndex})
-	h.ExpectXMessagesToBeSent(5)
+	h := NewHarness(blockHeight)
+	h.GenerateMessages(messagesBlockHeight, h.senderNode.KeyManager)
+	h.ExpectEachMessageToBeReceivedXTimes(1)
 
-	if err := h.SendAllMessages(); err != nil {
-		t.Error(err)
-	}
-	ok, err := h.Verify()
-	if !ok {
-		t.Error(err)
-	}
+	verify(h, t)
 }
 
 func TestIgnoreMessagesNotFromCurrentBlockHeight(t *testing.T) {
 	messagesBlockHeight := primitives.BlockHeight(2)
-	filterBlockHeight := primitives.BlockHeight(3)
-	senderNodeIndex := 0
+	blockHeight := primitives.BlockHeight(3)
 
-	h := NewHarness(NODE_COUNT, senderNodeIndex, messagesBlockHeight, filterBlockHeight, primitives.View(0), nil)
-	h.ExpectEachMessageToBeReceivedXTimes(0, []int{senderNodeIndex})
-	h.ExpectXMessagesToBeSent(5)
+	h := NewHarness(blockHeight)
+	h.GenerateMessages(messagesBlockHeight, h.senderNode.KeyManager)
+	h.ExpectEachMessageToBeReceivedXTimes(0)
 
-	if err := h.SendAllMessages(); err != nil {
-		t.Error(err)
-	}
-	ok, err := h.Verify()
-	if !ok {
-		t.Error(err)
-	}
+	verify(h, t)
 }
 
 func TestIgnoreMessagesFromMyself(t *testing.T) {
 	messagesBlockHeight := primitives.BlockHeight(3)
-	filterBlockHeight := primitives.BlockHeight(3)
-	senderNodeIndex := 0
+	blockHeight := primitives.BlockHeight(3)
 
-	// All excluded - the sender because it's not supposed to receive
-	excludedReceivers := make([]int, NODE_COUNT-1)
-	for i := 0; i < NODE_COUNT-1; i++ {
-		excludedReceivers[i] = i + 1
-	}
+	h := NewHarness(blockHeight)
+	h.GenerateMessages(messagesBlockHeight, h.receiverNode.KeyManager)
+	h.ExpectEachMessageToBeReceivedXTimes(0)
 
-	h := NewHarness(NODE_COUNT, senderNodeIndex, messagesBlockHeight, filterBlockHeight, primitives.View(0), nil)
-	h.ExpectEachMessageToBeReceivedXTimes(0, excludedReceivers)
-	h.ExpectEachMessageToBeReceivedXTimes(1, []int{senderNodeIndex})
-	h.ExpectXMessagesToBeSent(5)
-
-	if err := h.SendAllMessages(); err != nil {
-		t.Error(err)
-	}
-	ok, err := h.Verify()
-	if !ok {
-		t.Error(err)
-	}
+	verify(h, t)
 }
 
 func TestIgnoreMessagesFromNodesNotPartOfTheNetwork(t *testing.T) {
-
-	t.Skip()
 	messagesBlockHeight := primitives.BlockHeight(3)
-	filterBlockHeight := primitives.BlockHeight(3)
-	nonMemberSenderNodeIndex := 2
-	nonMemberNodeIndices := []int{nonMemberSenderNodeIndex}
+	blockHeight := primitives.BlockHeight(3)
 
-	h := NewHarness(NODE_COUNT, nonMemberSenderNodeIndex, messagesBlockHeight, filterBlockHeight, primitives.View(0), nonMemberNodeIndices)
-	h.ExpectEachMessageToBeReceivedXTimes(0, nil)
-	h.ExpectXMessagesToBeSent(5)
+	dummyPublicKey := primitives.Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	dummyKeyManager := builders.NewMockKeyManager(dummyPublicKey)
+	h := NewHarness(blockHeight)
+	h.GenerateMessages(messagesBlockHeight, dummyKeyManager)
+	h.ExpectEachMessageToBeReceivedXTimes(0)
 
+	verify(h, t)
+}
+
+func verify(h *harness, t *testing.T) {
 	if err := h.SendAllMessages(); err != nil {
 		t.Error(err)
 	}

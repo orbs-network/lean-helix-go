@@ -11,15 +11,14 @@ type NetworkMessageFilter struct {
 	MyPublicKey  primitives.Ed25519PublicKey
 	messageCache []ConsensusMessage
 	comm         NetworkCommunication
-	Receiver     MessageReceiver
+	receiver     MessageReceiver
 }
 
-func NewNetworkMessageFilter(comm NetworkCommunication, myPublicKey primitives.Ed25519PublicKey, messageReceiver MessageReceiver) *NetworkMessageFilter {
+func NewNetworkMessageFilter(comm NetworkCommunication, myPublicKey primitives.Ed25519PublicKey) *NetworkMessageFilter {
 	res := &NetworkMessageFilter{
 		blockHeight:  0,
 		MyPublicKey:  myPublicKey,
 		messageCache: make([]ConsensusMessage, 0, 10),
-		Receiver:     messageReceiver,
 		comm:         comm,
 	}
 
@@ -49,8 +48,6 @@ func (filter *NetworkMessageFilter) pushToCache(message ConsensusMessage) {
 
 // TODO unit-test this
 func (filter *NetworkMessageFilter) acceptMessage(message ConsensusMessage) bool {
-
-	fmt.Printf("acceptMessage? type: %T\n", message)
 	senderPublicKey := message.SenderPublicKey()
 
 	if !filter.AllowedToReceiveMessageFrom(senderPublicKey) {
@@ -79,28 +76,29 @@ func (filter *NetworkMessageFilter) isSameNodeAs(sender primitives.Ed25519Public
 
 func (filter *NetworkMessageFilter) ProcessGossipMessage(ctx context.Context, consensusMessage ConsensusMessage) error {
 
-	if filter.Receiver == nil {
+	if filter.receiver == nil {
 		panic("no receiver")
 	}
 	switch message := consensusMessage.(type) {
 	case *PreprepareMessage:
-		filter.Receiver.OnReceivePreprepare(ctx, message) // filter.Receiver is actually the LeanHelixTerm
+		filter.receiver.OnReceivePreprepare(ctx, message) // filter.receiver is actually the LeanHelixTerm
 	case *PrepareMessage:
-		filter.Receiver.OnReceivePrepare(ctx, message)
+		filter.receiver.OnReceivePrepare(ctx, message)
 	case *CommitMessage:
-		filter.Receiver.OnReceiveCommit(ctx, message)
+		filter.receiver.OnReceiveCommit(ctx, message)
 	case *ViewChangeMessage:
-		filter.Receiver.OnReceiveViewChange(ctx, message)
+		filter.receiver.OnReceiveViewChange(ctx, message)
 	case *NewViewMessage:
-		filter.Receiver.OnReceiveNewView(ctx, message)
+		filter.receiver.OnReceiveNewView(ctx, message)
 	default:
 		return fmt.Errorf("unknown message type: %T", consensusMessage)
 	}
 	return nil
 }
 
-func (filter *NetworkMessageFilter) SetBlockHeight(ctx context.Context, blockHeight primitives.BlockHeight) {
+func (filter *NetworkMessageFilter) SetBlockHeight(ctx context.Context, blockHeight primitives.BlockHeight, messageReceiver MessageReceiver) {
 	filter.blockHeight = blockHeight
+	filter.receiver = messageReceiver
 	filter.consumeCacheMessage(ctx)
 }
 

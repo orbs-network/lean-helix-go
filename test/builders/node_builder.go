@@ -125,7 +125,6 @@ func (builder *NodeBuilder) Build() *Node {
 	leanHelix := lh.NewLeanHelix(builder.ctx, builder.ctxCancel, nodeConfig)
 	node := &Node{
 		KeyManager: builder.keyManager,
-		Filter:     builder.filter,
 		Gossip:     builder.gossip,
 		Config:     nodeConfig,
 		leanHelix:  leanHelix,
@@ -138,10 +137,5 @@ func (builder *NodeBuilder) Build() *Node {
 func (builder *NodeBuilder) WithContext(ctx context.Context, ctxCancel context.CancelFunc) *NodeBuilder {
 	builder.ctx = ctx
 	builder.ctxCancel = ctxCancel
-	return builder
-}
-
-func (builder *NodeBuilder) WithFilter(filter *lh.NetworkMessageFilter) *NodeBuilder {
-	builder.filter = filter
 	return builder
 }

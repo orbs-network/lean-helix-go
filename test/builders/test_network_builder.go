@@ -68,8 +68,7 @@ func (builder *TestNetworkBuilder) Build() *TestNetwork {
 func NewSimpleTestNetwork(
 	nodeCount int,
 	nodesBlockHeight BlockHeight,
-	blocksPool []lh.Block,
-	nonMemberNodeIndices []int) *TestNetwork {
+	blocksPool []lh.Block) *TestNetwork {
 
 	b1 := CreateBlock(GenesisBlock)
 	b2 := CreateBlock(b1)
@@ -87,7 +86,6 @@ func NewSimpleTestNetwork(
 
 	return NewTestNetworkBuilder(nodeCount).
 		WithBlockHeight(nodesBlockHeight).
-		ExcludeNodesFromDiscovery(nonMemberNodeIndices).
 		RequestBlocksWith(mockBlockUtils).
 		Build()
 }
@@ -108,13 +106,12 @@ func NewTestNetworkBuilder(nodeCount int) *TestNetworkBuilder {
 	testLogger.Info("===========================================================================")
 
 	return &TestNetworkBuilder{
-		nodeCount:            nodeCount,
-		electionTrigger:      nil,
-		blockUtils:           nil,
-		blocksPool:           nil,
-		nonMemberNodeIndices: nil,
-		discovery:            gossip.NewGossipDiscovery(),
-		logger:               testLogger,
+		nodeCount:       nodeCount,
+		electionTrigger: nil,
+		blockUtils:      nil,
+		blocksPool:      nil,
+		discovery:       gossip.NewGossipDiscovery(),
+		logger:          testLogger,
 	}
 }
 
@@ -122,7 +119,7 @@ func (builder *TestNetworkBuilder) CreateNodes() []*Node {
 	nodes := make([]*Node, builder.nodeCount)
 
 	for i := range nodes {
-		nodes[i] = buildNode(Ed25519PublicKey(fmt.Sprintf("Node %d", i)), builder.nodesBlockHeight, builder.discovery, builder.logger)
+		nodes[i] = buildNode(Ed25519PublicKey(fmt.Sprintf("Node %d", i)), builder.discovery, builder.logger)
 	}
 	for _, idx := range builder.nonMemberNodeIndices {
 		builder.discovery.UnregisterGossip(nodes[idx].KeyManager.MyPublicKey())
@@ -130,12 +127,6 @@ func (builder *TestNetworkBuilder) CreateNodes() []*Node {
 	return nodes
 }
 
-func (builder *TestNetworkBuilder) ExcludeNodesFromDiscovery(nonMemberNodeIndices []int) *TestNetworkBuilder {
-	if nonMemberNodeIndices != nil {
-		builder.nonMemberNodeIndices = nonMemberNodeIndices
-	}
-	return builder
-}
 func (builder *TestNetworkBuilder) WithBlockHeight(height BlockHeight) *TestNetworkBuilder {
 	builder.nodesBlockHeight = height
 	return builder

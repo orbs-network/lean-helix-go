@@ -1,10 +1,10 @@
 package acceptance
 
 import (
-	"github.com/orbs-network/go-mock"
 	lh "github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -29,7 +29,7 @@ func TestSendPreprepareOnlyIfLeader(t *testing.T) {
 
 	t.Skip()
 
-	net := builders.NewSimpleTestNetwork(NODE_COUNT, 0, nil, nil) // Node 0 is leader
+	net := builders.NewSimpleTestNetwork(NODE_COUNT, 0, nil) // Node 0 is leader
 
 	predicateMessageTypeIsPreprepare := func(msg interface{}) bool {
 		message := msg.(lh.ConsensusMessage)
@@ -45,11 +45,6 @@ func TestSendPreprepareOnlyIfLeader(t *testing.T) {
 		gossips = append(gossips, gossip)
 	}
 
-	gossips[0].When("SendMessage", mock.Any, mock.Any, mock.AnyIf("gossip sends preprepare", predicateMessageTypeIsPreprepare)).Times(1)
-	for i := 1; i < NODE_COUNT; i++ {
-		gossips[i].Never("SendMessage", mock.Any, mock.Any, mock.AnyIf("gossip sends preprepare", predicateMessageTypeIsPreprepare))
-	}
-
 	defer net.Stop()
 	err := net.StartConsensusOnAllNodes()
 	if err != nil {
@@ -59,17 +54,10 @@ func TestSendPreprepareOnlyIfLeader(t *testing.T) {
 	net.BlockUtils.ProvideNextBlock()
 	net.BlockUtils.ResolveAllValidations(true)
 
-	errors := make([]error, 0)
-	for i := 0; i < NODE_COUNT; i++ {
-		_, err := gossips[i].Verify()
-		if err != nil {
-			errors = append(errors, err)
-		}
-	}
-
-	if len(errors) > 0 {
-		t.Errorf("Found %d errors: %v", len(errors), errors)
-	}
+	require.Equal(t, 1, gossips[0].StatsNumSentMessages(predicateMessageTypeIsPreprepare), "node 0 did not send 1 preprepare")
+	require.Equal(t, 0, gossips[1].StatsNumSentMessages(predicateMessageTypeIsPreprepare), "node 1 did not send 1 preprepare")
+	require.Equal(t, 0, gossips[2].StatsNumSentMessages(predicateMessageTypeIsPreprepare), "node 2 did not send 1 preprepare")
+	require.Equal(t, 0, gossips[3].StatsNumSentMessages(predicateMessageTypeIsPreprepare), "node 3 did not send 1 preprepare")
 
 	// 17-Sep-2018 plan for this test
 	// Code the harness to generate the test network ("Network")

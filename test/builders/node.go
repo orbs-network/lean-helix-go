@@ -14,12 +14,10 @@ type Node struct {
 	leanHelix  lh.LeanHelix
 	blockChain *InMemoryBlockChain
 	Gossip     *gossip.Gossip
-	Filter     *lh.NetworkMessageFilter
 }
 
 func buildNode(
 	publicKey Ed25519PublicKey,
-	nodeBlockHeight BlockHeight,
 	discovery gossip.Discovery,
 	logger log.BasicLogger) *Node {
 
@@ -28,13 +26,8 @@ func buildNode(
 	blockUtils := NewMockBlockUtils(nil)
 	gossip := gossip.NewGossip(discovery, publicKey)
 	discovery.RegisterGossip(publicKey, gossip)
-	mockReceiver := NewMockMessageReceiver()
-	filter := lh.NewNetworkMessageFilter(gossip, publicKey, mockReceiver)
-	ctx, _ := context.WithCancel(context.Background())
-	filter.SetBlockHeight(ctx, nodeBlockHeight)
 
 	return NewNodeBuilder().
-		WithFilter(filter).
 		ThatIsPartOf(gossip).
 		GettingBlocksVia(blockUtils).
 		ElectingLeaderUsing(electionTrigger).

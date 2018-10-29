@@ -20,8 +20,6 @@ func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 	ctx, _ := context.WithCancel(context.Background())
 
 	net := builders.NewTestNetworkBuilder(NODE_COUNT).Build()
-	node := net.Nodes[0]
-	node.Gossip.When("SendMessage", mock.Any, mock.Any, mock.Any).Return()
 	termConfig := lh.BuildTermConfig(net.Nodes[0].Config)
 	term, err := lh.NewLeanHelixTerm(ctx, termConfig, 0, func(block lh.Block) {})
 	if err != nil {
@@ -41,7 +39,6 @@ func TestRejectNewViewMessagesFromPast(t *testing.T) {
 	net := builders.NewTestNetworkBuilder(NODE_COUNT).Build()
 
 	node := net.Nodes[0]
-	node.Gossip.When("SendMessage", mock.Any, mock.Any, mock.Any).Return()
 	node.KeyManager.When("Verify", mock.Any, mock.Any).Return(true)
 	messageFactory := lh.NewMessageFactory(node.KeyManager)
 	ppmContentBuilder := messageFactory.CreatePreprepareMessageContentBuilder(height, view, block)
