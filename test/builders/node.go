@@ -39,3 +39,17 @@ func (node *Node) Dispose() {
 		node.leanHelix.Dispose()
 	}
 }
+
+func NewNode(config *lh.Config) *Node {
+	leanHelix := lh.NewLeanHelix(config)
+	node := &Node{
+		Config:     config,
+		leanHelix:  leanHelix,
+		blockChain: NewInMemoryBlockChain(),
+	}
+
+	leanHelix.RegisterOnCommitted(node.onCommittedBlock)
+
+	return node
+
+}

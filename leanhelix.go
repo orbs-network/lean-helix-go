@@ -6,8 +6,6 @@ import (
 	"github.com/orbs-network/lean-helix-go/primitives"
 )
 
-// PBFT.ts
-
 // TODO looks identical to Config, why is this needed?
 type TermConfig struct {
 	NetworkCommunication NetworkCommunication

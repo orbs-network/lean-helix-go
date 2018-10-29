@@ -15,7 +15,6 @@ type NodeBuilder struct {
 	logger               log.BasicLogger
 	electionTrigger      lh.ElectionTrigger
 	blockUtils           lh.BlockUtils
-	logsToConsole        bool
 }
 
 func NewNodeBuilder() *NodeBuilder {
@@ -108,14 +107,7 @@ func (builder *NodeBuilder) buildConfig() *lh.Config {
 
 func (builder *NodeBuilder) Build() *Node {
 	nodeConfig := builder.buildConfig()
-	leanHelix := lh.NewLeanHelix(nodeConfig)
-	node := &Node{
-		Config:     nodeConfig,
-		leanHelix:  leanHelix,
-		blockChain: NewInMemoryBlockChain(),
-	}
-	leanHelix.RegisterOnCommitted(node.onCommittedBlock)
-	return node
+	return NewNode(nodeConfig)
 }
 
 func buildNode(
