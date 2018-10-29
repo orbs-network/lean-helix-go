@@ -45,14 +45,14 @@ func TestSendPreprepareOnlyIfLeader(t *testing.T) {
 		gossips = append(gossips, gossip)
 	}
 
-	defer net.Stop()
+	defer net.ShutDown()
 	err := net.StartConsensusOnAllNodes()
 	if err != nil {
 		t.Error(err)
 	}
 
-	net.BlockUtils.ProvideNextBlock()
-	net.BlockUtils.ResolveAllValidations(true)
+	//net.BlockUtils.ProvideNextBlock()
+	//net.BlockUtils.ResolveAllValidations(true)
 
 	require.Equal(t, 1, gossips[0].StatsNumSentMessages(predicateMessageTypeIsPreprepare), "node 0 did not send 1 preprepare")
 	require.Equal(t, 0, gossips[1].StatsNumSentMessages(predicateMessageTypeIsPreprepare), "node 1 did not send 1 preprepare")
@@ -83,7 +83,7 @@ func TestSendPreprepareOnlyIfLeader(t *testing.T) {
 	//h.service.network.When("sendToMembers", &services.CommitBlockInput{expectedBlockPair}).Return(nil, nil).Times(1)
 	//h.service.network.When("SendBenchmarkConsensusCommitted", mock.AnyIf(fmt.Sprintf("LastCommittedBlockHeight equals %d, recipient equals %s and sender equals %s", expectedLastCommitted, expectedRecipient, expectedSender), lastCommittedReplyMatcher)).Times(1)
 	//h.service.StartConsensusOnAllNodes()
-	//defer h.service.Stop()
+	//defer h.service.ShutDown()
 
 }
 

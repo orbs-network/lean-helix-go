@@ -10,10 +10,8 @@ import (
 const MINIMUM_NODES = 2
 
 type TestNetwork struct {
-	Nodes      []*Node
-	BlockUtils *MockBlockUtils
-	Transport  *MockNetworkCommunication
-	Discovery  gossip.Discovery
+	Nodes     []*Node
+	Discovery gossip.Discovery
 }
 
 func (net *TestNetwork) GetNodeGossip(pk Ed25519PublicKey) *gossip.Gossip {
@@ -36,7 +34,7 @@ func (net *TestNetwork) StartConsensusOnAllNodes() error {
 	return nil
 }
 
-func (net *TestNetwork) Stop() {
+func (net *TestNetwork) ShutDown() {
 	// TODO Do we need this??
 	for _, node := range net.Nodes {
 		node.Dispose()

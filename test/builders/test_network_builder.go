@@ -30,9 +30,8 @@ func (builder *TestNetworkBuilder) WithNodeCount(nodeCount int) *TestNetworkBuil
 func (builder *TestNetworkBuilder) Build() *TestNetwork {
 
 	return &TestNetwork{
-		Nodes:      builder.CreateNodes(),
-		BlockUtils: builder.blockUtils,
-		Discovery:  builder.discovery,
+		Nodes:     builder.CreateNodes(),
+		Discovery: builder.discovery,
 	}
 
 	// TODO Why we need this?? it does nothing on TS code
