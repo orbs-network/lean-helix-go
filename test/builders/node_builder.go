@@ -15,7 +15,6 @@ type NodeBuilder struct {
 	logger               log.BasicLogger
 	electionTrigger      lh.ElectionTrigger
 	blockUtils           lh.BlockUtils
-	filter               *lh.NetworkMessageFilter
 	logsToConsole        bool
 }
 
