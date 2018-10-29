@@ -11,15 +11,20 @@ type TermConfig struct {
 	NetworkCommunication NetworkCommunication
 	BlockUtils           BlockUtils
 	KeyManager           KeyManager
-	Logger               log.BasicLogger
 	ElectionTrigger      ElectionTrigger
 	Storage              Storage
+	Logger               log.BasicLogger
 	//MessageFactory       *MessageFactory
 }
 
 type leanHelix struct {
-	ctx       context.Context
 	ctxCancel context.CancelFunc
+	config    *Config
+	log       log.BasicLogger
+}
+
+func (lh *leanHelix) ValidateBlockConsensus(block Block, blockProof *BlockProof, prevBlockProof *BlockProof) {
+	panic("impl me")
 }
 
 func (lh *leanHelix) RegisterOnCommitted(cb func(block Block)) {
@@ -31,7 +36,10 @@ func (lh *leanHelix) Dispose() {
 	// TODO: implement
 }
 
-func (lh *leanHelix) Start(blockHeight primitives.BlockHeight) {
+func (lh *leanHelix) Start(parentCtx context.Context, blockHeight primitives.BlockHeight) {
+
+	ctx, ctxCancel := context.WithCancel(parentCtx)
+	lh.ctxCancel = ctxCancel
 
 	// TODO: create an infinite loop which can be stopped by context.Done()
 
@@ -39,7 +47,8 @@ func (lh *leanHelix) Start(blockHeight primitives.BlockHeight) {
 		select {
 
 		// case: some channel that fires when consensus completed successfully or with error
-		case <-lh.ctx.Done():
+		case <-ctx.Done():
+			lh.log.Info("Context.done called")
 			lh.GracefulShutdown()
 
 		}
@@ -51,17 +60,19 @@ func (lh *leanHelix) IsLeader() bool {
 	// TODO: implement
 	return false
 }
+
 func (lh *leanHelix) GracefulShutdown() {
+	lh.log.Info("LeanHelix.GracefulShutdown() called")
 	lh.ctxCancel()
 }
 
 func BuildTermConfig(config *Config) *TermConfig {
 	return &TermConfig{
-		ElectionTrigger:      config.ElectionTrigger,
 		NetworkCommunication: config.NetworkCommunication,
-		Storage:              config.Storage, // TODO should this default to InMemoryStorage if nil??
-		KeyManager:           config.KeyManager,
-		Logger:               config.Logger,
 		BlockUtils:           config.BlockUtils,
+		KeyManager:           config.KeyManager,
+		ElectionTrigger:      config.ElectionTrigger,
+		Storage:              config.Storage, // TODO should this default to InMemoryStorage if nil??
+		Logger:               config.Logger,
 	}
 }

@@ -1,6 +1,7 @@
 package acceptance
 
 import (
+	"context"
 	lh "github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
@@ -29,6 +30,8 @@ func TestSendPreprepareOnlyIfLeader(t *testing.T) {
 
 	t.Skip()
 
+	ctx := context.Background()
+
 	net := builders.NewSimpleTestNetwork(NODE_COUNT, 0, nil) // Node 0 is leader
 
 	predicateMessageTypeIsPreprepare := func(msg interface{}) bool {
@@ -46,7 +49,7 @@ func TestSendPreprepareOnlyIfLeader(t *testing.T) {
 	}
 
 	defer net.Stop()
-	err := net.StartConsensusOnAllNodes()
+	err := net.StartConsensusOnAllNodes(ctx)
 	if err != nil {
 		t.Error(err)
 	}

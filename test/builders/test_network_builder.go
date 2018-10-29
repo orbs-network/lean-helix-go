@@ -130,12 +130,12 @@ func (net *TestNetwork) TriggerElection(ctx context.Context) {
 	}
 }
 
-func (net *TestNetwork) StartConsensusOnAllNodes() error {
+func (net *TestNetwork) StartConsensusOnAllNodes(ctx context.Context) error {
 	if len(net.Nodes) < MINIMUM_NODES {
 		return fmt.Errorf("not enough nodes in test network - found %d but minimum is %d", len(net.Nodes), MINIMUM_NODES)
 	}
 	for _, node := range net.Nodes {
-		node.StartConsensus()
+		node.StartConsensus(ctx)
 	}
 	return nil
 }
