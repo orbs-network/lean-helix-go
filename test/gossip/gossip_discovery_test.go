@@ -11,18 +11,18 @@ import (
 
 func TestGossipDiscovery(t *testing.T) {
 	genPublicKey := func() primitives.Ed25519PublicKey {
-		return primitives.Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+		return primitives.Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	}
 
-	t.Run("create a GossipDiscovery instance", func(t *testing.T) {
+	t.Run("create a Discovery instance", func(t *testing.T) {
 		instance := NewGossipDiscovery()
-		require.NotNil(t, instance, "GossipDiscovery instance created")
+		require.NotNil(t, instance, "Discovery instance created")
 	})
 
 	t.Run("get Gossip instance by ID", func(t *testing.T) {
 		id := genPublicKey()
 		gd := NewGossipDiscovery()
-		expectedGossip := NewGossip(gd, id)
+		expectedGossip := NewGossip(gd)
 		gd.RegisterGossip(id, expectedGossip)
 		actualGossip := gd.GetGossipByPK(id)
 		require.Equal(t, expectedGossip, actualGossip, "received Gossip instance by ID")
@@ -33,9 +33,9 @@ func TestGossipDiscovery(t *testing.T) {
 		id2 := genPublicKey()
 		id3 := genPublicKey()
 		gd := NewGossipDiscovery()
-		g1 := NewGossip(gd, id1)
-		g2 := NewGossip(gd, id2)
-		g3 := NewGossip(gd, id3)
+		g1 := NewGossip(gd)
+		g2 := NewGossip(gd)
+		g3 := NewGossip(gd)
 		gd.RegisterGossip(id1, g1)
 		gd.RegisterGossip(id2, g2)
 		gd.RegisterGossip(id3, g3)
@@ -61,8 +61,8 @@ func TestGossipDiscovery(t *testing.T) {
 		gd := NewGossipDiscovery()
 		id1 := genPublicKey()
 		id2 := genPublicKey()
-		g1 := NewGossip(gd, id1)
-		g2 := NewGossip(gd, id2)
+		g1 := NewGossip(gd)
+		g2 := NewGossip(gd)
 		gd.RegisterGossip(id1, g1)
 		gd.RegisterGossip(id2, g2)
 		actual := gd.Gossips(nil)
@@ -75,9 +75,9 @@ func TestGossipDiscovery(t *testing.T) {
 		id1 := genPublicKey()
 		id2 := genPublicKey()
 		id3 := genPublicKey()
-		g1 := NewGossip(gd, id1)
-		g2 := NewGossip(gd, id2)
-		g3 := NewGossip(gd, id3)
+		g1 := NewGossip(gd)
+		g2 := NewGossip(gd)
+		g3 := NewGossip(gd)
 		gd.RegisterGossip(id1, g1)
 		gd.RegisterGossip(id2, g2)
 		gd.RegisterGossip(id3, g3)

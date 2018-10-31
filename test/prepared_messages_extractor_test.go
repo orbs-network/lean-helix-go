@@ -13,9 +13,6 @@ import (
 )
 
 func TestPreparedMessagesExtractor(t *testing.T) {
-
-	t.Skip()
-
 	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000))
 	view := View(math.Floor(rand.Float64() * 1000))
 	block := builders.CreateBlock(builders.GenesisBlock)

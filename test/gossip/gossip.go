@@ -12,8 +12,7 @@ type SubscriptionValue struct {
 }
 
 type Gossip struct {
-	discovery            Discovery
-	publicKey            Ed25519PublicKey
+	discovery            *Discovery
 	totalSubscriptions   int
 	subscriptions        map[int]*SubscriptionValue
 	outgoingWhitelist    []Ed25519PublicKey
@@ -21,10 +20,9 @@ type Gossip struct {
 	statsSentMessages    []lh.ConsensusRawMessage
 }
 
-func NewGossip(gd Discovery, publicKey Ed25519PublicKey) *Gossip {
+func NewGossip(discovery *Discovery) *Gossip {
 	return &Gossip{
-		discovery:            gd,
-		publicKey:            publicKey,
+		discovery:            discovery,
 		totalSubscriptions:   0,
 		subscriptions:        make(map[int]*SubscriptionValue),
 		outgoingWhitelist:    nil,

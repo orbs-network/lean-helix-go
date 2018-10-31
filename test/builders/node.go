@@ -3,12 +3,19 @@ package builders
 import (
 	"context"
 	lh "github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/test/gossip"
 )
 
 type Node struct {
-	Config     *lh.Config
-	leanHelix  lh.LeanHelix
-	blockChain *InMemoryBlockChain
+	leanHelix       lh.LeanHelix
+	blockChain      *InMemoryBlockChain
+	electionTrigger *ElectionTriggerMock
+	BlockUtils      *MockBlockUtils
+	KeyManager      lh.KeyManager
+	Storage         lh.Storage
+	Gossip          *gossip.Gossip
+	PublicKey       primitives.Ed25519PublicKey
 }
 
 func (node *Node) GetLatestCommittedBlock() lh.Block {
@@ -20,7 +27,7 @@ func (node *Node) IsLeader() bool {
 }
 
 func (node *Node) TriggerElection(ctx context.Context) {
-	node.Config.ElectionTrigger.(*ElectionTriggerMock).Trigger(ctx)
+	node.electionTrigger.Trigger(ctx)
 }
 
 func (node *Node) onCommittedBlock(block lh.Block) {
@@ -40,16 +47,32 @@ func (node *Node) Dispose() {
 	}
 }
 
-func NewNode(config *lh.Config) *Node {
-	leanHelix := lh.NewLeanHelix(config)
-	node := &Node{
-		Config:     config,
-		leanHelix:  leanHelix,
-		blockChain: NewInMemoryBlockChain(),
+func (node *Node) BuildConfig() *lh.Config {
+	return &lh.Config{
+		NetworkCommunication: node.Gossip,
+		ElectionTrigger:      node.electionTrigger,
+		BlockUtils:           node.BlockUtils,
+		KeyManager:           node.KeyManager,
+		Storage:              node.Storage,
 	}
 
+}
+
+func NewNode(publicKey primitives.Ed25519PublicKey, gossip *gossip.Gossip, blockUtils *MockBlockUtils) *Node {
+	node := &Node{
+		blockChain:      NewInMemoryBlockChain(),
+		electionTrigger: NewMockElectionTrigger(),
+		BlockUtils:      blockUtils,
+		KeyManager:      NewMockKeyManager(publicKey),
+		Storage:         lh.NewInMemoryStorage(),
+		Gossip:          gossip,
+		PublicKey:       publicKey,
+	}
+
+	leanHelix := lh.NewLeanHelix(node.BuildConfig())
 	leanHelix.RegisterOnCommitted(node.onCommittedBlock)
 
+	node.leanHelix = leanHelix
 	return node
 
 }

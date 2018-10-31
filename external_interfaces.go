@@ -7,10 +7,7 @@ import (
 
 // first call - create an instance of Lean Helix library
 func NewLeanHelix(config *Config) LeanHelix {
-	return &leanHelix{
-		config: config,
-		log:    config.Logger.For(log.Service("leanhelix")),
-	}
+	return &leanHelix{config: config}
 }
 
 type LeanHelix interface {
@@ -27,7 +24,6 @@ type Config struct {
 	KeyManager           KeyManager
 	ElectionTrigger      ElectionTrigger
 	Storage              Storage
-	Logger               log.BasicLogger
 }
 
 // Interfaces that must be implemented by the external service using this library

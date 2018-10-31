@@ -12,31 +12,6 @@ import (
 
 // Unit tests for leanhelix_term
 
-func TestReturnOkForMembersInCurrentHeight(t *testing.T) {
-
-	t.Skip()
-	// Instantiate, provide no members, and expect error
-	ctx := context.Background()
-	pk := Ed25519PublicKey("PK")
-	mockComm := builders.NewMockNetworkCommunication()
-	mockBlockUtils := builders.NewMockBlockUtils(nil)
-	mockElectionTrigger := builders.NewMockElectionTrigger()
-	mockStorage := builders.NewMockStorage()
-	mockComm.When("RequestOrderedCommittee", mock.Any).Return([]Ed25519PublicKey{pk})
-	mockComm.When("SendMessage", mock.Any, mock.Any, mock.Any).Return()
-	mockStorage.When("StorePreprepare", mock.Any).Return(true)
-	mockKeyManager := builders.NewMockKeyManager(pk)
-	config := &lh.TermConfig{
-		KeyManager:           mockKeyManager,
-		NetworkCommunication: mockComm,
-		BlockUtils:           mockBlockUtils,
-		ElectionTrigger:      mockElectionTrigger,
-		Storage:              mockStorage,
-	}
-	term, _ := lh.NewLeanHelixTerm(ctx, config, 1, nil)
-	require.NotNil(t, term, "should return new term if there are members in current height")
-}
-
 func TestReturnErrorIfNoMembersInCurrentHeight(t *testing.T) {
 	// Instantiate, provide no members, and expect error
 	ctx := context.Background()

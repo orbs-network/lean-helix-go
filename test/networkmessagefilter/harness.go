@@ -23,11 +23,11 @@ func NewHarness(blockHeight primitives.BlockHeight) *harness {
 
 	ctx := context.Background()
 
-	net := builders.NewSimpleTestNetwork(NODE_COUNT, blockHeight, nil)
+	net := builders.ATestNetwork(NODE_COUNT, nil)
 	receiverNode := net.Nodes[0]
 	senderNode := net.Nodes[1]
 
-	filter := leanhelix.NewNetworkMessageFilter(receiverNode.Config.NetworkCommunication, receiverNode.Config.KeyManager.MyPublicKey())
+	filter := leanhelix.NewNetworkMessageFilter(receiverNode.Gossip, receiverNode.PublicKey)
 	mockReceiver := builders.NewMockMessageReceiver()
 	filter.SetBlockHeight(ctx, blockHeight, mockReceiver)
 
@@ -67,7 +67,7 @@ func (h *harness) ExpectEachMessageToBeReceivedXTimes(times int) {
 }
 
 func (h *harness) SendAllMessages() error {
-	networkCommunication := h.senderNode.Config.NetworkCommunication
+	networkCommunication := h.senderNode.Gossip
 	allPublicKeys := h.net.Discovery.AllGossipsPublicKeys()
 	for _, msg := range h.messages {
 		rawMsg := msg.ToConsensusRawMessage()

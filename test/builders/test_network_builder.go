@@ -1,121 +1,95 @@
 package builders
 
 import (
-	"context"
 	"fmt"
 	lh "github.com/orbs-network/lean-helix-go"
-	. "github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
 )
 
 type TestNetworkBuilder struct {
-	nodeCount            int
-	electionTrigger      lh.ElectionTrigger
-	blockUtils           *MockBlockUtils
-	blocksPool           []lh.Block
-	nonMemberNodeIndices []int
-	discovery            gossip.Discovery
-	nodesBlockHeight     BlockHeight
-}
-
-func (builder *TestNetworkBuilder) RequestBlocksWith(utils *MockBlockUtils) *TestNetworkBuilder {
-	builder.blockUtils = utils
-	return builder
+	NodeCount          int
+	customNodeBuilders []*NodeBuilder
+	blocksPool         []lh.Block
 }
 
 func (builder *TestNetworkBuilder) WithNodeCount(nodeCount int) *TestNetworkBuilder {
-	builder.nodeCount = nodeCount
+	builder.NodeCount = nodeCount
+	return builder
+}
+
+func (builder *TestNetworkBuilder) WithCustomNodeBuilder(nodeBuilder *NodeBuilder) *TestNetworkBuilder {
+	builder.customNodeBuilders = append(builder.customNodeBuilders, nodeBuilder)
+	return builder
+}
+
+func (builder *TestNetworkBuilder) WithBlocksPool(blocksPool []lh.Block) *TestNetworkBuilder {
+	if builder.blocksPool == nil {
+		builder.blocksPool = blocksPool
+	}
 	return builder
 }
 
 func (builder *TestNetworkBuilder) Build() *TestNetwork {
-
-	return &TestNetwork{
-		Nodes:     builder.CreateNodes(),
-		Discovery: builder.discovery,
-	}
-
-	// TODO Why we need this?? it does nothing on TS code
-	//testNet.registerNodes()
-	//return testNet
+	blocksPool := builder.buildBlocksPool()
+	discovery := gossip.NewGossipDiscovery()
+	nodes := builder.createNodes(discovery, blocksPool)
+	testNetwork := NewTestNetwork(discovery, blocksPool)
+	testNetwork.RegisterNodes(nodes)
+	return testNetwork
 }
 
-func NewSimpleTestNetwork(
-	nodeCount int,
-	nodesBlockHeight BlockHeight,
-	blocksPool []lh.Block) *TestNetwork {
+func (builder *TestNetworkBuilder) buildBlocksPool() []lh.Block {
+	if builder.blocksPool == nil {
+		b1 := CreateBlock(GenesisBlock)
+		b2 := CreateBlock(b1)
+		b3 := CreateBlock(b2)
+		b4 := CreateBlock(b3)
 
-	b1 := CreateBlock(GenesisBlock)
-	b2 := CreateBlock(b1)
-	b3 := CreateBlock(b2)
-	b4 := CreateBlock(b3)
-
-	var blocks []lh.Block
-	if blocksPool != nil {
-		blocks = blocksPool
+		return []lh.Block{b1, b2, b3, b4}
 	} else {
-		blocks = []lh.Block{b1, b2, b3, b4}
-	}
-
-	mockBlockUtils := NewMockBlockUtils(blocks)
-
-	return NewTestNetworkBuilder(nodeCount).
-		WithBlockHeight(nodesBlockHeight).
-		RequestBlocksWith(mockBlockUtils).
-		Build()
-}
-
-func NewTestNetworkBuilder(nodeCount int) *TestNetworkBuilder {
-	return &TestNetworkBuilder{
-		nodeCount:       nodeCount,
-		electionTrigger: nil,
-		blockUtils:      nil,
-		blocksPool:      nil,
-		discovery:       gossip.NewGossipDiscovery(),
+		return builder.blocksPool
 	}
 }
 
-func (builder *TestNetworkBuilder) CreateNodes() []*Node {
-	nodes := make([]*Node, builder.nodeCount)
+func (builder *TestNetworkBuilder) buildNode(
+	nodeBuilder *NodeBuilder,
+	publicKey primitives.Ed25519PublicKey,
+	discovery *gossip.Discovery,
+	blocksPool []lh.Block) *Node {
 
-	for i := range nodes {
-		nodes[i] = buildNode(Ed25519PublicKey(fmt.Sprintf("Node %d", i)), builder.discovery)
+	gossip := gossip.NewGossip(discovery)
+	discovery.RegisterGossip(publicKey, gossip)
+	return nodeBuilder.ThatIsPartOf(gossip).WithBlocksPool(blocksPool).WithPublicKey(publicKey).Build()
+}
+
+func (builder *TestNetworkBuilder) createNodes(discovery *gossip.Discovery, blocksPool []lh.Block) []*Node {
+	var nodes []*Node
+	for i := 0; i < builder.NodeCount; i++ {
+		nodeBuilder := NewNodeBuilder()
+		publicKey := primitives.Ed25519PublicKey(fmt.Sprintf("Node %d", i))
+		node := builder.buildNode(nodeBuilder, publicKey, discovery, blocksPool)
+		nodes = append(nodes, node)
 	}
-	for _, idx := range builder.nonMemberNodeIndices {
-		builder.discovery.UnregisterGossip(nodes[idx].Config.KeyManager.MyPublicKey())
+
+	for i, customBuilder := range builder.customNodeBuilders {
+		publicKey := primitives.Ed25519PublicKey(fmt.Sprintf("Custom-Node %d", i))
+		node := builder.buildNode(customBuilder, publicKey, discovery, blocksPool)
+		nodes = append(nodes, node)
 	}
+
 	return nodes
 }
 
-func (builder *TestNetworkBuilder) WithBlockHeight(height BlockHeight) *TestNetworkBuilder {
-	builder.nodesBlockHeight = height
-	return builder
-}
-
-func (net *TestNetwork) GetNodeGossip(pk Ed25519PublicKey) *gossip.Gossip {
-	return net.Discovery.GetGossipByPK(pk)
-}
-
-func (net *TestNetwork) TriggerElection(ctx context.Context) {
-	for _, node := range net.Nodes {
-		node.TriggerElection(ctx)
+func NewTestNetworkBuilder() *TestNetworkBuilder {
+	return &TestNetworkBuilder{
+		NodeCount:          0,
+		customNodeBuilders: nil,
+		blocksPool:         nil,
 	}
 }
 
-func (net *TestNetwork) StartConsensusOnAllNodes(ctx context.Context) error {
-	if len(net.Nodes) < MINIMUM_NODES {
-		return fmt.Errorf("not enough nodes in test network - found %d but minimum is %d", len(net.Nodes), MINIMUM_NODES)
-	}
-	for _, node := range net.Nodes {
-		node.StartConsensus(ctx)
-	}
-	return nil
-}
-
-func (net *TestNetwork) Stop() {
-	// TODO Do we need this??
-	for _, node := range net.Nodes {
-		node.Dispose()
-	}
-
+func ATestNetwork(countOfNodes int, blocksPool []lh.Block) *TestNetwork {
+	testNetwork := NewTestNetworkBuilder()
+	return testNetwork.WithNodeCount(countOfNodes).WithBlocksPool(blocksPool).Build()
 }
