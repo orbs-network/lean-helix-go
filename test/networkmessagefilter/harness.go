@@ -66,16 +66,13 @@ func (h *harness) ExpectEachMessageToBeReceivedXTimes(times int) {
 	h.receiver.When("OnReceiveNewView", mock.Any, mock.Any).Return().Times(times)
 }
 
-func (h *harness) SendAllMessages() error {
+func (h *harness) SendAllMessages() {
 	networkCommunication := h.senderNode.Gossip
 	allPublicKeys := h.net.Discovery.AllGossipsPublicKeys()
 	for _, msg := range h.messages {
 		rawMsg := msg.ToConsensusRawMessage()
-		if err := networkCommunication.SendMessage(h.ctx, allPublicKeys, rawMsg); err != nil {
-			return err
-		}
+		networkCommunication.SendMessage(h.ctx, allPublicKeys, rawMsg)
 	}
-	return nil
 }
 
 func (h *harness) Verify() (bool, error) {

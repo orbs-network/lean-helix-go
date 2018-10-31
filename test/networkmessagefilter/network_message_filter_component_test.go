@@ -56,9 +56,7 @@ func TestIgnoreMessagesFromNodesNotPartOfTheNetwork(t *testing.T) {
 }
 
 func verify(h *harness, t *testing.T) {
-	if err := h.SendAllMessages(); err != nil {
-		t.Error(err)
-	}
+	h.SendAllMessages()
 	ok, err := h.Verify()
 	if !ok {
 		t.Error(err)
