@@ -6,8 +6,9 @@ import (
 	"time"
 )
 
-func setTimeout(cb func(), milliseconds uint) chan bool {
-	interval := time.Duration(milliseconds) * time.Millisecond
+// TODO What to do in the infinite loop when context is cancelled?
+func setTimeoutMillis(cb func(), timeoutMillis uint64) chan bool {
+	interval := time.Duration(timeoutMillis) * time.Millisecond
 	timer := time.NewTimer(interval)
 	clear := make(chan bool)
 
@@ -28,45 +29,45 @@ func setTimeout(cb func(), milliseconds uint) chan bool {
 }
 
 type TimerBasedElectionTrigger struct {
-	minTimeout uint
-	view       primitives.View
-	isActive   bool
-	cb         func(view primitives.View)
-	clearTimer chan bool
+	minTimeoutMillis uint64
+	view             primitives.View
+	isActive         bool
+	cb               func(view primitives.View)
+	clearTimer       chan bool
 }
 
-func NewTimerBasedElectionTrigger(minTimeout uint) *TimerBasedElectionTrigger {
+func NewTimerBasedElectionTrigger(minTimeout uint64) *TimerBasedElectionTrigger {
 	return &TimerBasedElectionTrigger{
-		minTimeout: minTimeout,
+		minTimeoutMillis: minTimeout,
 	}
 }
 
-func (tbet *TimerBasedElectionTrigger) RegisterOnTrigger(view primitives.View, cb func(view primitives.View)) {
-	tbet.cb = cb
-	if !tbet.isActive || tbet.view != view {
-		tbet.isActive = true
-		tbet.view = view
-		tbet.stop()
-		timeout := uint(math.Pow(2, float64(view))) * tbet.minTimeout
-		tbet.clearTimer = setTimeout(tbet.onTimeout, timeout)
+func (t *TimerBasedElectionTrigger) RegisterOnTrigger(view primitives.View, cb func(view primitives.View)) {
+	t.cb = cb
+	if !t.isActive || t.view != view {
+		t.isActive = true
+		t.view = view
+		t.stop()
+		timeoutMillis := uint64(math.Pow(2, float64(view))) * t.minTimeoutMillis
+		t.clearTimer = setTimeoutMillis(t.onTimeout, timeoutMillis)
 	}
 }
 
-func (tbet *TimerBasedElectionTrigger) UnregisterOnTrigger() {
-	tbet.cb = nil
-	tbet.isActive = false
-	tbet.stop()
+func (t *TimerBasedElectionTrigger) UnregisterOnTrigger() {
+	t.cb = nil
+	t.isActive = false
+	t.stop()
 }
 
-func (tbet *TimerBasedElectionTrigger) stop() {
-	if tbet.clearTimer != nil {
-		tbet.clearTimer <- true
-		tbet.clearTimer = nil
+func (t *TimerBasedElectionTrigger) stop() {
+	if t.clearTimer != nil {
+		t.clearTimer <- true
+		t.clearTimer = nil
 	}
 }
 
-func (tbet *TimerBasedElectionTrigger) onTimeout() {
-	if tbet.cb != nil {
-		tbet.cb(tbet.view)
+func (t *TimerBasedElectionTrigger) onTimeout() {
+	if t.cb != nil {
+		t.cb(t.view)
 	}
 }
