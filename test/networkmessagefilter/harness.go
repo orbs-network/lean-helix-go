@@ -44,16 +44,15 @@ func (h *harness) GenerateMessages(
 	messagesBlockHeight primitives.BlockHeight,
 	keyManager leanhelix.KeyManager) {
 
-	senderMessageFactory := leanhelix.NewMessageFactory(keyManager)
 	block := builders.CreateBlock(builders.GenesisBlock)
 
 	messages := make([]leanhelix.ConsensusMessage, 5)
 	messagesView := primitives.View(3)
-	messages[0] = senderMessageFactory.CreatePreprepareMessage(messagesBlockHeight, messagesView, block)
-	messages[1] = senderMessageFactory.CreatePrepareMessage(messagesBlockHeight, messagesView, block.BlockHash())
-	messages[2] = senderMessageFactory.CreateCommitMessage(messagesBlockHeight, messagesView, block.BlockHash())
-	messages[3] = senderMessageFactory.CreateViewChangeMessage(messagesBlockHeight, messagesView, nil)
-	messages[4] = senderMessageFactory.CreateNewViewMessage(messagesBlockHeight, messagesView, nil, nil, block)
+	messages[0] = builders.APrepreparMessage(keyManager, messagesBlockHeight, messagesView, block)
+	messages[1] = builders.APrepareMessage(keyManager, messagesBlockHeight, messagesView, block)
+	messages[2] = builders.ACommitMessage(keyManager, messagesBlockHeight, messagesView, block)
+	messages[3] = builders.AViewChangeMessage(keyManager, messagesBlockHeight, messagesView, nil)
+	messages[4] = builders.ANewViewMessage(keyManager, messagesBlockHeight, messagesView, nil, nil, block)
 
 	h.messages = messages
 }

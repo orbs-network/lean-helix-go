@@ -15,7 +15,7 @@ func TestNoViewChangeMessages(t *testing.T) {
 
 func TestReturnNilWhenNoViewChangeMessages(t *testing.T) {
 	keyManager := builders.NewMockKeyManager(primitives.Ed25519PublicKey("PublicKey 1"))
-	VCMessage := builders.AViewChangeMessages(keyManager, 1, 2, nil)
+	VCMessage := builders.AViewChangeMessage(keyManager, 1, 2, nil)
 
 	actual := leanhelix.GetLatestBlockFromViewChangeMessages([]*leanhelix.ViewChangeMessage{VCMessage})
 	require.Nil(t, actual, "Should have returned Nil for ViewChange Messages without prepared messages")
@@ -31,12 +31,12 @@ func TestKeepOnlyMessagesWithBlock(t *testing.T) {
 	preparedMessages := &leanhelix.PreparedMessages{
 		PreprepareMessage: nil,
 		PrepareMessages: []*leanhelix.PrepareMessage{
-			builders.APreparedMessages(keyManager1, 1, 2, block),
-			builders.APreparedMessages(keyManager2, 1, 2, block),
+			builders.APrepareMessage(keyManager1, 1, 2, block),
+			builders.APrepareMessage(keyManager2, 1, 2, block),
 		},
 	}
 
-	VCMessage := builders.AViewChangeMessages(keyManager3, 1, 2, preparedMessages)
+	VCMessage := builders.AViewChangeMessage(keyManager3, 1, 2, preparedMessages)
 
 	actual := leanhelix.GetLatestBlockFromViewChangeMessages([]*leanhelix.ViewChangeMessage{VCMessage})
 	require.Nil(t, actual, "A block returned from View Change messages without block")

@@ -38,7 +38,7 @@ func TestRejectNewViewMessagesFromPast(t *testing.T) {
 	node := net.Nodes[0]
 	messageFactory := lh.NewMessageFactory(node.KeyManager)
 	ppmContentBuilder := messageFactory.CreatePreprepareMessageContentBuilder(height, view, block)
-	nvm := messageFactory.CreateNewViewMessage(height, view, ppmContentBuilder, nil, block)
+	nvm := builders.ANewViewMessage(node.KeyManager, height, view, ppmContentBuilder, nil, block)
 	termConfig := lh.BuildTermConfig(node.BuildConfig())
 	term, err := lh.NewLeanHelixTerm(ctx, termConfig, height, func(block lh.Block) {})
 	if err != nil {

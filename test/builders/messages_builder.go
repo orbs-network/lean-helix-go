@@ -5,7 +5,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/primitives"
 )
 
-func APrepreparedMessages(
+func APrepreparMessage(
 	keyManager leanhelix.KeyManager,
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
@@ -15,7 +15,7 @@ func APrepreparedMessages(
 	return messageFactory.CreatePreprepareMessage(blockHeight, view, block)
 }
 
-func APreparedMessages(
+func APrepareMessage(
 	keyManager leanhelix.KeyManager,
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
@@ -25,7 +25,7 @@ func APreparedMessages(
 	return messageFactory.CreatePrepareMessage(blockHeight, view, block.BlockHash())
 }
 
-func ACommitMessages(
+func ACommitMessage(
 	keyManager leanhelix.KeyManager,
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
@@ -35,7 +35,7 @@ func ACommitMessages(
 	return messageFactory.CreateCommitMessage(blockHeight, view, block.BlockHash())
 }
 
-func AViewChangeMessages(
+func AViewChangeMessage(
 	keyManager leanhelix.KeyManager,
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
@@ -43,4 +43,16 @@ func AViewChangeMessages(
 
 	messageFactory := leanhelix.NewMessageFactory(keyManager)
 	return messageFactory.CreateViewChangeMessage(blockHeight, view, preparedMessages)
+}
+
+func ANewViewMessage(
+	keyManager leanhelix.KeyManager,
+	blockHeight primitives.BlockHeight,
+	view primitives.View,
+	ppContentBuilder *leanhelix.PreprepareContentBuilder,
+	confirmations []*leanhelix.ViewChangeMessageContentBuilder,
+	block leanhelix.Block) *leanhelix.NewViewMessage {
+
+	messageFactory := leanhelix.NewMessageFactory(keyManager)
+	return messageFactory.CreateNewViewMessage(blockHeight, view, ppContentBuilder, confirmations, block)
 }

@@ -94,16 +94,12 @@ func TestStoreCommit(t *testing.T) {
 	block1 := builders.CreateBlock(builders.GenesisBlock)
 	block2 := builders.CreateBlock(builders.GenesisBlock)
 
-	mf1 := lh.NewMessageFactory(keyManager1)
-	mf2 := lh.NewMessageFactory(keyManager2)
-	mf3 := lh.NewMessageFactory(keyManager3)
-
-	message1 := mf1.CreateCommitMessage(blockHeight1, view1, block1.BlockHash())
-	message2 := mf2.CreateCommitMessage(blockHeight1, view1, block1.BlockHash())
-	message3 := mf3.CreateCommitMessage(blockHeight1, view1, block1.BlockHash())
-	message4 := mf1.CreateCommitMessage(blockHeight2, view1, block1.BlockHash())
-	message5 := mf1.CreateCommitMessage(blockHeight1, view2, block1.BlockHash())
-	message6 := mf1.CreateCommitMessage(blockHeight1, view1, block2.BlockHash())
+	message1 := builders.ACommitMessage(keyManager1, blockHeight1, view1, block1)
+	message2 := builders.ACommitMessage(keyManager2, blockHeight1, view1, block1)
+	message3 := builders.ACommitMessage(keyManager3, blockHeight1, view1, block1)
+	message4 := builders.ACommitMessage(keyManager1, blockHeight2, view1, block1)
+	message5 := builders.ACommitMessage(keyManager1, blockHeight1, view2, block1)
+	message6 := builders.ACommitMessage(keyManager1, blockHeight1, view1, block2)
 
 	storage.StoreCommit(message1)
 	storage.StoreCommit(message2)
@@ -225,11 +221,9 @@ func TestDuplicateCommit(t *testing.T) {
 	sender1KeyManager := builders.NewMockKeyManager(senderId1)
 	sender2KeyManager := builders.NewMockKeyManager(senderId2)
 	block := builders.CreateBlock(builders.GenesisBlock)
-	sender1MsgFactory := lh.NewMessageFactory(sender1KeyManager)
-	sender2MsgFactory := lh.NewMessageFactory(sender2KeyManager)
 
-	c1 := sender1MsgFactory.CreateCommitMessage(blockHeight, view, block.BlockHash())
-	c2 := sender2MsgFactory.CreateCommitMessage(blockHeight, view, block.BlockHash())
+	c1 := builders.ACommitMessage(sender1KeyManager, blockHeight, view, block)
+	c2 := builders.ACommitMessage(sender2KeyManager, blockHeight, view, block)
 
 	firstTime := storage.StoreCommit(c1)
 	require.True(t, firstTime, "StoreCommit() returns true if storing a new value (1 of 2)")
@@ -274,11 +268,10 @@ func TestClearBlockHeightLogs(t *testing.T) {
 	blockHash := block.BlockHash()
 	keyManager := builders.NewMockKeyManager(Ed25519PublicKey("PK"))
 
-	msgFactory := lh.NewMessageFactory(keyManager)
-	ppMsg := msgFactory.CreatePreprepareMessage(blockHeight, view, block)
-	pMsg := msgFactory.CreatePrepareMessage(blockHeight, view, blockHash)
-	cMsg := msgFactory.CreateCommitMessage(blockHeight, view, blockHash)
-	vcMsg := msgFactory.CreateViewChangeMessage(blockHeight, view, nil)
+	ppMsg := builders.APrepreparMessage(keyManager, blockHeight, view, block)
+	pMsg := builders.APrepareMessage(keyManager, blockHeight, view, block)
+	cMsg := builders.ACommitMessage(keyManager, blockHeight, view, block)
+	vcMsg := builders.AViewChangeMessage(keyManager, blockHeight, view, nil)
 
 	storage.StorePreprepare(ppMsg)
 	storage.StorePrepare(pMsg)
