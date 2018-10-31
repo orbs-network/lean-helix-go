@@ -89,6 +89,10 @@ func NewTestNetworkBuilder() *TestNetworkBuilder {
 	}
 }
 
+func ABasicTestNetwork() *TestNetwork {
+	return ATestNetwork(4, nil)
+}
+
 func ATestNetwork(countOfNodes int, blocksPool []lh.Block) *TestNetwork {
 	testNetwork := NewTestNetworkBuilder()
 	return testNetwork.WithNodeCount(countOfNodes).WithBlocksPool(blocksPool).Build()

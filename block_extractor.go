@@ -3,7 +3,6 @@ package leanhelix
 import "sort"
 
 func GetLatestBlockFromViewChangeMessages(messages []*ViewChangeMessage) Block {
-
 	if len(messages) == 0 {
 		return nil
 	}
@@ -24,9 +23,10 @@ func keepOnlyMessagesWithBlock(messages []*ViewChangeMessage) []*ViewChangeMessa
 	}
 	return messagesWithBlock
 }
+
 func sortMessagesByDescendingViewOfPreparedProofPPM(messages []*ViewChangeMessage) []*ViewChangeMessage {
 	sort.Slice(messages, func(i, j int) bool {
-		return messages[j].content.SignedHeader().PreparedProof().PreprepareBlockRef().View() > messages[i].content.SignedHeader().PreparedProof().PreprepareBlockRef().View()
+		return messages[i].content.SignedHeader().PreparedProof().PreprepareBlockRef().View() > messages[j].content.SignedHeader().PreparedProof().PreprepareBlockRef().View()
 	})
 	return messages
 }
