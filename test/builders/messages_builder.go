@@ -5,7 +5,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/primitives"
 )
 
-func APrepreparMessage(
+func APreprepareMessage(
 	keyManager leanhelix.KeyManager,
 	blockHeight primitives.BlockHeight,
 	view primitives.View,

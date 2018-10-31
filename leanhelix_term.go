@@ -21,10 +21,10 @@ type leanHelixTerm struct {
 	Storage
 	electionTrigger ElectionTrigger
 	BlockUtils
+	messageFactory                *MessageFactory
 	MyPublicKey                   Ed25519PublicKey
 	CommitteeMembersPublicKeys    []Ed25519PublicKey
 	NonCommitteeMembersPublicKeys []Ed25519PublicKey
-	MessageFactory                *MessageFactory
 	onCommittedBlock              func(block Block)
 	height                        BlockHeight
 	view                          View
@@ -62,7 +62,7 @@ func NewLeanHelixTerm(ctx context.Context, config *TermConfig, newBlockHeight Bl
 		electionTrigger:            config.ElectionTrigger,
 		BlockUtils:                 blockUtils,
 		CommitteeMembersPublicKeys: committeeMembers,
-		MessageFactory:             messageFactory,
+		messageFactory:             messageFactory,
 		onCommittedBlock:           onCommittedBlock,
 		MyPublicKey:                myPK,
 	}
@@ -83,7 +83,7 @@ func (term *leanHelixTerm) startTerm(ctx context.Context) {
 	if term.disposed {
 		return
 	}
-	ppm := term.MessageFactory.CreatePreprepareMessage(term.height, term.view, block)
+	ppm := term.messageFactory.CreatePreprepareMessage(term.height, term.view, block)
 
 	term.Storage.StorePreprepare(ppm)
 	term.sendPreprepare(ctx, ppm)
@@ -287,7 +287,7 @@ func (term *leanHelixTerm) processPreprepare(ctx context.Context, ppm *Preprepar
 		return
 	}
 
-	pm := term.MessageFactory.CreatePrepareMessage(header.BlockHeight(), header.View(), header.BlockHash())
+	pm := term.messageFactory.CreatePrepareMessage(header.BlockHeight(), header.View(), header.BlockHash())
 	term.Storage.StorePreprepare(ppm)
 	term.Storage.StorePrepare(pm)
 	term.sendPrepare(ctx, pm)
@@ -340,7 +340,7 @@ func (term *leanHelixTerm) onLeaderChange(ctx context.Context, view View) {
 	}
 	term.view = term.view + 1
 	preparedMessages := ExtractPreparedMessages(term.height, term.Storage, term.QuorumSize())
-	vcm := term.MessageFactory.CreateViewChangeMessage(term.height, term.view, preparedMessages)
+	vcm := term.messageFactory.CreateViewChangeMessage(term.height, term.view, preparedMessages)
 	term.Storage.StoreViewChange(vcm)
 	if term.IsLeader() {
 		term.checkElected(ctx, term.height, term.view)
@@ -479,10 +479,10 @@ func (term *leanHelixTerm) onElected(ctx context.Context, view View, viewChangeM
 			return
 		}
 	}
-	ppmContentBuilder := term.MessageFactory.CreatePreprepareMessageContentBuilder(term.height, view, block)
-	ppm := term.MessageFactory.CreatePreprepareMessageFromContentBuilder(ppmContentBuilder, block)
+	ppmContentBuilder := term.messageFactory.CreatePreprepareMessageContentBuilder(term.height, view, block)
+	ppm := term.messageFactory.CreatePreprepareMessageFromContentBuilder(ppmContentBuilder, block)
 	confirmations := extractConfirmationsFromViewChangeMessages(viewChangeMessages)
-	nvm := term.MessageFactory.CreateNewViewMessage(term.height, view, ppmContentBuilder, confirmations, block)
+	nvm := term.messageFactory.CreateNewViewMessage(term.height, view, ppmContentBuilder, confirmations, block)
 	term.Storage.StorePreprepare(ppm)
 	term.sendNewView(ctx, nvm)
 }
@@ -537,7 +537,7 @@ func (term *leanHelixTerm) countPrepared(height BlockHeight, view View, blockHas
 }
 func (term *leanHelixTerm) onPrepared(ctx context.Context, blockHeight BlockHeight, view View, blockHash Uint256) {
 	term.preparedLocally = true
-	cm := term.MessageFactory.CreateCommitMessage(blockHeight, view, blockHash)
+	cm := term.messageFactory.CreateCommitMessage(blockHeight, view, blockHash)
 	term.Storage.StoreCommit(cm)
 	term.sendCommit(ctx, cm)
 	term.checkCommitted(ctx, blockHeight, view, blockHash)

@@ -12,13 +12,11 @@ func CreatePreparedMessages(
 	view primitives.View,
 	block leanhelix.Block) *leanhelix.PreparedMessages {
 
-	mf := leanhelix.NewMessageFactory(leader.KeyManager)
-	PPMessage := mf.CreatePreprepareMessage(blockHeight, view, block)
-
+	PPMessage := APreprepareMessage(leader.KeyManager, blockHeight, view, block)
 	PMessages := make([]*leanhelix.PrepareMessage, len(members))
+
 	for i, member := range members {
-		mf := leanhelix.NewMessageFactory(member.KeyManager)
-		PMessages[i] = mf.CreatePrepareMessage(blockHeight, view, block.BlockHash())
+		PMessages[i] = APrepareMessage(member.KeyManager, blockHeight, view, block)
 	}
 
 	return &leanhelix.PreparedMessages{

@@ -16,21 +16,17 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000000))
 	view := View(math.Floor(rand.Float64() * 1000000))
 	block := builders.CreateBlock(builders.GenesisBlock)
-	blockHash := block.BlockHash()
 	leaderId := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	leaderKeyManager := builders.NewMockKeyManager(Ed25519PublicKey(leaderId))
 	sender1KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId1))
 	sender2KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId2))
-	leaderMsgFactory := lh.NewMessageFactory(leaderKeyManager)
-	sender1MsgFactory := lh.NewMessageFactory(sender1KeyManager)
-	sender2MsgFactory := lh.NewMessageFactory(sender2KeyManager)
 
 	t.Run("should return the prepare proof", func(t *testing.T) {
-		ppm := leaderMsgFactory.CreatePreprepareMessage(blockHeight, view, block)
-		pm1 := sender1MsgFactory.CreatePrepareMessage(blockHeight, view, blockHash)
-		pm2 := sender2MsgFactory.CreatePrepareMessage(blockHeight, view, blockHash)
+		ppm := builders.APreprepareMessage(leaderKeyManager, blockHeight, view, block)
+		pm1 := builders.APrepareMessage(sender1KeyManager, blockHeight, view, block)
+		pm2 := builders.APrepareMessage(sender2KeyManager, blockHeight, view, block)
 		storage := lh.NewInMemoryStorage()
 		storage.StorePreprepare(ppm)
 		storage.StorePrepare(pm1)
@@ -52,17 +48,17 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 
 	t.Run("should return the latest (highest view) Prepare Proof", func(t *testing.T) {
 		storage := lh.NewInMemoryStorage()
-		ppm10 := leaderMsgFactory.CreatePreprepareMessage(blockHeight, 10, block)
-		pm10a := sender1MsgFactory.CreatePrepareMessage(blockHeight, 10, blockHash)
-		pm10b := sender2MsgFactory.CreatePrepareMessage(blockHeight, 10, blockHash)
+		ppm10 := builders.APreprepareMessage(leaderKeyManager, blockHeight, 10, block)
+		pm10a := builders.APrepareMessage(sender1KeyManager, blockHeight, 10, block)
+		pm10b := builders.APrepareMessage(sender2KeyManager, blockHeight, 10, block)
 
-		ppm20 := leaderMsgFactory.CreatePreprepareMessage(blockHeight, 20, block)
-		pm20a := sender1MsgFactory.CreatePrepareMessage(blockHeight, 20, blockHash)
-		pm20b := sender2MsgFactory.CreatePrepareMessage(blockHeight, 20, blockHash)
+		ppm20 := builders.APreprepareMessage(leaderKeyManager, blockHeight, 20, block)
+		pm20a := builders.APrepareMessage(sender1KeyManager, blockHeight, 20, block)
+		pm20b := builders.APrepareMessage(sender2KeyManager, blockHeight, 20, block)
 
-		ppm30 := leaderMsgFactory.CreatePreprepareMessage(blockHeight, 30, block)
-		pm30a := sender1MsgFactory.CreatePrepareMessage(blockHeight, 30, blockHash)
-		pm30b := sender2MsgFactory.CreatePrepareMessage(blockHeight, 30, blockHash)
+		ppm30 := builders.APreprepareMessage(leaderKeyManager, blockHeight, 30, block)
+		pm30a := builders.APrepareMessage(sender1KeyManager, blockHeight, 30, block)
+		pm30b := builders.APrepareMessage(sender2KeyManager, blockHeight, 30, block)
 
 		storage.StorePreprepare(ppm10)
 		storage.StorePrepare(pm10a)
@@ -89,8 +85,8 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	})
 
 	t.Run("TestReturnNothingIfNoPrePrepare", func(t *testing.T) {
-		pm1 := sender1MsgFactory.CreatePrepareMessage(blockHeight, view, blockHash)
-		pm2 := sender2MsgFactory.CreatePrepareMessage(blockHeight, view, blockHash)
+		pm1 := builders.APrepareMessage(sender1KeyManager, blockHeight, view, block)
+		pm2 := builders.APrepareMessage(sender2KeyManager, blockHeight, view, block)
 		storage := lh.NewInMemoryStorage()
 		storage.StorePrepare(pm1)
 		storage.StorePrepare(pm2)
@@ -100,7 +96,7 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	})
 
 	t.Run("TestReturnNothingIfNoPrepares", func(t *testing.T) {
-		ppm := leaderMsgFactory.CreatePreprepareMessage(blockHeight, view, block)
+		ppm := builders.APreprepareMessage(leaderKeyManager, blockHeight, view, block)
 		storage := lh.NewInMemoryStorage()
 		storage.StorePreprepare(ppm)
 		q := 3
@@ -109,8 +105,8 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	})
 
 	t.Run("TestReturnNothingIfNotEnoughPrepares", func(t *testing.T) {
-		ppm := leaderMsgFactory.CreatePreprepareMessage(blockHeight, view, block)
-		pm1 := sender1MsgFactory.CreatePrepareMessage(blockHeight, view, blockHash)
+		ppm := builders.APreprepareMessage(leaderKeyManager, blockHeight, view, block)
+		pm1 := builders.APrepareMessage(sender1KeyManager, blockHeight, view, block)
 		storage := lh.NewInMemoryStorage()
 		storage.StorePreprepare(ppm)
 		storage.StorePrepare(pm1)

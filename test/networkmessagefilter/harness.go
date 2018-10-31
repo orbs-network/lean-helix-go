@@ -48,7 +48,7 @@ func (h *harness) GenerateMessages(
 
 	messages := make([]leanhelix.ConsensusMessage, 5)
 	messagesView := primitives.View(3)
-	messages[0] = builders.APrepreparMessage(keyManager, messagesBlockHeight, messagesView, block)
+	messages[0] = builders.APreprepareMessage(keyManager, messagesBlockHeight, messagesView, block)
 	messages[1] = builders.APrepareMessage(keyManager, messagesBlockHeight, messagesView, block)
 	messages[2] = builders.ACommitMessage(keyManager, messagesBlockHeight, messagesView, block)
 	messages[3] = builders.AViewChangeMessage(keyManager, messagesBlockHeight, messagesView, nil)

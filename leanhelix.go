@@ -12,7 +12,7 @@ type TermConfig struct {
 	KeyManager           KeyManager
 	ElectionTrigger      ElectionTrigger
 	Storage              Storage
-	//MessageFactory       *MessageFactory
+	//messageFactory       *messageFactory
 }
 
 type leanHelix struct {
