@@ -7,9 +7,8 @@ import (
 )
 
 // TODO What to do in the infinite loop when context is cancelled?
-func setTimeoutMillis(cb func(), timeoutMillis uint64) chan bool {
-	interval := time.Duration(timeoutMillis) * time.Millisecond
-	timer := time.NewTimer(interval)
+func setTimeout(cb func(), timeout time.Duration) chan bool {
+	timer := time.NewTimer(timeout)
 	clear := make(chan bool)
 
 	go func() {
@@ -29,16 +28,16 @@ func setTimeoutMillis(cb func(), timeoutMillis uint64) chan bool {
 }
 
 type TimerBasedElectionTrigger struct {
-	minTimeoutMillis uint64
-	view             primitives.View
-	isActive         bool
-	cb               func(view primitives.View)
-	clearTimer       chan bool
+	minTimeout time.Duration
+	view       primitives.View
+	isActive   bool
+	cb         func(view primitives.View)
+	clearTimer chan bool
 }
 
-func NewTimerBasedElectionTrigger(minTimeout uint64) *TimerBasedElectionTrigger {
+func NewTimerBasedElectionTrigger(minTimeout time.Duration) *TimerBasedElectionTrigger {
 	return &TimerBasedElectionTrigger{
-		minTimeoutMillis: minTimeout,
+		minTimeout: minTimeout,
 	}
 }
 
@@ -48,8 +47,9 @@ func (t *TimerBasedElectionTrigger) RegisterOnTrigger(view primitives.View, cb f
 		t.isActive = true
 		t.view = view
 		t.stop()
-		timeoutMillis := uint64(math.Pow(2, float64(view))) * t.minTimeoutMillis
-		t.clearTimer = setTimeoutMillis(t.onTimeout, timeoutMillis)
+		timeoutMultiplier := time.Duration(int64(math.Pow(2, float64(view))))
+		timeoutForView := timeoutMultiplier * t.minTimeout
+		t.clearTimer = setTimeout(t.onTimeout, timeoutForView)
 	}
 }
 

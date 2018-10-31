@@ -9,7 +9,7 @@ import (
 )
 
 func TestCallbackTrigger(t *testing.T) {
-	et := lh.NewTimerBasedElectionTrigger(10)
+	et := lh.NewTimerBasedElectionTrigger(10 * time.Millisecond)
 	wasCalled := false
 	cb := func(view View) { wasCalled = true }
 	et.RegisterOnTrigger(0, cb)
@@ -20,7 +20,7 @@ func TestCallbackTrigger(t *testing.T) {
 }
 
 func TestCallbackTriggerOnce(t *testing.T) {
-	et := lh.NewTimerBasedElectionTrigger(10)
+	et := lh.NewTimerBasedElectionTrigger(10 * time.Millisecond)
 	callCount := 0
 	cb := func(view View) { callCount++ }
 	et.RegisterOnTrigger(0, cb)
@@ -31,7 +31,7 @@ func TestCallbackTriggerOnce(t *testing.T) {
 }
 
 func TestIgnoreSameView(t *testing.T) {
-	et := lh.NewTimerBasedElectionTrigger(30)
+	et := lh.NewTimerBasedElectionTrigger(30 * time.Millisecond)
 	callCount := 0
 	cb := func(view View) { callCount++ }
 
@@ -48,7 +48,7 @@ func TestIgnoreSameView(t *testing.T) {
 }
 
 func TestViewChanges(t *testing.T) {
-	et := lh.NewTimerBasedElectionTrigger(20)
+	et := lh.NewTimerBasedElectionTrigger(20 * time.Millisecond)
 	wasCalled := false
 	cb := func(view View) { wasCalled = true }
 
@@ -68,7 +68,7 @@ func TestViewChanges(t *testing.T) {
 }
 
 func TestViewPowTimeout(t *testing.T) {
-	et := lh.NewTimerBasedElectionTrigger(10)
+	et := lh.NewTimerBasedElectionTrigger(10 * time.Millisecond)
 	wasCalled := false
 	cb := func(view View) { wasCalled = true }
 
@@ -82,7 +82,7 @@ func TestViewPowTimeout(t *testing.T) {
 }
 
 func TestStoppingTrigger(t *testing.T) {
-	et := lh.NewTimerBasedElectionTrigger(10)
+	et := lh.NewTimerBasedElectionTrigger(10 * time.Millisecond)
 	wasCalled := false
 	cb := func(view View) { wasCalled = true }
 	et.RegisterOnTrigger(0, cb)
