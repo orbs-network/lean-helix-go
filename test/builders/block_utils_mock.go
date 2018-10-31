@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
-	"github.com/orbs-network/go-mock"
 	lh "github.com/orbs-network/lean-helix-go"
 	. "github.com/orbs-network/lean-helix-go/primitives"
 )
@@ -17,7 +16,6 @@ func CalculateBlockHash(block lh.Block) Uint256 {
 }
 
 type MockBlockUtils struct {
-	mock.Mock
 	upcomingBlocks []lh.Block
 	latestBlock    lh.Block
 }
@@ -30,7 +28,6 @@ func NewMockBlockUtils(upcomingBlocks []lh.Block) *MockBlockUtils {
 }
 
 func (b *MockBlockUtils) CalculateBlockHash(block lh.Block) Uint256 {
-	b.Called(block)
 	return CalculateBlockHash(block)
 }
 
@@ -47,11 +44,9 @@ func (b *MockBlockUtils) ProvideNextBlock() lh.Block {
 }
 
 func (b *MockBlockUtils) ResolveAllValidations(isValid bool) {
-	b.Called(isValid)
 }
 
 func (b *MockBlockUtils) RequestCommittee() {
-	b.Called()
 	panic("implement me")
 }
 
@@ -61,6 +56,5 @@ func (b *MockBlockUtils) RequestNewBlock(ctx context.Context, height BlockHeight
 }
 
 func (b *MockBlockUtils) ValidateBlock(block lh.Block) bool {
-	b.Called(block)
 	panic("implement me")
 }
