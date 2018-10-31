@@ -11,7 +11,7 @@ import (
 
 func TestGossipDiscovery(t *testing.T) {
 	genPublicKey := func() primitives.Ed25519PublicKey {
-		return primitives.Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+		return primitives.Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000000))))
 	}
 
 	t.Run("create a Discovery instance", func(t *testing.T) {

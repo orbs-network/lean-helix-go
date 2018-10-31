@@ -15,8 +15,7 @@ func TestNoViewChangeMessages(t *testing.T) {
 
 func TestReturnNilWhenNoViewChangeMessages(t *testing.T) {
 	keyManager := builders.NewMockKeyManager(primitives.Ed25519PublicKey("PublicKey 1"))
-	messageFactory := leanhelix.NewMessageFactory(keyManager)
-	VCMessage := messageFactory.CreateViewChangeMessage(1, 2, nil)
+	VCMessage := builders.AViewChangeMessages(keyManager, 1, 2, nil)
 
 	actual := leanhelix.GetLatestBlockFromViewChangeMessages([]*leanhelix.ViewChangeMessage{VCMessage})
 	require.Nil(t, actual, "Should have returned Nil for ViewChange Messages without prepared messages")
@@ -27,23 +26,17 @@ func TestKeepOnlyMessagesWithBlock(t *testing.T) {
 	keyManager2 := builders.NewMockKeyManager(primitives.Ed25519PublicKey("PublicKey 2"))
 	keyManager3 := builders.NewMockKeyManager(primitives.Ed25519PublicKey("PublicKey 3"))
 
-	messageFactory1 := leanhelix.NewMessageFactory(keyManager1)
-	messageFactory2 := leanhelix.NewMessageFactory(keyManager2)
-	messageFactory3 := leanhelix.NewMessageFactory(keyManager3)
-
 	block := builders.CreateBlock(builders.GenesisBlock)
-	PMessage1 := messageFactory1.CreatePrepareMessage(1, 2, block.BlockHash())
-	PMessage2 := messageFactory2.CreatePrepareMessage(1, 2, block.BlockHash())
 
 	preparedMessages := &leanhelix.PreparedMessages{
 		PreprepareMessage: nil,
 		PrepareMessages: []*leanhelix.PrepareMessage{
-			PMessage1,
-			PMessage2,
+			builders.APreparedMessages(keyManager1, 1, 2, block),
+			builders.APreparedMessages(keyManager2, 1, 2, block),
 		},
 	}
 
-	VCMessage := messageFactory3.CreateViewChangeMessage(1, 2, preparedMessages)
+	VCMessage := builders.AViewChangeMessages(keyManager3, 1, 2, preparedMessages)
 
 	actual := leanhelix.GetLatestBlockFromViewChangeMessages([]*leanhelix.ViewChangeMessage{VCMessage})
 	require.Nil(t, actual, "A block returned from View Change messages without block")

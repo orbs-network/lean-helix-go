@@ -46,7 +46,7 @@ func TestIgnoreMessagesFromNodesNotPartOfTheNetwork(t *testing.T) {
 	messagesBlockHeight := primitives.BlockHeight(3)
 	blockHeight := primitives.BlockHeight(3)
 
-	dummyPublicKey := primitives.Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	dummyPublicKey := primitives.Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	dummyKeyManager := builders.NewMockKeyManager(dummyPublicKey)
 	h := NewHarness(blockHeight)
 	h.GenerateMessages(messagesBlockHeight, dummyKeyManager)

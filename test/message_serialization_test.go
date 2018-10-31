@@ -11,8 +11,8 @@ import (
 )
 
 func TestMessageBuilderAndReader(t *testing.T) {
-	height := BlockHeight(math.Floor(rand.Float64() * 1000000))
-	view := View(math.Floor(rand.Float64() * 1000000))
+	height := BlockHeight(math.Floor(rand.Float64() * 1000000000))
+	view := View(math.Floor(rand.Float64() * 1000000000))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	b1 := builders.CreateBlock(builders.GenesisBlock)
 	mockKeyManager := builders.NewMockKeyManager(Ed25519PublicKey("PK"), nil)

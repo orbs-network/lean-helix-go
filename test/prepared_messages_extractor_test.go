@@ -13,13 +13,13 @@ import (
 )
 
 func TestPreparedMessagesExtractor(t *testing.T) {
-	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000))
-	view := View(math.Floor(rand.Float64() * 1000))
+	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000000))
+	view := View(math.Floor(rand.Float64() * 1000000))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	blockHash := block.BlockHash()
-	leaderId := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
-	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000))))
+	leaderId := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	leaderKeyManager := builders.NewMockKeyManager(Ed25519PublicKey(leaderId))
 	sender1KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId1))
 	sender2KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId2))

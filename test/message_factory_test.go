@@ -13,8 +13,8 @@ import (
 
 func TestMessageFactory(t *testing.T) {
 	keyManager := builders.NewMockKeyManager(Ed25519PublicKey("PK0"))
-	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000000))
-	view := View(math.Floor(rand.Float64() * 1000000))
+	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000000000))
+	view := View(math.Floor(rand.Float64() * 1000000000))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	blockHash := block.BlockHash()
 	node1KeyManager := builders.NewMockKeyManager(Ed25519PublicKey("PK1"))
