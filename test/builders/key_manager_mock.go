@@ -9,13 +9,13 @@ import (
 
 type mockKeyManager struct {
 	myPublicKey        Ed25519PublicKey
-	RejectedPublicKeys []Ed25519PublicKey
+	rejectedPublicKeys []Ed25519PublicKey
 }
 
 func NewMockKeyManager(publicKey Ed25519PublicKey, rejectedPublicKeys ...Ed25519PublicKey) *mockKeyManager {
 	return &mockKeyManager{
 		myPublicKey:        publicKey,
-		RejectedPublicKeys: rejectedPublicKeys,
+		rejectedPublicKeys: rejectedPublicKeys,
 	}
 }
 
@@ -24,6 +24,12 @@ func (km *mockKeyManager) Sign(content []byte) []byte {
 }
 
 func (km *mockKeyManager) Verify(content []byte, sender *lh.SenderSignature) bool {
+	for _, rejectedKey := range km.rejectedPublicKeys {
+		if rejectedKey.Equal(sender.SenderPublicKey()) {
+			return false
+		}
+	}
+
 	expected := []byte(fmt.Sprintf("SIG|%x|%x", sender.SenderPublicKey(), content))
 	return bytes.Equal(expected, sender.Signature())
 }

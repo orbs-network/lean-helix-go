@@ -27,8 +27,7 @@ func CreatePreparedProof(
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		pSenders = make([]*SenderSignatureBuilder,
-			len(pKeyManagers))
+		pSenders = make([]*SenderSignatureBuilder, len(pKeyManagers))
 		for i, mgr := range pKeyManagers {
 			pSenders[i] = &SenderSignatureBuilder{
 				SenderPublicKey: mgr.MyPublicKey(),
@@ -59,4 +58,13 @@ func CreatePreparedProof(
 	}
 
 	return preparedProof.Build()
+}
+
+func APreparedProofByMessages(PPMessage *PreprepareMessage, PMessages []*PrepareMessage) *PreparedProof {
+	preparedMessages := &PreparedMessages{
+		PreprepareMessage: PPMessage,
+		PrepareMessages:   PMessages,
+	}
+
+	return CreatePreparedProofBuilderFromPreparedMessages(preparedMessages).Build()
 }
