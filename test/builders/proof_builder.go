@@ -1,26 +1,62 @@
 package builders
 
 import (
-	"github.com/orbs-network/lean-helix-go"
+	. "github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/primitives"
 )
 
-func CreatePreparedMessages(
-	leader *Node,
-	members []*Node,
-	blockHeight primitives.BlockHeight,
+func CreatePreparedProof(
+	ppKeyManager KeyManager,
+	pKeyManagers []KeyManager,
+	height primitives.BlockHeight,
 	view primitives.View,
-	block leanhelix.Block) *leanhelix.PreparedMessages {
+	blockHash primitives.Uint256) *PreparedProof {
 
-	PPMessage := APreprepareMessage(leader.KeyManager, blockHeight, view, block)
-	PMessages := make([]*leanhelix.PrepareMessage, len(members))
+	var ppBlockRef *BlockRefBuilder
+	var pBlockRef *BlockRefBuilder
+	var ppSender *SenderSignatureBuilder
+	var pSenders []*SenderSignatureBuilder
 
-	for i, member := range members {
-		PMessages[i] = APrepareMessage(member.KeyManager, blockHeight, view, block)
+	if len(pKeyManagers) == 0 {
+		pBlockRef = nil
+		pSenders = nil
+	} else {
+		pBlockRef = &BlockRefBuilder{
+			MessageType: LEAN_HELIX_PREPARE,
+			BlockHeight: height,
+			View:        view,
+			BlockHash:   blockHash,
+		}
+		pSenders = make([]*SenderSignatureBuilder,
+			len(pKeyManagers))
+		for i, mgr := range pKeyManagers {
+			pSenders[i] = &SenderSignatureBuilder{
+				SenderPublicKey: mgr.MyPublicKey(),
+				Signature:       mgr.Sign(pBlockRef.Build().Raw()),
+			}
+		}
+	}
+	if ppKeyManager == nil {
+		ppBlockRef = nil
+		ppSender = nil
+	} else {
+		ppBlockRef = &BlockRefBuilder{
+			MessageType: LEAN_HELIX_PREPREPARE,
+			BlockHeight: height,
+			View:        view,
+			BlockHash:   blockHash,
+		}
+		ppSender = &SenderSignatureBuilder{
+			SenderPublicKey: ppKeyManager.MyPublicKey(),
+			Signature:       ppKeyManager.Sign(ppBlockRef.Build().Raw()),
+		}
+	}
+	preparedProof := &PreparedProofBuilder{
+		PreprepareBlockRef: ppBlockRef,
+		PreprepareSender:   ppSender,
+		PrepareBlockRef:    pBlockRef,
+		PrepareSenders:     pSenders,
 	}
 
-	return &leanhelix.PreparedMessages{
-		PreprepareMessage: PPMessage,
-		PrepareMessages:   PMessages,
-	}
+	return preparedProof.Build()
 }
