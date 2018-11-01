@@ -73,9 +73,9 @@ func TestViewPowTimeout(t *testing.T) {
 	cb := func(view View) { wasCalled = true }
 
 	et.RegisterOnTrigger(2, cb) // 2 ** 2 * 10 = 40
-	time.Sleep(time.Duration(35) * time.Millisecond)
+	time.Sleep(time.Duration(30) * time.Millisecond)
 	require.False(t, wasCalled, "Triggered the callback too early")
-	time.Sleep(time.Duration(10) * time.Millisecond)
+	time.Sleep(time.Duration(30) * time.Millisecond)
 	require.True(t, wasCalled, "Did not trigger the callback after the required timeout")
 
 	et.UnregisterOnTrigger()
