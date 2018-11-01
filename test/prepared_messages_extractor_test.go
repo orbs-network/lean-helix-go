@@ -39,11 +39,18 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 
 		q := 3
 
-		actualProof := lh.ExtractPreparedMessages(blockHeight, storage, q)
-		require.True(t, bytes.Compare(expectedProof.PreprepareMessage.Raw(), actualProof.PreprepareMessage.Raw()) == 0)
-		require.True(t, bytes.Compare(expectedProof.PrepareMessages[0].Raw(), actualProof.PrepareMessages[0].Raw()) == 0)
-		require.True(t, bytes.Compare(expectedProof.PrepareMessages[1].Raw(), actualProof.PrepareMessages[1].Raw()) == 0)
+		xpp := expectedProof.PreprepareMessage.Raw()
+		xp0 := expectedProof.PrepareMessages[0].Raw()
+		xp1 := expectedProof.PrepareMessages[1].Raw()
 
+		actualProof := lh.ExtractPreparedMessages(blockHeight, storage, q)
+		app := actualProof.PreprepareMessage.Raw()
+		ap0 := actualProof.PrepareMessages[0].Raw()
+		ap1 := actualProof.PrepareMessages[1].Raw()
+
+		require.True(t, bytes.Compare(app, xpp) == 0)
+		require.True(t, bytes.Compare(ap0, xp0) == 0 || bytes.Compare(ap0, xp1) == 0)
+		require.True(t, bytes.Compare(ap1, xp0) == 0 || bytes.Compare(ap1, xp1) == 0)
 	})
 
 	t.Run("should return the latest (highest view) Prepare Proof", func(t *testing.T) {
@@ -72,16 +79,24 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 		storage.StorePrepare(pm30a)
 		storage.StorePrepare(pm30b)
 
-		expectedPreparedMessages := &lh.PreparedMessages{
+		expectedProof := &lh.PreparedMessages{
 			PreprepareMessage: ppm30,
 			PrepareMessages:   []*lh.PrepareMessage{pm30a, pm30b},
 		}
 		q := 3
-		actualPreparedMessages := lh.ExtractPreparedMessages(blockHeight, storage, q)
-		require.True(t, bytes.Compare(expectedPreparedMessages.PreprepareMessage.Raw(), actualPreparedMessages.PreprepareMessage.Raw()) == 0)
-		require.True(t, bytes.Compare(expectedPreparedMessages.PrepareMessages[0].Raw(), actualPreparedMessages.PrepareMessages[0].Raw()) == 0)
-		require.True(t, bytes.Compare(expectedPreparedMessages.PrepareMessages[1].Raw(), actualPreparedMessages.PrepareMessages[1].Raw()) == 0)
 
+		xpp := expectedProof.PreprepareMessage.Raw()
+		xp0 := expectedProof.PrepareMessages[0].Raw()
+		xp1 := expectedProof.PrepareMessages[1].Raw()
+
+		actualProof := lh.ExtractPreparedMessages(blockHeight, storage, q)
+		app := actualProof.PreprepareMessage.Raw()
+		ap0 := actualProof.PrepareMessages[0].Raw()
+		ap1 := actualProof.PrepareMessages[1].Raw()
+
+		require.True(t, bytes.Compare(app, xpp) == 0)
+		require.True(t, bytes.Compare(ap0, xp0) == 0 || bytes.Compare(ap0, xp1) == 0)
+		require.True(t, bytes.Compare(ap1, xp0) == 0 || bytes.Compare(ap1, xp1) == 0)
 	})
 
 	t.Run("TestReturnNothingIfNoPrePrepare", func(t *testing.T) {
