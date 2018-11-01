@@ -19,8 +19,7 @@ func verifyBlockRefMessage(blockRef *BlockRef, sender *SenderSignature, keyManag
 
 type CalcLeaderPk = func(view View) Ed25519PublicKey
 
-func CreatePreparedProofBuilder(ppKeyManager KeyManager, pKeyManagers []KeyManager, height BlockHeight, view View, blockHash Uint256) *PreparedProofBuilder {
-
+func CreatePreparedProof(ppKeyManager KeyManager, pKeyManagers []KeyManager, height BlockHeight, view View, blockHash Uint256) *PreparedProof {
 	var ppBlockRef *BlockRefBuilder
 	var pBlockRef *BlockRefBuilder
 	var ppSender *SenderSignatureBuilder
@@ -65,11 +64,8 @@ func CreatePreparedProofBuilder(ppKeyManager KeyManager, pKeyManagers []KeyManag
 		PrepareBlockRef:    pBlockRef,
 		PrepareSenders:     pSenders,
 	}
-	return preparedProof
-}
 
-func CreatePreparedProof(ppKeyManager KeyManager, pKeyManagers []KeyManager, height BlockHeight, view View, blockHash Uint256) *PreparedProof {
-	return CreatePreparedProofBuilder(ppKeyManager, pKeyManagers, height, view, blockHash).Build()
+	return preparedProof.Build()
 }
 
 func ValidatePreparedProof(
@@ -97,11 +93,7 @@ func ValidatePreparedProof(
 		pSenders = append(pSenders, pSendersIter.NextPrepareSenders())
 	}
 
-	if ppBlockRef == nil {
-		return false
-	}
-
-	if pSenders == nil {
+	if ppSender == nil || pSenders == nil || ppBlockRef == nil || pBlockRef == nil {
 		return false
 	}
 
@@ -116,15 +108,9 @@ func ValidatePreparedProof(
 		return false
 	}
 
-	if !pBlockRef.BlockHash().Equal(ppBlockRef.BlockHash()) {
-		return false
-	}
-
 	if len(pSenders) < q-1 {
 		return false
 	}
-
-	// TODO Refactor names here!!!
 
 	if !verifyBlockRefMessage(ppBlockRef, ppSender, keyManager) {
 		return false
@@ -133,6 +119,10 @@ func ValidatePreparedProof(
 	leaderFromPPMessage := ppSender.SenderPublicKey()
 	leaderFromView := calcLeaderPk(ppView)
 	if !leaderFromView.Equal(leaderFromPPMessage) {
+		return false
+	}
+
+	if !pBlockRef.BlockHash().Equal(ppBlockRef.BlockHash()) {
 		return false
 	}
 
@@ -146,7 +136,6 @@ func ValidatePreparedProof(
 
 	set := make(map[PublicKeyStr]bool)
 	for _, pSender := range pSenders {
-
 		pSenderPublicKey := pSender.SenderPublicKey()
 		if keyManager.Verify(pBlockRef.Raw(), pSender) == false {
 			return false
