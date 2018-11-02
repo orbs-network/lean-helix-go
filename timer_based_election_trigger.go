@@ -1,13 +1,17 @@
 package leanhelix
 
 import (
+	"context"
 	"github.com/orbs-network/lean-helix-go/primitives"
 	"math"
 	"time"
 )
 
 // TODO What to do in the infinite loop when context is cancelled?
-func setTimeout(cb func(), timeout time.Duration) chan bool {
+func setTimeout(cb func(ctx context.Context), timeout time.Duration) chan bool {
+
+	ctx := context.TODO() // TODO what to put here??
+
 	timer := time.NewTimer(timeout)
 	clear := make(chan bool)
 
@@ -15,7 +19,7 @@ func setTimeout(cb func(), timeout time.Duration) chan bool {
 		for {
 			select {
 			case <-timer.C:
-				cb()
+				cb(ctx)
 			case <-clear:
 				timer.Stop()
 				return
@@ -31,7 +35,7 @@ type TimerBasedElectionTrigger struct {
 	minTimeout time.Duration
 	view       primitives.View
 	isActive   bool
-	cb         func(view primitives.View)
+	cb         func(ctx context.Context, view primitives.View)
 	clearTimer chan bool
 }
 
@@ -41,7 +45,7 @@ func NewTimerBasedElectionTrigger(minTimeout time.Duration) *TimerBasedElectionT
 	}
 }
 
-func (t *TimerBasedElectionTrigger) RegisterOnTrigger(view primitives.View, cb func(view primitives.View)) {
+func (t *TimerBasedElectionTrigger) RegisterOnTrigger(view primitives.View, cb func(ctx context.Context, view primitives.View)) {
 	t.cb = cb
 	if !t.isActive || t.view != view {
 		t.isActive = true
@@ -66,8 +70,8 @@ func (t *TimerBasedElectionTrigger) stop() {
 	}
 }
 
-func (t *TimerBasedElectionTrigger) onTimeout() {
+func (t *TimerBasedElectionTrigger) onTimeout(ctx context.Context) {
 	if t.cb != nil {
-		t.cb(t.view)
+		t.cb(ctx, t.view)
 	}
 }

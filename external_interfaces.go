@@ -16,6 +16,7 @@ type LeanHelix interface {
 	Dispose()
 	IsLeader() bool
 	ValidateBlockConsensus(block Block, blockProof *BlockProof, prevBlockProof *BlockProof)
+	OnReceiveMessage(ctx context.Context, message ConsensusRawMessage) error
 }
 
 type Config struct {
@@ -40,7 +41,7 @@ type NetworkCommunication interface {
 	IsMember(pk primitives.Ed25519PublicKey) bool
 	RegisterOnMessage(onReceivedMessage func(ctx context.Context, message ConsensusRawMessage)) int
 	UnregisterOnMessage(subscriptionToken int)
-	SendMessage(ctx context.Context, targets []primitives.Ed25519PublicKey, message ConsensusRawMessage)
+	SendMessage(ctx context.Context, targets []primitives.Ed25519PublicKey, message ConsensusRawMessage) error
 }
 
 type KeyManager interface {
@@ -51,6 +52,6 @@ type KeyManager interface {
 
 type BlockUtils interface {
 	CalculateBlockHash(block Block) primitives.Uint256
-	RequestNewBlock(ctx context.Context, blockHeight primitives.BlockHeight) Block
+	RequestNewBlock(ctx context.Context, blockHeight primitives.BlockHeight) (Block, error)
 	ValidateBlock(block Block) bool
 }
