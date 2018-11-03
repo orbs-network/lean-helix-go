@@ -110,7 +110,10 @@ func (term *leanHelixTerm) OnReceivePrepare(ctx context.Context, pm *PrepareMess
 	header := pm.content.SignedHeader()
 	sender := pm.content.Sender()
 
-	signed := term.KeyManager.Sign(header.Raw())
+	signed, err := term.KeyManager.Sign(header.Raw())
+	if err != nil {
+		return fmt.Errorf("sign error: %v", err)
+	}
 	if !term.KeyManager.Verify(signed, sender) {
 		return fmt.Errorf("verification failed for Prepare blockHeight=%v view=%v blockHash=%v", header.BlockHeight(), header.View(), header.BlockHash())
 	}
@@ -131,7 +134,11 @@ func (term *leanHelixTerm) OnReceiveCommit(ctx context.Context, cm *CommitMessag
 	header := cm.content.SignedHeader()
 	sender := cm.content.Sender()
 
-	signed := term.KeyManager.Sign(header.Raw())
+	signed, err := term.KeyManager.Sign(header.Raw())
+	if err != nil {
+		return fmt.Errorf("sign error: %v", err)
+	}
+
 	if !term.KeyManager.Verify(signed, sender) {
 		return fmt.Errorf("verification failed for Commit blockHeight=%v view=%v blockHash=%v", header.BlockHeight(), header.View(), header.BlockHash())
 	}

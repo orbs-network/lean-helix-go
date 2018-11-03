@@ -21,9 +21,13 @@ func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
 	}
 
 	dataToSign := signedHeader.Build().Raw()
+	sig, err := f.KeyManager.Sign(dataToSign)
+	if err != nil {
+		return nil
+	}
 	sender := &SenderSignatureBuilder{
 		SenderPublicKey: Ed25519PublicKey(f.KeyManager.MyPublicKey()),
-		Signature:       Ed25519Sig(f.KeyManager.Sign(dataToSign)),
+		Signature:       Ed25519Sig(sig),
 	}
 
 	return &PreprepareContentBuilder{
@@ -64,9 +68,15 @@ func (f *MessageFactory) CreatePrepareMessage(
 		BlockHash:   blockHash,
 	}
 
+	dataToSign := signedHeader.Build().Raw()
+	sig, err := f.KeyManager.Sign(dataToSign)
+	if err != nil {
+		return nil
+	}
+
 	sender := &SenderSignatureBuilder{
 		SenderPublicKey: Ed25519PublicKey(f.KeyManager.MyPublicKey()),
-		Signature:       Ed25519Sig(f.KeyManager.Sign(signedHeader.Build().Raw())),
+		Signature:       Ed25519Sig(sig),
 	}
 
 	pContentBuilder := PrepareContentBuilder{
@@ -91,9 +101,14 @@ func (f *MessageFactory) CreateCommitMessage(
 		BlockHash:   blockHash,
 	}
 
+	dataToSign := signedHeader.Build().Raw()
+	sig, err := f.KeyManager.Sign(dataToSign)
+	if err != nil {
+		return nil
+	}
 	sender := &SenderSignatureBuilder{
 		SenderPublicKey: Ed25519PublicKey(f.KeyManager.MyPublicKey()),
-		Signature:       Ed25519Sig(f.KeyManager.Sign(signedHeader.Build().Raw())),
+		Signature:       Ed25519Sig(sig),
 	}
 
 	cContentBuilder := CommitContentBuilder{
@@ -174,9 +189,14 @@ func (f *MessageFactory) CreateViewChangeMessageContentBuilder(
 		PreparedProof: preparedProofBuilder,
 	}
 
+	dataToSign := signedHeader.Build().Raw()
+	sig, err := f.KeyManager.Sign(dataToSign)
+	if err != nil {
+		return nil
+	}
 	sender := &SenderSignatureBuilder{
 		SenderPublicKey: Ed25519PublicKey(f.KeyManager.MyPublicKey()),
-		Signature:       Ed25519Sig(f.KeyManager.Sign(signedHeader.Build().Raw())),
+		Signature:       Ed25519Sig(sig),
 	}
 
 	return &ViewChangeMessageContentBuilder{
@@ -216,9 +236,14 @@ func (f *MessageFactory) CreateNewViewMessageContentBuilder(
 		ViewChangeConfirmations: confirmations,
 	}
 
+	dataToSign := signedHeader.Build().Raw()
+	sig, err := f.KeyManager.Sign(dataToSign)
+	if err != nil {
+		return nil
+	}
 	sender := &SenderSignatureBuilder{
 		SenderPublicKey: Ed25519PublicKey(f.KeyManager.MyPublicKey()),
-		Signature:       Ed25519Sig(f.KeyManager.Sign(signedHeader.Build().Raw())),
+		Signature:       Ed25519Sig(sig),
 	}
 
 	return &NewViewMessageContentBuilder{
