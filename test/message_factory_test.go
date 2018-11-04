@@ -30,16 +30,11 @@ func TestMessageFactory(t *testing.T) {
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		dataToSign := signedHeader.Build().Raw()
-		sig, err := keyManager.Sign(dataToSign)
-		if err != nil {
-			t.Error(err)
-		}
 		ppmcb := &lh.PreprepareContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &lh.SenderSignatureBuilder{
 				SenderPublicKey: keyManager.MyPublicKey(),
-				Signature:       sig,
+				Signature:       keyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
 
@@ -56,16 +51,11 @@ func TestMessageFactory(t *testing.T) {
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		dataToSign := signedHeader.Build().Raw()
-		sig, err := keyManager.Sign(dataToSign)
-		if err != nil {
-			t.Error(err)
-		}
 		prepareContentBuilder := &lh.PrepareContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &lh.SenderSignatureBuilder{
 				SenderPublicKey: keyManager.MyPublicKey(),
-				Signature:       sig,
+				Signature:       keyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
 
@@ -82,16 +72,11 @@ func TestMessageFactory(t *testing.T) {
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		dataToSign := signedHeader.Build().Raw()
-		sig, err := keyManager.Sign(dataToSign)
-		if err != nil {
-			t.Error(err)
-		}
 		cmcb := &lh.CommitContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &lh.SenderSignatureBuilder{
 				SenderPublicKey: keyManager.MyPublicKey(),
-				Signature:       sig,
+				Signature:       keyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
 
@@ -112,16 +97,11 @@ func TestMessageFactory(t *testing.T) {
 			View:          view,
 			PreparedProof: nil,
 		}
-		dataToSign := signedHeader.Build().Raw()
-		sig, err := senderKeyManager.Sign(dataToSign)
-		if err != nil {
-			t.Error(err)
-		}
 		vcmContentBuilder := &lh.ViewChangeMessageContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &lh.SenderSignatureBuilder{
 				SenderPublicKey: senderKeyManager.MyPublicKey(),
-				Signature:       sig,
+				Signature:       senderKeyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
 
@@ -141,14 +121,9 @@ func TestMessageFactory(t *testing.T) {
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		ppDataToSign := ppBlockRefBuilder.Build().Raw()
-		sig, err := keyManager.Sign(ppDataToSign)
-		if err != nil {
-			t.Error(err)
-		}
 		ppSender := &lh.SenderSignatureBuilder{
 			SenderPublicKey: keyManager.MyPublicKey(),
-			Signature:       sig,
+			Signature:       keyManager.Sign(ppBlockRefBuilder.Build().Raw()),
 		}
 		pBlockRefBuilder := &lh.BlockRefBuilder{
 			MessageType: lh.LEAN_HELIX_PREPARE,
@@ -156,24 +131,14 @@ func TestMessageFactory(t *testing.T) {
 			View:        view,
 			BlockHash:   blockHash,
 		}
-
-		pDataToSign := pBlockRefBuilder.Build().Raw()
-		sig1, err := node1KeyManager.Sign(pDataToSign)
-		if err != nil {
-			t.Error(err)
-		}
-		sig2, err := node2KeyManager.Sign(pDataToSign)
-		if err != nil {
-			t.Error(err)
-		}
 		pSenders := []*lh.SenderSignatureBuilder{
 			{
 				SenderPublicKey: node1KeyManager.MyPublicKey(),
-				Signature:       sig1,
+				Signature:       node1KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
 			},
 			{
 				SenderPublicKey: node2KeyManager.MyPublicKey(),
-				Signature:       sig2,
+				Signature:       node2KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
 			},
 		}
 		proofBuilder := &lh.PreparedProofBuilder{
@@ -188,17 +153,11 @@ func TestMessageFactory(t *testing.T) {
 			View:          view,
 			PreparedProof: proofBuilder,
 		}
-
-		vcmDataToSign := signedHeader.Build().Raw()
-		vcmSig, err := node1KeyManager.Sign(vcmDataToSign)
-		if err != nil {
-			t.Error(err)
-		}
 		vcmContentBuilder := &lh.ViewChangeMessageContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &lh.SenderSignatureBuilder{
 				SenderPublicKey: senderKeyManager.MyPublicKey(),
-				Signature:       vcmSig,
+				Signature:       senderKeyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
 
@@ -226,15 +185,9 @@ func TestMessageFactory(t *testing.T) {
 			View:        view,
 			BlockHash:   blockHash,
 		}
-
-		ppDataToSign := ppBlockRefBuilder.Build().Raw()
-		sig, err := keyManager.Sign(ppDataToSign)
-		if err != nil {
-			t.Error(err)
-		}
 		ppSender := &lh.SenderSignatureBuilder{
 			SenderPublicKey: keyManager.MyPublicKey(),
-			Signature:       sig,
+			Signature:       keyManager.Sign(ppBlockRefBuilder.Build().Raw()),
 		}
 		pBlockRefBuilder := &lh.BlockRefBuilder{
 			MessageType: lh.LEAN_HELIX_PREPARE,
@@ -242,23 +195,14 @@ func TestMessageFactory(t *testing.T) {
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		pDataToSign := pBlockRefBuilder.Build().Raw()
-		sig1, err := node1KeyManager.Sign(pDataToSign)
-		if err != nil {
-			t.Error(err)
-		}
-		sig2, err := node2KeyManager.Sign(pDataToSign)
-		if err != nil {
-			t.Error(err)
-		}
 		pSenders := []*lh.SenderSignatureBuilder{
 			{
 				SenderPublicKey: node1KeyManager.MyPublicKey(),
-				Signature:       sig1,
+				Signature:       node1KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
 			},
 			{
 				SenderPublicKey: node2KeyManager.MyPublicKey(),
-				Signature:       sig2,
+				Signature:       node2KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
 			},
 		}
 		proofBuilder := &lh.PreparedProofBuilder{
@@ -274,27 +218,18 @@ func TestMessageFactory(t *testing.T) {
 			View:          view,
 			PreparedProof: proofBuilder,
 		}
-		vcDataToSign := nodesVCHeader.Build().Raw()
-		vcSig1, err := node1KeyManager.Sign(vcDataToSign)
-		if err != nil {
-			t.Error(err)
-		}
-		vcSig2, err := node2KeyManager.Sign(vcDataToSign)
-		if err != nil {
-			t.Error(err)
-		}
 		node1Confirmation := &lh.ViewChangeMessageContentBuilder{
 			SignedHeader: nodesVCHeader,
 			Sender: &lh.SenderSignatureBuilder{
 				SenderPublicKey: node1KeyManager.MyPublicKey(),
-				Signature:       vcSig1,
+				Signature:       node1KeyManager.Sign(nodesVCHeader.Build().Raw()),
 			},
 		}
 		node2Confirmation := &lh.ViewChangeMessageContentBuilder{
 			SignedHeader: nodesVCHeader,
 			Sender: &lh.SenderSignatureBuilder{
 				SenderPublicKey: node2KeyManager.MyPublicKey(),
-				Signature:       vcSig2,
+				Signature:       node2KeyManager.Sign(nodesVCHeader.Build().Raw()),
 			},
 		}
 		nvmHeader := &lh.NewViewHeaderBuilder{
@@ -305,14 +240,9 @@ func TestMessageFactory(t *testing.T) {
 				node1Confirmation, node2Confirmation,
 			},
 		}
-		nvmDataToSign := nvmHeader.Build().Raw()
-		nvSig, err := keyManager.Sign(nvmDataToSign)
-		if err != nil {
-			t.Error(err)
-		}
 		nvmSender := &lh.SenderSignatureBuilder{
 			SenderPublicKey: keyManager.MyPublicKey(),
-			Signature:       nvSig,
+			Signature:       keyManager.Sign(nvmHeader.Build().Raw()),
 		}
 		nvmContentBuilder := &lh.NewViewMessageContentBuilder{
 			SignedHeader: nvmHeader,

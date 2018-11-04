@@ -45,7 +45,7 @@ type NetworkCommunication interface {
 }
 
 type KeyManager interface {
-	Sign(content []byte) ([]byte, error)
+	Sign(content []byte) []byte
 	Verify(content []byte, sender *SenderSignature) bool
 	MyPublicKey() primitives.Ed25519PublicKey
 }

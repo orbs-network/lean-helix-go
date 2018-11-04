@@ -29,14 +29,9 @@ func CreatePreparedProof(
 		}
 		pSenders = make([]*SenderSignatureBuilder, len(pKeyManagers))
 		for i, mgr := range pKeyManagers {
-			dataToSign := pBlockRef.Build().Raw()
-			sig, err := mgr.Sign(dataToSign)
-			if err != nil {
-				return nil
-			}
 			pSenders[i] = &SenderSignatureBuilder{
 				SenderPublicKey: mgr.MyPublicKey(),
-				Signature:       sig,
+				Signature:       mgr.Sign(pBlockRef.Build().Raw()),
 			}
 		}
 	}
@@ -50,14 +45,9 @@ func CreatePreparedProof(
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		dataToSign := ppBlockRef.Build().Raw()
-		sig, err := ppKeyManager.Sign(dataToSign)
-		if err != nil {
-			return nil
-		}
 		ppSender = &SenderSignatureBuilder{
 			SenderPublicKey: ppKeyManager.MyPublicKey(),
-			Signature:       sig,
+			Signature:       ppKeyManager.Sign(ppBlockRef.Build().Raw()),
 		}
 	}
 	preparedProof := &PreparedProofBuilder{
