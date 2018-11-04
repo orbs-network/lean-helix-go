@@ -20,10 +20,6 @@ type leanHelix struct {
 	config    *Config
 }
 
-func (lh *leanHelix) OnReceiveMessage(ctx context.Context, message ConsensusRawMessage) error {
-	panic("implement me")
-}
-
 func (lh *leanHelix) ValidateBlockConsensus(block Block, blockProof *BlockProof, prevBlockProof *BlockProof) {
 	panic("impl me")
 }

@@ -50,9 +50,9 @@ func (b *MockBlockUtils) RequestCommittee() {
 	panic("implement me")
 }
 
-func (b *MockBlockUtils) RequestNewBlock(ctx context.Context, height BlockHeight) (lh.Block, error) {
+func (b *MockBlockUtils) RequestNewBlock(ctx context.Context, height BlockHeight) lh.Block {
 	//b.Called(height)
-	return b.ProvideNextBlock(), nil
+	return b.ProvideNextBlock()
 }
 
 func (b *MockBlockUtils) ValidateBlock(block lh.Block) bool {

@@ -38,12 +38,11 @@ func (g *Gossip) IsMember(pk Ed25519PublicKey) bool {
 	return g.discovery.GetGossipByPK(pk) != nil
 }
 
-func (g *Gossip) SendMessage(ctx context.Context, targets []Ed25519PublicKey, message lh.ConsensusRawMessage) error {
+func (g *Gossip) SendMessage(ctx context.Context, targets []Ed25519PublicKey, message lh.ConsensusRawMessage) {
 	g.statsSentMessages = append(g.statsSentMessages, message)
 	for _, targetId := range targets {
 		g.SendToNode(ctx, targetId, message)
 	}
-	return nil // TODO error handling not done yet
 }
 
 func (g *Gossip) RegisterOnMessage(cb func(ctx context.Context, message lh.ConsensusRawMessage)) int {

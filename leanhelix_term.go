@@ -72,19 +72,14 @@ func NewLeanHelixTerm(ctx context.Context, config *TermConfig, newBlockHeight Bl
 	return newTerm, nil
 }
 
-// TODO log errors here, and return them
 func (term *leanHelixTerm) startTerm(ctx context.Context) {
 	term.initView(ctx, 0)
 
 	if !term.IsLeader() {
 		return
 	}
-	// TODO Does this blocking operation need a specific timeout?
-	block, err := term.BlockUtils.RequestNewBlock(ctx, term.height)
-	if err != nil {
-		return
-	}
-
+	// TODO This should _Block!!!
+	block := term.BlockUtils.RequestNewBlock(ctx, term.height)
 	if term.disposed {
 		return
 	}
@@ -479,12 +474,8 @@ func (term *leanHelixTerm) onElected(ctx context.Context, view View, viewChangeM
 	term.SetView(ctx, view)
 	block := GetLatestBlockFromViewChangeMessages(viewChangeMessages)
 	if block == nil {
-		var err error
-		block, err = term.BlockUtils.RequestNewBlock(term.ctx, term.height) // TODO Pass ctx from params? do channels?
+		block = term.BlockUtils.RequestNewBlock(term.ctx, term.height) // TODO Pass ctx from params? do channels?
 		if term.disposed {
-			return
-		}
-		if err != nil {
 			return
 		}
 	}
