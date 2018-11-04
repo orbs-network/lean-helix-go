@@ -26,8 +26,8 @@ func (node *Node) IsLeader() bool {
 	return node.leanHelix.IsLeader()
 }
 
-func (node *Node) TriggerElection(ctx context.Context) {
-	node.electionTrigger.Trigger(ctx)
+func (node *Node) TriggerElection() {
+	node.electionTrigger.Trigger()
 }
 
 func (node *Node) onCommittedBlock(block lh.Block) {

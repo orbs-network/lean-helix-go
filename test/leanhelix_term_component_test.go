@@ -23,7 +23,7 @@ func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 		t.Fatal(err)
 	}
 	require.Equal(t, View(0), term.GetView(), "Term should have view=0 on init")
-	net.TriggerElection(ctx)
+	net.TriggerElection()
 	require.Equal(t, View(1), term.GetView(), "Term should have view=1 after one election")
 }
 
@@ -46,7 +46,7 @@ func TestRejectNewViewMessagesFromPast(t *testing.T) {
 	}
 
 	//require.Equal(t, View(0), term.GetView(), "Term should have view=0 on init")
-	net.TriggerElection(ctx)
+	net.TriggerElection()
 	//require.Equal(t, View(1), term.GetView(), "Term should have view=1 after one election")
 	term.OnReceiveNewView(ctx, nvm)
 	require.Equal(t, View(1), term.GetView(), "Term should have view=1")

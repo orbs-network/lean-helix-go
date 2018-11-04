@@ -324,7 +324,7 @@ func (term *leanHelixTerm) initView(ctx context.Context, view View) {
 	term.preparedLocally = false
 	term.view = view
 	term.leaderPublicKey = term.calcLeaderPublicKey(view)
-	term.electionTrigger.RegisterOnTrigger(view, func(ctx context.Context, v View) { term.onLeaderChange(ctx, v) })
+	term.electionTrigger.RegisterOnTrigger(view, func(v View) { term.onLeaderChange(ctx, v) })
 }
 func (term *leanHelixTerm) calcLeaderPublicKey(view View) Ed25519PublicKey {
 	index := int(view) % len(term.CommitteeMembersPublicKeys)
