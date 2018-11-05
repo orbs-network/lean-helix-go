@@ -1,7 +1,6 @@
 package builders
 
 import (
-	"context"
 	"github.com/orbs-network/lean-helix-go"
 	. "github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
@@ -23,9 +22,9 @@ func (net *TestNetwork) TriggerElection() {
 	}
 }
 
-func (net *TestNetwork) StartConsensusOnAllNodes(ctx context.Context) error {
+func (net *TestNetwork) StartConsensusOnAllNodes() error {
 	for _, node := range net.Nodes {
-		node.StartConsensus(ctx)
+		node.StartConsensus()
 	}
 	return nil
 }

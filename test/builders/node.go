@@ -34,10 +34,10 @@ func (node *Node) onCommittedBlock(block lh.Block) {
 	node.blockChain.AppendBlockToChain(block)
 }
 
-func (node *Node) StartConsensus(ctx context.Context) {
+func (node *Node) StartConsensus() {
 	if node.leanHelix != nil {
 		lastCommittedBlock := node.GetLatestCommittedBlock()
-		node.leanHelix.Start(ctx, lastCommittedBlock.Height()+1)
+		node.leanHelix.Start(context.Background(), lastCommittedBlock.Height()+1)
 	}
 }
 

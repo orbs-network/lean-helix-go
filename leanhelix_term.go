@@ -35,8 +35,7 @@ type leanHelixTerm struct {
 	newViewLocally                View
 }
 
-func NewLeanHelixTerm(ctx context.Context, config *TermConfig, newBlockHeight BlockHeight, onCommittedBlock func(block Block)) (LeanHelixTerm, error) {
-
+func NewLeanHelixTerm(ctx context.Context, config *Config, newBlockHeight BlockHeight, onCommittedBlock func(block Block)) (LeanHelixTerm, error) {
 	keyManager := config.KeyManager
 	blockUtils := config.BlockUtils
 	myPK := keyManager.MyPublicKey()

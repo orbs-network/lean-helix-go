@@ -8,8 +8,6 @@ import (
 	"github.com/orbs-network/lean-helix-go/test/builders"
 )
 
-const NODE_COUNT = 4
-
 type harness struct {
 	ctx          context.Context
 	net          *builders.TestNetwork
@@ -23,7 +21,7 @@ func NewHarness(blockHeight primitives.BlockHeight) *harness {
 
 	ctx := context.Background()
 
-	net := builders.ATestNetwork(NODE_COUNT, nil)
+	net := builders.ABasicTestNetwork()
 	receiverNode := net.Nodes[0]
 	senderNode := net.Nodes[1]
 
