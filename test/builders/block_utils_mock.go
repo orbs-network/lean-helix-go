@@ -6,6 +6,7 @@ import (
 	"fmt"
 	lh "github.com/orbs-network/lean-helix-go"
 	. "github.com/orbs-network/lean-helix-go/primitives"
+	"time"
 )
 
 func CalculateBlockHash(block lh.Block) Uint256 {
@@ -38,6 +39,7 @@ func (b *MockBlockUtils) CalculateBlockHash(block lh.Block) Uint256 {
 }
 
 func (b *MockBlockUtils) ProvideNextBlock() {
+	time.Sleep(time.Duration(20) * time.Millisecond)
 	var nextBlock lh.Block
 	if len(b.upcomingBlocks) > 0 {
 		// Simple queue impl, see https://github.com/golang/go/wiki/SliceTricks
@@ -47,6 +49,7 @@ func (b *MockBlockUtils) ProvideNextBlock() {
 	}
 	b.latestBlock = nextBlock
 	b.blocksChannel <- nextBlock
+	time.Sleep(time.Duration(20) * time.Millisecond)
 }
 
 func (b *MockBlockUtils) ResolveAllValidations(isValid bool) {

@@ -31,7 +31,6 @@ func (lh *leanHelix) createLeanHelixTerm(blockHeight primitives.BlockHeight) {
 		lh.Start(context.Background(), block.Height()+1)
 	})
 	lh.messagesFilter.SetBlockHeight(context.Background(), blockHeight, lh.leanHelixTerm)
-	lh.leanHelixTerm.StartTerm(context.Background())
 }
 
 func (lh *leanHelix) IsLeader() bool {
