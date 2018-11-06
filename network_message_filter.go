@@ -73,10 +73,9 @@ func (filter *NetworkMessageFilter) isSameNodeAs(sender primitives.Ed25519Public
 	return myPublicKeyStr == senderPublicKeyStr
 }
 
-func (filter *NetworkMessageFilter) ProcessGossipMessage(ctx context.Context, consensusMessage ConsensusMessage) error {
-
+func (filter *NetworkMessageFilter) ProcessGossipMessage(ctx context.Context, consensusMessage ConsensusMessage) {
 	if filter.receiver == nil {
-		panic("no receiver")
+		return
 	}
 	switch message := consensusMessage.(type) {
 	case *PreprepareMessage:
@@ -90,9 +89,8 @@ func (filter *NetworkMessageFilter) ProcessGossipMessage(ctx context.Context, co
 	case *NewViewMessage:
 		filter.receiver.OnReceiveNewView(ctx, message)
 	default:
-		return fmt.Errorf("unknown message type: %T", consensusMessage)
+		panic(fmt.Sprintf("unknown message type: %T", consensusMessage))
 	}
-	return nil
 }
 
 func (filter *NetworkMessageFilter) SetBlockHeight(ctx context.Context, blockHeight primitives.BlockHeight, messageReceiver MessageReceiver) {
