@@ -20,7 +20,8 @@ func NewMockKeyManager(publicKey Ed25519PublicKey, rejectedPublicKeys ...Ed25519
 }
 
 func (km *mockKeyManager) Sign(content []byte) []byte {
-	return []byte(fmt.Sprintf("SIG|%x|%x", km.myPublicKey, content))
+	str := fmt.Sprintf("SIG|%s|%x", km.myPublicKey.KeyForMap(), content)
+	return []byte(str)
 }
 
 func (km *mockKeyManager) Verify(content []byte, sender *lh.SenderSignature) bool {
@@ -30,7 +31,8 @@ func (km *mockKeyManager) Verify(content []byte, sender *lh.SenderSignature) boo
 		}
 	}
 
-	expected := []byte(fmt.Sprintf("SIG|%x|%x", sender.SenderPublicKey(), content))
+	str := fmt.Sprintf("SIG|%s|%x", sender.SenderPublicKey().KeyForMap(), content)
+	expected := []byte(str)
 	return bytes.Equal(expected, sender.Signature())
 }
 
