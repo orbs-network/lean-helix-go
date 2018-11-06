@@ -50,8 +50,10 @@ func (lh *leanHelix) ValidateBlockConsensus(block Block, blockProof *BlockProof,
 }
 
 func (lh *leanHelix) Start(parentCtx context.Context, blockHeight primitives.BlockHeight) {
-	lh.disposeLeanHelixTerm()
-	lh.createLeanHelixTerm(blockHeight)
+	go func() {
+		lh.disposeLeanHelixTerm()
+		lh.createLeanHelixTerm(blockHeight)
+	}()
 }
 
 func (lh *leanHelix) Dispose() {

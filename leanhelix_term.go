@@ -62,21 +62,22 @@ func NewLeanHelixTerm(ctx context.Context, config *Config, newBlockHeight BlockH
 }
 
 func (term *leanHelixTerm) StartTerm(ctx context.Context) {
-	term.initView(ctx, 0)
+	go func() {
+		term.initView(ctx, 0)
 
-	if !term.IsLeader() {
-		return
-	}
-	// TODO This should _Block!!!
-	block := term.BlockUtils.RequestNewBlock(ctx, term.height)
-	ppm := term.messageFactory.CreatePreprepareMessage(term.height, term.view, block)
+		if !term.IsLeader() {
+			return
+		}
+		block := term.BlockUtils.RequestNewBlock(ctx, term.height)
+		ppm := term.messageFactory.CreatePreprepareMessage(term.height, term.view, block)
 
-	term.Storage.StorePreprepare(ppm)
-	term.sendPreprepare(ctx, ppm)
-
+		term.Storage.StorePreprepare(ppm)
+		term.sendPreprepare(ctx, ppm)
+	}()
 }
 
 func (term *leanHelixTerm) OnReceivePreprepare(ctx context.Context, ppm *PreprepareMessage) error {
+	fmt.Println("OnReceivePreprepare:", term.myPublicKey.KeyForMap(), "term", term.height)
 	ok := term.validatePreprepare(ppm)
 	if !ok {
 		panic("throw some error here") // TODO nicer error & log
@@ -87,12 +88,12 @@ func (term *leanHelixTerm) OnReceivePreprepare(ctx context.Context, ppm *Preprep
 }
 
 func (term *leanHelixTerm) OnReceivePrepare(ctx context.Context, pm *PrepareMessage) error {
+	fmt.Println("OnReceivePrepare:", term.myPublicKey.KeyForMap(), "term", term.height)
 
 	header := pm.content.SignedHeader()
 	sender := pm.content.Sender()
 
-	signed := term.KeyManager.Sign(header.Raw())
-	if !term.KeyManager.Verify(signed, sender) {
+	if !term.KeyManager.Verify(header.Raw(), sender) {
 		return fmt.Errorf("verification failed for Prepare blockHeight=%v view=%v blockHash=%v", header.BlockHeight(), header.View(), header.BlockHash())
 	}
 	if term.view > header.View() {
@@ -109,11 +110,11 @@ func (term *leanHelixTerm) OnReceivePrepare(ctx context.Context, pm *PrepareMess
 }
 
 func (term *leanHelixTerm) OnReceiveCommit(ctx context.Context, cm *CommitMessage) error {
+	fmt.Println("OnReceiveCommit:", term.myPublicKey.KeyForMap(), "term", term.height)
 	header := cm.content.SignedHeader()
 	sender := cm.content.Sender()
 
-	signed := term.KeyManager.Sign(header.Raw())
-	if !term.KeyManager.Verify(signed, sender) {
+	if !term.KeyManager.Verify(header.Raw(), sender) {
 		return fmt.Errorf("verification failed for Commit blockHeight=%v view=%v blockHash=%v", header.BlockHeight(), header.View(), header.BlockHash())
 	}
 	if term.view > header.View() {
@@ -130,6 +131,7 @@ func (term *leanHelixTerm) OnReceiveCommit(ctx context.Context, cm *CommitMessag
 }
 
 func (term *leanHelixTerm) OnReceiveViewChange(ctx context.Context, vcm *ViewChangeMessage) error {
+	fmt.Println("OnReceiveViewChange:", term.myPublicKey.KeyForMap(), "term", term.height)
 
 	header := vcm.content.SignedHeader()
 	if !term.isViewChangeValid(term.myPublicKey, term.view, vcm.content) {
@@ -149,6 +151,7 @@ func (term *leanHelixTerm) OnReceiveViewChange(ctx context.Context, vcm *ViewCha
 }
 
 func (term *leanHelixTerm) OnReceiveNewView(ctx context.Context, nvm *NewViewMessage) error {
+	fmt.Println("OnReceiveNewView:", term.myPublicKey.KeyForMap(), "term", term.height)
 
 	header := nvm.Content().SignedHeader()
 	sender := nvm.Content().Sender()
@@ -233,12 +236,15 @@ func (term *leanHelixTerm) validatePreprepare(ppm *PreprepareMessage) bool {
 	if term.hasPreprepare(blockHeight, view) {
 		return false
 	}
-	if !term.KeyManager.Verify(ppm.Content().RawSignedHeader(), ppm.Content().Sender()) {
+
+	header := ppm.Content().SignedHeader()
+	sender := ppm.Content().Sender()
+	if !term.KeyManager.Verify(header.Raw(), sender) {
 		return false
 	}
 
 	leaderPublicKey := term.calcLeaderPublicKey(view)
-	senderPublicKey := ppm.Content().Sender().SenderPublicKey()
+	senderPublicKey := sender.SenderPublicKey()
 	if !senderPublicKey.Equal(leaderPublicKey) {
 		// Log
 		return false
@@ -370,12 +376,12 @@ func (term *leanHelixTerm) latestViewChangeConfirmation(confirmations []*ViewCha
 }
 func (term *leanHelixTerm) isViewChangeValid(targetLeaderPublicKey Ed25519PublicKey, view View, confirmation *ViewChangeMessageContent) bool {
 
-	signedHeader := confirmation.SignedHeader()
-	newView := signedHeader.View()
-	preparedProof := signedHeader.PreparedProof()
+	header := confirmation.SignedHeader()
 	sender := confirmation.Sender()
+	newView := header.View()
+	preparedProof := header.PreparedProof()
 
-	if !term.KeyManager.Verify(signedHeader.Raw(), sender) {
+	if !term.KeyManager.Verify(header.Raw(), sender) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${newView}], onReceiveViewChange from "${senderPk}", ignored because the signature verification failed` });
 		return false
 	}
@@ -451,13 +457,11 @@ func (term *leanHelixTerm) checkElected(ctx context.Context, height BlockHeight,
 	}
 }
 func (term *leanHelixTerm) onElected(ctx context.Context, view View, viewChangeMessages []*ViewChangeMessage) {
-
-	// this.logger.log({ subject: "Flow", FlowType: "Elected", blockHeight: this.blockHeight, view });
 	term.newViewLocally = view
 	term.SetView(ctx, view)
 	block := GetLatestBlockFromViewChangeMessages(viewChangeMessages)
 	if block == nil {
-		block = term.BlockUtils.RequestNewBlock(term.ctx, term.height) // TODO Pass ctx from params? do channels?
+		block = term.BlockUtils.RequestNewBlock(term.ctx, term.height)
 	}
 	ppmContentBuilder := term.messageFactory.CreatePreprepareMessageContentBuilder(term.height, view, block)
 	ppm := term.messageFactory.CreatePreprepareMessageFromContentBuilder(ppmContentBuilder, block)
@@ -476,7 +480,7 @@ func (term *leanHelixTerm) sendViewChange(ctx context.Context, viewChangeMessage
 
 }
 func (term *leanHelixTerm) checkPrepared(ctx context.Context, blockHeight BlockHeight, view View, blockHash Uint256) {
-	if term.preparedLocally {
+	if term.preparedLocally == false {
 		if term.isPreprepared(blockHeight, view, blockHash) {
 			countPrepared := term.countPrepared(blockHeight, view, blockHash)
 			//const metaData = {

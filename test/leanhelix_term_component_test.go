@@ -7,6 +7,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/stretchr/testify/require"
 	"testing"
+	"time"
 )
 
 func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
@@ -16,6 +17,11 @@ func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 	termConfig := net.Nodes[0].BuildConfig()
 	term := lh.NewLeanHelixTerm(ctx, termConfig, 0, func(block lh.Block) {})
 	term.StartTerm(context.Background())
+
+	time.Sleep(time.Duration(20) * time.Millisecond)
+	net.Nodes[0].BlockUtils.ProvideNextBlock()
+	time.Sleep(time.Duration(20) * time.Millisecond)
+
 	require.Equal(t, View(0), term.GetView(), "Term should have view=0 on init")
 	net.TriggerElection()
 	require.Equal(t, View(1), term.GetView(), "Term should have view=1 after one election")

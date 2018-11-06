@@ -16,6 +16,7 @@ func CalculateBlockHash(block lh.Block) Uint256 {
 }
 
 type MockBlockUtils struct {
+	blocksChannel     chan lh.Block
 	upcomingBlocks    []lh.Block
 	latestBlock       lh.Block
 	autoValidate      bool
@@ -24,6 +25,7 @@ type MockBlockUtils struct {
 
 func NewMockBlockUtils(upcomingBlocks []lh.Block) *MockBlockUtils {
 	return &MockBlockUtils{
+		blocksChannel:     make(chan lh.Block, 0),
 		upcomingBlocks:    upcomingBlocks,
 		latestBlock:       GenesisBlock,
 		autoValidate:      true,
@@ -35,7 +37,7 @@ func (b *MockBlockUtils) CalculateBlockHash(block lh.Block) Uint256 {
 	return CalculateBlockHash(block)
 }
 
-func (b *MockBlockUtils) ProvideNextBlock() lh.Block {
+func (b *MockBlockUtils) ProvideNextBlock() {
 	var nextBlock lh.Block
 	if len(b.upcomingBlocks) > 0 {
 		// Simple queue impl, see https://github.com/golang/go/wiki/SliceTricks
@@ -44,7 +46,7 @@ func (b *MockBlockUtils) ProvideNextBlock() lh.Block {
 		nextBlock = CreateBlock(b.latestBlock)
 	}
 	b.latestBlock = nextBlock
-	return nextBlock
+	b.blocksChannel <- nextBlock
 }
 
 func (b *MockBlockUtils) ResolveAllValidations(isValid bool) {
@@ -55,8 +57,7 @@ func (b *MockBlockUtils) RequestCommittee() {
 }
 
 func (b *MockBlockUtils) RequestNewBlock(ctx context.Context, height BlockHeight) lh.Block {
-	//b.Called(height)
-	return b.ProvideNextBlock()
+	return <-b.blocksChannel
 }
 
 func (b *MockBlockUtils) CounterOfValidation() uint {

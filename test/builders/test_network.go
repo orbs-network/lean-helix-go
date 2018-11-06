@@ -46,6 +46,15 @@ func (net *TestNetwork) ShutDown() {
 
 }
 
+func (net *TestNetwork) AllNodesAgreeOnBlock(block leanhelix.Block) bool {
+	for _, node := range net.Nodes {
+		if block.BlockHash().Equal(node.GetLatestCommittedBlock().BlockHash()) == false {
+			return false
+		}
+	}
+	return true
+}
+
 func NewTestNetwork(discovery *gossip.Discovery, blocksPool []leanhelix.Block) *TestNetwork {
 	return &TestNetwork{
 		Nodes:      []*Node{},
