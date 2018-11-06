@@ -7,14 +7,11 @@ import (
 )
 
 func TestCallValidateBlockDuringConsensusConsensus(t *testing.T) {
-	t.Skip()
-
 	testNetwork := builders.ABasicTestNetwork()
 	testNetwork.StartConsensusOnAllNodes()
 
-	node0 := testNetwork.Nodes[0]
-	actual := node0.BlockUtils.CounterOfValidation()
+	node1 := testNetwork.Nodes[1]
+	actual := node1.BlockUtils.CounterOfValidation()
 
-	require.Equal(t, 1, actual)
-
+	require.Equal(t, uint(1), actual)
 }
