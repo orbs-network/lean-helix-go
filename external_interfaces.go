@@ -5,11 +5,6 @@ import (
 	"github.com/orbs-network/lean-helix-go/primitives"
 )
 
-// first call - create an instance of Lean Helix library
-func NewLeanHelix(config *Config) LeanHelix {
-	return &leanHelix{config: config}
-}
-
 type LeanHelix interface {
 	Start(ctx context.Context, blockHeight primitives.BlockHeight)
 	RegisterOnCommitted(cb func(block Block))
