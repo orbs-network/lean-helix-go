@@ -45,8 +45,8 @@ func (lh *leanHelix) Start(parentCtx context.Context, blockHeight primitives.Blo
 
 		// case: some channel that fires when consensus completed successfully or with error
 		case <-ctx.Done():
-			lh.GracefulShutdown()
-
+			lh.cleanup()
+			return
 		}
 	}
 
@@ -57,8 +57,8 @@ func (lh *leanHelix) IsLeader() bool {
 	return false
 }
 
-func (lh *leanHelix) GracefulShutdown() {
-	lh.ctxCancel()
+func (lh *leanHelix) cleanup() {
+	// Free any resources, cancel contexts
 }
 
 func BuildTermConfig(config *Config) *TermConfig {
