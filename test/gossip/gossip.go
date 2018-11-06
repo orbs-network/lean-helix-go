@@ -4,6 +4,7 @@ import (
 	"context"
 	lh "github.com/orbs-network/lean-helix-go"
 	. "github.com/orbs-network/lean-helix-go/primitives"
+	"sort"
 )
 
 type SubscriptionValue struct {
@@ -31,7 +32,11 @@ func NewGossip(discovery *Discovery) *Gossip {
 }
 
 func (g *Gossip) RequestOrderedCommittee(seed uint64) []Ed25519PublicKey {
-	return g.discovery.AllGossipsPublicKeys()
+	result := g.discovery.AllGossipsPublicKeys()
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].KeyForMap() < result[j].KeyForMap()
+	})
+	return result
 }
 
 func (g *Gossip) IsMember(pk Ed25519PublicKey) bool {
