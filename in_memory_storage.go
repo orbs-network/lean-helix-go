@@ -3,12 +3,14 @@ package leanhelix
 import (
 	. "github.com/orbs-network/lean-helix-go/primitives"
 	"sort"
+	"sync"
 )
 
 type BlockHashStr string
 type PublicKeyStr string
 
 type InMemoryStorage struct {
+	mutext            sync.RWMutex
 	preprepareStorage map[BlockHeight]map[View]*PreprepareMessage
 	prepareStorage    map[BlockHeight]map[View]map[BlockHashStr]map[PublicKeyStr]*PrepareMessage
 	commitStorage     map[BlockHeight]map[View]map[BlockHashStr]map[PublicKeyStr]*CommitMessage
@@ -17,6 +19,9 @@ type InMemoryStorage struct {
 
 // Preprepare
 func (storage *InMemoryStorage) StorePreprepare(ppm *PreprepareMessage) bool {
+	storage.mutext.Lock()
+	defer storage.mutext.Unlock()
+
 	height := ppm.BlockHeight()
 	view := ppm.Content().SignedHeader().View()
 
@@ -34,6 +39,9 @@ func (storage *InMemoryStorage) StorePreprepare(ppm *PreprepareMessage) bool {
 }
 
 func (storage *InMemoryStorage) GetPreprepareMessage(blockHeight BlockHeight, view View) (*PreprepareMessage, bool) {
+	storage.mutext.Lock()
+	defer storage.mutext.Unlock()
+
 	views, ok := storage.preprepareStorage[blockHeight]
 	if !ok {
 		return nil, false
@@ -43,6 +51,9 @@ func (storage *InMemoryStorage) GetPreprepareMessage(blockHeight BlockHeight, vi
 }
 
 func (storage *InMemoryStorage) GetPreprepareBlock(blockHeight BlockHeight, view View) (Block, bool) {
+	storage.mutext.Lock()
+	defer storage.mutext.Unlock()
+
 	views, ok := storage.preprepareStorage[blockHeight]
 	if !ok {
 		return nil, false
@@ -52,6 +63,8 @@ func (storage *InMemoryStorage) GetPreprepareBlock(blockHeight BlockHeight, view
 }
 
 func (storage *InMemoryStorage) GetLatestPreprepare(blockHeight BlockHeight) (*PreprepareMessage, bool) {
+	storage.mutext.Lock()
+	defer storage.mutext.Unlock()
 
 	views, ok := storage.preprepareStorage[blockHeight]
 	if !ok {
@@ -74,6 +87,9 @@ func (storage *InMemoryStorage) GetLatestPreprepare(blockHeight BlockHeight) (*P
 
 // Prepare
 func (storage *InMemoryStorage) StorePrepare(pp *PrepareMessage) bool {
+	storage.mutext.Lock()
+	defer storage.mutext.Unlock()
+
 	height := pp.BlockHeight()
 	view := pp.Content().SignedHeader().View()
 	// pps -> views ->
@@ -116,6 +132,9 @@ func (storage *InMemoryStorage) getPrepare(blockHeight BlockHeight, view View, b
 }
 
 func (storage *InMemoryStorage) GetPrepareMessages(blockHeight BlockHeight, view View, blockHash Uint256) ([]*PrepareMessage, bool) {
+	storage.mutext.Lock()
+	defer storage.mutext.Unlock()
+
 	senders, ok := storage.getPrepare(blockHeight, view, blockHash)
 	if !ok {
 		return nil, false
@@ -128,6 +147,9 @@ func (storage *InMemoryStorage) GetPrepareMessages(blockHeight BlockHeight, view
 }
 
 func (storage *InMemoryStorage) GetPrepareSendersPKs(blockHeight BlockHeight, view View, blockHash Uint256) []Ed25519PublicKey {
+	storage.mutext.Lock()
+	defer storage.mutext.Unlock()
+
 	senders, ok := storage.getPrepare(blockHeight, view, blockHash)
 	if !ok {
 		return []Ed25519PublicKey{}
@@ -143,6 +165,9 @@ func (storage *InMemoryStorage) GetPrepareSendersPKs(blockHeight BlockHeight, vi
 
 // Commit
 func (storage *InMemoryStorage) StoreCommit(cm *CommitMessage) bool {
+	storage.mutext.Lock()
+	defer storage.mutext.Unlock()
+
 	height := cm.Content().SignedHeader().BlockHeight()
 	view := cm.Content().SignedHeader().View()
 	// pps -> views ->
@@ -186,6 +211,9 @@ func (storage *InMemoryStorage) getCommit(blockHeight BlockHeight, view View, bl
 }
 
 func (storage *InMemoryStorage) GetCommitMessages(blockHeight BlockHeight, view View, blockHash Uint256) ([]*CommitMessage, bool) {
+	storage.mutext.Lock()
+	defer storage.mutext.Unlock()
+
 	senders, ok := storage.getCommit(blockHeight, view, blockHash)
 	if !ok {
 		return nil, false
@@ -198,6 +226,9 @@ func (storage *InMemoryStorage) GetCommitMessages(blockHeight BlockHeight, view 
 }
 
 func (storage *InMemoryStorage) GetCommitSendersPKs(blockHeight BlockHeight, view View, blockHash Uint256) []Ed25519PublicKey {
+	storage.mutext.Lock()
+	defer storage.mutext.Unlock()
+
 	senders, ok := storage.getCommit(blockHeight, view, blockHash)
 	if !ok {
 		return []Ed25519PublicKey{}
@@ -213,6 +244,9 @@ func (storage *InMemoryStorage) GetCommitSendersPKs(blockHeight BlockHeight, vie
 
 // View Change
 func (storage *InMemoryStorage) StoreViewChange(vcm *ViewChangeMessage) bool {
+	storage.mutext.Lock()
+	defer storage.mutext.Unlock()
+
 	height, view := vcm.Content().SignedHeader().BlockHeight(), vcm.Content().SignedHeader().View()
 	// pps -> views ->
 	views, ok := storage.viewChangeStorage[height]
@@ -237,6 +271,9 @@ func (storage *InMemoryStorage) StoreViewChange(vcm *ViewChangeMessage) bool {
 }
 
 func (storage *InMemoryStorage) GetViewChangeMessages(blockHeight BlockHeight, view View) []*ViewChangeMessage {
+	storage.mutext.Lock()
+	defer storage.mutext.Unlock()
+
 	views, ok := storage.viewChangeStorage[blockHeight]
 	if !ok {
 		return nil
@@ -256,6 +293,9 @@ func (storage *InMemoryStorage) GetViewChangeMessages(blockHeight BlockHeight, v
 }
 
 func (storage *InMemoryStorage) ClearBlockHeightLogs(blockHeight BlockHeight) {
+	storage.mutext.Lock()
+	defer storage.mutext.Unlock()
+
 	storage.resetPreprepareStorage(blockHeight)
 	storage.resetPrepareStorage(blockHeight)
 	storage.resetCommitStorage(blockHeight)
