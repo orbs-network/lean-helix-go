@@ -6,7 +6,6 @@ import (
 	"fmt"
 	lh "github.com/orbs-network/lean-helix-go"
 	. "github.com/orbs-network/lean-helix-go/primitives"
-	"time"
 )
 
 func CalculateBlockHash(block lh.Block) Uint256 {
@@ -17,19 +16,19 @@ func CalculateBlockHash(block lh.Block) Uint256 {
 }
 
 type MockBlockUtils struct {
-	blocksChannel     chan lh.Block
 	upcomingBlocks    []lh.Block
 	latestBlock       lh.Block
 	autoValidate      bool
-	validationCounter uint
+	pauseOnValidation bool
+	validationCounter int
 }
 
 func NewMockBlockUtils(upcomingBlocks []lh.Block) *MockBlockUtils {
 	return &MockBlockUtils{
-		blocksChannel:     make(chan lh.Block, 0),
 		upcomingBlocks:    upcomingBlocks,
 		latestBlock:       GenesisBlock,
 		autoValidate:      true,
+		pauseOnValidation: false,
 		validationCounter: 0,
 	}
 }
@@ -38,8 +37,7 @@ func (b *MockBlockUtils) CalculateBlockHash(block lh.Block) Uint256 {
 	return CalculateBlockHash(block)
 }
 
-func (b *MockBlockUtils) ProvideNextBlock() {
-	time.Sleep(time.Duration(20) * time.Millisecond)
+func (b *MockBlockUtils) getNextBlock() lh.Block {
 	var nextBlock lh.Block
 	if len(b.upcomingBlocks) > 0 {
 		// Simple queue impl, see https://github.com/golang/go/wiki/SliceTricks
@@ -48,8 +46,7 @@ func (b *MockBlockUtils) ProvideNextBlock() {
 		nextBlock = CreateBlock(b.latestBlock)
 	}
 	b.latestBlock = nextBlock
-	b.blocksChannel <- nextBlock
-	time.Sleep(time.Duration(20) * time.Millisecond)
+	return nextBlock
 }
 
 func (b *MockBlockUtils) ResolveAllValidations(isValid bool) {
@@ -60,10 +57,10 @@ func (b *MockBlockUtils) RequestCommittee() {
 }
 
 func (b *MockBlockUtils) RequestNewBlock(ctx context.Context, height BlockHeight) lh.Block {
-	return <-b.blocksChannel
+	return b.getNextBlock()
 }
 
-func (b *MockBlockUtils) CounterOfValidation() uint {
+func (b *MockBlockUtils) CounterOfValidation() int {
 	return b.validationCounter
 }
 

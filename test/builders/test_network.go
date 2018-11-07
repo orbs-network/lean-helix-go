@@ -48,7 +48,18 @@ func (net *TestNetwork) ShutDown() {
 
 func (net *TestNetwork) AllNodesAgreeOnBlock(block leanhelix.Block) bool {
 	for _, node := range net.Nodes {
-		if block.BlockHash().Equal(node.GetLatestCommittedBlock().BlockHash()) == false {
+		nodeState := <-node.NodeStateChannel
+		if block.BlockHash().Equal(nodeState.block.BlockHash()) == false {
+			return false
+		}
+	}
+	return true
+}
+
+func (net *TestNetwork) AllNodesValidatedOnceBeforeCommit() bool {
+	for _, node := range net.Nodes {
+		nodeState := <-node.NodeStateChannel
+		if nodeState.validationCount > 1 {
 			return false
 		}
 	}

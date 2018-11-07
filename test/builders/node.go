@@ -8,15 +8,21 @@ import (
 	"github.com/orbs-network/lean-helix-go/test/gossip"
 )
 
+type NodeState struct {
+	block           lh.Block
+	validationCount int
+}
+
 type Node struct {
-	leanHelix       lh.LeanHelix
-	blockChain      *InMemoryBlockChain
-	electionTrigger *ElectionTriggerMock
-	BlockUtils      *MockBlockUtils
-	KeyManager      lh.KeyManager
-	Storage         lh.Storage
-	Gossip          *gossip.Gossip
-	PublicKey       primitives.Ed25519PublicKey
+	leanHelix        lh.LeanHelix
+	blockChain       *InMemoryBlockChain
+	electionTrigger  *ElectionTriggerMock
+	BlockUtils       *MockBlockUtils
+	KeyManager       lh.KeyManager
+	Storage          lh.Storage
+	Gossip           *gossip.Gossip
+	PublicKey        primitives.Ed25519PublicKey
+	NodeStateChannel chan *NodeState
 }
 
 func (node *Node) GetLatestCommittedBlock() lh.Block {
@@ -34,6 +40,10 @@ func (node *Node) TriggerElection() {
 func (node *Node) onCommittedBlock(block lh.Block) {
 	fmt.Println("COMMIT on", node.PublicKey.KeyForMap(), "block", block.BlockHash().String())
 	node.blockChain.AppendBlockToChain(block)
+	node.NodeStateChannel <- &NodeState{
+		block:           block,
+		validationCount: node.BlockUtils.validationCounter,
+	}
 }
 
 func (node *Node) StartConsensus() {
@@ -62,13 +72,14 @@ func (node *Node) BuildConfig() *lh.Config {
 
 func NewNode(publicKey primitives.Ed25519PublicKey, gossip *gossip.Gossip, blockUtils *MockBlockUtils) *Node {
 	node := &Node{
-		blockChain:      NewInMemoryBlockChain(),
-		electionTrigger: NewMockElectionTrigger(),
-		BlockUtils:      blockUtils,
-		KeyManager:      NewMockKeyManager(publicKey),
-		Storage:         lh.NewInMemoryStorage(),
-		Gossip:          gossip,
-		PublicKey:       publicKey,
+		blockChain:       NewInMemoryBlockChain(),
+		electionTrigger:  NewMockElectionTrigger(),
+		BlockUtils:       blockUtils,
+		KeyManager:       NewMockKeyManager(publicKey),
+		Storage:          lh.NewInMemoryStorage(),
+		Gossip:           gossip,
+		PublicKey:        publicKey,
+		NodeStateChannel: make(chan *NodeState),
 	}
 
 	leanHelix := lh.NewLeanHelix(node.BuildConfig())

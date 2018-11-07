@@ -57,23 +57,20 @@ func NewLeanHelixTerm(ctx context.Context, config *Config, newBlockHeight BlockH
 		myPublicKey:                   myPK,
 	}
 
-	newTerm.startTerm(ctx)
+	newTerm.initView(ctx, 0)
+	go newTerm.startTerm(ctx)
 	return newTerm
 }
 
 func (term *leanHelixTerm) startTerm(ctx context.Context) {
-	go func() {
-		term.initView(ctx, 0)
+	if !term.IsLeader() {
+		return
+	}
+	block := term.BlockUtils.RequestNewBlock(ctx, term.height)
+	ppm := term.messageFactory.CreatePreprepareMessage(term.height, term.view, block)
 
-		if !term.IsLeader() {
-			return
-		}
-		block := term.BlockUtils.RequestNewBlock(ctx, term.height)
-		ppm := term.messageFactory.CreatePreprepareMessage(term.height, term.view, block)
-
-		term.Storage.StorePreprepare(ppm)
-		term.sendPreprepare(ctx, ppm)
-	}()
+	term.Storage.StorePreprepare(ppm)
+	term.sendPreprepare(ctx, ppm)
 }
 
 func (term *leanHelixTerm) OnReceivePreprepare(ctx context.Context, ppm *PreprepareMessage) error {
