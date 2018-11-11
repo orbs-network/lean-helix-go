@@ -11,31 +11,26 @@ type MockMessageReceiver struct {
 	mock.Mock
 }
 
-func (rec *MockMessageReceiver) OnReceivePreprepare(ctx context.Context, ppm *leanhelix.PreprepareMessage) error {
+func (rec *MockMessageReceiver) OnReceivePreprepare(ctx context.Context, ppm *leanhelix.PreprepareMessage) {
 	fmt.Println("OnReceivePreprepare")
-	ret := rec.Called(ctx, ppm)
-	return ret.Error(0)
+	rec.Called(ctx, ppm)
 }
 
-func (rec *MockMessageReceiver) OnReceivePrepare(ctx context.Context, pm *leanhelix.PrepareMessage) error {
+func (rec *MockMessageReceiver) OnReceivePrepare(ctx context.Context, pm *leanhelix.PrepareMessage) {
 	fmt.Println("OnReceivePrepare")
-	ret := rec.Called(ctx, pm)
-	return ret.Error(0)
+	rec.Called(ctx, pm)
 }
 
-func (rec *MockMessageReceiver) OnReceiveCommit(ctx context.Context, cm *leanhelix.CommitMessage) error {
-	ret := rec.Called(ctx, cm)
-	return ret.Error(0)
+func (rec *MockMessageReceiver) OnReceiveCommit(ctx context.Context, cm *leanhelix.CommitMessage) {
+	rec.Called(ctx, cm)
 }
 
-func (rec *MockMessageReceiver) OnReceiveViewChange(ctx context.Context, vcm *leanhelix.ViewChangeMessage) error {
-	ret := rec.Called(ctx, vcm)
-	return ret.Error(0)
+func (rec *MockMessageReceiver) OnReceiveViewChange(ctx context.Context, vcm *leanhelix.ViewChangeMessage) {
+	rec.Called(ctx, vcm)
 }
 
-func (rec *MockMessageReceiver) OnReceiveNewView(ctx context.Context, nvm *leanhelix.NewViewMessage) error {
-	ret := rec.Called(ctx, nvm)
-	return ret.Error(0)
+func (rec *MockMessageReceiver) OnReceiveNewView(ctx context.Context, nvm *leanhelix.NewViewMessage) {
+	rec.Called(ctx, nvm)
 }
 
 func NewMockMessageReceiver() *MockMessageReceiver {

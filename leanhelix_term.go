@@ -58,7 +58,7 @@ func NewLeanHelixTerm(ctx context.Context, config *Config, newBlockHeight BlockH
 	}
 
 	newTerm.initView(ctx, 0)
-	go newTerm.startTerm(ctx)
+	newTerm.startTerm(ctx)
 	return newTerm
 }
 
@@ -73,81 +73,74 @@ func (term *leanHelixTerm) startTerm(ctx context.Context) {
 	term.sendPreprepare(ctx, ppm)
 }
 
-func (term *leanHelixTerm) OnReceivePreprepare(ctx context.Context, ppm *PreprepareMessage) error {
+func (term *leanHelixTerm) OnReceivePreprepare(ctx context.Context, ppm *PreprepareMessage) {
 	fmt.Println("OnReceivePreprepare:", term.myPublicKey.KeyForMap(), "term", term.height)
-	ok := term.validatePreprepare(ppm)
-	if !ok {
-		panic("throw some error here") // TODO nicer error & log
+	if term.validatePreprepare(ppm) {
+		term.processPreprepare(ctx, ppm)
 	}
-	term.processPreprepare(ctx, ppm)
-
-	return nil
 }
 
-func (term *leanHelixTerm) OnReceivePrepare(ctx context.Context, pm *PrepareMessage) error {
+func (term *leanHelixTerm) OnReceivePrepare(ctx context.Context, pm *PrepareMessage) {
 	fmt.Println("OnReceivePrepare:", term.myPublicKey.KeyForMap(), "term", term.height)
 
 	header := pm.content.SignedHeader()
 	sender := pm.content.Sender()
 
 	if !term.KeyManager.Verify(header.Raw(), sender) {
-		return fmt.Errorf("verification failed for Prepare blockHeight=%v view=%v blockHash=%v", header.BlockHeight(), header.View(), header.BlockHash())
+		fmt.Printf("verification failed for Prepare blockHeight=%v view=%v blockHash=%v", header.BlockHeight(), header.View(), header.BlockHash())
 	}
 	if term.view > header.View() {
-		return fmt.Errorf("prepare view %v is less than OneHeight's view %v", header.View(), term.view)
+		fmt.Printf("prepare view %v is less than OneHeight's view %v", header.View(), term.view)
 	}
 	if term.leaderPublicKey.Equal(sender.SenderPublicKey()) {
-		return fmt.Errorf("prepare received from leader (only preprepare can be received from leader)")
+		fmt.Printf("prepare received from leader (only preprepare can be received from leader)")
 	}
 	term.Storage.StorePrepare(pm)
 	if term.view == header.View() {
 		term.checkPrepared(ctx, header.BlockHeight(), header.View(), header.BlockHash())
 	}
-	return nil
 }
 
-func (term *leanHelixTerm) OnReceiveCommit(ctx context.Context, cm *CommitMessage) error {
+func (term *leanHelixTerm) OnReceiveCommit(ctx context.Context, cm *CommitMessage) {
 	fmt.Println("OnReceiveCommit:", term.myPublicKey.KeyForMap(), "term", term.height)
 	header := cm.content.SignedHeader()
 	sender := cm.content.Sender()
 
 	if !term.KeyManager.Verify(header.Raw(), sender) {
-		return fmt.Errorf("verification failed for Commit blockHeight=%v view=%v blockHash=%v", header.BlockHeight(), header.View(), header.BlockHash())
+		fmt.Printf("verification failed for Commit blockHeight=%v view=%v blockHash=%v", header.BlockHeight(), header.View(), header.BlockHash())
 	}
 	if term.view > header.View() {
-		return fmt.Errorf("message Commit view %v is less than OneHeight's view %v", header.View(), term.view)
+		fmt.Printf("message Commit view %v is less than OneHeight's view %v", header.View(), term.view)
 	}
 	if term.leaderPublicKey.Equal(sender.SenderPublicKey()) {
-		return fmt.Errorf("message Commit received from leader (only preprepare can be received from leader)")
+		fmt.Printf("message Commit received from leader (only preprepare can be received from leader)")
 	}
 	term.Storage.StoreCommit(cm)
 	if term.view == header.View() {
 		term.checkCommitted(ctx, header.BlockHeight(), header.View(), header.BlockHash())
 	}
-	return nil
 }
 
-func (term *leanHelixTerm) OnReceiveViewChange(ctx context.Context, vcm *ViewChangeMessage) error {
+func (term *leanHelixTerm) OnReceiveViewChange(ctx context.Context, vcm *ViewChangeMessage) {
 	fmt.Println("OnReceiveViewChange:", term.myPublicKey.KeyForMap(), "term", term.height)
 
 	header := vcm.content.SignedHeader()
 	if !term.isViewChangeValid(term.myPublicKey, term.view, vcm.content) {
-		return fmt.Errorf("message ViewChange is not valid")
+		fmt.Printf("message ViewChange is not valid")
 	}
 	if vcm.block == nil || header.PreparedProof() == nil {
-		return fmt.Errorf("message ViewChange - block or prepared proof are nil")
+		fmt.Printf("message ViewChange - block or prepared proof are nil")
 	}
 	calculatedBlockHash := term.BlockUtils.CalculateBlockHash(vcm.block)
 	isValidDigest := calculatedBlockHash.Equal(header.PreparedProof().PreprepareBlockRef().BlockHash())
 	if !isValidDigest {
-		return fmt.Errorf("different block hashes for block provided with message, and the block provided by the PPM in the PreparedProof of the message")
+		fmt.Printf("different block hashes for block provided with message, and the block provided by the PPM in the PreparedProof of the message")
 	}
 	term.Storage.StoreViewChange(vcm)
 	term.checkElected(ctx, header.BlockHeight(), header.View())
-	return nil
 }
 
-func (term *leanHelixTerm) OnReceiveNewView(ctx context.Context, nvm *NewViewMessage) error {
+func (term *leanHelixTerm) OnReceiveNewView(ctx context.Context, nvm *NewViewMessage) {
 	fmt.Println("OnReceiveNewView:", term.myPublicKey.KeyForMap(), "term", term.height)
 
 	header := nvm.Content().SignedHeader()
@@ -164,33 +157,33 @@ func (term *leanHelixTerm) OnReceiveNewView(ctx context.Context, nvm *NewViewMes
 
 	if !term.KeyManager.Verify(header.Raw(), sender) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", ignored because the signature verification failed` });
-		return fmt.Errorf("verify failed")
+		fmt.Printf("verify failed")
 	}
 
 	futureLeaderId := term.calcLeaderPublicKey(header.View())
 	if !sender.SenderPublicKey().Equal(futureLeaderId) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", rejected because it match the new id (${view})` });
-		return fmt.Errorf("no match for future leader")
+		fmt.Printf("no match for future leader")
 	}
 
 	if !term.validateViewChangeConfirmations(header.BlockHeight(), header.View(), viewChangeConfirmations) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", votes is invalid` });
-		return fmt.Errorf("validateViewChangeConfirmations failed")
+		fmt.Printf("validateViewChangeConfirmations failed")
 	}
 
 	if term.view > header.View() {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", view is from the past` });
-		return fmt.Errorf("current view is higher than message view")
+		fmt.Printf("current view is higher than message view")
 	}
 
 	if !ppMessageContent.SignedHeader().View().Equal(header.View()) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", view doesn't match PP.view` });
-		return fmt.Errorf("NewView.view and NewView.Preprepare.view do not match")
+		fmt.Printf("NewView.view and NewView.Preprepare.view do not match")
 	}
 
 	if !ppMessageContent.SignedHeader().BlockHeight().Equal(header.BlockHeight()) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", blockHeight doesn't match PP.blockHeight` });
-		return fmt.Errorf("NewView.BlockHeight and NewView.Preprepare.BlockHeight do not match")
+		fmt.Printf("NewView.BlockHeight and NewView.Preprepare.BlockHeight do not match")
 	}
 
 	latestConfirmation := term.latestViewChangeConfirmation(viewChangeConfirmations)
@@ -198,7 +191,7 @@ func (term *leanHelixTerm) OnReceiveNewView(ctx context.Context, nvm *NewViewMes
 		viewChangeMessageValid := term.isViewChangeValid(futureLeaderId, header.View(), latestConfirmation)
 		if !viewChangeMessageValid {
 			//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", view change votes are invalid` });
-			return fmt.Errorf("NewView.ViewChangeConfirmation (with latest view) is invalid")
+			fmt.Printf("NewView.ViewChangeConfirmation (with latest view) is invalid")
 		}
 
 		// rewrite this mess
@@ -207,7 +200,7 @@ func (term *leanHelixTerm) OnReceiveNewView(ctx context.Context, nvm *NewViewMes
 			ppBlockHash := term.BlockUtils.CalculateBlockHash(nvm.Block())
 			if !latestConfirmationPreprepareBlockHash.Equal(ppBlockHash) {
 				//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], onReceiveNewView from "${senderPk}", the given _Block (PP._Block) doesn't match the best _Block from the VCProof` });
-				return fmt.Errorf("NewView.ViewChangeConfirmation (with latest view) is invalid")
+				fmt.Printf("NewView.ViewChangeConfirmation (with latest view) is invalid")
 			}
 		}
 	}
@@ -222,8 +215,6 @@ func (term *leanHelixTerm) OnReceiveNewView(ctx context.Context, nvm *NewViewMes
 		term.SetView(ctx, header.View())
 		term.processPreprepare(ctx, ppm)
 	}
-
-	return nil
 }
 
 func (term *leanHelixTerm) validatePreprepare(ppm *PreprepareMessage) bool {
