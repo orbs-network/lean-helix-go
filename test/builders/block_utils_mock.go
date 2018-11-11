@@ -18,8 +18,7 @@ func CalculateBlockHash(block lh.Block) Uint256 {
 type MockBlockUtils struct {
 	upcomingBlocks    []lh.Block
 	latestBlock       lh.Block
-	autoValidate      bool
-	pauseOnValidation bool
+	validationResult  bool
 	validationCounter int
 }
 
@@ -27,14 +26,17 @@ func NewMockBlockUtils(upcomingBlocks []lh.Block) *MockBlockUtils {
 	return &MockBlockUtils{
 		upcomingBlocks:    upcomingBlocks,
 		latestBlock:       GenesisBlock,
-		autoValidate:      true,
-		pauseOnValidation: false,
+		validationResult:  true,
 		validationCounter: 0,
 	}
 }
 
 func (b *MockBlockUtils) CalculateBlockHash(block lh.Block) Uint256 {
 	return CalculateBlockHash(block)
+}
+
+func (b *MockBlockUtils) FailValidations() {
+	b.validationResult = false
 }
 
 func (b *MockBlockUtils) getNextBlock() lh.Block {
@@ -65,10 +67,6 @@ func (b *MockBlockUtils) CounterOfValidation() int {
 }
 
 func (b *MockBlockUtils) ValidateBlock(block lh.Block) bool {
-	if b.autoValidate {
-		b.validationCounter++
-		return true
-	}
-
-	return false
+	b.validationCounter++
+	return b.validationResult
 }
