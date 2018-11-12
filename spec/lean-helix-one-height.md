@@ -23,8 +23,6 @@
 * Is Disposed is checked at beginning of validation _(instead of at checking criteria)_ to prevent any further processing of messages.
 * PreparedProof in VIEW_CHANGE does not hold block _(only Block_hash)_
 * Report conditions which failed validation (e.g., Leader for View sent PREPARE message)
-* TODO: Small inefficiency in validation of NEW_VIEW: CalBlockHash might be called twice, as part of ValidateNewViewBlock and in ValidatePrePrepare _(Could be passed as param)_
-
 
 
 
