@@ -1,10 +1,10 @@
 package leanhelix
 
 import (
+	"context"
 	"github.com/orbs-network/lean-helix-go/primitives"
 )
 
 type ElectionTrigger interface {
-	RegisterOnTrigger(view primitives.View, cb func(view primitives.View))
-	UnregisterOnTrigger()
+	CreateElectionContext(parentContext context.Context, view primitives.View) context.Context
 }

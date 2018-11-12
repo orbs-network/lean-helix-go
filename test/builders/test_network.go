@@ -40,10 +40,9 @@ func (net *TestNetwork) RegisterNodes(nodes []*Node) {
 }
 
 func (net *TestNetwork) ShutDown() {
-	for _, node := range net.Nodes {
-		node.Dispose()
-	}
-
+	//for _, node := range net.Nodes {
+	//	node.Dispose()
+	//}
 }
 
 func (net *TestNetwork) AllNodesAgreeOnBlock(block leanhelix.Block) bool {

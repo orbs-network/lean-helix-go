@@ -29,10 +29,6 @@ func (node *Node) GetLatestCommittedBlock() lh.Block {
 	return node.blockChain.GetLastBlock()
 }
 
-func (node *Node) IsLeader() bool {
-	return node.leanHelix.IsLeader()
-}
-
 func (node *Node) TriggerElection() {
 	node.electionTrigger.Trigger()
 }
@@ -49,13 +45,7 @@ func (node *Node) onCommittedBlock(block lh.Block) {
 func (node *Node) StartConsensus() {
 	if node.leanHelix != nil {
 		lastCommittedBlock := node.GetLatestCommittedBlock()
-		node.leanHelix.Start(context.Background(), lastCommittedBlock.Height()+1)
-	}
-}
-
-func (node *Node) Dispose() {
-	if node.leanHelix != nil {
-		node.leanHelix.Dispose()
+		go node.leanHelix.Start(context.Background(), lastCommittedBlock.Height()+1)
 	}
 }
 

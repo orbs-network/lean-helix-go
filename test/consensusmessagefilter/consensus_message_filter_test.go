@@ -1,9 +1,10 @@
-package test
+package consensusmessagefilter
 
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -16,7 +17,7 @@ func GenerateMessage(blockHeight primitives.BlockHeight, view primitives.View, s
 }
 
 func TestGettingAMessage(t *testing.T) {
-	WithContext(func(ctx context.Context) {
+	test.WithContext(func(ctx context.Context) {
 		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
 		rawMessage := GenerateMessage(10, 20, "Sender PublicKey")
 		go filter.OnGossipMessage(rawMessage)
@@ -42,7 +43,7 @@ func TestStoppingOnContextCancel(t *testing.T) {
 }
 
 func TestFilterMessagesFromThePast(t *testing.T) {
-	WithContext(func(ctx context.Context) {
+	test.WithContext(func(ctx context.Context) {
 		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
 		rawMessageFromThePast := GenerateMessage(9, 20, "Sender PublicKey")
 		rawMessageFromThePresent := GenerateMessage(10, 20, "Sender PublicKey")
@@ -58,7 +59,7 @@ func TestFilterMessagesFromThePast(t *testing.T) {
 }
 
 func TestCacheMessagesFromTheFuture(t *testing.T) {
-	WithContext(func(ctx context.Context) {
+	test.WithContext(func(ctx context.Context) {
 		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
 		rawMessageFromTheFuture := GenerateMessage(11, 20, "Sender PublicKey")
 		rawMessageFromThePresent := GenerateMessage(10, 20, "Sender PublicKey")
@@ -78,7 +79,7 @@ func TestCacheMessagesFromTheFuture(t *testing.T) {
 }
 
 func TestFilterMessagesWithMyPublicKey(t *testing.T) {
-	WithContext(func(ctx context.Context) {
+	test.WithContext(func(ctx context.Context) {
 		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
 		badMessage := GenerateMessage(10, 20, "My PublicKey")
 		goodMessage := GenerateMessage(10, 20, "Sender PublicKey")

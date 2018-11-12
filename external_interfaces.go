@@ -8,8 +8,6 @@ import (
 type LeanHelix interface {
 	Start(ctx context.Context, blockHeight primitives.BlockHeight)
 	RegisterOnCommitted(cb func(block Block))
-	Dispose()
-	IsLeader() bool
 	ValidateBlockConsensus(block Block, blockProof *BlockProof, prevBlockProof *BlockProof)
 }
 
