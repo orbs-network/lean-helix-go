@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type leanHelixTerm struct {
+type LeanHelixTerm struct {
 	ctx context.Context
 	KeyManager
 	NetworkCommunication
@@ -29,7 +29,7 @@ type leanHelixTerm struct {
 	newViewLocally                View
 }
 
-func NewLeanHelixTerm(config *Config, filter *ConsensusMessageFilter, newBlockHeight BlockHeight) *leanHelixTerm {
+func NewLeanHelixTerm(config *Config, filter *ConsensusMessageFilter, newBlockHeight BlockHeight) *LeanHelixTerm {
 	keyManager := config.KeyManager
 	blockUtils := config.BlockUtils
 	myPK := keyManager.MyPublicKey()
@@ -43,7 +43,7 @@ func NewLeanHelixTerm(config *Config, filter *ConsensusMessageFilter, newBlockHe
 		}
 	}
 
-	newTerm := &leanHelixTerm{
+	newTerm := &LeanHelixTerm{
 		height:                        newBlockHeight,
 		KeyManager:                    keyManager,
 		NetworkCommunication:          comm,
@@ -60,7 +60,7 @@ func NewLeanHelixTerm(config *Config, filter *ConsensusMessageFilter, newBlockHe
 	return newTerm
 }
 
-func (term *leanHelixTerm) WaitForBlock(ctx context.Context) Block {
+func (term *LeanHelixTerm) WaitForBlock(ctx context.Context) Block {
 	go func() {
 		time.Sleep(time.Duration(100) * time.Millisecond)
 		term.startTerm(ctx)
@@ -86,7 +86,7 @@ func (term *leanHelixTerm) WaitForBlock(ctx context.Context) Block {
 	return nil
 }
 
-func (term *leanHelixTerm) startTerm(ctx context.Context) {
+func (term *LeanHelixTerm) startTerm(ctx context.Context) {
 	term.initView(0)
 	if term.IsLeader() {
 		block := term.BlockUtils.RequestNewBlock(ctx, term.height)
@@ -97,7 +97,7 @@ func (term *leanHelixTerm) startTerm(ctx context.Context) {
 	}
 }
 
-func (term *leanHelixTerm) handleMessage(ctx context.Context, consensusMessage ConsensusMessage) {
+func (term *LeanHelixTerm) handleMessage(ctx context.Context, consensusMessage ConsensusMessage) {
 	switch message := consensusMessage.(type) {
 	case *PreprepareMessage:
 		term.onReceivePreprepare(ctx, message)
@@ -114,13 +114,13 @@ func (term *leanHelixTerm) handleMessage(ctx context.Context, consensusMessage C
 	}
 }
 
-func (term *leanHelixTerm) onReceivePreprepare(ctx context.Context, ppm *PreprepareMessage) {
+func (term *LeanHelixTerm) onReceivePreprepare(ctx context.Context, ppm *PreprepareMessage) {
 	if term.validatePreprepare(ppm) {
 		term.processPreprepare(ctx, ppm)
 	}
 }
 
-func (term *leanHelixTerm) onReceivePrepare(ctx context.Context, pm *PrepareMessage) {
+func (term *LeanHelixTerm) onReceivePrepare(ctx context.Context, pm *PrepareMessage) {
 	header := pm.content.SignedHeader()
 	sender := pm.content.Sender()
 
@@ -142,7 +142,7 @@ func (term *leanHelixTerm) onReceivePrepare(ctx context.Context, pm *PrepareMess
 	}
 }
 
-func (term *leanHelixTerm) onReceiveCommit(ctx context.Context, cm *CommitMessage) {
+func (term *LeanHelixTerm) onReceiveCommit(ctx context.Context, cm *CommitMessage) {
 	header := cm.content.SignedHeader()
 	sender := cm.content.Sender()
 
@@ -164,7 +164,7 @@ func (term *leanHelixTerm) onReceiveCommit(ctx context.Context, cm *CommitMessag
 	}
 }
 
-func (term *leanHelixTerm) onReceiveViewChange(ctx context.Context, vcm *ViewChangeMessage) {
+func (term *LeanHelixTerm) onReceiveViewChange(ctx context.Context, vcm *ViewChangeMessage) {
 	header := vcm.content.SignedHeader()
 	if !term.isViewChangeValid(term.myPublicKey, term.view, vcm.content) {
 		fmt.Printf("message ViewChange is not valid")
@@ -184,7 +184,7 @@ func (term *leanHelixTerm) onReceiveViewChange(ctx context.Context, vcm *ViewCha
 	term.checkElected(ctx, header.BlockHeight(), header.View())
 }
 
-func (term *leanHelixTerm) onReceiveNewView(ctx context.Context, nvm *NewViewMessage) {
+func (term *LeanHelixTerm) onReceiveNewView(ctx context.Context, nvm *NewViewMessage) {
 	header := nvm.Content().SignedHeader()
 	sender := nvm.Content().Sender()
 	ppMessageContent := nvm.Content().PreprepareMessageContent()
@@ -267,7 +267,7 @@ func (term *leanHelixTerm) onReceiveNewView(ctx context.Context, nvm *NewViewMes
 	}
 }
 
-func (term *leanHelixTerm) validatePreprepare(ppm *PreprepareMessage) bool {
+func (term *LeanHelixTerm) validatePreprepare(ppm *PreprepareMessage) bool {
 
 	blockHeight := ppm.BlockHeight()
 	view := ppm.View()
@@ -302,12 +302,12 @@ func (term *leanHelixTerm) validatePreprepare(ppm *PreprepareMessage) bool {
 	return true
 }
 
-func (term *leanHelixTerm) hasPreprepare(blockHeight BlockHeight, view View) bool {
+func (term *LeanHelixTerm) hasPreprepare(blockHeight BlockHeight, view View) bool {
 	_, ok := term.GetPreprepareMessage(blockHeight, view)
 	return ok
 }
 
-func (term *leanHelixTerm) processPreprepare(ctx context.Context, ppm *PreprepareMessage) {
+func (term *LeanHelixTerm) processPreprepare(ctx context.Context, ppm *PreprepareMessage) {
 	header := ppm.content.SignedHeader()
 	if term.view != header.View() {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], processPrePrepare, view doesn't match` });
@@ -321,41 +321,41 @@ func (term *leanHelixTerm) processPreprepare(ctx context.Context, ppm *Preprepar
 	term.checkPrepared(ctx, header.BlockHeight(), header.View(), header.BlockHash())
 }
 
-func (term *leanHelixTerm) GetView() View {
+func (term *LeanHelixTerm) GetView() View {
 	return term.view
 }
 
-func (term *leanHelixTerm) sendPreprepare(ctx context.Context, message *PreprepareMessage) {
+func (term *LeanHelixTerm) sendPreprepare(ctx context.Context, message *PreprepareMessage) {
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.nonCommitteeMembersPublicKeys, rawMessage)
 }
 
-func (term *leanHelixTerm) sendPrepare(ctx context.Context, message *PrepareMessage) {
+func (term *LeanHelixTerm) sendPrepare(ctx context.Context, message *PrepareMessage) {
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.nonCommitteeMembersPublicKeys, rawMessage)
 }
 
-func (term *leanHelixTerm) sendCommit(ctx context.Context, message *CommitMessage) {
+func (term *LeanHelixTerm) sendCommit(ctx context.Context, message *CommitMessage) {
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.nonCommitteeMembersPublicKeys, rawMessage)
 }
 
-func (term *leanHelixTerm) initView(view View) {
+func (term *LeanHelixTerm) initView(view View) {
 	term.preparedLocally = false
 	term.view = view
 	term.leaderPublicKey = term.calcLeaderPublicKey(view)
 }
 
-func (term *leanHelixTerm) calcLeaderPublicKey(view View) Ed25519PublicKey {
+func (term *LeanHelixTerm) calcLeaderPublicKey(view View) Ed25519PublicKey {
 	index := int(view) % len(term.committeeMembersPublicKeys)
 	return term.committeeMembersPublicKeys[index]
 }
 
-func (term *leanHelixTerm) IsLeader() bool {
+func (term *LeanHelixTerm) IsLeader() bool {
 	return term.myPublicKey.Equal(term.leaderPublicKey)
 }
 
-func (term *leanHelixTerm) moveToNextLeader(ctx context.Context) {
+func (term *LeanHelixTerm) moveToNextLeader(ctx context.Context) {
 	term.SetView(term.view + 1)
 	preparedMessages := ExtractPreparedMessages(term.height, term.Storage, term.QuorumSize())
 	vcm := term.messageFactory.CreateViewChangeMessage(term.height, term.view, preparedMessages)
@@ -367,7 +367,7 @@ func (term *leanHelixTerm) moveToNextLeader(ctx context.Context) {
 	}
 }
 
-func (term *leanHelixTerm) latestViewChangeConfirmation(confirmations []*ViewChangeMessageContent) *ViewChangeMessageContent {
+func (term *LeanHelixTerm) latestViewChangeConfirmation(confirmations []*ViewChangeMessageContent) *ViewChangeMessageContent {
 
 	res := make([]*ViewChangeMessageContent, 0, len(confirmations))
 	for _, confirmation := range confirmations {
@@ -387,7 +387,7 @@ func (term *leanHelixTerm) latestViewChangeConfirmation(confirmations []*ViewCha
 	}
 }
 
-func (term *leanHelixTerm) isViewChangeValid(targetLeaderPublicKey Ed25519PublicKey, view View, confirmation *ViewChangeMessageContent) bool {
+func (term *LeanHelixTerm) isViewChangeValid(targetLeaderPublicKey Ed25519PublicKey, view View, confirmation *ViewChangeMessageContent) bool {
 
 	header := confirmation.SignedHeader()
 	sender := confirmation.Sender()
@@ -419,17 +419,17 @@ func (term *leanHelixTerm) isViewChangeValid(targetLeaderPublicKey Ed25519Public
 
 }
 
-func (term *leanHelixTerm) SetView(view View) {
+func (term *LeanHelixTerm) SetView(view View) {
 	if term.view != view {
 		term.initView(view)
 	}
 }
 
-func (term *leanHelixTerm) GetF() int {
+func (term *LeanHelixTerm) GetF() int {
 	return int(math.Floor(float64(len(term.committeeMembersPublicKeys))-1) / 3)
 }
 
-func (term *leanHelixTerm) validateViewChangeConfirmations(targetBlockHeight BlockHeight, targetView View, confirmations []*ViewChangeMessageContent) bool {
+func (term *LeanHelixTerm) validateViewChangeConfirmations(targetBlockHeight BlockHeight, targetView View, confirmations []*ViewChangeMessageContent) bool {
 
 	minimumConfirmations := int(term.GetF()*2 + 1)
 
@@ -459,13 +459,13 @@ func (term *leanHelixTerm) validateViewChangeConfirmations(targetBlockHeight Blo
 
 }
 
-func (term *leanHelixTerm) QuorumSize() int {
+func (term *LeanHelixTerm) QuorumSize() int {
 	committeeMembersCount := len(term.committeeMembersPublicKeys)
 	f := int(math.Floor(float64(committeeMembersCount-1) / 3))
 	return committeeMembersCount - f
 }
 
-func (term *leanHelixTerm) checkElected(ctx context.Context, height BlockHeight, view View) {
+func (term *LeanHelixTerm) checkElected(ctx context.Context, height BlockHeight, view View) {
 	if term.newViewLocally < view {
 		vcms := term.Storage.GetViewChangeMessages(height, view)
 		minimumNodes := term.QuorumSize()
@@ -475,7 +475,7 @@ func (term *leanHelixTerm) checkElected(ctx context.Context, height BlockHeight,
 	}
 }
 
-func (term *leanHelixTerm) onElected(ctx context.Context, view View, viewChangeMessages []*ViewChangeMessage) {
+func (term *LeanHelixTerm) onElected(ctx context.Context, view View, viewChangeMessages []*ViewChangeMessage) {
 	term.newViewLocally = view
 	term.SetView(view)
 	block := GetLatestBlockFromViewChangeMessages(viewChangeMessages)
@@ -490,17 +490,17 @@ func (term *leanHelixTerm) onElected(ctx context.Context, view View, viewChangeM
 	term.sendNewView(ctx, nvm)
 }
 
-func (term *leanHelixTerm) sendNewView(ctx context.Context, nvm *NewViewMessage) {
+func (term *LeanHelixTerm) sendNewView(ctx context.Context, nvm *NewViewMessage) {
 	nvmRaw := nvm.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.nonCommitteeMembersPublicKeys, nvmRaw)
 	// log
 }
 
-func (term *leanHelixTerm) sendViewChange(ctx context.Context, viewChangeMessage *ViewChangeMessage) {
+func (term *LeanHelixTerm) sendViewChange(ctx context.Context, viewChangeMessage *ViewChangeMessage) {
 
 }
 
-func (term *leanHelixTerm) checkPrepared(ctx context.Context, blockHeight BlockHeight, view View, blockHash Uint256) {
+func (term *LeanHelixTerm) checkPrepared(ctx context.Context, blockHeight BlockHeight, view View, blockHash Uint256) {
 	if term.preparedLocally == false {
 		if term.isPreprepared(blockHeight, view, blockHash) {
 			countPrepared := term.countPrepared(blockHeight, view, blockHash)
@@ -518,7 +518,7 @@ func (term *leanHelixTerm) checkPrepared(ctx context.Context, blockHeight BlockH
 	}
 }
 
-func (term *leanHelixTerm) isPreprepared(blockHeight BlockHeight, view View, blockHash Uint256) bool {
+func (term *LeanHelixTerm) isPreprepared(blockHeight BlockHeight, view View, blockHash Uint256) bool {
 	ppm, ok := term.Storage.GetPreprepareMessage(blockHeight, view)
 	if !ok {
 		return false
@@ -539,11 +539,11 @@ func (term *leanHelixTerm) isPreprepared(blockHeight BlockHeight, view View, blo
 	return ppmBlockHash.Equal(blockHash)
 }
 
-func (term *leanHelixTerm) countPrepared(height BlockHeight, view View, blockHash Uint256) int {
+func (term *LeanHelixTerm) countPrepared(height BlockHeight, view View, blockHash Uint256) int {
 	return len(term.Storage.GetPrepareSendersPKs(height, view, blockHash))
 }
 
-func (term *leanHelixTerm) onPrepared(ctx context.Context, blockHeight BlockHeight, view View, blockHash Uint256) {
+func (term *LeanHelixTerm) onPrepared(ctx context.Context, blockHeight BlockHeight, view View, blockHash Uint256) {
 	term.preparedLocally = true
 	cm := term.messageFactory.CreateCommitMessage(blockHeight, view, blockHash)
 	term.Storage.StoreCommit(cm)
@@ -551,7 +551,7 @@ func (term *leanHelixTerm) onPrepared(ctx context.Context, blockHeight BlockHeig
 	term.checkCommitted(blockHeight, view, blockHash)
 }
 
-func (term *leanHelixTerm) checkCommitted(blockHeight BlockHeight, view View, blockHash Uint256) {
+func (term *LeanHelixTerm) checkCommitted(blockHeight BlockHeight, view View, blockHash Uint256) {
 	if term.committedBlock != nil {
 		return
 	}
