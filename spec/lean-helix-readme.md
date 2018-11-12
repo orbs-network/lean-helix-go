@@ -41,8 +41,8 @@
 
 #### BlockUtils
 * `RequestNewBlock(height, prevBlockHash) : block` - called by the OneHeight logic, returns a block interface with a block proposal. This block will then go through consensus.
-* `ValidateBlock(height, block) : is_valid` - called by the OneHeight logic.
-* `CalcBlockHash(height, block) : block_hash` - called by the OneHeight logic, the consumer service uses its hashing scheme to calculate the hash on a block.
+* `ValidateBlock(height, block) : is_valid` - called by the OneHeight logic. Validates the block structure and content. Note: this could include the timestamp - whithin acceptable range of local clock.
+* `CalcBlockHash(height, block) : block_hash` - called by the OneHeight logic, the consumer service uses its hashing scheme to calculate the hash on a block (commitment on block content and structure).
 
 #### Membership
 * `MyID(height) : member` - obtain unique identifier for the node, used in consensus process.
