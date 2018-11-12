@@ -2,7 +2,6 @@ package builders
 
 import (
 	"context"
-	"fmt"
 	lh "github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
@@ -34,7 +33,6 @@ func (node *Node) TriggerElection() {
 }
 
 func (node *Node) onCommittedBlock(block lh.Block) {
-	fmt.Println("COMMIT on", node.PublicKey.KeyForMap(), "block", block.BlockHash().String())
 	node.blockChain.AppendBlockToChain(block)
 	node.NodeStateChannel <- &NodeState{
 		block:           block,

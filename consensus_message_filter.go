@@ -53,7 +53,7 @@ func (f *ConsensusMessageFilter) WaitForMessage(ctx context.Context, blockHeight
 }
 
 // This method must run in a different goroutine than the consensus goroutine
-func (f *ConsensusMessageFilter) OnGossipMessage(message ConsensusRawMessage) {
+func (f *ConsensusMessageFilter) OnGossipMessage(ctx context.Context, message ConsensusRawMessage) {
 	f.messagesChannel <- message
 }
 

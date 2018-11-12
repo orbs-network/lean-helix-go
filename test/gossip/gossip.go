@@ -68,7 +68,7 @@ func (g *Gossip) onRemoteMessage(ctx context.Context, rawMessage lh.ConsensusRaw
 				continue
 			}
 		}
-		s.cb(ctx, rawMessage)
+		go s.cb(ctx, rawMessage)
 	}
 }
 

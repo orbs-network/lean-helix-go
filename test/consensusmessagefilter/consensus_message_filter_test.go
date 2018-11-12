@@ -20,7 +20,7 @@ func TestGettingAMessage(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
 		rawMessage := GenerateMessage(10, 20, "Sender PublicKey")
-		go filter.OnGossipMessage(rawMessage)
+		go filter.OnGossipMessage(ctx, rawMessage)
 
 		actual, _ := filter.WaitForMessage(ctx, 10)
 		expected := rawMessage.ToConsensusMessage()
@@ -34,7 +34,7 @@ func TestStoppingOnContextCancel(t *testing.T) {
 
 	filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
 	rawMessage := GenerateMessage(10, 20, "Sender PublicKey")
-	go filter.OnGossipMessage(rawMessage)
+	go filter.OnGossipMessage(ctx, rawMessage)
 
 	actual, err := filter.WaitForMessage(ctx, 10)
 
@@ -48,8 +48,8 @@ func TestFilterMessagesFromThePast(t *testing.T) {
 		rawMessageFromThePast := GenerateMessage(9, 20, "Sender PublicKey")
 		rawMessageFromThePresent := GenerateMessage(10, 20, "Sender PublicKey")
 		go func() {
-			filter.OnGossipMessage(rawMessageFromThePast)
-			filter.OnGossipMessage(rawMessageFromThePresent)
+			filter.OnGossipMessage(ctx, rawMessageFromThePast)
+			filter.OnGossipMessage(ctx, rawMessageFromThePresent)
 		}()
 
 		actual, _ := filter.WaitForMessage(ctx, 10)
@@ -64,8 +64,8 @@ func TestCacheMessagesFromTheFuture(t *testing.T) {
 		rawMessageFromTheFuture := GenerateMessage(11, 20, "Sender PublicKey")
 		rawMessageFromThePresent := GenerateMessage(10, 20, "Sender PublicKey")
 		go func() {
-			filter.OnGossipMessage(rawMessageFromTheFuture)
-			filter.OnGossipMessage(rawMessageFromThePresent)
+			filter.OnGossipMessage(ctx, rawMessageFromTheFuture)
+			filter.OnGossipMessage(ctx, rawMessageFromThePresent)
 		}()
 
 		actualOn10, _ := filter.WaitForMessage(ctx, 10)
@@ -84,8 +84,8 @@ func TestFilterMessagesWithMyPublicKey(t *testing.T) {
 		badMessage := GenerateMessage(10, 20, "My PublicKey")
 		goodMessage := GenerateMessage(10, 20, "Sender PublicKey")
 		go func() {
-			filter.OnGossipMessage(badMessage)
-			filter.OnGossipMessage(goodMessage)
+			filter.OnGossipMessage(ctx, badMessage)
+			filter.OnGossipMessage(ctx, goodMessage)
 		}()
 
 		actual, _ := filter.WaitForMessage(ctx, 10)

@@ -24,14 +24,16 @@ func (lh *leanHelix) ValidateBlockConsensus(block Block, blockProof *BlockProof,
 	panic("impl me")
 }
 
-func (lh *leanHelix) Start(parentCtx context.Context, blockHeight primitives.BlockHeight) {
+func (lh *leanHelix) Start(ctx context.Context, blockHeight primitives.BlockHeight) {
 	filter := NewConsensusMessageFilter(lh.config.KeyManager.MyPublicKey())
+	subscriptionToken := lh.config.NetworkCommunication.RegisterOnMessage(filter.OnGossipMessage)
 	for {
 		leanHelixTerm := NewLeanHelixTerm(lh.config, filter, blockHeight)
-		block := leanHelixTerm.WaitForBlock()
+		block := leanHelixTerm.WaitForBlock(ctx)
 		lh.notifyCommitted(block)
 		blockHeight++
 	}
+	lh.config.NetworkCommunication.UnregisterOnMessage(subscriptionToken)
 }
 
 func NewLeanHelix(config *Config) LeanHelix {
