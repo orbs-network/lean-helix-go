@@ -6,20 +6,25 @@ import (
 )
 
 type ElectionTriggerMock struct {
-	cancel      func()
-	viewChannel chan View
+	hangNextView bool
+	cancel       func()
+	viewChannel  chan View
 }
 
-func NewMockElectionTrigger() *ElectionTriggerMock {
+func NewMockElectionTrigger(hangNextView bool) *ElectionTriggerMock {
 	return &ElectionTriggerMock{
-		viewChannel: make(chan View),
+		hangNextView: hangNextView,
+		viewChannel:  make(chan View),
 	}
 }
 
 func (et *ElectionTriggerMock) CreateElectionContextForView(parentContext context.Context, view View) context.Context {
 	ctx, cancel := context.WithCancel(parentContext)
 	et.cancel = cancel
-	et.viewChannel <- view
+	if et.hangNextView {
+		et.viewChannel <- view
+	}
+
 	return ctx
 }
 

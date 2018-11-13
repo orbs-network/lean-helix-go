@@ -61,7 +61,7 @@ func (node *Node) BuildConfig() *lh.Config {
 func NewNode(publicKey primitives.Ed25519PublicKey, gossip *gossip.Gossip, blockUtils *MockBlockUtils) *Node {
 	node := &Node{
 		blockChain:       NewInMemoryBlockChain(),
-		electionTrigger:  NewMockElectionTrigger(),
+		electionTrigger:  NewMockElectionTrigger(false),
 		BlockUtils:       blockUtils,
 		KeyManager:       NewMockKeyManager(publicKey),
 		Storage:          lh.NewInMemoryStorage(),

@@ -25,7 +25,7 @@ func NewHarness(t *testing.T) *harness {
 	gossip := gossip.NewGossip(discovery)
 	discovery.RegisterGossip(publicKey, gossip)
 	blockUtils := builders.NewMockBlockUtils(nil)
-	electionTrigger := builders.NewMockElectionTrigger()
+	electionTrigger := builders.NewMockElectionTrigger(false)
 	storage := leanhelix.NewInMemoryStorage()
 	termConfig := &leanhelix.Config{
 		NetworkCommunication: gossip,

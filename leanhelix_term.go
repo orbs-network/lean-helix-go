@@ -86,7 +86,7 @@ func (term *LeanHelixTerm) WaitForBlock(ctx context.Context) Block {
 func (term *LeanHelixTerm) startTerm(ctx context.Context) {
 	term.initView(0)
 	if term.IsLeader() {
-		time.Sleep(time.Duration(500) * time.Millisecond)
+		time.Sleep(time.Duration(100) * time.Millisecond)
 		block := term.BlockUtils.RequestNewBlock(ctx, term.height)
 		ppm := term.messageFactory.CreatePreprepareMessage(term.height, term.view, block)
 
