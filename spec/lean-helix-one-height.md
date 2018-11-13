@@ -177,7 +177,7 @@
 * If signature mismatch Return False.
 * If signer is not leader of Message.View Return False _(`IsLeader(Message.View, Message.Signer)`)_.
 * If Block_hash does not match Message.Block_hash Return False.
-* If PRE_PREPARE message already in MessagesLog matching Message(View, Signer, Message_type, Block_hash) Return False.
+* If PRE_PREPARE message already in MessagesLog matching Message(View, Signer, Message_type) Return False.
 * Passed validation Return True.
 
 
