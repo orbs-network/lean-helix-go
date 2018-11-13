@@ -10,13 +10,8 @@ var GenesisBlock = CreateBlock(nil)
 
 // MockBlock
 type MockBlock struct {
-	height    BlockHeight
-	blockHash Uint256
-	body      string
-}
-
-func (b *MockBlock) BlockHash() Uint256 {
-	return b.blockHash
+	height BlockHeight
+	body   string
 }
 
 func (b *MockBlock) Height() BlockHeight {
@@ -37,7 +32,6 @@ func CreateBlock(previousBlock lh.Block) lh.Block {
 		height: height,
 		body:   genBody(height),
 	}
-	block.blockHash = CalculateBlockHash(block)
 	return block
 }
 

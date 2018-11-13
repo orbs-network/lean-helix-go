@@ -24,7 +24,6 @@ type Config struct {
 // A block instance for which library tries to reach consensus
 type Block interface {
 	Height() primitives.BlockHeight
-	BlockHash() primitives.Uint256
 }
 
 // Communication layer for sending & receiving messages, and requesting committee and checking committee membership

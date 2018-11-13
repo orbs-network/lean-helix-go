@@ -16,7 +16,7 @@ func TestMessageFactory(t *testing.T) {
 	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000000000))
 	view := View(math.Floor(rand.Float64() * 1000000000))
 	block := builders.CreateBlock(builders.GenesisBlock)
-	blockHash := block.BlockHash()
+	blockHash := builders.CalculateBlockHash(block)
 	node1KeyManager := builders.NewMockKeyManager(Ed25519PublicKey("PK1"))
 	node2KeyManager := builders.NewMockKeyManager(Ed25519PublicKey("PK2"))
 	leaderFac := lh.NewMessageFactory(keyManager)
@@ -39,7 +39,7 @@ func TestMessageFactory(t *testing.T) {
 		}
 
 		expectedPPM := lh.NewPreprepareMessage(ppmcb.Build(), block)
-		actualPPM := leaderFac.CreatePreprepareMessage(blockHeight, view, block)
+		actualPPM := leaderFac.CreatePreprepareMessage(blockHeight, view, block, blockHash)
 
 		require.True(t, bytes.Compare(expectedPPM.Raw(), actualPPM.Raw()) == 0, "compared bytes of PPM")
 	})
@@ -162,7 +162,7 @@ func TestMessageFactory(t *testing.T) {
 		}
 
 		preparedMessages := &lh.PreparedMessages{
-			PreprepareMessage: leaderFac.CreatePreprepareMessage(blockHeight, view, block),
+			PreprepareMessage: leaderFac.CreatePreprepareMessage(blockHeight, view, block, blockHash),
 			PrepareMessages: []*lh.PrepareMessage{
 				node1Fac.CreatePrepareMessage(blockHeight, view, blockHash),
 				node2Fac.CreatePrepareMessage(blockHeight, view, blockHash),
@@ -254,7 +254,7 @@ func TestMessageFactory(t *testing.T) {
 		}
 
 		// Construct "actual" message with message factories
-		ppm := leaderFac.CreatePreprepareMessage(blockHeight, view, block)
+		ppm := leaderFac.CreatePreprepareMessage(blockHeight, view, block, blockHash)
 		preparedMessages := &lh.PreparedMessages{
 			PreprepareMessage: ppm,
 			PrepareMessages: []*lh.PrepareMessage{
@@ -270,7 +270,7 @@ func TestMessageFactory(t *testing.T) {
 		actualNVM := leaderFac.CreateNewViewMessage(
 			blockHeight,
 			view,
-			leaderFac.CreatePreprepareMessageContentBuilder(blockHeight, view, block),
+			leaderFac.CreatePreprepareMessageContentBuilder(blockHeight, view, block, blockHash),
 			confirmations,
 			block)
 		expectedNVM := lh.NewNewViewMessage(nvmContentBuilder.Build(), block)

@@ -12,7 +12,7 @@ func APreprepareMessage(
 	block leanhelix.Block) *leanhelix.PreprepareMessage {
 
 	messageFactory := leanhelix.NewMessageFactory(keyManager)
-	return messageFactory.CreatePreprepareMessage(blockHeight, view, block)
+	return messageFactory.CreatePreprepareMessage(blockHeight, view, block, CalculateBlockHash(block))
 }
 
 func APrepareMessage(
@@ -22,7 +22,7 @@ func APrepareMessage(
 	block leanhelix.Block) *leanhelix.PrepareMessage {
 
 	messageFactory := leanhelix.NewMessageFactory(keyManager)
-	return messageFactory.CreatePrepareMessage(blockHeight, view, block.BlockHash())
+	return messageFactory.CreatePrepareMessage(blockHeight, view, CalculateBlockHash(block))
 }
 
 func ACommitMessage(
@@ -32,7 +32,7 @@ func ACommitMessage(
 	block leanhelix.Block) *leanhelix.CommitMessage {
 
 	messageFactory := leanhelix.NewMessageFactory(keyManager)
-	return messageFactory.CreateCommitMessage(blockHeight, view, block.BlockHash())
+	return messageFactory.CreateCommitMessage(blockHeight, view, CalculateBlockHash(block))
 }
 
 func AViewChangeMessage(

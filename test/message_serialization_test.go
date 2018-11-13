@@ -21,7 +21,7 @@ func TestMessageBuilderAndReader(t *testing.T) {
 	}
 
 	t.Run("build and read PreprepareMessage", func(t *testing.T) {
-		ppm := mf.CreatePreprepareMessage(height, view, b1)
+		ppm := mf.CreatePreprepareMessage(height, view, b1, builders.CalculateBlockHash(b1))
 		ppmBytes := ppm.Raw()
 		receivedPPMC := lh.PreprepareContentReader(ppmBytes)
 		require.Equal(t, receivedPPMC.SignedHeader().MessageType(), lh.LEAN_HELIX_PREPREPARE, "Message type should be LEAN_HELIX_PREPREPARE")
@@ -29,7 +29,7 @@ func TestMessageBuilderAndReader(t *testing.T) {
 		require.True(t, receivedPPMC.SignedHeader().View().Equal(view), "View = %v", view)
 	})
 	t.Run("build and read PrepareMessage", func(t *testing.T) {
-		pm := mf.CreatePrepareMessage(height, view, b1.BlockHash())
+		pm := mf.CreatePrepareMessage(height, view, builders.CalculateBlockHash(b1))
 		pmBytes := pm.Raw()
 		receivedPMC := lh.PrepareContentReader(pmBytes)
 		require.Equal(t, receivedPMC.SignedHeader().MessageType(), lh.LEAN_HELIX_PREPARE, "Message type should be LEAN_HELIX_PREPARE")
@@ -37,7 +37,7 @@ func TestMessageBuilderAndReader(t *testing.T) {
 		require.True(t, receivedPMC.SignedHeader().View().Equal(view), "View = %v", view)
 	})
 	t.Run("build and read CommitMessage", func(t *testing.T) {
-		cm := mf.CreateCommitMessage(height, view, b1.BlockHash())
+		cm := mf.CreateCommitMessage(height, view, builders.CalculateBlockHash(b1))
 		cmBytes := cm.Raw()
 		receivedCMC := lh.CommitContentReader(cmBytes)
 		require.Equal(t, receivedCMC.SignedHeader().MessageType(), lh.LEAN_HELIX_COMMIT, "Message type should be LEAN_HELIX_COMMIT")
@@ -54,7 +54,7 @@ func TestMessageBuilderAndReader(t *testing.T) {
 		// TODO add test with preparedproof and do require.Equal on some of the proof's internal properties
 	})
 	t.Run("build and read NewViewMessage", func(t *testing.T) {
-		ppmcb := mf.CreatePreprepareMessageContentBuilder(height, view, b1)
+		ppmcb := mf.CreatePreprepareMessageContentBuilder(height, view, b1, builders.CalculateBlockHash(b1))
 		vcm1 := mf.CreateViewChangeMessageContentBuilder(height, view, nil)
 		vcm2 := mf.CreateViewChangeMessageContentBuilder(height, view, nil)
 		confirmation1 := &lh.ViewChangeMessageContentBuilder{

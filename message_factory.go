@@ -11,13 +11,14 @@ type MessageFactory struct {
 func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
 	blockHeight BlockHeight,
 	view View,
-	block Block) *PreprepareContentBuilder {
+	block Block,
+	blockHash Uint256) *PreprepareContentBuilder {
 
 	signedHeader := &BlockRefBuilder{
 		MessageType: LEAN_HELIX_PREPREPARE,
 		BlockHeight: blockHeight,
 		View:        view,
-		BlockHash:   block.BlockHash(),
+		BlockHash:   blockHash,
 	}
 
 	dataToSign := signedHeader.Build().Raw()
@@ -35,9 +36,10 @@ func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
 func (f *MessageFactory) CreatePreprepareMessage(
 	blockHeight BlockHeight,
 	view View,
-	block Block) *PreprepareMessage {
+	block Block,
+	blockHash Uint256) *PreprepareMessage {
 
-	ppmc := f.CreatePreprepareMessageContentBuilder(blockHeight, view, block)
+	ppmc := f.CreatePreprepareMessageContentBuilder(blockHeight, view, block, blockHash)
 
 	return &PreprepareMessage{
 		content: ppmc.Build(),

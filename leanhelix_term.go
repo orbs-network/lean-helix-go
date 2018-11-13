@@ -103,7 +103,8 @@ func (term *LeanHelixTerm) startTerm(ctx context.Context) {
 	term.initView(0)
 	if term.IsLeader() {
 		block := term.BlockUtils.RequestNewBlock(ctx, term.height)
-		ppm := term.messageFactory.CreatePreprepareMessage(term.height, term.view, block)
+		blockHash := term.BlockUtils.CalculateBlockHash(block)
+		ppm := term.messageFactory.CreatePreprepareMessage(term.height, term.view, block, blockHash)
 
 		term.Storage.StorePreprepare(ppm)
 		term.sendPreprepare(ctx, ppm)
@@ -321,7 +322,7 @@ func (term *LeanHelixTerm) onElected(ctx context.Context, view View, viewChangeM
 	if block == nil {
 		block = term.BlockUtils.RequestNewBlock(term.ctx, term.height)
 	}
-	ppmContentBuilder := term.messageFactory.CreatePreprepareMessageContentBuilder(term.height, view, block)
+	ppmContentBuilder := term.messageFactory.CreatePreprepareMessageContentBuilder(term.height, view, block, term.BlockUtils.CalculateBlockHash(block))
 	ppm := term.messageFactory.CreatePreprepareMessageFromContentBuilder(ppmContentBuilder, block)
 	confirmations := extractConfirmationsFromViewChangeMessages(viewChangeMessages)
 	nvm := term.messageFactory.CreateNewViewMessage(term.height, view, ppmContentBuilder, confirmations, block)
@@ -534,6 +535,6 @@ func (term *LeanHelixTerm) isPreprepared(blockHeight BlockHeight, view View, blo
 		return false
 	}
 
-	ppmBlockHash := ppmBlock.BlockHash() // TODO: Use CalcBlockHash here (as in ts code)?
+	ppmBlockHash := ppm.Content().SignedHeader().BlockHash()
 	return ppmBlockHash.Equal(blockHash)
 }

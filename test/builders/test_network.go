@@ -49,7 +49,7 @@ func (net *TestNetwork) ShutDown() {
 func (net *TestNetwork) AllNodesAgreeOnBlock(block leanhelix.Block) bool {
 	for _, node := range net.Nodes {
 		nodeState := <-node.NodeStateChannel
-		if block.BlockHash().Equal(nodeState.block.BlockHash()) == false {
+		if CalculateBlockHash(block).Equal(CalculateBlockHash(nodeState.block)) == false {
 			return false
 		}
 	}

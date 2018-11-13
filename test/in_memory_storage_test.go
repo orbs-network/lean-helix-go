@@ -48,6 +48,7 @@ func TestStorePrepare(t *testing.T) {
 	keyManager3 := builders.NewMockKeyManager(senderId3)
 	block1 := builders.CreateBlock(builders.GenesisBlock)
 	block2 := builders.CreateBlock(builders.GenesisBlock)
+	block1Hash := builders.CalculateBlockHash(block1)
 
 	message1 := builders.APrepareMessage(keyManager1, blockHeight1, view1, block1)
 	message2 := builders.APrepareMessage(keyManager2, blockHeight1, view1, block1)
@@ -63,11 +64,11 @@ func TestStorePrepare(t *testing.T) {
 	storage.StorePrepare(message5)
 	storage.StorePrepare(message6)
 
-	actualPrepareMessages, _ := storage.GetPrepareMessages(blockHeight1, view1, block1.BlockHash())
+	actualPrepareMessages, _ := storage.GetPrepareMessages(blockHeight1, view1, block1Hash)
 	expectedMessages := []*lh.PrepareMessage{message1, message2, message3}
 	require.ElementsMatch(t, actualPrepareMessages, expectedMessages, "stored prepare messages should match the fetched prepare messages")
 
-	actualPrepareSendersPks := storage.GetPrepareSendersPKs(blockHeight1, view1, block1.BlockHash())
+	actualPrepareSendersPks := storage.GetPrepareSendersPKs(blockHeight1, view1, block1Hash)
 	expectedPks := []Ed25519PublicKey{senderId1, senderId2, senderId3}
 	require.ElementsMatch(t, actualPrepareSendersPks, expectedPks, "stored prepare messages senders should match the fetched prepare messages senders")
 }
@@ -86,6 +87,7 @@ func TestStoreCommit(t *testing.T) {
 	keyManager3 := builders.NewMockKeyManager(senderId3)
 	block1 := builders.CreateBlock(builders.GenesisBlock)
 	block2 := builders.CreateBlock(builders.GenesisBlock)
+	block1Hash := builders.CalculateBlockHash(block1)
 
 	message1 := builders.ACommitMessage(keyManager1, blockHeight1, view1, block1)
 	message2 := builders.ACommitMessage(keyManager2, blockHeight1, view1, block1)
@@ -101,11 +103,11 @@ func TestStoreCommit(t *testing.T) {
 	storage.StoreCommit(message5)
 	storage.StoreCommit(message6)
 
-	actualCommitMessages, _ := storage.GetCommitMessages(blockHeight1, view1, block1.BlockHash())
+	actualCommitMessages, _ := storage.GetCommitMessages(blockHeight1, view1, block1Hash)
 	expectedMessages := []*lh.CommitMessage{message1, message2, message3}
 	require.ElementsMatch(t, actualCommitMessages, expectedMessages, "stored commit messages should match the fetched commit messages")
 
-	actualCommitSendersPks := storage.GetCommitSendersPKs(blockHeight1, view1, block1.BlockHash())
+	actualCommitSendersPks := storage.GetCommitSendersPKs(blockHeight1, view1, block1Hash)
 	expectedPks := []Ed25519PublicKey{senderId1, senderId2, senderId3}
 	require.ElementsMatch(t, actualCommitSendersPks, expectedPks, "stored commit messages senders should match the fetched commit messages senders")
 }
@@ -246,7 +248,7 @@ func TestClearBlockHeightLogs(t *testing.T) {
 	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000000))
 	view := View(math.Floor(rand.Float64() * 1000000))
 	block := builders.CreateBlock(builders.GenesisBlock)
-	blockHash := block.BlockHash()
+	blockHash := builders.CalculateBlockHash(block)
 	keyManager := builders.NewMockKeyManager(Ed25519PublicKey("PK"))
 
 	ppMsg := builders.APreprepareMessage(keyManager, blockHeight, view, block)

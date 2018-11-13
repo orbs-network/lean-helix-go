@@ -31,7 +31,7 @@ func TestProofsValidator(t *testing.T) {
 	const targetBlockHeight = blockHeight
 	const targetView = view + 1
 	block := builders.CreateBlock(builders.GenesisBlock)
-	blockHash := block.BlockHash()
+	blockHash := builders.CalculateBlockHash(block)
 	goodPrepareProof := builders.CreatePreparedProof(leaderKeyManager, []lh.KeyManager{node1KeyManager, node2KeyManager, node3KeyManager}, blockHeight, view, blockHash)
 
 	calcLeaderPk := func(view View) Ed25519PublicKey {
