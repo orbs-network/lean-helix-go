@@ -1,7 +1,9 @@
 package gossip
 
 import (
+	"context"
 	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/stretchr/testify/require"
 	"math"
 	"math/rand"
@@ -20,33 +22,37 @@ func TestGossipDiscovery(t *testing.T) {
 	})
 
 	t.Run("get Gossip instance by ID", func(t *testing.T) {
-		id := genPublicKey()
-		gd := NewGossipDiscovery()
-		expectedGossip := NewGossip(gd)
-		gd.RegisterGossip(id, expectedGossip)
-		actualGossip := gd.GetGossipByPK(id)
-		require.Equal(t, expectedGossip, actualGossip, "received Gossip instance by ID")
+		test.WithContext(func(ctx context.Context) {
+			id := genPublicKey()
+			gd := NewGossipDiscovery()
+			expectedGossip := NewGossip(ctx, gd)
+			gd.RegisterGossip(id, expectedGossip)
+			actualGossip := gd.GetGossipByPK(id)
+			require.Equal(t, expectedGossip, actualGossip, "received Gossip instance by ID")
+		})
 	})
 
 	t.Run("get all Gossip IDs", func(t *testing.T) {
-		id1 := genPublicKey()
-		id2 := genPublicKey()
-		id3 := genPublicKey()
-		gd := NewGossipDiscovery()
-		g1 := NewGossip(gd)
-		g2 := NewGossip(gd)
-		g3 := NewGossip(gd)
-		gd.RegisterGossip(id1, g1)
-		gd.RegisterGossip(id2, g2)
-		gd.RegisterGossip(id3, g3)
-		expectedPublicKeyStrings := []string{id1.String(), id2.String(), id3.String()}
-		actualPublicKeys := gd.AllGossipsPublicKeys()
-		actualPublicKeyStrings := make([]string, 0, len(actualPublicKeys))
-		for _, pk := range actualPublicKeys {
-			actualPublicKeyStrings = append(actualPublicKeyStrings, pk.String())
-		}
+		test.WithContext(func(ctx context.Context) {
+			id1 := genPublicKey()
+			id2 := genPublicKey()
+			id3 := genPublicKey()
+			gd := NewGossipDiscovery()
+			g1 := NewGossip(ctx, gd)
+			g2 := NewGossip(ctx, gd)
+			g3 := NewGossip(ctx, gd)
+			gd.RegisterGossip(id1, g1)
+			gd.RegisterGossip(id2, g2)
+			gd.RegisterGossip(id3, g3)
+			expectedPublicKeyStrings := []string{id1.String(), id2.String(), id3.String()}
+			actualPublicKeys := gd.AllGossipsPublicKeys()
+			actualPublicKeyStrings := make([]string, 0, len(actualPublicKeys))
+			for _, pk := range actualPublicKeys {
+				actualPublicKeyStrings = append(actualPublicKeyStrings, pk.String())
+			}
 
-		require.ElementsMatch(t, actualPublicKeyStrings, expectedPublicKeyStrings)
+			require.ElementsMatch(t, actualPublicKeyStrings, expectedPublicKeyStrings)
+		})
 	})
 
 	t.Run("return gossip=nil if given Id was not registered", func(t *testing.T) {
@@ -58,32 +64,36 @@ func TestGossipDiscovery(t *testing.T) {
 	})
 
 	t.Run("return a list of all gossips", func(t *testing.T) {
-		gd := NewGossipDiscovery()
-		id1 := genPublicKey()
-		id2 := genPublicKey()
-		g1 := NewGossip(gd)
-		g2 := NewGossip(gd)
-		gd.RegisterGossip(id1, g1)
-		gd.RegisterGossip(id2, g2)
-		actual := gd.Gossips(nil)
-		expected := []*Gossip{g1, g2}
-		require.ElementsMatch(t, actual, expected, "list of all gossips")
+		test.WithContext(func(ctx context.Context) {
+			gd := NewGossipDiscovery()
+			id1 := genPublicKey()
+			id2 := genPublicKey()
+			g1 := NewGossip(ctx, gd)
+			g2 := NewGossip(ctx, gd)
+			gd.RegisterGossip(id1, g1)
+			gd.RegisterGossip(id2, g2)
+			actual := gd.Gossips(nil)
+			expected := []*Gossip{g1, g2}
+			require.ElementsMatch(t, actual, expected, "list of all gossips")
+		})
 	})
 
 	t.Run("return a list of requested gossips", func(t *testing.T) {
-		gd := NewGossipDiscovery()
-		id1 := genPublicKey()
-		id2 := genPublicKey()
-		id3 := genPublicKey()
-		g1 := NewGossip(gd)
-		g2 := NewGossip(gd)
-		g3 := NewGossip(gd)
-		gd.RegisterGossip(id1, g1)
-		gd.RegisterGossip(id2, g2)
-		gd.RegisterGossip(id3, g3)
-		actual := gd.Gossips([]primitives.Ed25519PublicKey{id1, id3})
-		expected := []*Gossip{g1, g3}
-		require.ElementsMatch(t, actual, expected, "list of requested gossips")
+		test.WithContext(func(ctx context.Context) {
+			gd := NewGossipDiscovery()
+			id1 := genPublicKey()
+			id2 := genPublicKey()
+			id3 := genPublicKey()
+			g1 := NewGossip(ctx, gd)
+			g2 := NewGossip(ctx, gd)
+			g3 := NewGossip(ctx, gd)
+			gd.RegisterGossip(id1, g1)
+			gd.RegisterGossip(id2, g2)
+			gd.RegisterGossip(id3, g3)
+			actual := gd.Gossips([]primitives.Ed25519PublicKey{id1, id3})
+			expected := []*Gossip{g1, g3}
+			require.ElementsMatch(t, actual, expected, "list of requested gossips")
+		})
 	})
 
 }

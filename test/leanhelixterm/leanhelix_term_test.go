@@ -9,7 +9,7 @@ import (
 // Leader election //
 func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		h := NewHarness(t)
+		h := NewHarness(ctx, t)
 		h.startConsensus(ctx)
 		h.waitForView(0)
 
@@ -21,7 +21,7 @@ func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 // View Change messages //
 func TestViewIncrementedAfterEnoughViewChangeMessages(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		h := NewHarness(t)
+		h := NewHarness(ctx, t)
 		h.startConsensus(ctx)
 		h.waitForView(0)
 
@@ -32,7 +32,7 @@ func TestViewIncrementedAfterEnoughViewChangeMessages(t *testing.T) {
 
 func TestRejectNewViewMessagesFromPast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		h := NewHarness(t)
+		h := NewHarness(ctx, t)
 		h.startConsensus(ctx)
 		h.waitForView(0)
 
