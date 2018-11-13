@@ -23,8 +23,6 @@
 * Is Disposed is checked at beginning of validation _(instead of at checking criteria)_ to prevent any further processing of messages.
 * PreparedProof in VIEW_CHANGE does not hold block _(only Block_hash)_
 * Report conditions which failed validation (e.g., Leader for View sent PREPARE message)
-* TODO: Small inefficiency in validation of NEW_VIEW: CalBlockHash might be called twice, as part of ValidateNewViewBlock and in ValidatePrePrepare _(Could be passed as param)_
-
 
 
 
@@ -55,7 +53,7 @@
 ## Databases
 
 #### Messages Log
-> Stores the current block_height messages after validation process. i.e., it is assumed the message Log stores valid messages.\
+> Stores the current block_height messages after validation process. i.e., it is assumed the message Log stores valid messages.
 * Accessed by (Message_type, Signer, View, Block_hash) or subset of params
 * No need to be persistent
 * Stores only one valid message per {MessageType, Signer, View}
@@ -159,13 +157,18 @@
 ## `OnPrePrepareReceived(Message)`
 > Process a leader block proposal.
 #### Validate message, including Block
-* If `ValidatePrePrepare(Message)` Continue
+* Block_hash = Get Block_hash by calling `Config.BlockUtils.CalcBlockHash(Message.Block)`
+* If `ValidatePrePrepare(Message, Block_hash)` Continue
+* If Block is not Valid by calling `Config.BlockUtils.ValidateBlock(Message.Block)` Return.
+#### Check state still match - Important! state might change during blocking validation process
+* If Disposed Return.
+* If my_state.View does not match Message.View Return.
 #### Continue Process PrePrepare
 * Call `ProcessPrePrepare(Message)`  _(Applies for PrePrepare message in New_View as well)_
 
 
 &nbsp;
-## `ValidatePrePrepare(Message)`
+## `ValidatePrePrepare(Message, Block_hash)`
 > Validate a block proposal message. Make sure state match. Assume block_height was filtered.\
 > Report failed validation.\
 > Also used upon receiving New_View.
@@ -173,13 +176,8 @@
 * If my_state.View does not match Message.View Return False.
 * If signature mismatch Return False.
 * If signer is not leader of Message.View Return False _(`IsLeader(Message.View, Message.Signer)`)_.
-* Get Block_hash by calling `Config.BlockUtils.CalcBlockHash(Message.Block)`
 * If Block_hash does not match Message.Block_hash Return False.
 * If PRE_PREPARE message already in MessagesLog matching Message(View, Signer, Message_type, Block_hash) Return False.
-* If Block is not Valid by calling `Config.BlockUtils.ValidateBlock(Message.Block)` Return False.
-#### Check state still match - Important! state might change during validation process
-* If Disposed Return.
-* If my_state.View does not match Message.View Return.
 * Passed validation Return True.
 
 
@@ -578,8 +576,9 @@
 * If signature mismatch Return False.
 * If Message.PrePrepare.View does not match Message.View _(signed by leader in both NewView and PrePrepare but might differ)_
 * If not `ValidateElectedProof(Message.ElectedProof)` Return False.
-* If not `ValidateNewViewBlock(Message.ElectedProof, Message.PrePrepare.Block)` Return False.
-* If not `ValidatePrePrepare(Message.PrePrepare)` Return False.
+* Block_hash = Get Block_hash by calling `Config.BlockUtils.CalcBlockHash(Message.PrePrepare.Block)`
+* If not `ValidateNewViewBlock(Message.ElectedProof, Message.PrePrepare.Block, Block_hash)` Return False.
+* If not `ValidatePrePrepare(Message.PrePrepare, Block_hash)` Return False.
 * Passed all validation Return True.
 
 
@@ -598,15 +597,16 @@
 
 
 &nbsp;
-## `ValidateNewViewBlock(ElectedProof, Block)`
+## `ValidateNewViewBlock(ElectedProof, Block, Block_hash)`
 > Validate Block was constructed according to rules - based on ElectedProof.\
 > Note: If no PreparedProof is found Leader could propose its "own" Block, pass this validation.
 #### Get VIEW_CHANGE message in ElectedProof with highest PreparedProof.View or None if no PreparedProof
 * ViewChangeMessage = `GetHighestViewChange(ElectedProof)`
 * If ViewChangeMessage is not None _(Found PreparedProof in votes: Leader should propose matching Block)_
-    * Block_hash = Get Block_hash by calling `Config.BlockUtils.CalcBlockHash(Block)`
     * If ViewChangeMessage.PreparedProof.PrePrepare.Block_hash does not match Block_hash
         * Return False. _(Leader proposed a Block which does not match ElectedProof)_
+* Else _(The leader proposed aits "own" Block - no preparedProof in ElectedProof - i.e., no locked node. Need to validate content.)_:
+   * If Block is not Valid by calling `Config.BlockUtils.ValidateBlock(Block)` Return False.
 * Passed validation Return True.
 
 
@@ -633,508 +633,3 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-&nbsp;
-## `OnCommittedLocally`
-
-#### Generate block proof and commit block
-* Aggregate the threshold signatrues of the logged COMMIT messages in (View = message.view) to generate an aggregated threshold signatrue.
-* Generate a LeanHelixBlockProof for the TransactionsBlock based on Log(View = message.view):
-  * opaque_message_type = COMMIT
-  * block_height = my_state.Block_height
-  * View = my_state.View
-  * block_hash_mask = SHA256(ResultsBlockHeader)
-  * block_hash = SHA256(TransactionBlockHeader)
-  * For each COMMIT in (View = message.View)
-    * block_signatures.add({COMMIT message.Signer, COMMIT message.Signature})
-  * random_seed_signature = aggregated threshold signatrue
-
-* Append the corresponding LeanHelixBlockProof to the TransactionsBlock and ResultsBlockHeader.
-* Commit the BlockPair by calling `BlockStorage.CommitBlock`.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-*
-* the Log(View = message.view)
-  * If a PRE_PREPARE message AND exactly (trigger once) 2xf PRPARE messages are logged with Block_hash equal to the PRE_PREPARE message.Block_hash.
-    * Set my_state.Prepared
-    * Call `OnPreparedLocally`
-
-
-
-#### Log the massages and update the state
-> Performed if all the message checks and content checks have passed
-* Log the received PRE_PREPARE message
-* Log the sent PREPARE message
-* Update the state
-  * Candidate_block_hash = PRE_PREPARE message.Block_hash
-  * Candidate_block = PRE_PREPARE message.BlockPair
-
-#### Check if PreparedLocally
-* Check the Log(View = message.view)
-  * If a PRE_PREPARE message AND exactly (trigger once) 2xf PRPARE messages are logged with Block_hash equal to the PRE_PREPARE message.Block_hash.
-    * Set my_state.Prepared
-    * Call `OnPreparedLocally`
-
-#### Check message signature against signer
-* Discard if signature mismatch
-* Discard if the signer is not a valid participant in Config.Members.
-
-#### Check {block_height, view}
-* Discard if message.block_height > my_state.block_height + configurable future_block_height_window.
-* If message.block_height > my_state.block_height, store in Received Messages Cache.
-* Discard if message.block_height < my_state.block_height.
-* Discard if message.view != 0.
-  * Note: NEW_VIEW messages incldue the NV_PRE_PREPARE, no PRE_PREPARE messages should be received not in view 0.
-
-#### Check that the signer is the leader for the view
-* Discard if the signer isn't the leader for the view based on `GetCurrentLeader(ordered_committee, message.view)`.
-
-#### Check no duplicate PrePrepare message was logged
-* Discard if a PRE_PREPARE message was already logged for the same view and signer.
-
-#### Check message content
-* Check PRE_PREPARE message.Block_hash matches the block pair headers hash. (Base on the hash scheme)
-* Check the TransactionBlockHeader.prev_block_hash_ptr and the ResultsBlockHeader.prev_block_hash_ptr.
-* Validate the transactions block (ordering phase) by calling `ConsensusContext.ValidateTransactionsBlock`.
-* Validate the results block (execution phase) by calling `ConsensusContext.ValidateResultsBlock`.
-* Check the ResultsBlockHeader.Metadata.RandomSeed <!--  TODO, place metadata in both blocks ?-->
-* If one of the checks fails, discard message.
-
-#### Generate PREPARE message
-> Performed if all the message checks and content checks have passed
-* Generate PREPARE message and broadcast to all nodes.
-  * Type = PREPARE
-  * Signer = Node public key.
-  * Block_height = my_state.block_height
-  * View = my_state.view
-  * Block_hash = PRE_PREPARE message.Block_hash
-  * Signature {Type, Block_height, View, Block_hash}
-
-#### Log the massages and update the state
-> Performed if all the message checks and content checks have passed
-* Log the received PRE_PREPARE message
-* Log the sent PREPARE message
-* Update the state
-  * Candidate_block_hash = PRE_PREPARE message.Block_hash
-  * Candidate_block = PRE_PREPARE message.BlockPair
-
-#### Check if PreparedLocally
-* Check the Log(View = message.view)
-  * If a PRE_PREPARE message AND exactly (trigger once) 2xf PRPARE messages are logged with Block_hash equal to the PRE_PREPARE message.Block_hash.
-    * Set my_state.Prepared
-    * Call `OnPreparedLocally`
-
-&nbsp;
-## `OnPrepareReceived`
-
-#### Check message signature and signer
-* Discard if signature mismatch
-* Discard if the signer is not a valid participant in the block's committee.
-
-#### Check Block height and view
-* Discard if message.block_height > my_state.block_height + configurable future_block_height_window.
-* If message.block_height > my_state.block_height, store in Received Messages Cache.
-* Discard if message.block_height < my_state.block_height.
-* Discard if message.view < my_state.view
-
-#### Check that the signer isn't the leader for the view
-* Discard if the signer is the leader for the view based on `GetCurrentLeader(ordered_committee, message.view)`.
-
-#### Check no duplicate Prepare message was logged
-* Discard if a PREPARE message was already logged for the same view and signer.
-
-#### Log message
-* Log the PREPARE message in message Log.
-
-#### Check if PreparedLocally
-* Check the Log(View = message.view)
-  * If a PRE_PREPARE message AND exactly (trigger once) 2xf PRPARE messages are logged with Block_hash equal to the PRE_PREPARE message.Block_hash.
-    * Set my_state.Prepared
-    * Call `OnPreparedLocally`
-
-
-&nbsp;
-## `OnPreparedLocally`
-
-#### Generate COMMIT message
-* Generate COMMIT message and broadcast to all nodes:
-  * Type = COMMIT
-  * Signer = Node public key.
-  * Block_height = my_state.block_height
-  * View = my_state.view
-  * Block_hash = logged PRE_PREPARE (View = my_state.view).Block_hash
-  * Signature {Type, Block_height, View, Block_hash}
-* Log the COMMIT message in message Log.
-
-#### Generate Prepared Proof
-* Generate Prepared_proof based on Log(View = message.view):
-  * Block_Height = my_state.Block_height
-  * View = my_state.View
-  * Block_hash = Candidate_block_hash
-  * PP_proof = {PRE_PREPARE message.Signer, PRE_PREPARE message.Signature}
-  * For each PREPARE
-    * Prepare_proofs.add({PREPARE message.Signer, PREPARE message.Signature})
-* Prepared_block = PRE_PREPARE message.BlockPair.
-
-#### Check if Commited_localy
-* Check the Log(View = message.view)
-  * If a PRE_PREPARE message AND 2xf+1 COMMIT messages are logged with Block_hash equal to the PRE_PREPARE message.Block_hash.
-    * Set my_state.Committed_locally
-    * Call `OnCommittedLocally`
-
-
-&nbsp;
-## `OnCommitReceived`
-
-#### Check message signature and signer
-* Discard if signature mismatch
-* Discard if the signer is not a valid participant in the block's committee.
-
-#### Check Block height and view
-* Discard if message.block_height > my_state.block_height + configurable future_block_height_window.
-* If message.block_height > my_state.block_height, store in Received Messages Cache.
-* Discard if message.block_height < my_state.block_height.
-Note: a node may receive COMMIT messages of earlier views.
-
-#### Check no duplicate COMMIT message was logged
-* Discard if a COMMIT message was already logged for the same view and signer.
-
-#### Check threshold signature
-* Discard if the threshold signatrue of the signer on previous block random seed is invalid.
-
-#### Log message
-* Log the COMMIT message in message Log.
-
-#### Check if Commited_localy
-* Check the Log(View = message.view)
-  * If a PRE_PREPARE message AND 2xf+1 COMMIT messages are logged with Block_hash equal to the PRE_PREPARE message.Block_hash.
-    * Set my_state.Committed_locally
-    * Call `OnCommittedLocally`
-
-
-&nbsp;
-## `OnCommittedLocally`
-
-#### Generate block proof and commit block
-* Aggregate the threshold signatrues of the logged COMMIT messages in (View = message.view) to generate an aggregated threshold signatrue.
-* Generate a LeanHelixBlockProof for the TransactionsBlock based on Log(View = message.view):
-  * opaque_message_type = COMMIT
-  * block_height = my_state.Block_height
-  * View = my_state.View
-  * block_hash_mask = SHA256(ResultsBlockHeader)
-  * block_hash = SHA256(TransactionBlockHeader)
-  * For each COMMIT in (View = message.View)
-    * block_signatures.add({COMMIT message.Signer, COMMIT message.Signature})
-  * random_seed_signature = aggregated threshold signatrue
-
-* Generate a LeanHelixBlockProof for the ResultsBlockHeader based on Log(View = message.view):
-  * opaque_message_type = COMMIT
-  * block_height = my_state.Block_height
-  * View = my_state.View
-  * block_hash_mask = SHA256(TransactionBlockHeader)
-  * block_hash = SHA256(ResultsBlockHeader)
-  * For each COMMIT in (View = message.View)
-    * block_signatures.add({COMMIT message.Signer, COMMIT message.Signature})
-  * random_seed_signature = aggregated threshold signatrue
-
-* Append the corresponding LeanHelixBlockProof to the TransactionsBlock and ResultsBlockHeader.
-* Commit the BlockPair by calling `BlockStorage.CommitBlock`.
-
-#### Triger the next block height round
-* Cache the required fields from the block headers for the next round.
-* Clear all messages with the block_height from the Log.
-* Initiate the next block height round by triggering `OnNewConsensusRound`.
-
-
-&nbsp;
-## `OnTimeOut`
-> Timeout of the PBFT timer.
-> Reset conditions: on new consensus round, on timeout.
-
-#### Init State for next view
-* my_state.view = my_state.view + 1.
-* Clear my_state.NewViewTriggered.
-* Reset the timer to configurable base_round_timeout x 2^(my_state.view).
-* Determine the current leader using `GetCurrentLeader(ordered_committee, message.view)`.
-
-#### Generate a VIEW_CHANGE message
-* Generate VIEW_CHANGE message
-  * Type = VIEW_CHANGE
-  * Signer = Node public key.
-  * Block_height = my_state.block_height
-  * View = my_state.view
-  * If my_state.Prepared then
-    * Prepared_proof = my_state.Prepared_proof <!-- TODO CHANGE METHODOLOGY>
-    * Prepared_block = my_state.Candidate_block
-  * Else
-    * Prepared_proof = {}
-    * Prepared_block = {}
-  * Signature {Type, Block_height, View, Prepared_proof}
-* Log the VIEW_CHANGE message in message Log.
-
-#### OnTimeOut - Validator Only
-* Send the VIEW_CHANGE as unicast to the new view's leader
-
-
-&nbsp;
-## ValidatePreparedProof(View_change_view)
-> Used by `OnViewChangeReceived` and `OnNewViewReceived`
-
-* Check Prepared_proof.Block_height = my_state.Block_height
-* Check Prepared_proof.View < View_change_view
-* Check Prepared_proof.Block_hash matches the block
-* Verify a PP_proof and 2f Prepare_proofs, from different senders.
-* For each proof in (PP_proof, Prepare_proofs):
-  * Check signature
-  * Check that the signer is a valid participant in the round's committee.
-* If all pass return valid., else return invalid.
-
-
-&nbsp;
-## `OnViewChangeReceived`
-
-#### Check message signature and signer
-* Discard if signature mismatch
-* Discard if the signer is not a valid participant in the block's committee.
-
-#### Check Block height and view
-* Discard if message.block_height > my_state.block_height + configurable future_block_height_window.
-* If message.block_height > my_state.block_height, store in Received Messages Cache.
-* Discard if message.block_height < my_state.block_height.
-* Discard if message.view < my_state.view
-* Note: VIEW_CHANGE of View + 1 is common if the node timeout is behind.
-
-#### Check no duplicate VIEW_CHANGE message was logged
-* Discard if a VIEW_CHANGE message was already logged for the same view and signer.
-
-#### Check that node is the leader for the view.
-* Discard if the node isn't the leader for the view based on `GetCurrentLeader(ordered_committee, message.view)`.
-
-#### Check the VIEW_CHANGE Prepared_proof
-* Check the received Prepared_proof is valid using `ValidatePreparedProof(View_change_view)`
-* Check that the received Prepared_proof.Block_hash matches the received Prepared_proof.Prepared_block.
-* If one of the checks fails, discard message.
-
-#### Log message
-* Log the VIEW_CHANGE message in message Log.
-
-#### Check if new view
-* Check the Log(View = message.view)
-  * If 2xf+1 VIEW_CHANGE messages are logged:
-    * If not my_state.NewViewTriggered call `LocalNewView`
-
-
-&nbsp;
-## `LocalNewView`
-
-#### `Init State for a New View`
-* my_state.view = message.View.
-* Set my_state.NewViewTriggered
-* Reset the timer to configurable base_round_timeout x 2^(my_state.view).
-
-#### Determine the next candidate block
-* From all VIEW_CHANGE messages in (View = my_state.view) with Prepared_proof != {}, find the one with the highest Prepared_proof.View.
-* If a VIEW_CHANGE message with Prepared_proof != {} was found:
-  * Candidate_block = highest prepraed view VIEW_CHANGE.BlockPair
-  * Candidate_block_hash = highest prepraed view VIEW_CHANGE.Block_hash
-* Else (no VIEW_CHANGE was Prepared)
-  * Construct a new Candidate_block
-    * Request new transactions block proposal (ordering phase) by calling `ConsensusBuilder.RequestNewTransactionsBlock`.
-    * Request new results block proposal (execution phase) by calling `ConsensusBuilder.RequestNewResultsBlock`.
-  * Candidate_block_hash = SHA256(TransactionBlockHeader) XOR SHA256(ResultsBlockHeader).
-
-#### Generate New_view_proof
-* New_view_proof = All logged VIEW_CHANGE messages in (View = my_state.view) without the Prepared_block
-
-#### Generate New View PRE_PREPARE
-> The New View PRE_PREPARE message is a regular PRE_PREPARE message encapsulated in NEW_VIEW. Using the same message format enables a single PREPARE flow.
-* Generate PRE_PREPARE
-  * Type = PRE_PREPARE
-  * Signer = Node public key.
-  * View = my_state.view
-  * Block_height = my_state.block_height
-  * BlockPair = Candidate_block
-  * Block_hash = Candidate_block_hash
-  * Signature {Type, Block_height, View, Hash(Block pair)}
-
-#### Generate NEW_VIEW message
-* Generate NEW_VIEW message and broadcast to all nodes:
-  * Type = NEW_VIEW
-  * Signer = Node public key.
-  * Block_height = my_state.block_height
-  * View = my_state.view
-  * New_view_proof = New_view_proof
-  * NVPP = New View PRE_PREPARE message
-  * Signature {Type, Block_height, View, New_view_proof, NVPP}
-
-#### Log NVPP Message and update state
-* Log the NV_PRE_PREPARE message
-  * Note: there's no need to Log the NEW_VIEW message.
-
-
-&nbsp;
-## `OnNewViewReceived`
-
-#### Check message signature and signer
-* Discard if signature mismatch
-* Discard if the signer is not a valid participant in the block's committee.
-
-#### Check {block_height, view}
-* Discard if message.block_height > my_state.block_height + configurable future_block_height_window.
-* If message.block_height > my_state.block_height, store in Received Messages Cache.
-* Discard if message.block_height < my_state.block_height.
-* Discard if message.view < my_state.view.
-
-#### Check that the signer is the leader for the view
-* Discard if the signer isn't the leader for the view based on `GetCurrentLeader(ordered_committee, message.view)`.
-
-#### Check no duplicate PrePrepare message was logged
-* Discard if a PRE_PREPARE message was already logged for the same view and signer.
-
-#### Check New_view_proof
-* Verify 2f+1 VIEW_CHANGE messages, from different senders.
-* For each VIEW_CHANGE message verify:
-  * Type = VIEW_CHANGE
-  * Signer is a valid participant in the block's committee.
-  * Block_height = NEW_VIEW message.Block_height
-  * View = NEW_VIEW message.View
-  * Prepared_proof is valid using `ValidatePreparedProof(View_change_view)`
-  * Valid signature
-* Discard if one of the checks fails.
-
-<!-- TODO consider unify with OnPrePrepareRecevied -->
-#### Check encapsulated New View PRE_PREPARE (NVPP) message
-* Check the New View PRE_PREPARE message fields
-  * Check Type = PRE_PREPARE
-  * Check Signer = NEW_VIEW.Signer
-  * Check View = NEW_VIEW.View
-  * Check Block_height = NEW_VIEW.Block_height
-  * Check Block_hash matches the NVPP block pair headers hash.
-  * Check signature
-
-#### Check encapsulated New View PRE_PREPARE message block
-* From all VIEW_CHANGE messages in New_view_proof with Prepared_proof != {} in , find the one with the highest Prepared_proof.View.
-* If a VIEW_CHANGE message with Prepared_proof != {} was found:
-  * Check NVPP.Block_hash = highest prepraed view VIEW_CHANGE.Block_hash.
-* Else (no VIEW_CHANGE was Prepared)
-  * Check the TransactionBlockHeader.prev_block_hash_ptr and the ResultsBlockHeader.prev_block_hash_ptr.
-  * Validate the transactions block (ordering phase) by calling `ConsensusBuilder.ValidateTransactionsBlock`.
-  * Validate the results block (execution phase) by calling `ConsensusBuilder.ValidateResultsBlock`.
-  * Check the ResultsBlockHeader.Metadata.RandomSeed <!-- Oded TODO, place metadata in both blocks ?-->
-* Discard the NEW_VIEW message if one of the checks fails.
-
-#### Init State for a New View
-* my_state.view = message.View.
-* Reset the timer to configurable base_round_timeout x 2^(my_state.view).
-
-#### Generate PREPARE message
-> Performed if all the message checks and content checks have passed
-* Generate PREPARE message and broadcast to all nodes.
-  * Type = PREPARE
-  * Signer = Node public key.
-  * Block_height = my_state.block_height
-  * View = my_state.view
-  * Block_hash = NV_PRE_PREPARE message.Block_hash
-  * Signature {Type, Block_height, View, Block_hash}
-
-#### Log the massages and update the state
-> Performed if all the message checks and content checks have passed
-* Log the received NV_PRE_PREPARE message
-  * Note: there's no need to Log the NEW_VIEW message.
-* Log the sent PREPARE message
-* Update the state
-  * Candidate_block_hash = PRE_PREPARE message.Block_hash
-  * Candidate_block = BlockPair
-
-#### Check if PreparedLocally
-* Check the Log(View = message.view)
-  * If a PRE_PREPARE message AND exactly (trigger once) 2xf PRPARE messages are logged with Block_hash equal to the PRE_PREPARE message.Block_hash.
-    * Set my_state.Prepared
-    * Call `OnPreparedLocally`
-
-
-&nbsp;
-## `AcknowledgeTransactionsBlockConsensus` and `AcknowledgeResultsBlockConsensus`
-<!-- TODO Consider to unify to a single function to prevent races -->
-> See consensus-algo.md, upon valid block
-
-#### Check Block_height
-* Ignore if recevied block_height <= my_state.block_height
-
-#### Triger the next block height round
-* Update my_state.Block_height = recevied block_height.
-* Cache the required fields from the block headers for the next round.
-* Clear all messages with block_height <= my_state.block_height from the Log.
-* Initiate the next block height round by triggering `OnNewConsensusRound`.
-
-&nbsp;
-## `GetCurrentLeader(ordered_committee, message.view)`
-> Returns the leader for the view
-* Return ordered_committee[View MOD ordered_committee size]
-
-
-## Oded Questions
-1. avoid sending blocks in VIEW_CHANGE, for example by V
-2. TODO - Remove pointers validation from Consensus Context
-3. TODO - out of sync flow, reducing the amount of "zevel" transactions
-
-
-*
-
-<!-- *
-* View Change message sent by a prepared node includes the candidate block
-  * May add a request / response message as optimization
-* New View includes all the view change proofs and a signed NV_PRE_PREPARE
-  * May add an optimization to avoid n^2 signatures in new view
-* A block can be committed (Commit_locally) even if not in Prepared state. (The block was received in PRE_PREPARE or NV_PRE_PREPARE). -->
-
-<!-- ## Configuration
-> Held by each node consensus algorithm, read from configuration file upon init
-* Committee_size
-* f_byzantine - max number byzantine nodes (default - 2/3 Committee_size + 1)
-* Cryptographic keys -->
