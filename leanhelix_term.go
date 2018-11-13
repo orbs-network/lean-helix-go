@@ -61,13 +61,10 @@ func NewLeanHelixTerm(config *Config, filter *ConsensusMessageFilter, newBlockHe
 }
 
 func (term *LeanHelixTerm) WaitForBlock(ctx context.Context) Block {
-	go func() {
-		time.Sleep(time.Duration(100) * time.Millisecond)
-		term.startTerm(ctx)
-	}()
+	term.startTerm(ctx)
 
 	for {
-		ctxWithElectionTrigger := term.electionTrigger.CreateElectionContext(ctx, term.view)
+		ctxWithElectionTrigger := term.electionTrigger.CreateElectionContextForView(ctx, term.view)
 		message, err := term.filter.WaitForMessage(ctxWithElectionTrigger, term.height)
 
 		if err != nil {
@@ -89,6 +86,7 @@ func (term *LeanHelixTerm) WaitForBlock(ctx context.Context) Block {
 func (term *LeanHelixTerm) startTerm(ctx context.Context) {
 	term.initView(0)
 	if term.IsLeader() {
+		time.Sleep(time.Duration(500) * time.Millisecond)
 		block := term.BlockUtils.RequestNewBlock(ctx, term.height)
 		ppm := term.messageFactory.CreatePreprepareMessage(term.height, term.view, block)
 

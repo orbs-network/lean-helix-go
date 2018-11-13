@@ -15,7 +15,7 @@ func TestElectionTriggerMockInitialization(t *testing.T) {
 func TestElectionTriggerMockContextCreation(t *testing.T) {
 	WithContext(func(ctx context.Context) {
 		et := builders.NewMockElectionTrigger()
-		resultContext := et.CreateElectionContext(ctx, 10)
+		resultContext := et.CreateElectionContextForView(ctx, 10)
 		require.NotNil(t, resultContext)
 	})
 }
@@ -23,8 +23,8 @@ func TestElectionTriggerMockContextCreation(t *testing.T) {
 func TestElectionTriggerMockTriggerCancellation(t *testing.T) {
 	WithContext(func(ctx context.Context) {
 		et := builders.NewMockElectionTrigger()
-		resultContext := et.CreateElectionContext(ctx, 10)
-		et.Trigger()
+		resultContext := et.CreateElectionContextForView(ctx, 10)
+		et.ManualTrigger()
 		require.Error(t, resultContext.Err())
 	})
 }

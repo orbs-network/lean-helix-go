@@ -6,22 +6,31 @@ import (
 )
 
 type ElectionTriggerMock struct {
-	cancel func()
+	cancel      func()
+	viewChannel chan View
 }
 
 func NewMockElectionTrigger() *ElectionTriggerMock {
-	return &ElectionTriggerMock{}
+	return &ElectionTriggerMock{
+		viewChannel: make(chan View),
+	}
 }
 
-func (electionTrigger *ElectionTriggerMock) CreateElectionContext(parentContext context.Context, view View) context.Context {
+func (et *ElectionTriggerMock) CreateElectionContextForView(parentContext context.Context, view View) context.Context {
 	ctx, cancel := context.WithCancel(parentContext)
-	electionTrigger.cancel = cancel
+	et.cancel = cancel
+	et.viewChannel <- view
 	return ctx
 }
 
-func (electionTrigger *ElectionTriggerMock) Trigger() {
-	cancel := electionTrigger.cancel
-	if cancel != nil {
-		cancel()
+func (et *ElectionTriggerMock) ManualTrigger() {
+	cancel := et.cancel
+	if cancel == nil {
+		panic("You triggered the election before term was initialized")
 	}
+	cancel()
+}
+
+func (et *ElectionTriggerMock) WaitForNextView() View {
+	return <-et.viewChannel
 }

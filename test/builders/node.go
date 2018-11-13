@@ -29,7 +29,7 @@ func (node *Node) GetLatestCommittedBlock() lh.Block {
 }
 
 func (node *Node) TriggerElection() {
-	node.electionTrigger.Trigger()
+	node.electionTrigger.ManualTrigger()
 }
 
 func (node *Node) onCommittedBlock(block lh.Block) {

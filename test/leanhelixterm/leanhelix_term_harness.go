@@ -2,9 +2,9 @@ package leanhelixterm
 
 import (
 	"context"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/primitives"
-	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
 	"github.com/stretchr/testify/require"
@@ -14,6 +14,7 @@ import (
 type harness struct {
 	t               *testing.T
 	term            *leanhelix.LeanHelixTerm
+	filter          *leanhelix.ConsensusMessageFilter
 	electionTrigger *builders.ElectionTriggerMock
 }
 
@@ -39,6 +40,7 @@ func NewHarness(t *testing.T) *harness {
 	return &harness{
 		t:               t,
 		term:            term,
+		filter:          filter,
 		electionTrigger: electionTrigger,
 	}
 }
@@ -47,14 +49,22 @@ func (h *harness) startConsensus(ctx context.Context) {
 	go h.term.WaitForBlock(ctx)
 }
 
-func (h *harness) verifyView(view primitives.View) {
-	require.Equal(h.t, primitives.View(0), h.term.GetView(), "Term should have view=0 on init")
+func (h *harness) waitForView(expectedView primitives.View) {
+	view := h.electionTrigger.WaitForNextView()
+	require.Equal(h.t, view, expectedView, fmt.Sprintf("Term should have view=%d, but got %d", expectedView, view))
 }
 
-func (h *harness) waitForView(view primitives.View) {
-	test.Eventually(1000, func() bool { return primitives.View(1) == h.term.GetView() })
+func (h *harness) triggerElection() {
+	h.electionTrigger.ManualTrigger()
 }
 
-func (h *harness) changeLeader() {
-	h.electionTrigger.Trigger()
+func (h *harness) sendLeaderChange(ctx context.Context, view primitives.View) {
+	block := builders.CreateBlock(builders.GenesisBlock)
+	publicKey := primitives.Ed25519PublicKey("Dummy PublicKey")
+	keyManager := builders.NewMockKeyManager(publicKey)
+	nvm := builders.ANewViewMessage(keyManager, 1, view, nil, nil, block)
+	go h.filter.OnGossipMessage(ctx, nvm.ToConsensusRawMessage())
+}
+
+func (h *harness) verifyViewDoesNotChange(view primitives.View) {
 }

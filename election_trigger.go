@@ -6,5 +6,5 @@ import (
 )
 
 type ElectionTrigger interface {
-	CreateElectionContext(parentContext context.Context, view primitives.View) context.Context
+	CreateElectionContextForView(parentContext context.Context, view primitives.View) context.Context
 }

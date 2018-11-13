@@ -6,13 +6,41 @@ import (
 	"testing"
 )
 
+// Leader election //
 func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(t)
 		h.startConsensus(ctx)
-		h.verifyView(0)
-		h.changeLeader()
+		h.waitForView(0)
+
+		h.triggerElection()
 		h.waitForView(1)
+	})
+}
+
+// View Change messages //
+func TestViewIncrementedAfterEnoughViewChangeMessages(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		h := NewHarness(t)
+		h.startConsensus(ctx)
+		h.waitForView(0)
+
+		h.sendLeaderChange(ctx, 1) // next view
+		h.waitForView(1)
+	})
+}
+
+func TestRejectNewViewMessagesFromPast(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		h := NewHarness(t)
+		h.startConsensus(ctx)
+		h.waitForView(0)
+
+		h.sendLeaderChange(ctx, 1) // next view, good
+		h.waitForView(1)
+
+		h.sendLeaderChange(ctx, 1) // same view, ignored
+		h.verifyViewDoesNotChange(1)
 	})
 }
 
