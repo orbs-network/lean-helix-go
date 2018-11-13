@@ -356,14 +356,6 @@ func (term *LeanHelixTerm) onReceiveCommit(ctx context.Context, cm *CommitMessag
 		fmt.Printf("verification failed for Commit blockHeight=%v view=%v blockHash=%v\n", header.BlockHeight(), header.View(), header.BlockHash())
 		return
 	}
-	if term.view > header.View() {
-		fmt.Printf("message Commit view %v is less than OneHeight's view %v\n", header.View(), term.view)
-		return
-	}
-	if term.leaderPublicKey.Equal(sender.SenderPublicKey()) {
-		fmt.Printf("message Commit received from leader (only preprepare can be received from leader)\n")
-		return
-	}
 	term.Storage.StoreCommit(cm)
 	if term.view == header.View() {
 		term.checkCommitted(header.BlockHeight(), header.View(), header.BlockHash())
