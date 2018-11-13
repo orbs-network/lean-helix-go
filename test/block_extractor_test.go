@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
@@ -43,28 +44,30 @@ func TestKeepOnlyMessagesWithBlock(t *testing.T) {
 }
 
 func TestReturnBlockFromPPMWithHighestView(t *testing.T) {
-	testNetwork := builders.ABasicTestNetwork()
-	node0 := testNetwork.Nodes[0]
-	node1 := testNetwork.Nodes[1]
-	node2 := testNetwork.Nodes[2]
-	node3 := testNetwork.Nodes[3]
+	WithContext(func(ctx context.Context) {
+		testNetwork := builders.ABasicTestNetwork(ctx)
+		node0 := testNetwork.Nodes[0]
+		node1 := testNetwork.Nodes[1]
+		node2 := testNetwork.Nodes[2]
+		node3 := testNetwork.Nodes[3]
 
-	// view on view 3
-	blockOnView3 := builders.CreateBlock(builders.GenesisBlock)
-	preparedOnView3 := builders.CreatePreparedMessages(node3, []*builders.Node{node1, node2}, 1, 3, blockOnView3)
+		// view on view 3
+		blockOnView3 := builders.CreateBlock(builders.GenesisBlock)
+		preparedOnView3 := builders.CreatePreparedMessages(node3, []*builders.Node{node1, node2}, 1, 3, blockOnView3)
 
-	VCMessageOnView3 := builders.AViewChangeMessage(node0.KeyManager, 1, 5, preparedOnView3)
+		VCMessageOnView3 := builders.AViewChangeMessage(node0.KeyManager, 1, 5, preparedOnView3)
 
-	// view on view 8
-	blockOnView8 := builders.CreateBlock(builders.GenesisBlock)
-	preparedOnView8 := builders.CreatePreparedMessages(node0, []*builders.Node{node1, node2}, 1, 8, blockOnView8)
-	VCMessageOnView8 := builders.AViewChangeMessage(node2.KeyManager, 1, 5, preparedOnView8)
+		// view on view 8
+		blockOnView8 := builders.CreateBlock(builders.GenesisBlock)
+		preparedOnView8 := builders.CreatePreparedMessages(node0, []*builders.Node{node1, node2}, 1, 8, blockOnView8)
+		VCMessageOnView8 := builders.AViewChangeMessage(node2.KeyManager, 1, 5, preparedOnView8)
 
-	// view on view 4
-	blockOnView4 := builders.CreateBlock(builders.GenesisBlock)
-	preparedOnView4 := builders.CreatePreparedMessages(node0, []*builders.Node{node1, node2}, 1, 4, blockOnView4)
-	VCMessageOnView4 := builders.AViewChangeMessage(node2.KeyManager, 1, 5, preparedOnView4)
+		// view on view 4
+		blockOnView4 := builders.CreateBlock(builders.GenesisBlock)
+		preparedOnView4 := builders.CreatePreparedMessages(node0, []*builders.Node{node1, node2}, 1, 4, blockOnView4)
+		VCMessageOnView4 := builders.AViewChangeMessage(node2.KeyManager, 1, 5, preparedOnView4)
 
-	actual := leanhelix.GetLatestBlockFromViewChangeMessages([]*leanhelix.ViewChangeMessage{VCMessageOnView3, VCMessageOnView8, VCMessageOnView4})
-	require.Equal(t, blockOnView8, actual, "Returned block is not from the latest view")
+		actual := leanhelix.GetLatestBlockFromViewChangeMessages([]*leanhelix.ViewChangeMessage{VCMessageOnView3, VCMessageOnView8, VCMessageOnView4})
+		require.Equal(t, blockOnView8, actual, "Returned block is not from the latest view")
+	})
 }

@@ -1,6 +1,7 @@
 package builders
 
 import (
+	"context"
 	"fmt"
 	lh "github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/primitives"
@@ -30,10 +31,10 @@ func (builder *TestNetworkBuilder) WithBlocksPool(blocksPool []lh.Block) *TestNe
 	return builder
 }
 
-func (builder *TestNetworkBuilder) Build() *TestNetwork {
+func (builder *TestNetworkBuilder) Build(ctx context.Context) *TestNetwork {
 	blocksPool := builder.buildBlocksPool()
 	discovery := gossip.NewGossipDiscovery()
-	nodes := builder.createNodes(discovery, blocksPool)
+	nodes := builder.createNodes(ctx, discovery, blocksPool)
 	testNetwork := NewTestNetwork(discovery, blocksPool)
 	testNetwork.RegisterNodes(nodes)
 	return testNetwork
@@ -53,28 +54,29 @@ func (builder *TestNetworkBuilder) buildBlocksPool() []lh.Block {
 }
 
 func (builder *TestNetworkBuilder) buildNode(
+	ctx context.Context,
 	nodeBuilder *NodeBuilder,
 	publicKey primitives.Ed25519PublicKey,
 	discovery *gossip.Discovery,
 	blocksPool []lh.Block) *Node {
 
-	gossip := gossip.NewGossip(discovery)
+	gossip := gossip.NewGossip(ctx, discovery)
 	discovery.RegisterGossip(publicKey, gossip)
 	return nodeBuilder.ThatIsPartOf(gossip).WithBlocksPool(blocksPool).WithPublicKey(publicKey).Build()
 }
 
-func (builder *TestNetworkBuilder) createNodes(discovery *gossip.Discovery, blocksPool []lh.Block) []*Node {
+func (builder *TestNetworkBuilder) createNodes(ctx context.Context, discovery *gossip.Discovery, blocksPool []lh.Block) []*Node {
 	var nodes []*Node
 	for i := 0; i < builder.NodeCount; i++ {
 		nodeBuilder := NewNodeBuilder()
 		publicKey := primitives.Ed25519PublicKey(fmt.Sprintf("Node %d", i))
-		node := builder.buildNode(nodeBuilder, publicKey, discovery, blocksPool)
+		node := builder.buildNode(ctx, nodeBuilder, publicKey, discovery, blocksPool)
 		nodes = append(nodes, node)
 	}
 
 	for i, customBuilder := range builder.customNodeBuilders {
 		publicKey := primitives.Ed25519PublicKey(fmt.Sprintf("Custom-Node %d", i))
-		node := builder.buildNode(customBuilder, publicKey, discovery, blocksPool)
+		node := builder.buildNode(ctx, customBuilder, publicKey, discovery, blocksPool)
 		nodes = append(nodes, node)
 	}
 
@@ -89,11 +91,11 @@ func NewTestNetworkBuilder() *TestNetworkBuilder {
 	}
 }
 
-func ABasicTestNetwork() *TestNetwork {
-	return ATestNetwork(4, nil)
+func ABasicTestNetwork(ctx context.Context) *TestNetwork {
+	return ATestNetwork(ctx, 4, nil)
 }
 
-func ATestNetwork(countOfNodes int, blocksPool []lh.Block) *TestNetwork {
+func ATestNetwork(ctx context.Context, countOfNodes int, blocksPool []lh.Block) *TestNetwork {
 	testNetwork := NewTestNetworkBuilder()
-	return testNetwork.WithNodeCount(countOfNodes).WithBlocksPool(blocksPool).Build()
+	return testNetwork.WithNodeCount(countOfNodes).WithBlocksPool(blocksPool).Build(ctx)
 }

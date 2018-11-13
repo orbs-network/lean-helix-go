@@ -25,7 +25,7 @@ func NewHarness(t *testing.T) *harness {
 	gossip := gossip.NewGossip(discovery)
 	discovery.RegisterGossip(publicKey, gossip)
 	blockUtils := builders.NewMockBlockUtils(nil)
-	electionTrigger := builders.NewMockElectionTrigger(false)
+	electionTrigger := builders.NewMockElectionTrigger(true)
 	storage := leanhelix.NewInMemoryStorage()
 	termConfig := &leanhelix.Config{
 		NetworkCommunication: gossip,
@@ -62,7 +62,7 @@ func (h *harness) sendLeaderChange(ctx context.Context, view primitives.View) {
 	block := builders.CreateBlock(builders.GenesisBlock)
 	publicKey := primitives.Ed25519PublicKey("Dummy PublicKey")
 	keyManager := builders.NewMockKeyManager(publicKey)
-	nvm := builders.ANewViewMessage(keyManager, 1, view, nil, nil, block)
+	nvm := builders.ANewViewMessage(keyManager, 0, view, nil, nil, block)
 	go h.filter.OnGossipMessage(ctx, nvm.ToConsensusRawMessage())
 }
 
