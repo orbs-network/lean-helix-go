@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// See README.md in this folder for how to invoke this from the calling service
+// See README.md in this folder for how to invoke this from the consumer of this library
 func TestSignAndVerify(t *testing.T, mgr leanhelix.KeyManager) {
 
 	input := []byte("Hello world")
