@@ -73,7 +73,7 @@ func (f *ConsensusMessageFilter) popFromCache(height primitives.BlockHeight) Con
 	f.clearCacheHistory(height)
 
 	messages := f.messageCache[height]
-	if messages == nil && len(messages) == 0 {
+	if messages == nil || len(messages) == 0 {
 		return nil
 	}
 
