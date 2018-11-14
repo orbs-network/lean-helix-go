@@ -23,10 +23,12 @@ func (net *TestNetwork) TriggerElection() {
 	}
 }
 
-func (net *TestNetwork) StartConsensusOnAllNodes(ctx context.Context) {
+func (net *TestNetwork) StartConsensus(ctx context.Context) *TestNetwork {
 	for _, node := range net.Nodes {
 		node.StartConsensus(ctx)
 	}
+
+	return net
 }
 
 func (net *TestNetwork) RegisterNode(node *Node) {
@@ -54,6 +56,58 @@ func (net *TestNetwork) AllNodesAgreeOnBlock(block leanhelix.Block) bool {
 		}
 	}
 	return true
+}
+
+const MINIMUM_NUMBER_OF_NODES_FOR_CONSENSUS = 4
+
+func (net *TestNetwork) InConsensus() bool {
+	if len(net.Nodes) < MINIMUM_NUMBER_OF_NODES_FOR_CONSENSUS {
+		panic("Not enough nodes for consensus")
+	}
+
+	firstNodeStateChannel := <-net.Nodes[0].NodeStateChannel
+	firstNodeBlock := firstNodeStateChannel.block
+	for i := 1; i < len(net.Nodes); i++ {
+		node := net.Nodes[i]
+		nodeState := <-node.NodeStateChannel
+		if CalculateBlockHash(firstNodeBlock).Equal(CalculateBlockHash(nodeState.block)) == false {
+			return false
+		}
+	}
+	return true
+}
+
+func (net *TestNetwork) WaitForConsensus() {
+	for _, node := range net.Nodes {
+		<-node.NodeStateChannel
+	}
+}
+
+func (net *TestNetwork) PauseNodesExecutionOnValidation(nodes ...*Node) func() func(isValid bool) {
+	for _, node := range nodes {
+		node.BlockUtils.PauseOnValidations = true
+	}
+
+	return func() func(isValid bool) {
+		releasingChannels := make([]chan bool, len(nodes))
+		for _, node := range nodes {
+			releasingChannel := <-node.BlockUtils.PausingChannel
+			releasingChannels = append(releasingChannels, releasingChannel)
+		}
+
+		return func(isValid bool) {
+			for _, releasingChannel := range releasingChannels {
+				releasingChannel <- isValid
+			}
+		}
+	}
+}
+
+func (net *TestNetwork) ResolveAllValidations() {
+	for _, node := range net.Nodes {
+		releasingChannel := make(chan bool)
+		node.BlockUtils.PausingChannel <- releasingChannel
+	}
 }
 
 func (net *TestNetwork) AllNodesValidatedOnceBeforeCommit() bool {

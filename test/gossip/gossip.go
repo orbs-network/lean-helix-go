@@ -144,10 +144,10 @@ func (g *Gossip) SendToNode(ctx context.Context, targetPublicKey Ed25519PublicKe
 	return
 }
 
-func (g *Gossip) StatsNumSentMessages(predicate func(msg interface{}) bool) int {
+func (g *Gossip) CountSentMessages(messageType lh.MessageType) int {
 	res := 0
 	for _, msg := range g.statsSentMessages {
-		if predicate(msg) {
+		if msg.ToConsensusMessage().MessageType() == messageType {
 			res++
 		}
 	}

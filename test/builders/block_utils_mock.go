@@ -16,27 +16,25 @@ func CalculateBlockHash(block lh.Block) Uint256 {
 }
 
 type MockBlockUtils struct {
-	upcomingBlocks    []lh.Block
-	latestBlock       lh.Block
-	validationResult  bool
-	validationCounter int
+	upcomingBlocks     []lh.Block
+	latestBlock        lh.Block
+	validationCounter  int
+	PauseOnValidations bool
+	PausingChannel     chan chan bool
 }
 
 func NewMockBlockUtils(upcomingBlocks []lh.Block) *MockBlockUtils {
 	return &MockBlockUtils{
-		upcomingBlocks:    upcomingBlocks,
-		latestBlock:       GenesisBlock,
-		validationResult:  true,
-		validationCounter: 0,
+		upcomingBlocks:     upcomingBlocks,
+		latestBlock:        GenesisBlock,
+		validationCounter:  0,
+		PauseOnValidations: false,
+		PausingChannel:     make(chan chan bool),
 	}
 }
 
 func (b *MockBlockUtils) CalculateBlockHash(block lh.Block) Uint256 {
 	return CalculateBlockHash(block)
-}
-
-func (b *MockBlockUtils) FailValidations() {
-	b.validationResult = false
 }
 
 func (b *MockBlockUtils) getNextBlock() lh.Block {
@@ -51,13 +49,6 @@ func (b *MockBlockUtils) getNextBlock() lh.Block {
 	return nextBlock
 }
 
-func (b *MockBlockUtils) ResolveAllValidations(isValid bool) {
-}
-
-func (b *MockBlockUtils) RequestCommittee() {
-	panic("implement me")
-}
-
 func (b *MockBlockUtils) RequestNewBlock(ctx context.Context, height BlockHeight) lh.Block {
 	return b.getNextBlock()
 }
@@ -65,8 +56,12 @@ func (b *MockBlockUtils) RequestNewBlock(ctx context.Context, height BlockHeight
 func (b *MockBlockUtils) CounterOfValidation() int {
 	return b.validationCounter
 }
-
 func (b *MockBlockUtils) ValidateBlock(block lh.Block) bool {
 	b.validationCounter++
-	return b.validationResult
+	if b.PauseOnValidations {
+		releasingChannel := make(chan bool)
+		b.PausingChannel <- releasingChannel
+		return <-releasingChannel
+	}
+	return true
 }

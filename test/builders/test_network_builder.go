@@ -92,10 +92,10 @@ func NewTestNetworkBuilder() *TestNetworkBuilder {
 }
 
 func ABasicTestNetwork(ctx context.Context) *TestNetwork {
-	return ATestNetwork(ctx, 4, nil)
+	return ATestNetwork(ctx, 4)
 }
 
-func ATestNetwork(ctx context.Context, countOfNodes int, blocksPool []lh.Block) *TestNetwork {
+func ATestNetwork(ctx context.Context, countOfNodes int, blocksPool ...lh.Block) *TestNetwork {
 	testNetwork := NewTestNetworkBuilder()
 	return testNetwork.WithNodeCount(countOfNodes).WithBlocksPool(blocksPool).Build(ctx)
 }
