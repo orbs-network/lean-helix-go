@@ -12,7 +12,7 @@ func TestCallValidateBlockDuringConsensus(t *testing.T) {
 		testNetwork := builders.ABasicTestNetwork(ctx)
 		testNetwork.StartConsensus(ctx)
 
-		require.True(t, testNetwork.AllNodesValidatedOnceBeforeCommit())
+		require.True(t, testNetwork.AllNodesValidatedNoMoreThanOnceBeforeCommit())
 	})
 }
 

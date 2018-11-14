@@ -110,7 +110,7 @@ func (net *TestNetwork) ResolveAllValidations() {
 	}
 }
 
-func (net *TestNetwork) AllNodesValidatedOnceBeforeCommit() bool {
+func (net *TestNetwork) AllNodesValidatedNoMoreThanOnceBeforeCommit() bool {
 	for _, node := range net.Nodes {
 		nodeState := <-node.NodeStateChannel
 		if nodeState.validationCount > 1 {
