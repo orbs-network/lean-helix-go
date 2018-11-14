@@ -7,6 +7,8 @@ import (
 
 type leanHelix struct {
 	config              *Config
+	filter              *ConsensusMessageFilter
+	subscriptionToken   int
 	commitSubscriptions []func(block Block)
 }
 
@@ -25,19 +27,20 @@ func (lh *leanHelix) ValidateBlockConsensus(block Block, blockProof *BlockProof,
 }
 
 func (lh *leanHelix) Start(ctx context.Context, blockHeight primitives.BlockHeight) {
-	filter := NewConsensusMessageFilter(lh.config.KeyManager.MyPublicKey())
-	subscriptionToken := lh.config.NetworkCommunication.RegisterOnMessage(filter.OnGossipMessage)
 	for {
-		leanHelixTerm := NewLeanHelixTerm(lh.config, filter, blockHeight)
+		leanHelixTerm := NewLeanHelixTerm(lh.config, lh.filter, blockHeight)
 		block := leanHelixTerm.WaitForBlock(ctx)
 		lh.notifyCommitted(block)
 		blockHeight++
 	}
-	lh.config.NetworkCommunication.UnregisterOnMessage(subscriptionToken)
+}
+
+func (lh *leanHelix) Dispose() {
+	lh.config.NetworkCommunication.UnregisterOnMessage(lh.subscriptionToken)
 }
 
 func NewLeanHelix(config *Config) LeanHelix {
-	return &leanHelix{
-		config: config,
-	}
+	filter := NewConsensusMessageFilter(config.KeyManager.MyPublicKey())
+	subscriptionToken := config.NetworkCommunication.RegisterOnMessage(filter.OnGossipMessage)
+	return &leanHelix{config, filter, subscriptionToken, nil}
 }
