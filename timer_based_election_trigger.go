@@ -20,7 +20,7 @@ func NewTimerBasedElectionTrigger(minTimeout time.Duration) *TimerBasedElectionT
 	}
 }
 
-func (t *TimerBasedElectionTrigger) CreateElectionContext(parentContext context.Context, view primitives.View) context.Context {
+func (t *TimerBasedElectionTrigger) CreateElectionContextForView(parentContext context.Context, view primitives.View) context.Context {
 	if t.view != view {
 		t.view = view
 		t.electionTimeoutAt = time.Now().Add(t.calcTimeout(view))
