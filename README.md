@@ -4,9 +4,7 @@
 **--Work in progress - not yet functional--**
 
 
-Go implementation of Lean Helix consensus algorithm.
-
-Spec location: TBD
+Lean Helix consensus algorithm implementation in Go.
 
 ## TODO
 * See [issues on Github](https://github.com/orbs-network/lean-helix-go/issues)
@@ -14,9 +12,6 @@ Spec location: TBD
 ## Installation
 * Download from Github
 * Run `./git-submodule-checkout.sh` - this will install all git submodules under `vendor` folder
-
-## Design (Lean Helix fully serializes its messages internally)
-Formal spec for this library can be found under the `/spec` folder.
 
 ### Terminology
 * `Library` - this repo
@@ -42,10 +37,8 @@ If that leader is unable to reach consensus for any reason (usually timeout), th
 The next leader is the next node in the committee
 So - each view (modulo the number of nodes in a committee) has a different leader.
 
-
-
-
 ## Design
+Formal spec for this library can be found under the `/spec` folder.
 
 ### API
 * NewLeanHelix()
