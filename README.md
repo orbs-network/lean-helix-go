@@ -16,28 +16,66 @@ Spec location: TBD
 * Run `./git-submodule-checkout.sh` - this will install all git submodules under `vendor` folder
 
 ## Design (Lean Helix fully serializes its messages internally)
-Uses orbs-spec
-* orbs-spec/interfaces/protocol/gossipmessages/lean-helix.proto
-* orbs-spec/interfaces/protocol/consensus/lean-helix.proto
+Formal spec for this library can be found under the `/spec` folder.
+
+### Terminology
+* `Library` - this repo
+* `Consumer` - the user of this library
+* `API` - methods in the library that the consumer can execute (e.g. `NewLeanHelix()`)
+* `SPI` - Service Programming Interface - interfaces defined in the library, for which the consumer provides the implementation
+  * For example - `NetworkCommunication` is responsible for transferring messages between nodes in the network. The library cannot assume anything about the consumer's network, therefore it is up to the consumer to provide the actual implementation of message transfer.
+* `membuffers` - the 3rd party dependency that the library uses for serializing its messages into and from byte arrays
+  * Repo on [github](https://github.com/orbs-network/membuffers)
+
+* Lean Helix (object) - runs the infinite loop that with every iteration requests a new block, reaches consensus, and broadcasts the commit message.
+  There is only a single instance of this type, it is aware of all blocks pending consensus (of all heights). It holds one or more `LeanHelixTerm` instances.
+
+* `Committee` - the *ordered* list of nodes participating in a single *Term*.
+The first node in the committee is the first leader. If that leader is unable to reach consensus on its block proposal, the next node in the committee becomes the new leader and the process repeats.
+
+* `Term` - a.k.a. **consensus round** - the process of reaching consensus for a *specific block height* - the algo is trying to reach consensus on a block of some height during a term.
+A Term handles only a specific height, but the algo can locally store blocks for several heights.
+It will associate each block height with its term. See struct `LeanHelixTerm`.
+
+* `View` - part of the `Term`, during which a specific leader node proposes a block and tries to reach consensus with its *validators* (the other, non-leader nodes).
+If that leader is unable to reach consensus for any reason (usually timeout), the *view* is incremented and a new leader is set.
+The next leader is the next node in the committee
+So - each view (modulo the number of nodes in a committee) has a different leader.
 
 
 
 
-## Design (Lean helix only uses interfaces)
-This library does not create any Message objects on its own.
-It defines interfaces and leaves it to the user of the library to
-create structs that implement them. This is because a Message can contain any data the user wishes, and the library needs not be concerned with that,
-as long as specific fields of the Message (as required by the interface's methods) are provided.
+## Design
 
-KeyManager is also provided as interface-only and it is up to the user to implement its methods.
+### API
+* NewLeanHelix()
+* ValidateConsensusOnBlock
+* tbd
 
-### Interfaces
+### SPI
+Interfaces provided by the library, implemented by the consumer
+* KeyManager (to be renamed to SignerVerifier - tbd)
+* BlockUtils (to be split into BlockProvider and BlockValidator)
+* NetworkCommunication
 
-Only orbs serializes messages because its protocol defines the exact structure of every message on the wire, including the lib's.
-The lib does so for testing and can use JSON.
+### Internal structs
+tbd
+These are internal, not to be used directly by the consumer of the library
+
+* `LeanHelixTerm` handles a specific **term** - that is it handles reaching consensus on a single block of some height. It has no knowledge of blocks of other heights.
+There may be multiple `LeanHelixTerm` instances active at the same time.
+
+
+TBD
+
+### Messages
+The library creates and serializes its own messages into and from byte arrays.
+The library does not actually transfer messages over the wire as it does not assume anything about the consumer's network.
+
 
 #### Message handling
 
+tbd go over make sure still relevant
 Message creation
 ```
 type MessageFactory interface {
@@ -245,22 +283,6 @@ On creation of the lib instance (of type `LeanHelixLib`) by Orbs, Orbs will pass
 
 ## Terminology
 
-### Lean Helix (object)
-The `LeanHelix` object holds the main algo loop that always tries to get new blocks, reach consensus, and broadcast that they should be committed.
-There is only a single instance of this type, it is aware of all blocks pending consensus (of all heights). It holds one or more `LeanHelixTerm` instances.
-
-### Term
-**Term** is a specific block height - the algo is trying to reach consensus on a block of some height during a term.
-A Term handles only a specific height, but the algo can store locally blocks of several heights.
-It will associate each block height with its term.
-
-The struct `LeanHelixTerm` handles a specific **term** - that is it handles reaching consensus on a single block of some height. It has no knowledge of blocks of other heights.
-There may be multiple `LeanHelixTerm` instances active at the same time.
-
-### View
-A view is a single round of consensus with a specific leader. The leader for that view begins with getting a block for which it will try to reach consensus, then it starts spreading it by sending a Preprepare message.
-If that leader is unable to reach consensus for any reason (usually timeout), the view is incremented and a new leader is set.
-So - each view (modulo the number of nodes in a committee) has a different leader.
 
 
 ### Logging
