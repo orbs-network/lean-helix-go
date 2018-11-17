@@ -9,9 +9,12 @@ import (
 )
 
 type TestNetworkBuilder struct {
-	NodeCount          int
-	customNodeBuilders []*NodeBuilder
-	blocksPool         []lh.Block
+	NodeCount            int
+	customNodeBuilders   []*NodeBuilder
+	blocksPool           []lh.Block
+	keyManager           lh.KeyManager
+	blockUtils           lh.BlockUtils
+	networkCommunication lh.NetworkCommunication
 }
 
 func (builder *TestNetworkBuilder) WithNodeCount(nodeCount int) *TestNetworkBuilder {
@@ -83,6 +86,21 @@ func (builder *TestNetworkBuilder) createNodes(ctx context.Context, discovery *g
 	return nodes
 }
 
+func (builder *TestNetworkBuilder) WithNetworkCommunication(comm lh.NetworkCommunication) *TestNetworkBuilder {
+	builder.networkCommunication = comm
+	return builder
+}
+
+func (builder *TestNetworkBuilder) WithBlockUtils(utils lh.BlockUtils) *TestNetworkBuilder {
+	builder.blockUtils = utils
+	return builder
+}
+
+func (builder *TestNetworkBuilder) WithKeyManager(mgr lh.KeyManager) *TestNetworkBuilder {
+	builder.keyManager = mgr
+	return builder
+}
+
 func NewTestNetworkBuilder() *TestNetworkBuilder {
 	return &TestNetworkBuilder{
 		NodeCount:          0,
@@ -98,4 +116,19 @@ func ABasicTestNetwork(ctx context.Context) *TestNetwork {
 func ATestNetwork(ctx context.Context, countOfNodes int, blocksPool ...lh.Block) *TestNetwork {
 	testNetwork := NewTestNetworkBuilder()
 	return testNetwork.WithNodeCount(countOfNodes).WithBlocksPool(blocksPool).Build(ctx)
+}
+
+func CreateTestNetworkForConsumerTests(
+	ctx context.Context, countOfNodes int,
+	spi *lh.LeanHelixSPI,
+	blocks []lh.Block,
+) *TestNetwork {
+	testNetwork := NewTestNetworkBuilder()
+	return testNetwork.
+		WithNodeCount(countOfNodes).
+		WithBlocksPool(blocks).
+		WithNetworkCommunication(spi.Comm).
+		WithKeyManager(spi.Mgr).
+		WithBlockUtils(spi.Utils).
+		Build(ctx)
 }
