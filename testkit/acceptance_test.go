@@ -18,6 +18,6 @@ package testkit
 //		testNetwork := builders.CreateTestNetworkForConsumerTests(ctx, 4, spi, block1, block2)
 //		testNetwork.StartConsensus(ctx)
 //
-//		require.True(t, testNetwork.AllNodesAgreeOnBlock(block1))
+//		require.True(t, testNetwork.WaitForAllNodesToCommitBlock(block1))
 //	})
 //}

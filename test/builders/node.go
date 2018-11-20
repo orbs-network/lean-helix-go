@@ -15,7 +15,7 @@ type NodeState struct {
 type Node struct {
 	leanHelix        lh.LeanHelix
 	blockChain       *InMemoryBlockChain
-	electionTrigger  *ElectionTriggerMock
+	ElectionTrigger  *ElectionTriggerMock
 	BlockUtils       *MockBlockUtils
 	KeyManager       lh.KeyManager
 	Storage          lh.Storage
@@ -24,12 +24,12 @@ type Node struct {
 	NodeStateChannel chan *NodeState
 }
 
-func (node *Node) GetLatestCommittedBlock() lh.Block {
+func (node *Node) GetLatestBlock() lh.Block {
 	return node.blockChain.GetLastBlock()
 }
 
 func (node *Node) TriggerElection() {
-	node.electionTrigger.ManualTrigger()
+	node.ElectionTrigger.ManualTrigger()
 }
 
 func (node *Node) onCommittedBlock(block lh.Block) {
@@ -42,7 +42,7 @@ func (node *Node) onCommittedBlock(block lh.Block) {
 
 func (node *Node) StartConsensus(ctx context.Context) {
 	if node.leanHelix != nil {
-		lastCommittedBlock := node.GetLatestCommittedBlock()
+		lastCommittedBlock := node.GetLatestBlock()
 		go node.leanHelix.Start(ctx, lastCommittedBlock.Height()+1)
 	}
 }
@@ -50,7 +50,7 @@ func (node *Node) StartConsensus(ctx context.Context) {
 func (node *Node) BuildConfig() *lh.Config {
 	return &lh.Config{
 		NetworkCommunication: node.Gossip,
-		ElectionTrigger:      node.electionTrigger,
+		ElectionTrigger:      node.ElectionTrigger,
 		BlockUtils:           node.BlockUtils,
 		KeyManager:           node.KeyManager,
 		Storage:              node.Storage,
@@ -61,7 +61,7 @@ func (node *Node) BuildConfig() *lh.Config {
 func NewNode(publicKey primitives.Ed25519PublicKey, gossip *gossip.Gossip, blockUtils *MockBlockUtils) *Node {
 	node := &Node{
 		blockChain:       NewInMemoryBlockChain(),
-		electionTrigger:  NewMockElectionTrigger(false),
+		ElectionTrigger:  NewMockElectionTrigger(false),
 		BlockUtils:       blockUtils,
 		KeyManager:       NewMockKeyManager(publicKey),
 		Storage:          lh.NewInMemoryStorage(),

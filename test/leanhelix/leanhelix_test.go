@@ -13,7 +13,7 @@ func TestHappyFlow(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		net := builders.ABasicTestNetwork(ctx)
 		net.StartConsensus(ctx)
-		require.True(t, net.InConsensus())
+		require.True(t, net.WaitForAllNodesToCommitTheSameBlock())
 	})
 }
 
@@ -36,7 +36,7 @@ func TestConsensusFor8Blocks(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		net := builders.ABasicTestNetwork(ctx).StartConsensus(ctx)
 		for i := 0; i < 8; i++ {
-			net.InConsensus()
+			net.WaitForAllNodesToCommitTheSameBlock()
 		}
 	})
 }
@@ -57,26 +57,26 @@ func TestHangingNode(t *testing.T) {
 		net.WaitForNodesToValidate(node1, node2, node3)
 		net.ResumeNodesValidation(node1, node2)
 		net.WaitForNodesToCommitABlock(node0, node1, node2)
-		require.True(t, builders.BlocksAreEqual(node0.GetLatestCommittedBlock(), block1))
-		require.True(t, builders.BlocksAreEqual(node1.GetLatestCommittedBlock(), block1))
-		require.True(t, builders.BlocksAreEqual(node2.GetLatestCommittedBlock(), block1))
-		require.True(t, builders.BlocksAreEqual(node3.GetLatestCommittedBlock(), builders.GenesisBlock))
+		require.True(t, builders.BlocksAreEqual(node0.GetLatestBlock(), block1))
+		require.True(t, builders.BlocksAreEqual(node1.GetLatestBlock(), block1))
+		require.True(t, builders.BlocksAreEqual(node2.GetLatestBlock(), block1))
+		require.True(t, builders.BlocksAreEqual(node3.GetLatestBlock(), builders.GenesisBlock))
 
 		net.WaitForNodesToValidate(node1, node2)
 		net.ResumeNodesValidation(node1, node2)
 		net.WaitForNodesToCommitABlock(node0, node1, node2)
-		require.True(t, builders.BlocksAreEqual(node0.GetLatestCommittedBlock(), block2))
-		require.True(t, builders.BlocksAreEqual(node1.GetLatestCommittedBlock(), block2))
-		require.True(t, builders.BlocksAreEqual(node2.GetLatestCommittedBlock(), block2))
-		require.True(t, builders.BlocksAreEqual(node3.GetLatestCommittedBlock(), builders.GenesisBlock))
+		require.True(t, builders.BlocksAreEqual(node0.GetLatestBlock(), block2))
+		require.True(t, builders.BlocksAreEqual(node1.GetLatestBlock(), block2))
+		require.True(t, builders.BlocksAreEqual(node2.GetLatestBlock(), block2))
+		require.True(t, builders.BlocksAreEqual(node3.GetLatestBlock(), builders.GenesisBlock))
 
 		net.ResumeNodesValidation(node3)
 		net.WaitForNodesToCommitABlock(node3)
-		require.True(t, builders.BlocksAreEqual(node3.GetLatestCommittedBlock(), block1))
+		require.True(t, builders.BlocksAreEqual(node3.GetLatestBlock(), block1))
 
 		net.WaitForNodesToValidate(node3)
 		net.ResumeNodesValidation(node3)
 		net.WaitForNodesToCommitABlock(node3)
-		require.True(t, builders.BlocksAreEqual(node3.GetLatestCommittedBlock(), block2))
+		require.True(t, builders.BlocksAreEqual(node3.GetLatestBlock(), block2))
 	})
 }

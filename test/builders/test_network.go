@@ -48,7 +48,16 @@ func (net *TestNetwork) ShutDown() {
 	//}
 }
 
-func (net *TestNetwork) AllNodesAgreeOnBlock(block leanhelix.Block) bool {
+func (net *TestNetwork) AllNodesChainEndsWithABlock(block leanhelix.Block) bool {
+	for _, node := range net.Nodes {
+		if BlocksAreEqual(block, node.GetLatestBlock()) == false {
+			return false
+		}
+	}
+	return true
+}
+
+func (net *TestNetwork) WaitForAllNodesToCommitBlock(block leanhelix.Block) bool {
 	for _, node := range net.Nodes {
 		nodeState := <-node.NodeStateChannel
 		if BlocksAreEqual(block, nodeState.block) == false {
@@ -60,7 +69,7 @@ func (net *TestNetwork) AllNodesAgreeOnBlock(block leanhelix.Block) bool {
 
 const MINIMUM_NUMBER_OF_NODES_FOR_CONSENSUS = 4
 
-func (net *TestNetwork) InConsensus() bool {
+func (net *TestNetwork) WaitForAllNodesToCommitTheSameBlock() bool {
 	if len(net.Nodes) < MINIMUM_NUMBER_OF_NODES_FOR_CONSENSUS {
 		panic("Not enough nodes for consensus")
 	}
