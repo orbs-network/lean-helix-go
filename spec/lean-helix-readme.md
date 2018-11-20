@@ -24,7 +24,7 @@
 
 ### Library API
 
-* `UpdateState(previousBlockProof)`
+* `Start(previousBlockProof)`
   Initiates participation in a consensus round and terminate participation in an on-going round. Called upon block sync upon processing of a block with height higher than the current one.
 * `ValidateBlockConsensus(block, blockProof, prevBlockProof)`
   Validates given block against its BlockProof and its parent BlockProof _(prevBlockProof)_. Called as part of the **block sync** flow upon receiving a new block.
