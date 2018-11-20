@@ -23,6 +23,7 @@
 * Is Disposed is checked at beginning of validation _(instead of at checking criteria)_ to prevent any further processing of messages.
 * PreparedProof in VIEW_CHANGE does not hold block _(only Block_hash)_
 * Report conditions which failed validation (e.g., Leader for View sent PREPARE message)
+* A node validates a proposed Block only once, on first encounter. Specifically, subsequent NewView message containing the same Block will not trigger a new validation.
 
 
 
