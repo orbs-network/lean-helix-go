@@ -59,9 +59,9 @@
  -->
 
 #### KeyManager
-<!--  * `KeyManager.GetPublicKey(height, SignatureScheme) : PublicKey` - Returnes the node public Public Key. KeyType indicates Consensus / RandomSeed. -->
-* `KeyManager.Sign(height, data, SignatureScheme) : signature` - sign using the node's private key. SignatureScheme is an enum with options: Consensus / RandomSeed.
-* `KeyManager.Verify(height, data, signature, memberID, SignatureScheme) : valid` - verify the validity of a signature.
+<!--  * `KeyManager.GetPublicKey(height, SignatureType) : PublicKey` - Returnes the node public Public Key. KeyType indicates Consensus / RandomSeed. -->
+* `KeyManager.Sign(height, data, SignatureType) : signature` - sign using the node's private key. SignatureType is an enum with options: Consensus / RandomSeed.
+* `KeyManager.Verify(height, data, signature, memberID, SignatureType) : valid` - verify the validity of a signature.
 * `KeyManager.Aggregate(height, signature_list, memberIDs_list) : signature` - aggregate the RandomSeed signatures.
 
 #### Logger and Monitor 
