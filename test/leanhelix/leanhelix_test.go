@@ -11,7 +11,7 @@ import (
 
 func TestHappyFlow(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := builders.ABasicTestNetwork(ctx)
+		net := builders.ABasicTestNetwork()
 		net.StartConsensus(ctx)
 		require.True(t, net.WaitForAllNodesToCommitTheSameBlock())
 	})
@@ -19,7 +19,7 @@ func TestHappyFlow(t *testing.T) {
 
 func TestOnlyLeaderIsSendingPrePrepareOnce(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := builders.ABasicTestNetwork(ctx)
+		net := builders.ABasicTestNetwork()
 
 		net.NodesPauseOnValidate()
 		net.StartConsensus(ctx)
@@ -34,7 +34,7 @@ func TestOnlyLeaderIsSendingPrePrepareOnce(t *testing.T) {
 
 func TestConsensusFor8Blocks(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := builders.ABasicTestNetwork(ctx).StartConsensus(ctx)
+		net := builders.ABasicTestNetwork().StartConsensus(ctx)
 		for i := 0; i < 8; i++ {
 			net.WaitForAllNodesToCommitTheSameBlock()
 		}
@@ -46,7 +46,7 @@ func TestHangingNode(t *testing.T) {
 		block1 := builders.CreateBlock(builders.GenesisBlock)
 		block2 := builders.CreateBlock(block1)
 
-		net := builders.ATestNetwork(ctx, 4, block1, block2)
+		net := builders.ATestNetwork(4, block1, block2)
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
