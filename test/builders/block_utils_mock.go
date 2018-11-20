@@ -25,6 +25,7 @@ type MockBlockUtils struct {
 	validationCounter int
 	ValidationSns     *Sns
 	PauseOnValidation bool
+	ValidationResult  bool
 }
 
 func NewMockBlockUtils(upcomingBlocks []lh.Block) *MockBlockUtils {
@@ -34,6 +35,7 @@ func NewMockBlockUtils(upcomingBlocks []lh.Block) *MockBlockUtils {
 		validationCounter: 0,
 		ValidationSns:     NewSignalAndStop(),
 		PauseOnValidation: false,
+		ValidationResult:  true,
 	}
 }
 
@@ -66,5 +68,5 @@ func (b *MockBlockUtils) ValidateBlock(block lh.Block) bool {
 		b.ValidationSns.SignalAndStop()
 	}
 
-	return true
+	return b.ValidationResult
 }

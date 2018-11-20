@@ -47,6 +47,18 @@ func (node *Node) StartConsensus(ctx context.Context) {
 	}
 }
 
+func (node *Node) PauseOnTick() {
+	node.ElectionTrigger.PauseOnTick = true
+}
+
+func (node *Node) WaitForPause() {
+	node.ElectionTrigger.TickSns.WaitForSignal()
+}
+
+func (node *Node) Resume() {
+	node.ElectionTrigger.TickSns.Resume()
+}
+
 func (node *Node) BuildConfig() *lh.Config {
 	return &lh.Config{
 		NetworkCommunication: node.Gossip,
@@ -58,10 +70,14 @@ func (node *Node) BuildConfig() *lh.Config {
 
 }
 
-func NewNode(publicKey primitives.Ed25519PublicKey, gossip *gossip.Gossip, blockUtils *MockBlockUtils) *Node {
+func NewNode(
+	publicKey primitives.Ed25519PublicKey,
+	gossip *gossip.Gossip,
+	blockUtils *MockBlockUtils,
+	electionTrigger *ElectionTriggerMock) *Node {
 	node := &Node{
 		blockChain:       NewInMemoryBlockChain(),
-		ElectionTrigger:  NewMockElectionTrigger(false),
+		ElectionTrigger:  electionTrigger,
 		BlockUtils:       blockUtils,
 		KeyManager:       NewMockKeyManager(publicKey),
 		Storage:          lh.NewInMemoryStorage(),

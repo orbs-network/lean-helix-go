@@ -50,7 +50,9 @@ func (h *harness) startConsensus(ctx context.Context) {
 }
 
 func (h *harness) waitForView(expectedView primitives.View) {
-	view := h.electionTrigger.WaitForNextContextCreation()
+	h.electionTrigger.TickSns.WaitForSignal()
+	view := h.term.GetView()
+	h.electionTrigger.TickSns.Resume()
 	require.Equal(h.t, view, expectedView, fmt.Sprintf("Term should have view=%d, but got %d", expectedView, view))
 }
 
