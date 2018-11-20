@@ -6,7 +6,6 @@ import (
 	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
-	"github.com/orbs-network/lean-helix-go/test/gossip"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -16,32 +15,25 @@ type harness struct {
 	term            *leanhelix.LeanHelixTerm
 	filter          *leanhelix.ConsensusMessageFilter
 	electionTrigger *builders.ElectionTriggerMock
+	blockUtils      *builders.MockBlockUtils
 }
 
 func NewHarness(t *testing.T) *harness {
-	publicKey := primitives.Ed25519PublicKey("My PublicKey")
-	keyManager := builders.NewMockKeyManager(publicKey)
-	discovery := gossip.NewGossipDiscovery()
-	gossip := gossip.NewGossip(discovery)
-	discovery.RegisterGossip(publicKey, gossip)
-	blockUtils := builders.NewMockBlockUtils(nil)
-	electionTrigger := builders.NewMockElectionTrigger(true)
-	storage := leanhelix.NewInMemoryStorage()
-	termConfig := &leanhelix.Config{
-		NetworkCommunication: gossip,
-		BlockUtils:           blockUtils,
-		KeyManager:           keyManager,
-		ElectionTrigger:      electionTrigger,
-		Storage:              storage,
-	}
-	filter := leanhelix.NewConsensusMessageFilter(publicKey)
+	net := builders.ABasicTestNetwork()
+	node := net.Nodes[0]
+	termConfig := node.BuildConfig()
+	node.ElectionTrigger.PauseOnTick = true
+
+	// term initialization
+	filter := leanhelix.NewConsensusMessageFilter(termConfig.KeyManager.MyPublicKey())
 	term := leanhelix.NewLeanHelixTerm(termConfig, filter, 0)
 
 	return &harness{
 		t:               t,
 		term:            term,
 		filter:          filter,
-		electionTrigger: electionTrigger,
+		electionTrigger: node.ElectionTrigger,
+		blockUtils:      node.BlockUtils,
 	}
 }
 

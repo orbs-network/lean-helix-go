@@ -18,6 +18,56 @@ func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 	})
 }
 
+func TestNotAcceptViewsFromThePast(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		h := NewHarness(t)
+
+		h.startConsensus(ctx)
+		h.waitForView(0)
+
+		h.triggerElection()
+		h.waitForView(1)
+	})
+}
+
+//func TestNoConsensusWhenValidationFailed(t *testing.T) {
+//	test.WithContext(func(ctx context.Context) {
+//		block1 := builders.CreateBlock(builders.GenesisBlock)
+//		block2 := builders.CreateBlock(block1)
+//
+//		net := builders.ATestNetwork(ctx, 4, block1, block2)
+//		node1 := net.Nodes[1]
+//		node2 := net.Nodes[2]
+//		node3 := net.Nodes[3]
+//
+//		net.NodesPauseOnValidate()
+//		net.StartConsensus(ctx)
+//
+//		// Block1, should pass
+//		node1.BlockUtils.ValidationResult = true
+//		node2.BlockUtils.ValidationResult = true
+//		node3.BlockUtils.ValidationResult = true
+//		net.WaitForNodesToValidate(node1, node2, node3)
+//		net.ResumeNodesValidation(node1, node2, node3)
+//		require.True(t, net.WaitForAllNodesToCommitBlock(block1))
+//
+//		// Block2, should fail
+//		node1.BlockUtils.ValidationResult = false
+//		node2.BlockUtils.ValidationResult = false
+//		node3.BlockUtils.ValidationResult = false
+//		net.WaitForNodesToValidate(node1, node2, node3)
+//		node1.PauseOnTick()
+//		node2.PauseOnTick()
+//		node3.PauseOnTick()
+//		net.ResumeNodesValidation(node1, node2, node3)
+//
+//		node1.WaitForPause()
+//		node2.WaitForPause()
+//		node3.WaitForPause()
+//		require.True(t, net.AllNodesChainEndsWithABlock(block1))
+//	})
+//}
+
 // TODO: uncomment
 //// View Change messages //
 //func TestViewIncrementedAfterEnoughViewChangeMessages(t *testing.T) {
