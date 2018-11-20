@@ -24,6 +24,7 @@ type MockBlockUtils struct {
 	latestBlock       lh.Block
 	validationCounter int
 	ValidationSns     *Sns
+	PauseOnValidation bool
 }
 
 func NewMockBlockUtils(upcomingBlocks []lh.Block) *MockBlockUtils {
@@ -32,6 +33,7 @@ func NewMockBlockUtils(upcomingBlocks []lh.Block) *MockBlockUtils {
 		latestBlock:       GenesisBlock,
 		validationCounter: 0,
 		ValidationSns:     NewSignalAndStop(),
+		PauseOnValidation: false,
 	}
 }
 
@@ -60,7 +62,9 @@ func (b *MockBlockUtils) CounterOfValidation() int {
 }
 func (b *MockBlockUtils) ValidateBlock(block lh.Block) bool {
 	b.validationCounter++
-	b.ValidationSns.SignalAndStop()
+	if b.PauseOnValidation {
+		b.ValidationSns.SignalAndStop()
+	}
 
 	return true
 }

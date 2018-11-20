@@ -77,27 +77,13 @@ func (net *TestNetwork) InConsensus() bool {
 	return true
 }
 
-//func (net *TestNetwork) PauseNodesExecutionOnValidation(nodes ...*Node) func() func() {
-//	for _, node := range nodes {
-//		node.BlockUtils.ValidationSns = test.NewSignalAndStop()
-//	}
-//
-//	return func() func() {
-//		for _, node := range nodes {
-//			node.BlockUtils.ValidationSns.WaitForSignal()
-//		}
-//
-//		return func() {
-//			for _, node := range nodes {
-//				node.BlockUtils.ValidationSns.Resume()
-//			}
-//		}
-//	}
-//}
+func (net *TestNetwork) NodesPauseOnValidate(nodes ...*Node) {
+	if nodes == nil {
+		nodes = net.Nodes
+	}
 
-func (net *TestNetwork) NodesWaitOnValidate(nodes ...*Node) {
 	for _, node := range nodes {
-		node.BlockUtils.ValidationSns = NewSignalAndStop()
+		node.BlockUtils.PauseOnValidation = true
 	}
 }
 

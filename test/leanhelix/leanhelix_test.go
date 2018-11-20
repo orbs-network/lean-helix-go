@@ -13,8 +13,6 @@ func TestHappyFlow(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		net := builders.ABasicTestNetwork(ctx)
 		net.StartConsensus(ctx)
-		net.WaitForNodesToValidate(net.Nodes[1], net.Nodes[2], net.Nodes[3])
-		net.ResumeNodesValidation(net.Nodes[1], net.Nodes[2], net.Nodes[3])
 		require.True(t, net.InConsensus())
 	})
 }
@@ -23,7 +21,7 @@ func TestOnlyLeaderIsSendingPrePrepareOnce(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		net := builders.ABasicTestNetwork(ctx)
 
-		net.NodesWaitOnValidate(net.Nodes[1], net.Nodes[2], net.Nodes[3])
+		net.NodesPauseOnValidate()
 		net.StartConsensus(ctx)
 		net.WaitForNodesToValidate(net.Nodes[1], net.Nodes[2], net.Nodes[3])
 
@@ -38,8 +36,6 @@ func TestConsensusFor8Blocks(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		net := builders.ABasicTestNetwork(ctx).StartConsensus(ctx)
 		for i := 0; i < 8; i++ {
-			net.WaitForNodesToValidate(net.Nodes[1], net.Nodes[2], net.Nodes[3])
-			net.ResumeNodesValidation(net.Nodes[1], net.Nodes[2], net.Nodes[3])
 			net.InConsensus()
 		}
 	})
@@ -55,6 +51,7 @@ func TestHangingNode(t *testing.T) {
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
 		node3 := net.Nodes[3]
+		net.NodesPauseOnValidate()
 		net.StartConsensus(ctx)
 
 		net.WaitForNodesToValidate(node1, node2, node3)
