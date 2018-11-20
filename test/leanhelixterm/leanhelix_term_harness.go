@@ -18,11 +18,11 @@ type harness struct {
 	electionTrigger *builders.ElectionTriggerMock
 }
 
-func NewHarness(ctx context.Context, t *testing.T) *harness {
+func NewHarness(t *testing.T) *harness {
 	publicKey := primitives.Ed25519PublicKey("My PublicKey")
 	keyManager := builders.NewMockKeyManager(publicKey)
 	discovery := gossip.NewGossipDiscovery()
-	gossip := gossip.NewGossip(ctx, discovery)
+	gossip := gossip.NewGossip(discovery)
 	discovery.RegisterGossip(publicKey, gossip)
 	blockUtils := builders.NewMockBlockUtils(nil)
 	electionTrigger := builders.NewMockElectionTrigger(true)

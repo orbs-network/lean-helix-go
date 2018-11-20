@@ -8,6 +8,10 @@ import (
 	. "github.com/orbs-network/lean-helix-go/primitives"
 )
 
+func BlocksAreEqual(block1 lh.Block, block2 lh.Block) bool {
+	return CalculateBlockHash(block1).Equal(CalculateBlockHash(block2))
+}
+
 func CalculateBlockHash(block lh.Block) Uint256 {
 	mockBlock := block.(*MockBlock)
 	str := fmt.Sprintf("%d_%s", mockBlock.Height(), mockBlock.Body())
@@ -16,20 +20,18 @@ func CalculateBlockHash(block lh.Block) Uint256 {
 }
 
 type MockBlockUtils struct {
-	upcomingBlocks     []lh.Block
-	latestBlock        lh.Block
-	validationCounter  int
-	PauseOnValidations bool
-	PausingChannel     chan chan bool
+	upcomingBlocks    []lh.Block
+	latestBlock       lh.Block
+	validationCounter int
+	ValidationSns     *Sns
 }
 
 func NewMockBlockUtils(upcomingBlocks []lh.Block) *MockBlockUtils {
 	return &MockBlockUtils{
-		upcomingBlocks:     upcomingBlocks,
-		latestBlock:        GenesisBlock,
-		validationCounter:  0,
-		PauseOnValidations: false,
-		PausingChannel:     make(chan chan bool),
+		upcomingBlocks:    upcomingBlocks,
+		latestBlock:       GenesisBlock,
+		validationCounter: 0,
+		ValidationSns:     NewSignalAndStop(),
 	}
 }
 
@@ -58,10 +60,7 @@ func (b *MockBlockUtils) CounterOfValidation() int {
 }
 func (b *MockBlockUtils) ValidateBlock(block lh.Block) bool {
 	b.validationCounter++
-	if b.PauseOnValidations {
-		releasingChannel := make(chan bool)
-		b.PausingChannel <- releasingChannel
-		return <-releasingChannel
-	}
+	b.ValidationSns.SignalAndStop()
+
 	return true
 }

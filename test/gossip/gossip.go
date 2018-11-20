@@ -12,41 +12,40 @@ type SubscriptionValue struct {
 }
 
 type outgoingMessage struct {
-	targets []Ed25519PublicKey
+	target  Ed25519PublicKey
 	message lh.ConsensusRawMessage
 }
 
 type Gossip struct {
-	discovery               *Discovery
-	outgoingMessagesChannel chan *outgoingMessage
-	totalSubscriptions      int
-	subscriptions           map[int]*SubscriptionValue
-	outgoingWhitelist       []Ed25519PublicKey
-	incomingWhiteListPKs    []Ed25519PublicKey
-	statsSentMessages       []lh.ConsensusRawMessage
+	discovery            *Discovery
+	outgoingChannelsMap  map[string]chan *outgoingMessage
+	totalSubscriptions   int
+	subscriptions        map[int]*SubscriptionValue
+	outgoingWhitelist    []Ed25519PublicKey
+	incomingWhiteListPKs []Ed25519PublicKey
+	statsSentMessages    []lh.ConsensusRawMessage
 }
 
-func NewGossip(ctx context.Context, discovery *Discovery) *Gossip {
+func NewGossip(discovery *Discovery) *Gossip {
 	g := &Gossip{
-		discovery:               discovery,
-		outgoingMessagesChannel: make(chan *outgoingMessage, 10),
-		totalSubscriptions:      0,
-		subscriptions:           make(map[int]*SubscriptionValue),
-		outgoingWhitelist:       nil,
-		incomingWhiteListPKs:    nil,
-		statsSentMessages:       []lh.ConsensusRawMessage{},
+		discovery:            discovery,
+		outgoingChannelsMap:  make(map[string]chan *outgoingMessage),
+		totalSubscriptions:   0,
+		subscriptions:        make(map[int]*SubscriptionValue),
+		outgoingWhitelist:    nil,
+		incomingWhiteListPKs: nil,
+		statsSentMessages:    []lh.ConsensusRawMessage{},
 	}
-	go g.messageSenderMainLoop(ctx)
 	return g
 }
 
-func (g *Gossip) messageSenderMainLoop(ctx context.Context) {
+func (g *Gossip) messageSenderLoop(ctx context.Context, channel chan *outgoingMessage) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case messageData := <-g.outgoingMessagesChannel:
-			g.sendMessageFromMainLoop(ctx, messageData.targets, messageData.message)
+		case messageData := <-channel:
+			g.SendToNode(ctx, messageData.target, messageData.message)
 		}
 
 	}
@@ -64,14 +63,22 @@ func (g *Gossip) IsMember(pk Ed25519PublicKey) bool {
 	return g.discovery.GetGossipByPK(pk) != nil
 }
 
-func (g *Gossip) SendMessage(ctx context.Context, targets []Ed25519PublicKey, message lh.ConsensusRawMessage) {
-	g.outgoingMessagesChannel <- &outgoingMessage{targets, message}
+func (g *Gossip) getOutgoingChannelByTarget(ctx context.Context, target Ed25519PublicKey) chan *outgoingMessage {
+	channel := g.outgoingChannelsMap[target.String()]
+	if channel == nil {
+		channel = make(chan *outgoingMessage, 100)
+		g.outgoingChannelsMap[target.String()] = channel
+		go g.messageSenderLoop(ctx, channel)
+	}
+
+	return channel
 }
 
-func (g *Gossip) sendMessageFromMainLoop(ctx context.Context, targets []Ed25519PublicKey, message lh.ConsensusRawMessage) {
+func (g *Gossip) SendMessage(ctx context.Context, targets []Ed25519PublicKey, message lh.ConsensusRawMessage) {
 	g.statsSentMessages = append(g.statsSentMessages, message)
-	for _, targetId := range targets {
-		g.SendToNode(ctx, targetId, message)
+	for _, target := range targets {
+		channel := g.getOutgoingChannelByTarget(ctx, target)
+		channel <- &outgoingMessage{target, message}
 	}
 }
 

@@ -9,10 +9,12 @@ import (
 
 func TestCallValidateBlockDuringConsensus(t *testing.T) {
 	WithContext(func(ctx context.Context) {
-		testNetwork := builders.ABasicTestNetwork(ctx)
-		testNetwork.StartConsensus(ctx)
+		net := builders.ABasicTestNetwork(ctx)
+		net.StartConsensus(ctx)
+		net.WaitForNodesToValidate(net.Nodes[1], net.Nodes[2], net.Nodes[3])
+		net.ResumeNodesValidation(net.Nodes[1], net.Nodes[2], net.Nodes[3])
 
-		require.True(t, testNetwork.AllNodesValidatedNoMoreThanOnceBeforeCommit())
+		require.True(t, net.AllNodesValidatedNoMoreThanOnceBeforeCommit())
 	})
 }
 

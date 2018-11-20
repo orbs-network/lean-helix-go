@@ -9,7 +9,7 @@ import (
 // Leader election //
 func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		h := NewHarness(ctx, t)
+		h := NewHarness(t)
 		h.startConsensus(ctx)
 		h.waitForView(0)
 
