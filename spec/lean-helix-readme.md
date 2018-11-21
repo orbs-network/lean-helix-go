@@ -29,7 +29,7 @@
 * `ValidateBlockConsensus(block, blockProof, prevBlockProof)`
   Validates given block against its BlockProof and its parent BlockProof _(prevBlockProof)_. Called as part of the **block sync** flow upon receiving a new block.
 * `StopAt(height)`
-  Stops the participation in the consensus when the target height is reached.
+  Stops the participation in the consensus when the target height is reached. [Not implemented yet]
 * `OnConsensusMessage(message)` - called upon reception of a consensus message.
 
 ### Dependent Interfaces
