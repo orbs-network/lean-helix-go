@@ -27,7 +27,7 @@ func ValidatePreparedProof(
 	keyManager KeyManager,
 	membersPKs []Ed25519PublicKey,
 	calcLeaderPk CalcLeaderPk) bool {
-	if preparedProof == nil {
+	if preparedProof == nil || len(preparedProof.Raw()) == 0 {
 		return true
 	}
 

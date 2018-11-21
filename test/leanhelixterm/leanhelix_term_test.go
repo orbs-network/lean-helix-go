@@ -3,6 +3,7 @@ package leanhelixterm
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/test"
+	"github.com/orbs-network/lean-helix-go/test/builders"
 	"testing"
 )
 
@@ -23,10 +24,21 @@ func TestNotAcceptViewsFromThePast(t *testing.T) {
 		h := NewHarness(t)
 
 		h.startConsensus(ctx)
-		h.waitForView(0)
 
+		// moving to node1 as the leader
+		h.waitForView(0)
 		h.triggerElection()
 		h.waitForView(1)
+
+		// voting node0 as the leader
+		block := builders.CreateBlock(builders.GenesisBlock)
+		h.sendLeaderChange(ctx, 8, block)
+		h.waitForView(8)
+
+		// re-voting node0 as the leader, but with a view from the past (4)
+		block = builders.CreateBlock(builders.GenesisBlock)
+		h.sendLeaderChange(ctx, 4, block)
+		h.waitForView(8) // unchanged
 	})
 }
 

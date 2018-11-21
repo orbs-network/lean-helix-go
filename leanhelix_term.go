@@ -412,7 +412,7 @@ func (term *LeanHelixTerm) validateViewChangeVotes(targetBlockHeight BlockHeight
 func (term *LeanHelixTerm) latestViewChangeVote(confirmations []*ViewChangeMessageContent) *ViewChangeMessageContent {
 	res := make([]*ViewChangeMessageContent, 0, len(confirmations))
 	for _, confirmation := range confirmations {
-		if confirmation.SignedHeader().PreparedProof() != nil {
+		if confirmation.SignedHeader().PreparedProof() != nil && len(confirmation.SignedHeader().PreparedProof().Raw()) > 0 {
 			res = append(res, confirmation)
 		}
 	}
