@@ -19,7 +19,7 @@ func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 	})
 }
 
-func TestNotAcceptViewsFromThePast(t *testing.T) {
+func TestNewViewNotAcceptViewsFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(t)
 
@@ -32,12 +32,12 @@ func TestNotAcceptViewsFromThePast(t *testing.T) {
 
 		// voting node0 as the leader
 		block := builders.CreateBlock(builders.GenesisBlock)
-		h.sendLeaderChange(ctx, 8, block)
+		h.sendLeaderChanged(ctx, 8, block)
 		h.waitForView(8)
 
 		// re-voting node0 as the leader, but with a view from the past (4)
 		block = builders.CreateBlock(builders.GenesisBlock)
-		h.sendLeaderChange(ctx, 4, block)
+		h.sendLeaderChanged(ctx, 4, block)
 		h.waitForView(8) // unchanged
 	})
 }
@@ -88,7 +88,7 @@ func TestNotAcceptViewsFromThePast(t *testing.T) {
 //		h.startConsensus(ctx)
 //		h.waitForView(0)
 //
-//		h.sendLeaderChange(ctx, 1) // next view
+//		h.sendLeaderChanged(ctx, 1) // next view
 //		h.waitForView(1)
 //	})
 //}
@@ -99,10 +99,10 @@ func TestNotAcceptViewsFromThePast(t *testing.T) {
 //		h.startConsensus(ctx)
 //		h.waitForView(0)
 //
-//		h.sendLeaderChange(ctx, 1) // next view, good
+//		h.sendLeaderChanged(ctx, 1) // next view, good
 //		h.waitForView(1)
 //
-//		h.sendLeaderChange(ctx, 1) // same view, ignored
+//		h.sendLeaderChanged(ctx, 1) // same view, ignored
 //		h.verifyViewDoesNotChange(1)
 //	})
 //}

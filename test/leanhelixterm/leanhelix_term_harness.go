@@ -57,7 +57,7 @@ func (h *harness) triggerElection() {
 	h.electionTrigger.ManualTrigger()
 }
 
-func (h *harness) sendLeaderChange(ctx context.Context, view primitives.View, block leanhelix.Block) {
+func (h *harness) sendLeaderChanged(ctx context.Context, view primitives.View, block leanhelix.Block) {
 	leader := h.net.Nodes[0]
 	node1 := h.net.Nodes[1]
 	node2 := h.net.Nodes[2]
