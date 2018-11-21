@@ -75,7 +75,7 @@ func (g *Gossip) sendMessageFromMainLoop(ctx context.Context, targets []Ed25519P
 	}
 }
 
-func (g *Gossip) RegisterOnMessage(cb func(ctx context.Context, message lh.ConsensusRawMessage)) int {
+func (g *Gossip) RegisterOnMessage(cb lh.MessageHandler) int {
 	g.totalSubscriptions++
 	g.subscriptions[g.totalSubscriptions] = &SubscriptionValue{cb}
 	return g.totalSubscriptions
