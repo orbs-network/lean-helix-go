@@ -63,7 +63,7 @@ func (builder *TestNetworkBuilder) buildNode(
 	discovery *gossip.Discovery,
 	blocksPool []lh.Block) *Node {
 
-	gossip := gossip.NewGossip(ctx, discovery)
+	gossip := gossip.NewGossip(discovery)
 	discovery.RegisterGossip(publicKey, gossip)
 	return nodeBuilder.ThatIsPartOf(gossip).WithBlocksPool(blocksPool).WithPublicKey(publicKey).Build()
 }

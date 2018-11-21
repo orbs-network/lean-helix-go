@@ -24,7 +24,7 @@
 
 ### Library API
 
-* `UpdateState(previousBlockProof)`
+* `Start(previousBlockProof)`
   Initiates participation in a consensus round and terminate participation in an on-going round. Called upon block sync upon processing of a block with height higher than the current one.
 * `ValidateBlockConsensus(block, blockProof, prevBlockProof)`
   Validates given block against its BlockProof and its parent BlockProof _(prevBlockProof)_. Called as part of the **block sync** flow upon receiving a new block.
@@ -59,9 +59,9 @@
  -->
 
 #### KeyManager
-<!--  * `KeyManager.GetPublicKey(height, SignatureScheme) : PublicKey` - Returnes the node public Public Key. KeyType indicates Consensus / RandomSeed. -->
-* `KeyManager.Sign(height, data, SignatureScheme) : signature` - sign using the node's private key. SignatureScheme is an enum with options: Consensus / RandomSeed.
-* `KeyManager.Verify(height, data, signature, memberID, SignatureScheme) : valid` - verify the validity of a signature.
+<!--  * `KeyManager.GetPublicKey(height, SignatureType) : PublicKey` - Returnes the node public Public Key. KeyType indicates Consensus / RandomSeed. -->
+* `KeyManager.Sign(height, data, SignatureType) : signature` - sign using the node's private key. SignatureType is an enum with options: Consensus / RandomSeed.
+* `KeyManager.Verify(height, data, signature, memberID, SignatureType) : valid` - verify the validity of a signature.
 * `KeyManager.Aggregate(height, signature_list, memberIDs_list) : signature` - aggregate the RandomSeed signatures.
 
 #### Logger and Monitor 

@@ -51,7 +51,7 @@ func (net *TestNetwork) ShutDown() {
 func (net *TestNetwork) AllNodesAgreeOnBlock(block leanhelix.Block) bool {
 	for _, node := range net.Nodes {
 		nodeState := <-node.NodeStateChannel
-		if CalculateBlockHash(block).Equal(CalculateBlockHash(nodeState.block)) == false {
+		if BlocksAreEqual(block, nodeState.block) == false {
 			return false
 		}
 	}
@@ -70,11 +70,33 @@ func (net *TestNetwork) InConsensus() bool {
 	for i := 1; i < len(net.Nodes); i++ {
 		node := net.Nodes[i]
 		nodeState := <-node.NodeStateChannel
-		if CalculateBlockHash(firstNodeBlock).Equal(CalculateBlockHash(nodeState.block)) == false {
+		if BlocksAreEqual(firstNodeBlock, nodeState.block) == false {
 			return false
 		}
 	}
 	return true
+}
+
+func (net *TestNetwork) NodesPauseOnValidate(nodes ...*Node) {
+	if nodes == nil {
+		nodes = net.Nodes
+	}
+
+	for _, node := range nodes {
+		node.BlockUtils.PauseOnValidation = true
+	}
+}
+
+func (net *TestNetwork) WaitForNodesToValidate(nodes ...*Node) {
+	for _, node := range nodes {
+		node.BlockUtils.ValidationSns.WaitForSignal()
+	}
+}
+
+func (net *TestNetwork) ResumeNodesValidation(nodes ...*Node) {
+	for _, node := range nodes {
+		node.BlockUtils.ValidationSns.Resume()
+	}
 }
 
 func (net *TestNetwork) WaitForConsensus() {
@@ -83,30 +105,9 @@ func (net *TestNetwork) WaitForConsensus() {
 	}
 }
 
-func (net *TestNetwork) PauseNodesExecutionOnValidation(nodes ...*Node) func() func(isValid bool) {
+func (net *TestNetwork) WaitForNodesToCommitABlock(nodes ...*Node) {
 	for _, node := range nodes {
-		node.BlockUtils.PauseOnValidations = true
-	}
-
-	return func() func(isValid bool) {
-		releasingChannels := make([]chan bool, len(nodes))
-		for _, node := range nodes {
-			releasingChannel := <-node.BlockUtils.PausingChannel
-			releasingChannels = append(releasingChannels, releasingChannel)
-		}
-
-		return func(isValid bool) {
-			for _, releasingChannel := range releasingChannels {
-				releasingChannel <- isValid
-			}
-		}
-	}
-}
-
-func (net *TestNetwork) ResolveAllValidations() {
-	for _, node := range net.Nodes {
-		releasingChannel := make(chan bool)
-		node.BlockUtils.PausingChannel <- releasingChannel
+		<-node.NodeStateChannel
 	}
 }
 

@@ -77,7 +77,7 @@
 
 
 &nbsp;
-## `UpdateState(previousBlockProof)`
+## `Start(previousBlockProof)`
 > Start infinite consensus at a given context. \
 > Derive next height, prevBlockHash and random_seed from previousBlockProof (called by the ConsensusService). \
 > Clear old cache. \
@@ -185,7 +185,7 @@
 * LeanHelixBlockProof = Get by Calling `GenerateLeanHelixBlockProof(commits_list)`
 * Commit the BlockPair to consuming service by calling `Config.ConsensusService.Commit(block, LeanHelixBlockProof)`
 * Broadcast to all nodes message with block by calling `Config.Communication.SendConsensusMessage(height, message(block))`
-* Trigger next consensus round by Calling `UpdateState(LeanHelixBlockProof)`
+* Trigger next consensus round by Calling `Start(LeanHelixBlockProof)`
 
 
 
@@ -308,7 +308,7 @@
 
 * Interfaces:
 
-  * `UpdateState(prevBlockHeader)` - start infinite consensus from prevBlockHeader.height + 1 - dependent on blockstorage.
+  * `Start(prevBlockHeader)` - start infinite consensus from prevBlockHeader.height + 1 - dependent on blockstorage.
   * `NotifyCommitted(block)` - notify on committed block event - push commit block to blockStorage.
   * `VerifyBlockConsensus (block - headers + proof)` - called by the Block storage as part of block sync (dependent on blockstorage.getBlockHeader(block -> height-1)).
   * `CommitBlock(block, commits_list)` - called by the OneHieght, generates a block_proof, propagates the commit and starts new consesnus round.
@@ -335,7 +335,7 @@
 
 
 * Internal methods:
-  * `StartNewConsensusRound(height, committee)` - triggered upon block n-1 commit or by UpdateState. OrderedNodes are the committee elected for this height.
+  * `StartNewConsensusRound(height, committee)` - triggered upon block n-1 commit or by Start. OrderedNodes are the committee elected for this height.
   * `ClearOldRound()` - clean log
 
   * Construct New one-height
