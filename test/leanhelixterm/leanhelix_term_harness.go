@@ -27,6 +27,7 @@ func NewHarness(t *testing.T) *harness {
 	blockUtils := builders.NewMockBlockUtils(nil)
 	electionTrigger := builders.NewMockElectionTrigger(true)
 	storage := leanhelix.NewInMemoryStorage()
+	logger := leanhelix.NewSilentLogger()
 	termConfig := &leanhelix.Config{
 		NetworkCommunication: gossip,
 		BlockUtils:           blockUtils,
@@ -34,7 +35,7 @@ func NewHarness(t *testing.T) *harness {
 		ElectionTrigger:      electionTrigger,
 		Storage:              storage,
 	}
-	filter := leanhelix.NewConsensusMessageFilter(publicKey)
+	filter := leanhelix.NewConsensusMessageFilter(publicKey, logger)
 	term := leanhelix.NewLeanHelixTerm(termConfig, filter, 0)
 
 	return &harness{

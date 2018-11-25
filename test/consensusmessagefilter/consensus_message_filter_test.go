@@ -10,6 +10,10 @@ import (
 	"testing"
 )
 
+func testLogger() leanhelix.Logger {
+	return leanhelix.NewSilentLogger()
+}
+
 func GenerateMessage(blockHeight primitives.BlockHeight, view primitives.View, senderPublicKey string) leanhelix.ConsensusRawMessage {
 	keyManager := builders.NewMockKeyManager(primitives.Ed25519PublicKey(senderPublicKey))
 	block := builders.CreateBlock(builders.GenesisBlock)
@@ -18,7 +22,7 @@ func GenerateMessage(blockHeight primitives.BlockHeight, view primitives.View, s
 
 func TestGettingAMessage(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
+		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"), testLogger())
 		rawMessage := GenerateMessage(10, 20, "Sender PublicKey")
 		go filter.OnGossipMessage(ctx, rawMessage)
 
@@ -32,7 +36,7 @@ func TestStoppingOnContextCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
+	filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"), testLogger())
 	rawMessage := GenerateMessage(10, 20, "Sender PublicKey")
 	go filter.OnGossipMessage(ctx, rawMessage)
 
@@ -44,7 +48,7 @@ func TestStoppingOnContextCancel(t *testing.T) {
 
 func TestFilterMessagesFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
+		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"), testLogger())
 		rawMessageFromThePast := GenerateMessage(9, 20, "Sender PublicKey")
 		rawMessageFromThePresent := GenerateMessage(10, 20, "Sender PublicKey")
 		go func() {
@@ -60,7 +64,7 @@ func TestFilterMessagesFromThePast(t *testing.T) {
 
 func TestCacheMessagesFromTheFuture(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
+		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"), testLogger())
 		rawMessageFromTheFuture := GenerateMessage(11, 20, "Sender PublicKey")
 		rawMessageFromThePresent := GenerateMessage(10, 20, "Sender PublicKey")
 		go func() {
@@ -80,7 +84,7 @@ func TestCacheMessagesFromTheFuture(t *testing.T) {
 
 func TestFilterMessagesWithMyPublicKey(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
+		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"), testLogger())
 		badMessage := GenerateMessage(10, 20, "My PublicKey")
 		goodMessage := GenerateMessage(10, 20, "Sender PublicKey")
 		go func() {

@@ -28,10 +28,6 @@ func (lh *leanHelix) ValidateBlockConsensus(block Block, blockProof *BlockProof,
 }
 
 func (lh *leanHelix) Start(ctx context.Context, blockHeight primitives.BlockHeight) {
-	lh.logger = lh.config.Logger
-	if lh.logger == nil {
-		lh.logger = NewSilentLogger()
-	}
 	lh.logger.Debug("LeanHelix.Start")
 	for {
 		leanHelixTerm := NewLeanHelixTerm(lh.config, lh.filter, blockHeight)
@@ -46,7 +42,10 @@ func (lh *leanHelix) Dispose() {
 }
 
 func NewLeanHelix(config *Config) LeanHelix {
-	filter := NewConsensusMessageFilter(config.KeyManager.MyPublicKey())
+	if config.Logger == nil {
+		config.Logger = NewSilentLogger()
+	}
+	filter := NewConsensusMessageFilter(config.KeyManager.MyPublicKey(), config.Logger)
 	subscriptionToken := config.NetworkCommunication.RegisterOnMessage(filter.OnGossipMessage)
-	return &leanHelix{config, filter, subscriptionToken, nil}
+	return &leanHelix{config, config.Logger, filter, subscriptionToken, nil}
 }

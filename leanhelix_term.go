@@ -45,6 +45,8 @@ func NewLeanHelixTerm(config *Config, filter *ConsensusMessageFilter, newBlockHe
 	var log Logger
 	if config.Logger == nil {
 		log = NewSilentLogger()
+	} else {
+		log = config.Logger
 	}
 
 	newTerm := &LeanHelixTerm{
