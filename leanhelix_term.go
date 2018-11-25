@@ -36,6 +36,9 @@ func NewLeanHelixTerm(config *Config, filter *ConsensusMessageFilter, newBlockHe
 	comm := config.NetworkCommunication
 	messageFactory := NewMessageFactory(keyManager)
 	committeeMembers := comm.RequestOrderedCommittee(uint64(newBlockHeight))
+
+	panicOnLessThanMinimumCommitteeMembers(config.OverrideMinimumCommitteeMembers, committeeMembers)
+
 	otherCommitteeMembers := make([]Ed25519PublicKey, 0)
 	for _, member := range committeeMembers {
 		if !member.Equal(myPK) {
@@ -65,8 +68,19 @@ func NewLeanHelixTerm(config *Config, filter *ConsensusMessageFilter, newBlockHe
 		logger:                          config.Logger,
 	}
 
-	newTerm.logger.Debug("NewLeanHelixTerm: blockHeight=%v myID=%v", newBlockHeight, keyManager.MyPublicKey())
+	newTerm.logger.Debug("NewLeanHelixTerm: blockHeight=%s myID=%s committeeMembersCount=%d", newBlockHeight, keyManager.MyPublicKey(), len(committeeMembers))
 	return newTerm
+}
+
+func panicOnLessThanMinimumCommitteeMembers(minimum int, committeeMembers []Ed25519PublicKey) {
+
+	if minimum == 0 {
+		minimum = LEAN_HELIX_HARD_MINIMUM_COMMITTEE_MEMBERS
+	}
+
+	if len(committeeMembers) < minimum {
+		panic(fmt.Sprintf("LH Received only %d committee members, but the hard minimum is %d", len(committeeMembers), LEAN_HELIX_HARD_MINIMUM_COMMITTEE_MEMBERS))
+	}
 }
 
 func (term *LeanHelixTerm) WaitForBlock(ctx context.Context) Block {
