@@ -34,6 +34,7 @@ func NewHarness(t *testing.T) *harness {
 		KeyManager:           keyManager,
 		ElectionTrigger:      electionTrigger,
 		Storage:              storage,
+		OverrideMinimumCommitteeMembers: 1,
 	}
 	filter := leanhelix.NewConsensusMessageFilter(publicKey, logger)
 	term := leanhelix.NewLeanHelixTerm(termConfig, filter, 0)
