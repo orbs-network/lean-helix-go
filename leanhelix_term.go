@@ -42,11 +42,12 @@ func NewLeanHelixTerm(config *Config, filter *ConsensusMessageFilter, newBlockHe
 			otherCommitteeMembers = append(otherCommitteeMembers, member)
 		}
 	}
-	var log Logger
 	if config.Logger == nil {
-		log = NewSilentLogger()
-	} else {
-		log = config.Logger
+		config.Logger = NewSilentLogger()
+	}
+
+	if config.Storage == nil {
+		config.Storage = NewInMemoryStorage()
 	}
 
 	newTerm := &LeanHelixTerm{
@@ -61,10 +62,10 @@ func NewLeanHelixTerm(config *Config, filter *ConsensusMessageFilter, newBlockHe
 		messageFactory:                  messageFactory,
 		myPublicKey:                     myPK,
 		filter:                          filter,
-		logger:                          log,
+		logger:                          config.Logger,
 	}
 
-	log.Debug("NewLeanHelixTerm: blockHeight=%v myID=%v", newBlockHeight, keyManager.MyPublicKey())
+	newTerm.logger.Debug("NewLeanHelixTerm: blockHeight=%v myID=%v", newBlockHeight, keyManager.MyPublicKey())
 	return newTerm
 }
 
@@ -146,6 +147,7 @@ func (term *LeanHelixTerm) calcLeaderPublicKey(view View) Ed25519PublicKey {
 }
 
 func (term *LeanHelixTerm) moveToNextLeader(ctx context.Context) {
+	term.logger.Info("moveToNextLeader()")
 	term.SetView(term.view + 1)
 	preparedMessages := ExtractPreparedMessages(term.height, term.Storage, term.QuorumSize())
 	vcm := term.messageFactory.CreateViewChangeMessage(term.height, term.view, preparedMessages)
