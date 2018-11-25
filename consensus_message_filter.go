@@ -9,44 +9,53 @@ type ConsensusMessageFilter struct {
 	myPublicKey     primitives.Ed25519PublicKey
 	messagesChannel chan ConsensusRawMessage
 	messageCache    map[primitives.BlockHeight][]ConsensusMessage
+	logger          Logger
 }
 
-func NewConsensusMessageFilter(myPublicKey primitives.Ed25519PublicKey) *ConsensusMessageFilter {
+func NewConsensusMessageFilter(myPublicKey primitives.Ed25519PublicKey, logger Logger) *ConsensusMessageFilter {
 	res := &ConsensusMessageFilter{
 		myPublicKey:     myPublicKey,
 		messagesChannel: make(chan ConsensusRawMessage, 0),
 		messageCache:    make(map[primitives.BlockHeight][]ConsensusMessage),
+		logger:          logger,
 	}
 
 	return res
 }
 
 func (f *ConsensusMessageFilter) WaitForMessage(ctx context.Context, blockHeight primitives.BlockHeight) (ConsensusMessage, error) {
+	f.logger.Debug("WaitForMessage() start, blockHeight=%v", blockHeight)
 	message := f.popFromCache(blockHeight)
 	if message != nil {
 		return message, nil
 	}
-
+	f.logger.Debug("WaitForMessage() popped")
 	for {
 		select {
 		case <-ctx.Done():
+			f.logger.Debug("WaitForMessage() Done()")
 			return nil, ctx.Err()
 
 		case rawMessage := <-f.messagesChannel:
+			f.logger.Debug("WaitForMessage() got message")
 			message = rawMessage.ToConsensusMessage()
 			if f.isMyMessage(message) {
+				f.logger.Debug("WaitForMessage() rejected: from me")
 				continue
 			}
 
 			if message.BlockHeight() > blockHeight {
+				f.logger.Debug("WaitForMessage() rejected: from future")
 				f.pushToCache(message.BlockHeight(), message)
 				continue
 			}
 
 			if message.BlockHeight() < blockHeight {
+				f.logger.Debug("WaitForMessage() rejected: from past")
 				continue
 			}
 
+			f.logger.Debug("WaitForMessage() accepted")
 			return message, nil
 		}
 	}

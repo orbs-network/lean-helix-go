@@ -26,6 +26,7 @@ type LeanHelixTerm struct {
 	committedBlock                  Block
 	leaderPublicKey                 Ed25519PublicKey
 	newViewLocally                  View
+	logger                          Logger
 }
 
 func NewLeanHelixTerm(config *Config, filter *ConsensusMessageFilter, newBlockHeight BlockHeight) *LeanHelixTerm {
@@ -41,6 +42,10 @@ func NewLeanHelixTerm(config *Config, filter *ConsensusMessageFilter, newBlockHe
 			otherCommitteeMembers = append(otherCommitteeMembers, member)
 		}
 	}
+	var log Logger
+	if config.Logger == nil {
+		log = NewSilentLogger()
+	}
 
 	newTerm := &LeanHelixTerm{
 		height:                          newBlockHeight,
@@ -54,8 +59,10 @@ func NewLeanHelixTerm(config *Config, filter *ConsensusMessageFilter, newBlockHe
 		messageFactory:                  messageFactory,
 		myPublicKey:                     myPK,
 		filter:                          filter,
+		logger:                          log,
 	}
 
+	log.Debug("NewLeanHelixTerm: blockHeight=%v myID=%v", newBlockHeight, keyManager.MyPublicKey())
 	return newTerm
 }
 

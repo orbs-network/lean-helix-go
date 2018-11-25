@@ -17,6 +17,7 @@ type Config struct {
 	KeyManager           KeyManager
 	ElectionTrigger      ElectionTrigger
 	Storage              Storage
+	Logger               Logger
 }
 
 // Interfaces that must be implemented by the external service using this library

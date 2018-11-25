@@ -7,6 +7,7 @@ import (
 
 type leanHelix struct {
 	config              *Config
+	logger              Logger
 	filter              *ConsensusMessageFilter
 	subscriptionToken   int
 	commitSubscriptions []func(block Block)
@@ -27,6 +28,11 @@ func (lh *leanHelix) ValidateBlockConsensus(block Block, blockProof *BlockProof,
 }
 
 func (lh *leanHelix) Start(ctx context.Context, blockHeight primitives.BlockHeight) {
+	lh.logger = lh.config.Logger
+	if lh.logger == nil {
+		lh.logger = NewSilentLogger()
+	}
+	lh.logger.Debug("LeanHelix.Start")
 	for {
 		leanHelixTerm := NewLeanHelixTerm(lh.config, lh.filter, blockHeight)
 		block := leanHelixTerm.WaitForBlock(ctx)
