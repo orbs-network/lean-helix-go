@@ -147,7 +147,7 @@ func (term *LeanHelixTerm) calcLeaderPublicKey(view View) Ed25519PublicKey {
 }
 
 func (term *LeanHelixTerm) moveToNextLeader(ctx context.Context) {
-	term.logger.Info("moveToNextLeader()")
+	term.logger.Debug("moveToNextLeader()")
 	term.SetView(term.view + 1)
 	preparedMessages := ExtractPreparedMessages(term.height, term.Storage, term.QuorumSize())
 	vcm := term.messageFactory.CreateViewChangeMessage(term.height, term.view, preparedMessages)
@@ -160,31 +160,37 @@ func (term *LeanHelixTerm) moveToNextLeader(ctx context.Context) {
 }
 
 func (term *LeanHelixTerm) sendPreprepare(ctx context.Context, message *PreprepareMessage) {
+	term.logger.Debug("sendPreprepare(): height=%s view=%s", message.BlockHeight(), message.View())
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
 }
 
 func (term *LeanHelixTerm) sendPrepare(ctx context.Context, message *PrepareMessage) {
+	term.logger.Debug("sendPrepare(): height=%s view=%s", message.BlockHeight(), message.View())
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
 }
 
 func (term *LeanHelixTerm) sendCommit(ctx context.Context, message *CommitMessage) {
+	term.logger.Debug("sendCommit(): height=%s view=%s", message.BlockHeight(), message.View())
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
 }
 
 func (term *LeanHelixTerm) sendViewChange(ctx context.Context, message *ViewChangeMessage) {
+	term.logger.Debug("sendViewChange(): height=%s view=%s", message.BlockHeight(), message.View())
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, []Ed25519PublicKey{term.leaderPublicKey}, rawMessage)
 }
 
 func (term *LeanHelixTerm) sendNewView(ctx context.Context, message *NewViewMessage) {
+	term.logger.Debug("sendNewView(): height=%s view=%s", message.BlockHeight(), message.View())
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
 }
 
 func (term *LeanHelixTerm) onReceivePreprepare(ctx context.Context, ppm *PreprepareMessage) {
+	term.logger.Debug("onReceivePreprepare(): height=%s view=%s", ppm.BlockHeight(), ppm.View())
 	if term.validatePreprepare(ppm) {
 		term.processPreprepare(ctx, ppm)
 	}
@@ -244,6 +250,7 @@ func (term *LeanHelixTerm) hasPreprepare(blockHeight BlockHeight, view View) boo
 }
 
 func (term *LeanHelixTerm) onReceivePrepare(ctx context.Context, pm *PrepareMessage) {
+	term.logger.Debug("onReceivePrepare(): height=%s view=%s", pm.BlockHeight(), pm.View())
 	header := pm.content.SignedHeader()
 	sender := pm.content.Sender()
 
@@ -266,6 +273,7 @@ func (term *LeanHelixTerm) onReceivePrepare(ctx context.Context, pm *PrepareMess
 }
 
 func (term *LeanHelixTerm) onReceiveViewChange(ctx context.Context, vcm *ViewChangeMessage) {
+	term.logger.Debug("onReceiveViewChange(): height=%s view=%s", vcm.BlockHeight(), vcm.View())
 	header := vcm.content.SignedHeader()
 	if !term.isViewChangeValid(term.myPublicKey, term.view, vcm.content) {
 		fmt.Printf("message ViewChange is not valid\n")
@@ -361,6 +369,7 @@ func (term *LeanHelixTerm) onPrepared(ctx context.Context, blockHeight BlockHeig
 }
 
 func (term *LeanHelixTerm) onReceiveCommit(ctx context.Context, cm *CommitMessage) {
+	term.logger.Debug("onReceiveCommit(): height=%s view=%s", cm.BlockHeight(), cm.View())
 	header := cm.content.SignedHeader()
 	sender := cm.content.Sender()
 
@@ -440,6 +449,7 @@ func (term *LeanHelixTerm) latestViewChangeVote(confirmations []*ViewChangeMessa
 }
 
 func (term *LeanHelixTerm) onReceiveNewView(ctx context.Context, nvm *NewViewMessage) {
+	term.logger.Debug("onReceiveNewView(): height=%s view=%s", nvm.BlockHeight(), nvm.View())
 	header := nvm.Content().SignedHeader()
 	sender := nvm.Content().Sender()
 	ppMessageContent := nvm.Content().PreprepareMessageContent()
