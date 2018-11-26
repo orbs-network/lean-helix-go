@@ -1,10 +1,10 @@
 # LeanHelix Consensus Algo
-> This document describes LeanHelix consensus library interfaces and APIs.
+> This document describes LeanHelix consensus library interfaces and APIs.\
 > LeanHelix is a PBFT based algorithm, providing block finality based on committees. A new ordered committee, and its leader, is randomly selected for each block. The committee members actively participate in the block consensus.
 > LeanHelix is based on [Helix consensus algorithm paper](https://orbs.com/helix-consensus-whitepaper/ "Helix consensus algorithm paper"). LeanHelix does not implement Helix selection fairness properties.
 
 ## Design Notes
-* Consensus is performed in an infinite loop triggered at a given context state (a BlockProof which holds all necessary information to start next consensus round). For example, a sync scenario flow might shift the consensus loop to a different height.
+* Consensus is performed in an infinite loop triggered at a given context state (a pair _(Block,BlockProof)_ which holds all necessary information to start next consensus round). For example, a sync scenario flow might shift the consensus loop to a different height.
 * The proposed design involves another partition into an inner constrained module - "LeanHelixOneHeight" - explicitly devoted to a single round PBFT consensus, further detailed in a seperate file. The "multi-height" library is responsible for:
   * Looping through the correct height, setting the relevant context
   * Filtering old messages and subsequently relaying future messages at appropriate times
@@ -24,8 +24,11 @@
 
 ### Library API
 
-* `Start(previousBlockProof)`
-  Initiates participation in a consensus round and terminate participation in an on-going round. Called upon block sync upon processing of a block with height higher than the current one.
+* `Run()`
+Initiates lean-helix library infinite listening loop.
+* `UpdateState(prevBlock, prevBlockProof)`
+  Called upon node sync. Assumes the matching pair _(prevBlock,prevBlockProof)_ are validated!\
+  If given prevBlock->height is at least as on-going round, terminate participation in an on-going round and initiate participation in the subsequent consensus round.
 * `ValidateBlockConsensus(block, blockProof, prevBlockProof)`
   Validates given block against its BlockProof and its parent BlockProof _(prevBlockProof)_. Called as part of the **block sync** flow upon receiving a new block.
 * `StopAt(height)`
@@ -40,13 +43,21 @@
 * `NewBlockProof(blockProof_data): BlockProof` - Provides BlockProof serialization.
 
 #### BlockUtils
-* `RequestNewBlock(height, prevBlockHash) : block` - called by the OneHeight logic, returns a block interface with a block proposal. This block will then go through consensus.
-* `ValidateBlockContent(height, block) : is_valid` - called by the OneHeight logic. Validates the block structure and content. Note: this could include the timestamp - whithin acceptable range of local clock.
+* `RequestNewBlock(prevBlock) : block` - called by the OneHeight logic, returns a block interface with a block proposal. This block will then go through consensus. 
+* `ValidateBlockContent(height, block, prevBlock) : is_valid` - called by the OneHeight logic. Validates the block content. Note: this includes validating previous block pointer _(prevBlockHash)_ and timestamp - whithin acceptable range of local clock.
 * `CalcBlockHash(height, block) : block_hash` - called by the OneHeight logic, the consumer service uses its hashing scheme to calculate the hash on a block (commitment on block content and structure).
+* `ValidateBlockHash(height, block, block_hash) : is_valid` - called by the OneHeight logic, validate the block_hash against the given block, based on the hashing scheme ("deep" commitment on block content and structure).
 
 #### Membership
 * `MyID(height) : member` - obtain unique identifier for the node, used in consensus process.
-* `RequestOrderedCommittee(height, random_seed, Config.commmittee_size) : member_list` -  called at the setup stage of each consensus round (random_seed for round r is determined from the random_seed at round r-1).
+* `RequestOrderedCommittee(height, random_seed) : member_list` -  called at the setup stage of each consensus round (random_seed for round r is determined from the random_seed at round r-1). Assumes membership holds the both the federation members and the committee size of the given height.
+
+#### KeyManager
+* `KeyManager.SignConsensusMessage(height, data) : signature` - sign using the node's private key. 
+* `KeyManager.VerifyConsensusMessage(height, data, signature, memberID) : valid` - verify the validity of a signature.
+* `KeyManager.SignRandomSeed(height, data) : signature` - sign using the node's private key. 
+* `KeyManager.VerifyRandomSeed(height, data, signature, memberID) : valid` - verify the validity of a signature.
+* `KeyManager.AggregateRandomSeed(height, signature_and_memberID_list) : signature` - aggregate the RandomSeed signatures.
 
 #### Communication
 * `SendConsensusMessage(height, member_list, message)` - abstraction of sending all consensus related messages [LeanHelix messages](../messages.go). Message may include a Block interface, indicating SendMessageWithBlock.
@@ -54,27 +65,11 @@
 <!-- I think it should be part fo the SendConsensusMessage, sent to a member list (non-committee)
 * `BroadcastPostConsensusMessage(height, message)` - e.g. notify all non committee members of committed block
 -->
-<!-- moved to API
-* `OnConsensusMessage(message)` - relay message to filtering by height.
- -->
 
-#### KeyManager
-<!--  * `KeyManager.GetPublicKey(height, SignatureType) : PublicKey` - Returnes the node public Public Key. KeyType indicates Consensus / RandomSeed. -->
-* `KeyManager.Sign(height, data, SignatureType) : signature` - sign using the node's private key. SignatureType is an enum with options: Consensus / RandomSeed.
-* `KeyManager.Verify(height, data, signature, memberID, SignatureType) : valid` - verify the validity of a signature.
-* `KeyManager.Aggregate(height, signature_list, memberIDs_list) : signature` - aggregate the RandomSeed signatures.
+
+
 
 #### Logger and Monitor 
 * `Log(data)` - logs an log event. 
 * `Monitor(data)` - reports monitoring data.
     
-<!--
-#### ElectionTrigger:
-* `ElectionTrigger.RegisterOnTrigger(cb) : uid`
-* `ElectionTrigger.unregisterOnTrigger(uid)`
---->
-
-#### Additional configurations and interfaces
-* Committee size
-  * Desired committee size
-  
