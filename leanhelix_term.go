@@ -260,16 +260,16 @@ func (term *LeanHelixTerm) onReceiveViewChange(ctx context.Context, vcm *ViewCha
 		fmt.Printf("message ViewChange is not valid\n")
 		return
 	}
-	if vcm.block == nil || header.PreparedProof() == nil {
-		fmt.Printf("message ViewChange - block or prepared proof are nil\n")
-		return
+
+	if vcm.block != nil && header.PreparedProof() != nil {
+		calculatedBlockHash := term.BlockUtils.CalculateBlockHash(vcm.block)
+		isValidDigest := calculatedBlockHash.Equal(header.PreparedProof().PreprepareBlockRef().BlockHash())
+		if !isValidDigest {
+			fmt.Printf("different block hashes for block provided with message, and the block provided by the PPM in the PreparedProof of the message\n")
+			return
+		}
 	}
-	calculatedBlockHash := term.BlockUtils.CalculateBlockHash(vcm.block)
-	isValidDigest := calculatedBlockHash.Equal(header.PreparedProof().PreprepareBlockRef().BlockHash())
-	if !isValidDigest {
-		fmt.Printf("different block hashes for block provided with message, and the block provided by the PPM in the PreparedProof of the message\n")
-		return
-	}
+
 	term.Storage.StoreViewChange(vcm)
 	term.checkElected(ctx, header.BlockHeight(), header.View())
 }

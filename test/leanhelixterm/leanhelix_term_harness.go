@@ -18,6 +18,7 @@ type harness struct {
 	electionTrigger *builders.ElectionTriggerMock
 	keyManager      leanhelix.KeyManager
 	blockUtils      *builders.MockBlockUtils
+	storage         leanhelix.Storage
 }
 
 func NewHarness(t *testing.T) *harness {
@@ -39,6 +40,7 @@ func NewHarness(t *testing.T) *harness {
 		electionTrigger: node.ElectionTrigger,
 		blockUtils:      node.BlockUtils,
 		keyManager:      node.KeyManager,
+		storage:         node.Storage,
 	}
 }
 
@@ -46,10 +48,18 @@ func (h *harness) startConsensus(ctx context.Context) {
 	go h.term.WaitForBlock(ctx)
 }
 
-func (h *harness) waitForView(expectedView primitives.View) {
+func (h *harness) waitForTick() {
 	h.electionTrigger.TickSns.WaitForSignal()
-	view := h.term.GetView()
+}
+
+func (h *harness) resume() {
 	h.electionTrigger.TickSns.Resume()
+}
+
+func (h *harness) waitForView(expectedView primitives.View) {
+	h.waitForTick()
+	view := h.term.GetView()
+	h.resume()
 	require.Equal(h.t, view, expectedView, fmt.Sprintf("Term should have view=%d, but got %d", expectedView, view))
 }
 
@@ -57,12 +67,22 @@ func (h *harness) triggerElection() {
 	h.electionTrigger.ManualTrigger()
 }
 
-func (h *harness) sendLeaderChanged(ctx context.Context, view primitives.View, block leanhelix.Block) {
+func (h *harness) sendLeaderChanged(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
 	leader := h.net.Nodes[0]
 	node1 := h.net.Nodes[1]
 	node2 := h.net.Nodes[2]
 	node3 := h.net.Nodes[3]
 	members := []*builders.Node{node1, node2, node3}
-	nvm := builders.AValidNewViewMessage(leader, members, 1, view, block)
+	nvm := builders.AValidNewViewMessage(leader, members, blockHeight, view, block)
 	go h.filter.OnGossipMessage(ctx, nvm.ToConsensusRawMessage())
+}
+
+func (h *harness) sendChangeLeader(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+	sender := h.net.Nodes[3]
+	vc := builders.AViewChangeMessage(sender.KeyManager, blockHeight, view, nil)
+	go h.filter.OnGossipMessage(ctx, vc.ToConsensusRawMessage())
+}
+
+func (h *harness) countViewChange(blockHeight primitives.BlockHeight, view primitives.View) int {
+	return len(h.storage.GetViewChangeMessages(blockHeight, view))
 }
