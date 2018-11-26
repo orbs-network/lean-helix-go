@@ -91,7 +91,7 @@ func (term *LeanHelixTerm) WaitForBlock(ctx context.Context) Block {
 		message, err := term.filter.WaitForMessage(ctxWithElectionTrigger, term.height)
 
 		if err != nil {
-			term.logger.Debug("H %s WaitForBlock() err=%v", term.height, err)
+			term.logger.Debug("H %s V ? WaitForBlock() err=%v", term.height, err)
 			if ctx.Err() == nil {
 				term.moveToNextLeader(ctx)
 				continue
