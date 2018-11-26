@@ -26,7 +26,7 @@
 
 * `Run()`
 Initiates lean-helix library infinite listening loop.
-* `SetContext(prevBlock, prevBlockProof)`
+* `UpdateState(prevBlock, prevBlockProof)`
   Called upon node sync. Assumes the matching pair _(prevBlock,prevBlockProof)_ are validated!\
   If given prevBlock->height is at least as on-going round, terminate participation in an on-going round and initiate participation in the subsequent consensus round.
 * `ValidateBlockConsensus(block, blockProof, prevBlockProof)`
