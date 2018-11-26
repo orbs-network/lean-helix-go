@@ -27,12 +27,12 @@ func (lh *leanHelix) ValidateBlockConsensus(block Block, blockProof *BlockProof,
 }
 
 func (lh *leanHelix) Start(ctx context.Context, blockHeight primitives.BlockHeight) {
-	for {
-		leanHelixTerm := NewLeanHelixTerm(lh.config, lh.filter, blockHeight)
-		block := leanHelixTerm.WaitForBlock(ctx)
-		lh.notifyCommitted(block)
-		blockHeight++
-	}
+	//for {
+	//	leanHelixTerm := NewLeanHelixTerm(lh.config, lh.filter, blockHeight)
+	//	block := leanHelixTerm.WaitForBlock(ctx)
+	//	lh.notifyCommitted(block)
+	//	blockHeight++
+	//}
 }
 
 func (lh *leanHelix) Dispose() {

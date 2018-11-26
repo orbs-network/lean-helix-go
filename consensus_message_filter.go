@@ -2,59 +2,42 @@ package leanhelix
 
 import (
 	"context"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/primitives"
 )
 
 type ConsensusMessageFilter struct {
-	myPublicKey     primitives.Ed25519PublicKey
-	messagesChannel chan ConsensusRawMessage
-	messageCache    map[primitives.BlockHeight][]ConsensusMessage
+	blockHeight         primitives.BlockHeight
+	termMessagesHandler TermMessagesHandler
+	myPublicKey         primitives.Ed25519PublicKey
+	messageCache        map[primitives.BlockHeight][]ConsensusMessage
 }
 
 func NewConsensusMessageFilter(myPublicKey primitives.Ed25519PublicKey) *ConsensusMessageFilter {
 	res := &ConsensusMessageFilter{
-		myPublicKey:     myPublicKey,
-		messagesChannel: make(chan ConsensusRawMessage, 0),
-		messageCache:    make(map[primitives.BlockHeight][]ConsensusMessage),
+		myPublicKey:  myPublicKey,
+		messageCache: make(map[primitives.BlockHeight][]ConsensusMessage),
 	}
 
 	return res
 }
 
-func (f *ConsensusMessageFilter) WaitForMessage(ctx context.Context, blockHeight primitives.BlockHeight) (ConsensusMessage, error) {
-	message := f.popFromCache(blockHeight)
-	if message != nil {
-		return message, nil
+func (f *ConsensusMessageFilter) OnGossipMessage(ctx context.Context, rawMessage ConsensusRawMessage) {
+	message := rawMessage.ToConsensusMessage()
+	if f.isMyMessage(message) {
+		return
 	}
 
-	for {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-
-		case rawMessage := <-f.messagesChannel:
-			message = rawMessage.ToConsensusMessage()
-			if f.isMyMessage(message) {
-				continue
-			}
-
-			if message.BlockHeight() > blockHeight {
-				f.pushToCache(message.BlockHeight(), message)
-				continue
-			}
-
-			if message.BlockHeight() < blockHeight {
-				continue
-			}
-
-			return message, nil
-		}
+	if message.BlockHeight() < f.blockHeight {
+		return
 	}
-}
 
-// This method must run in a different goroutine than the consensus goroutine
-func (f *ConsensusMessageFilter) OnGossipMessage(ctx context.Context, message ConsensusRawMessage) {
-	f.messagesChannel <- message
+	if message.BlockHeight() > f.blockHeight {
+		f.pushToCache(message.BlockHeight(), message)
+		return
+	}
+
+	f.processGossipMessage(ctx, message)
 }
 
 func (f *ConsensusMessageFilter) isMyMessage(message ConsensusMessage) bool {
@@ -69,24 +52,47 @@ func (f *ConsensusMessageFilter) clearCacheHistory(height primitives.BlockHeight
 	}
 }
 
-func (f *ConsensusMessageFilter) popFromCache(height primitives.BlockHeight) ConsensusMessage {
-	f.clearCacheHistory(height)
-
-	messages := f.messageCache[height]
-	if messages == nil || len(messages) == 0 {
-		return nil
-	}
-
-	message := messages[0]
-	f.messageCache[height] = messages[1:]
-
-	return message
-}
-
 func (f *ConsensusMessageFilter) pushToCache(height primitives.BlockHeight, message ConsensusMessage) {
 	if f.messageCache[height] == nil {
 		f.messageCache[height] = []ConsensusMessage{message}
 	} else {
 		f.messageCache[height] = append(f.messageCache[height], message)
 	}
+}
+
+func (f *ConsensusMessageFilter) processGossipMessage(ctx context.Context, message ConsensusMessage) {
+	if f.termMessagesHandler == nil {
+		return
+	}
+
+	switch message := message.(type) {
+	case *PreprepareMessage:
+		f.termMessagesHandler.OnReceivePreprepare(ctx, message)
+	case *PrepareMessage:
+		f.termMessagesHandler.OnReceivePrepare(ctx, message)
+	case *CommitMessage:
+		f.termMessagesHandler.OnReceiveCommit(ctx, message)
+	case *ViewChangeMessage:
+		f.termMessagesHandler.OnReceiveViewChange(ctx, message)
+	case *NewViewMessage:
+		f.termMessagesHandler.OnReceiveNewView(ctx, message)
+	default:
+		panic(fmt.Sprintf("unknown message type: %T", message))
+	}
+}
+
+func (f *ConsensusMessageFilter) consumeCacheMessages(ctx context.Context, blockHeight primitives.BlockHeight) {
+	f.clearCacheHistory(blockHeight)
+
+	messages := f.messageCache[blockHeight]
+	for _, message := range messages {
+		f.processGossipMessage(ctx, message)
+	}
+	delete(f.messageCache, blockHeight)
+}
+
+func (f *ConsensusMessageFilter) SetBlockHeight(ctx context.Context, blockHeight primitives.BlockHeight, termMessagesHandler TermMessagesHandler) {
+	f.termMessagesHandler = termMessagesHandler
+	f.blockHeight = blockHeight
+	f.consumeCacheMessages(ctx, blockHeight)
 }

@@ -25,7 +25,6 @@ func NewHarness(t *testing.T) *harness {
 	net := builders.ABasicTestNetwork()
 	node := net.Nodes[1]
 	termConfig := node.BuildConfig()
-	node.ElectionTrigger.PauseOnTick = true
 	lastCommittedBlock := node.GetLatestBlock()
 
 	// term initialization
@@ -45,21 +44,10 @@ func NewHarness(t *testing.T) *harness {
 }
 
 func (h *harness) startConsensus(ctx context.Context) {
-	go h.term.WaitForBlock(ctx)
-}
-
-func (h *harness) waitForTick() {
-	h.electionTrigger.TickSns.WaitForSignal()
-}
-
-func (h *harness) resume() {
-	h.electionTrigger.TickSns.Resume()
 }
 
 func (h *harness) waitForView(expectedView primitives.View) {
-	h.waitForTick()
 	view := h.term.GetView()
-	h.resume()
 	require.Equal(h.t, view, expectedView, fmt.Sprintf("Term should have view=%d, but got %d", expectedView, view))
 }
 

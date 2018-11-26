@@ -1,8 +1,10 @@
 package leanhelix
 
-import "context"
+import (
+	"context"
+)
 
-type MessageReceiver interface {
+type TermMessagesHandler interface {
 	OnReceivePreprepare(ctx context.Context, ppm *PreprepareMessage)
 	OnReceivePrepare(ctx context.Context, pm *PrepareMessage)
 	OnReceiveCommit(ctx context.Context, cm *CommitMessage)

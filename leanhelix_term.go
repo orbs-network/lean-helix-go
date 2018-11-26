@@ -59,44 +59,27 @@ func NewLeanHelixTerm(config *Config, filter *ConsensusMessageFilter, newBlockHe
 	return newTerm
 }
 
-func (term *LeanHelixTerm) WaitForBlock(ctx context.Context) Block {
-	term.startTerm(ctx)
-
-	for {
-		message, err := term.filter.WaitForMessage(ctx, term.height)
-
-		if err != nil {
-			if ctx.Err() == nil {
-				term.moveToNextLeader(ctx)
-				continue
-			}
-			return nil
-		}
-
-		term.handleMessage(ctx, message)
-		if term.committedBlock != nil {
-			return term.committedBlock
-		}
-	}
-	return nil
-}
-
-func (term *LeanHelixTerm) handleMessage(ctx context.Context, consensusMessage ConsensusMessage) {
-	switch message := consensusMessage.(type) {
-	case *PreprepareMessage:
-		term.onReceivePreprepare(ctx, message)
-	case *PrepareMessage:
-		term.onReceivePrepare(ctx, message)
-	case *CommitMessage:
-		term.onReceiveCommit(ctx, message)
-	case *ViewChangeMessage:
-		term.onReceiveViewChange(ctx, message)
-	case *NewViewMessage:
-		term.onReceiveNewView(ctx, message)
-	default:
-		panic(fmt.Sprintf("unknown message type: %T", consensusMessage))
-	}
-}
+//func (term *LeanHelixTerm) WaitForBlock(ctx context.Context) Block {
+//	term.startTerm(ctx)
+//
+//	for {
+//		message, err := term.filter.WaitForMessage(ctx, term.height)
+//
+//		if err != nil {
+//			if ctx.Err() == nil {
+//				term.moveToNextLeader(ctx)
+//				continue
+//			}
+//			return nil
+//		}
+//
+//		term.handleMessage(ctx, message)
+//		if term.committedBlock != nil {
+//			return term.committedBlock
+//		}
+//	}
+//	return nil
+//}
 
 func (term *LeanHelixTerm) startTerm(ctx context.Context) {
 	term.initView(0)

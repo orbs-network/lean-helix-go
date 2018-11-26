@@ -10,86 +10,117 @@ import (
 	"testing"
 )
 
-func GenerateMessage(blockHeight primitives.BlockHeight, view primitives.View, senderPublicKey string) leanhelix.ConsensusRawMessage {
+func GeneratePreprepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderPublicKey string) leanhelix.ConsensusRawMessage {
+	keyManager := builders.NewMockKeyManager(primitives.Ed25519PublicKey(senderPublicKey))
+	block := builders.CreateBlock(builders.GenesisBlock)
+	return builders.APreprepareMessage(keyManager, blockHeight, view, block).ToConsensusRawMessage()
+}
+
+func GeneratePrepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderPublicKey string) leanhelix.ConsensusRawMessage {
 	keyManager := builders.NewMockKeyManager(primitives.Ed25519PublicKey(senderPublicKey))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	return builders.APrepareMessage(keyManager, blockHeight, view, block).ToConsensusRawMessage()
 }
 
+func GenerateCommitMessage(blockHeight primitives.BlockHeight, view primitives.View, senderPublicKey string) leanhelix.ConsensusRawMessage {
+	keyManager := builders.NewMockKeyManager(primitives.Ed25519PublicKey(senderPublicKey))
+	block := builders.CreateBlock(builders.GenesisBlock)
+	return builders.ACommitMessage(keyManager, blockHeight, view, block).ToConsensusRawMessage()
+}
+
+func GenerateViewChangeMessage(blockHeight primitives.BlockHeight, view primitives.View, senderPublicKey string) leanhelix.ConsensusRawMessage {
+	keyManager := builders.NewMockKeyManager(primitives.Ed25519PublicKey(senderPublicKey))
+	return builders.AViewChangeMessage(keyManager, blockHeight, view, nil).ToConsensusRawMessage()
+}
+
+func GenerateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.View, senderPublicKey string) leanhelix.ConsensusRawMessage {
+	keyManager := builders.NewMockKeyManager(primitives.Ed25519PublicKey(senderPublicKey))
+	block := builders.CreateBlock(builders.GenesisBlock)
+	return builders.ANewViewMessage(keyManager, blockHeight, view, nil, nil, block).ToConsensusRawMessage()
+}
+
 func TestGettingAMessage(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
-		rawMessage := GenerateMessage(10, 20, "Sender PublicKey")
-		go filter.OnGossipMessage(ctx, rawMessage)
+		termMessagesHandler := NewTermMessagesHandlerMock()
+		filter.SetBlockHeight(ctx, 10, termMessagesHandler)
 
-		actual, _ := filter.WaitForMessage(ctx, 10)
-		expected := rawMessage.ToConsensusMessage()
-		require.Equal(t, expected.Raw(), actual.Raw())
+		ppm := GeneratePreprepareMessage(10, 20, "Sender PublicKey")
+		pm := GeneratePrepareMessage(10, 20, "Sender PublicKey")
+		cm := GenerateCommitMessage(10, 20, "Sender PublicKey")
+		vcm := GenerateViewChangeMessage(10, 20, "Sender PublicKey")
+		nvm := GenerateNewViewMessage(10, 20, "Sender PublicKey")
+
+		require.Equal(t, 0, len(termMessagesHandler.historyPP))
+		require.Equal(t, 0, len(termMessagesHandler.historyP))
+		require.Equal(t, 0, len(termMessagesHandler.historyC))
+		require.Equal(t, 0, len(termMessagesHandler.historyNV))
+		require.Equal(t, 0, len(termMessagesHandler.historyVC))
+
+		filter.OnGossipMessage(ctx, ppm)
+		filter.OnGossipMessage(ctx, pm)
+		filter.OnGossipMessage(ctx, cm)
+		filter.OnGossipMessage(ctx, vcm)
+		filter.OnGossipMessage(ctx, nvm)
+
+		require.Equal(t, 1, len(termMessagesHandler.historyPP))
+		require.Equal(t, 1, len(termMessagesHandler.historyP))
+		require.Equal(t, 1, len(termMessagesHandler.historyC))
+		require.Equal(t, 1, len(termMessagesHandler.historyNV))
+		require.Equal(t, 1, len(termMessagesHandler.historyVC))
 	})
-}
-
-func TestStoppingOnContextCancel(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
-	rawMessage := GenerateMessage(10, 20, "Sender PublicKey")
-	go filter.OnGossipMessage(ctx, rawMessage)
-
-	actual, err := filter.WaitForMessage(ctx, 10)
-
-	require.Nil(t, actual)
-	require.Error(t, err)
 }
 
 func TestFilterMessagesFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
-		rawMessageFromThePast := GenerateMessage(9, 20, "Sender PublicKey")
-		rawMessageFromThePresent := GenerateMessage(10, 20, "Sender PublicKey")
-		go func() {
-			filter.OnGossipMessage(ctx, rawMessageFromThePast)
-			filter.OnGossipMessage(ctx, rawMessageFromThePresent)
-		}()
+		termMessagesHandler := NewTermMessagesHandlerMock()
+		filter.SetBlockHeight(ctx, 10, termMessagesHandler)
 
-		actual, _ := filter.WaitForMessage(ctx, 10)
-		expected := rawMessageFromThePresent.ToConsensusMessage()
-		require.Equal(t, expected.Raw(), actual.Raw())
+		messageFromThePast := GeneratePreprepareMessage(9, 20, "Sender PublicKey")
+		messageFromThePresent := GeneratePreprepareMessage(10, 20, "Sender PublicKey")
+
+		require.Equal(t, 0, len(termMessagesHandler.historyPP))
+
+		filter.OnGossipMessage(ctx, messageFromThePast)
+		filter.OnGossipMessage(ctx, messageFromThePresent)
+
+		require.Equal(t, 1, len(termMessagesHandler.historyPP))
 	})
 }
 
 func TestCacheMessagesFromTheFuture(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
-		rawMessageFromTheFuture := GenerateMessage(11, 20, "Sender PublicKey")
-		rawMessageFromThePresent := GenerateMessage(10, 20, "Sender PublicKey")
-		go func() {
-			filter.OnGossipMessage(ctx, rawMessageFromTheFuture)
-			filter.OnGossipMessage(ctx, rawMessageFromThePresent)
-		}()
+		termMessagesHandler := NewTermMessagesHandlerMock()
+		filter.SetBlockHeight(ctx, 10, termMessagesHandler)
 
-		actualOn10, _ := filter.WaitForMessage(ctx, 10)
-		expectedOn10 := rawMessageFromThePresent.ToConsensusMessage()
-		require.Equal(t, expectedOn10.Raw(), actualOn10.Raw())
+		messageFromTheFuture := GeneratePreprepareMessage(11, 20, "Sender PublicKey")
+		messageFromThePresent := GeneratePreprepareMessage(10, 20, "Sender PublicKey")
 
-		actualOn11, _ := filter.WaitForMessage(ctx, 11)
-		expectedOn11 := rawMessageFromTheFuture.ToConsensusMessage()
-		require.Equal(t, expectedOn11.Raw(), actualOn11.Raw())
+		require.Equal(t, 0, len(termMessagesHandler.historyPP))
+
+		filter.OnGossipMessage(ctx, messageFromTheFuture)
+		filter.OnGossipMessage(ctx, messageFromThePresent)
+
+		require.Equal(t, 1, len(termMessagesHandler.historyPP))
 	})
 }
 
 func TestFilterMessagesWithMyPublicKey(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
-		badMessage := GenerateMessage(10, 20, "My PublicKey")
-		goodMessage := GenerateMessage(10, 20, "Sender PublicKey")
-		go func() {
-			filter.OnGossipMessage(ctx, badMessage)
-			filter.OnGossipMessage(ctx, goodMessage)
-		}()
+		termMessagesHandler := NewTermMessagesHandlerMock()
+		filter.SetBlockHeight(ctx, 10, termMessagesHandler)
 
-		actual, _ := filter.WaitForMessage(ctx, 10)
-		expected := goodMessage.ToConsensusMessage()
-		require.Equal(t, expected.Raw(), actual.Raw())
+		badMessage := GeneratePreprepareMessage(11, 20, "My PublicKey")
+		goodMessage := GeneratePreprepareMessage(10, 20, "Sender PublicKey")
+
+		require.Equal(t, 0, len(termMessagesHandler.historyPP))
+
+		filter.OnGossipMessage(ctx, badMessage)
+		filter.OnGossipMessage(ctx, goodMessage)
+
+		require.Equal(t, 1, len(termMessagesHandler.historyPP))
 	})
 }
