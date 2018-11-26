@@ -55,8 +55,8 @@ Initiates lean-helix library infinite listening loop.
 * `KeyManager.SignConsensusMessage(height, data) : signature` - sign using the node's private key. 
 * `KeyManager.VerifyConsensusMessage(height, data, signature, memberID) : valid` - verify the validity of a signature.
 * `KeyManager.SignRandomSeed(height, data) : signature` - sign using the node's private key. 
-* `KeyManager.VerifyRandomSeedShare(height, data, signature, memberID) : valid` - verify the validity of a signature.
-* `KeyManager.Aggregate(height, signature_and_memberID_list) : signature` - aggregate the RandomSeed signatures.
+* `KeyManager.VerifyRandomSeed(height, data, signature, memberID) : valid` - verify the validity of a signature.
+* `KeyManager.AggregateRandomSeed(height, signature_and_memberID_list) : signature` - aggregate the RandomSeed signatures.
 
 #### Communication
 * `SendConsensusMessage(height, member_list, message)` - abstraction of sending all consensus related messages [LeanHelix messages](../messages.go). Message may include a Block interface, indicating SendMessageWithBlock.
