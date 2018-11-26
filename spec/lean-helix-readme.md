@@ -44,8 +44,9 @@ Initiates lean-helix library infinite listening loop.
 
 #### BlockUtils
 * `RequestNewBlock(prevBlock) : block` - called by the OneHeight logic, returns a block interface with a block proposal. This block will then go through consensus. 
-* `ValidateBlock(height, block, block_hash, prevBlock) : is_valid` - called by the OneHeight logic. Validates the block structure and content _(match it to given block_hash)_. Note: this could include the timestamp - whithin acceptable range of local clock.
+* `ValidateBlockContent(height, block, prevBlock) : is_valid` - called by the OneHeight logic. Validates the block content. Note: this includes validating previous block pointer _(prevBlockHash)_ and timestamp - whithin acceptable range of local clock.
 * `CalcBlockHash(height, block) : block_hash` - called by the OneHeight logic, the consumer service uses its hashing scheme to calculate the hash on a block (commitment on block content and structure).
+* `ValidateBlockHash(height, block, block_hash) : is_valid` - called by the OneHeight logic, validate the block_hash against the given block, based on the hashing scheme ("deep" commitment on block content and structure).
 
 #### Membership
 * `MyID(height) : member` - obtain unique identifier for the node, used in consensus process.
