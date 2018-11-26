@@ -9,7 +9,7 @@ import (
 )
 
 func buildElectionTrigger(timeout time.Duration) *lh.TimerBasedElectionTrigger {
-	et := lh.NewTimerBasedElectionTrigger(10 * time.Millisecond)
+	et := lh.NewTimerBasedElectionTrigger(timeout)
 	go func() {
 		for {
 			trigger := <-et.ElectionChannel()
