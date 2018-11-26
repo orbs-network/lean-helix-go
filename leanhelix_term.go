@@ -63,8 +63,7 @@ func (term *LeanHelixTerm) WaitForBlock(ctx context.Context) Block {
 	term.startTerm(ctx)
 
 	for {
-		ctxWithElectionTrigger := term.electionTrigger.CreateElectionContextForView(ctx, term.view)
-		message, err := term.filter.WaitForMessage(ctxWithElectionTrigger, term.height)
+		message, err := term.filter.WaitForMessage(ctx, term.height)
 
 		if err != nil {
 			if ctx.Err() == nil {

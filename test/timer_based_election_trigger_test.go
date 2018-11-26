@@ -1,68 +1,96 @@
 package test
 
 import (
-	"context"
 	lh "github.com/orbs-network/lean-helix-go"
+	. "github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
 
-func TestTimeout(t *testing.T) {
-	WithContext(func(ctx context.Context) {
-		et := lh.NewTimerBasedElectionTrigger(10 * time.Millisecond)
-		resultContext := et.CreateElectionContextForView(ctx, 0)
-		time.Sleep(time.Duration(15) * time.Millisecond)
-		require.Error(t, resultContext.Err())
-	})
+func buildElectionTrigger(timeout time.Duration) *lh.TimerBasedElectionTrigger {
+	et := lh.NewTimerBasedElectionTrigger(10 * time.Millisecond)
+	go func() {
+		for {
+			trigger := <-et.ElectionChannel()
+			trigger()
+		}
+	}()
+
+	return et
+}
+
+func TestCallbackTrigger(t *testing.T) {
+	et := buildElectionTrigger(10 * time.Millisecond)
+
+	wasCalled := false
+	cb := func(view View) { wasCalled = true }
+	et.RegisterOnElection(0, cb)
+
+	time.Sleep(time.Duration(15) * time.Millisecond)
+
+	require.True(t, wasCalled, "Did not call the timer callback")
+}
+
+func TestCallbackTriggerOnce(t *testing.T) {
+	et := buildElectionTrigger(10 * time.Millisecond)
+
+	callCount := 0
+	cb := func(view View) { callCount++ }
+	et.RegisterOnElection(0, cb)
+
+	time.Sleep(time.Duration(25) * time.Millisecond)
+
+	require.Exactly(t, 1, callCount, "Trigger callback called more than once")
 }
 
 func TestIgnoreSameView(t *testing.T) {
-	WithContext(func(ctx context.Context) {
-		et := lh.NewTimerBasedElectionTrigger(30 * time.Millisecond)
+	et := buildElectionTrigger(30 * time.Millisecond)
 
-		resultContext := et.CreateElectionContextForView(ctx, 0)
-		time.Sleep(time.Duration(10) * time.Millisecond)
-		resultContext = et.CreateElectionContextForView(ctx, 0)
-		time.Sleep(time.Duration(10) * time.Millisecond)
-		resultContext = et.CreateElectionContextForView(ctx, 0)
+	callCount := 0
+	cb := func(view View) { callCount++ }
 
-		require.NoError(t, resultContext.Err())
+	et.RegisterOnElection(0, cb)
+	time.Sleep(time.Duration(10) * time.Millisecond)
+	et.RegisterOnElection(0, cb)
+	time.Sleep(time.Duration(10) * time.Millisecond)
+	et.RegisterOnElection(0, cb)
+	time.Sleep(time.Duration(20) * time.Millisecond)
+	et.RegisterOnElection(0, cb)
 
-		time.Sleep(time.Duration(20) * time.Millisecond)
-		resultContext = et.CreateElectionContextForView(ctx, 0)
-
-		require.Error(t, resultContext.Err())
-	})
+	require.Exactly(t, 1, callCount, "Trigger callback called more than once")
 }
 
-func TestViewChange(t *testing.T) {
-	WithContext(func(ctx context.Context) {
-		et := lh.NewTimerBasedElectionTrigger(20 * time.Millisecond)
+func TestViewChanges(t *testing.T) {
+	et := buildElectionTrigger(20 * time.Millisecond)
 
-		resultContext := et.CreateElectionContextForView(ctx, 0) // 2 ** 0 * 20 = 20
-		time.Sleep(time.Duration(10) * time.Millisecond)
+	wasCalled := false
+	cb := func(view View) { wasCalled = true }
 
-		resultContext = et.CreateElectionContextForView(ctx, 1) // 2 ** 1 * 20 = 40
-		time.Sleep(time.Duration(30) * time.Millisecond)
+	et.RegisterOnElection(0, cb) // 2 ** 0 * 20 = 20
+	time.Sleep(time.Duration(10) * time.Millisecond)
 
-		resultContext = et.CreateElectionContextForView(ctx, 2) // 2 ** 2 * 20 = 80
-		time.Sleep(time.Duration(70) * time.Millisecond)
+	et.RegisterOnElection(1, cb) // 2 ** 1 * 20 = 40
+	time.Sleep(time.Duration(30) * time.Millisecond)
 
-		resultContext = et.CreateElectionContextForView(ctx, 3) // 2 ** 3 * 20 = 160
+	et.RegisterOnElection(2, cb) // 2 ** 2 * 20 = 80
+	time.Sleep(time.Duration(70) * time.Millisecond)
 
-		require.NoError(t, resultContext.Err())
-	})
+	et.RegisterOnElection(3, cb) // 2 ** 3 * 20 = 160
+
+	require.False(t, wasCalled, "Trigger the callback even if a new Register was called with a new view")
 }
 
 func TestViewPowTimeout(t *testing.T) {
-	WithContext(func(ctx context.Context) {
-		et := lh.NewTimerBasedElectionTrigger(10 * time.Millisecond)
+	et := buildElectionTrigger(10 * time.Millisecond)
 
-		resultContext := et.CreateElectionContextForView(ctx, 2) // 2 ** 2 * 20 = 40
-		time.Sleep(time.Duration(30) * time.Millisecond)
-		require.NoError(t, resultContext.Err())
-		time.Sleep(time.Duration(30) * time.Millisecond)
-		require.Error(t, resultContext.Err())
-	})
+	wasCalled := false
+	cb := func(view View) { wasCalled = true }
+
+	et.RegisterOnElection(2, cb) // 2 ** 2 * 10 = 40
+	time.Sleep(time.Duration(30) * time.Millisecond)
+	require.False(t, wasCalled, "Triggered the callback too early")
+	time.Sleep(time.Duration(30) * time.Millisecond)
+	require.True(t, wasCalled, "Did not trigger the callback after the required timeout")
+
 }

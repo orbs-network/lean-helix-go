@@ -1,33 +1,77 @@
 package leanhelix
 
 import (
-	"context"
 	"github.com/orbs-network/lean-helix-go/primitives"
 	"math"
 	"time"
 )
 
+func setTimeout(cb func(), timeout time.Duration) chan bool {
+	timer := time.NewTimer(timeout)
+	clear := make(chan bool)
+
+	go func() {
+		for {
+			select {
+			case <-timer.C:
+				cb()
+			case <-clear:
+				timer.Stop()
+				return
+			}
+
+		}
+	}()
+
+	return clear
+}
+
 type TimerBasedElectionTrigger struct {
-	minTimeout        time.Duration
-	electionTimeoutAt time.Time
-	view              primitives.View
+	electionChannel chan func()
+	minTimeout      time.Duration
+	view            primitives.View
+	firstTime       bool
+	cb              func(view primitives.View)
+	clearTimer      chan bool
 }
 
 func NewTimerBasedElectionTrigger(minTimeout time.Duration) *TimerBasedElectionTrigger {
 	return &TimerBasedElectionTrigger{
-		minTimeout: minTimeout,
-		view:       100,
+		electionChannel: make(chan func()),
+		minTimeout:      minTimeout,
+		firstTime:       true,
 	}
 }
 
-func (t *TimerBasedElectionTrigger) CreateElectionContextForView(parentContext context.Context, view primitives.View) context.Context {
-	if t.view != view {
+func (t *TimerBasedElectionTrigger) RegisterOnElection(view primitives.View, cb func(view primitives.View)) {
+	t.cb = cb
+	if t.firstTime || t.view != view {
+		t.firstTime = false
 		t.view = view
-		t.electionTimeoutAt = time.Now().Add(t.calcTimeout(view))
+		t.stop()
+		t.clearTimer = setTimeout(t.onTimeout, t.calcTimeout(view))
 	}
+}
 
-	ctx, _ := context.WithDeadline(parentContext, t.electionTimeoutAt)
-	return ctx
+func (t *TimerBasedElectionTrigger) ElectionChannel() chan func() {
+	return t.electionChannel
+}
+
+func (t *TimerBasedElectionTrigger) stop() {
+	if t.clearTimer != nil {
+		t.clearTimer <- true
+		t.clearTimer = nil
+	}
+}
+
+func (t *TimerBasedElectionTrigger) trigger() {
+	if t.cb != nil {
+		t.cb(t.view)
+	}
+}
+
+func (t *TimerBasedElectionTrigger) onTimeout() {
+	t.electionChannel <- t.trigger
 }
 
 func (t *TimerBasedElectionTrigger) calcTimeout(view primitives.View) time.Duration {

@@ -45,6 +45,6 @@ func (builder *NodeBuilder) Build() *Node {
 	}
 
 	blockUtils := NewMockBlockUtils(builder.blocksPool)
-	electionTrigger := NewMockElectionTrigger(false)
+	electionTrigger := NewMockElectionTrigger()
 	return NewNode(publicKey, builder.gossip, blockUtils, electionTrigger)
 }

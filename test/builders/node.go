@@ -47,18 +47,6 @@ func (node *Node) StartConsensus(ctx context.Context) {
 	}
 }
 
-func (node *Node) PauseOnTick() {
-	node.ElectionTrigger.PauseOnTick = true
-}
-
-func (node *Node) WaitForPause() {
-	node.ElectionTrigger.TickSns.WaitForSignal()
-}
-
-func (node *Node) Resume() {
-	node.ElectionTrigger.TickSns.Resume()
-}
-
 func (node *Node) BuildConfig() *lh.Config {
 	return &lh.Config{
 		NetworkCommunication: node.Gossip,

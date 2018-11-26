@@ -1,37 +1,32 @@
 package builders
 
-import (
-	"context"
-	. "github.com/orbs-network/lean-helix-go/primitives"
-)
+import "github.com/orbs-network/lean-helix-go/primitives"
 
 type ElectionTriggerMock struct {
-	TickSns     *Sns
-	PauseOnTick bool
-	cancel      func()
+	view            primitives.View
+	cb              func(view primitives.View)
+	electionChannel chan func()
 }
 
-func NewMockElectionTrigger(pauseOnTick bool) *ElectionTriggerMock {
+func NewMockElectionTrigger() *ElectionTriggerMock {
 	return &ElectionTriggerMock{
-		TickSns:     NewSignalAndStop(),
-		PauseOnTick: pauseOnTick,
+		electionChannel: make(chan func()),
 	}
 }
 
-func (et *ElectionTriggerMock) CreateElectionContextForView(parentContext context.Context, view View) context.Context {
-	ctx, cancel := context.WithCancel(parentContext)
-	et.cancel = cancel
-	if et.PauseOnTick {
-		et.TickSns.SignalAndStop()
-	}
+func (et *ElectionTriggerMock) RegisterOnElection(view primitives.View, cb func(view primitives.View)) {
+	et.view = view
+	et.cb = cb
+}
 
-	return ctx
+func (et *ElectionTriggerMock) ElectionChannel() chan func() {
+	return et.electionChannel
 }
 
 func (et *ElectionTriggerMock) ManualTrigger() {
-	cancel := et.cancel
-	if cancel == nil {
-		panic("You triggered the election before term was initialized")
+	et.electionChannel <- func() {
+		if et.cb != nil {
+			et.cb(et.view)
+		}
 	}
-	cancel()
 }

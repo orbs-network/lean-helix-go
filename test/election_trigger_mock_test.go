@@ -1,30 +1,35 @@
 package test
 
 import (
-	"context"
+	"github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestElectionTriggerMockInitialization(t *testing.T) {
-	actual := builders.NewMockElectionTrigger(false)
+	actual := builders.NewMockElectionTrigger()
 	require.NotNil(t, actual)
 }
 
-func TestElectionTriggerMockContextCreation(t *testing.T) {
-	WithContext(func(ctx context.Context) {
-		et := builders.NewMockElectionTrigger(false)
-		resultContext := et.CreateElectionContextForView(ctx, 10)
-		require.NotNil(t, resultContext)
-	})
+func TestCallingCallback(t *testing.T) {
+	et := builders.NewMockElectionTrigger()
+	var actualView primitives.View = 666
+	var expectedView primitives.View = 10
+	cb := func(view primitives.View) { actualView = view }
+	et.RegisterOnElection(expectedView, cb)
+
+	go et.ManualTrigger()
+	trigger := <-et.ElectionChannel()
+	trigger()
+
+	require.Equal(t, expectedView, actualView)
 }
 
-func TestElectionTriggerMockTriggerCancellation(t *testing.T) {
-	WithContext(func(ctx context.Context) {
-		et := builders.NewMockElectionTrigger(false)
-		resultContext := et.CreateElectionContextForView(ctx, 10)
-		et.ManualTrigger()
-		require.Error(t, resultContext.Err())
-	})
+func TestIgnoreEmptyCallback(t *testing.T) {
+	et := builders.NewMockElectionTrigger()
+
+	go et.ManualTrigger()
+	trigger := <-et.ElectionChannel()
+	trigger()
 }
