@@ -43,8 +43,8 @@ Initiates lean-helix library infinite listening loop.
 * `NewBlockProof(blockProof_data): BlockProof` - Provides BlockProof serialization.
 
 #### BlockUtils
-* `RequestNewBlock(prevBlock) : block` - called by the OneHeight logic, returns a block interface with a block proposal. This block will then go through consensus.
-* `ValidateBlock(height, block, block_hash) : is_valid` - called by the OneHeight logic. Validates the block structure and content. Note: this could include the timestamp - whithin acceptable range of local clock.
+* `RequestNewBlock(prevBlock) : block` - called by the OneHeight logic, returns a block interface with a block proposal. This block will then go through consensus. 
+* `ValidateBlock(height, block, block_hash, prevBlock) : is_valid` - called by the OneHeight logic. Validates the block structure and content _(match it to given block_hash)_. Note: this could include the timestamp - whithin acceptable range of local clock.
 * `CalcBlockHash(height, block) : block_hash` - called by the OneHeight logic, the consumer service uses its hashing scheme to calculate the hash on a block (commitment on block content and structure).
 
 #### Membership
