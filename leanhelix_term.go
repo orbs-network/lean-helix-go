@@ -91,7 +91,7 @@ func (term *LeanHelixTerm) WaitForBlock(ctx context.Context) Block {
 		message, err := term.filter.WaitForMessage(ctxWithElectionTrigger, term.height)
 
 		if err != nil {
-			term.logger.Debug("WaitForBlock() err=%v", err)
+			term.logger.Debug("H %s WaitForBlock() err=%v", term.height, err)
 			if ctx.Err() == nil {
 				term.moveToNextLeader(ctx)
 				continue
@@ -127,8 +127,9 @@ func (term *LeanHelixTerm) handleMessage(ctx context.Context, consensusMessage C
 func (term *LeanHelixTerm) startTerm(ctx context.Context) {
 
 	term.initView(0)
-	if term.IsLeader() {
-		term.logger.Debug("I'm the leader")
+	isLeader := term.IsLeader()
+	term.logger.Debug("H %d V 0 startTerm(): leader? %s", term.height, isLeader)
+	if isLeader {
 		block := term.BlockUtils.RequestNewBlock(ctx, term.height)
 		blockHash := term.BlockUtils.CalculateBlockHash(block)
 		ppm := term.messageFactory.CreatePreprepareMessage(term.height, term.view, block, blockHash)
