@@ -24,7 +24,7 @@
 
 ### Library API
 
-* `Init()`
+* `Run()`
 Initiates lean-helix library infinite listening loop.
 * `SetContext(prevBlock, prevBlockProof)`
   Called upon node sync. Assumes the matching pair _(prevBlock,prevBlockProof)_ are validated!\
