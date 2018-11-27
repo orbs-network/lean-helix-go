@@ -38,7 +38,9 @@ func NewLeanHelixTerm(ctx context.Context, config *Config, filter *ConsensusMess
 
 	// TODO Implement me!
 	randomSeed := uint64(12345)
-	committeeMembers := comm.RequestOrderedCommittee(ctx, newBlockHeight, randomSeed)
+	// TODO Implement me!
+	maxCommitteeSize := uint32(4)
+	committeeMembers := comm.RequestOrderedCommittee(ctx, newBlockHeight, randomSeed, maxCommitteeSize)
 
 	panicOnLessThanMinimumCommitteeMembers(config.OverrideMinimumCommitteeMembers, committeeMembers)
 
