@@ -10,6 +10,10 @@ import (
 	"testing"
 )
 
+func testLogger() leanhelix.Logger {
+	return leanhelix.NewSilentLogger()
+}
+
 func GeneratePreprepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderPublicKey string) leanhelix.ConsensusRawMessage {
 	keyManager := builders.NewMockKeyManager(primitives.Ed25519PublicKey(senderPublicKey))
 	block := builders.CreateBlock(builders.GenesisBlock)
@@ -41,7 +45,7 @@ func GenerateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.
 
 func TestGettingAMessage(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
+		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"), testLogger())
 		termMessagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, termMessagesHandler)
 
@@ -73,7 +77,7 @@ func TestGettingAMessage(t *testing.T) {
 
 func TestFilterMessagesFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
+		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"), testLogger())
 		termMessagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, termMessagesHandler)
 
@@ -91,7 +95,7 @@ func TestFilterMessagesFromThePast(t *testing.T) {
 
 func TestCacheMessagesFromTheFuture(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
+		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"), testLogger())
 		termMessagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, termMessagesHandler)
 
@@ -109,7 +113,7 @@ func TestCacheMessagesFromTheFuture(t *testing.T) {
 
 func TestFilterMessagesWithMyPublicKey(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"))
+		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"), testLogger())
 		termMessagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, termMessagesHandler)
 

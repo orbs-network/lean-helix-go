@@ -11,12 +11,14 @@ type ConsensusMessageFilter struct {
 	termMessagesHandler TermMessagesHandler
 	myPublicKey         primitives.Ed25519PublicKey
 	messageCache        map[primitives.BlockHeight][]ConsensusMessage
+	logger              Logger
 }
 
-func NewConsensusMessageFilter(myPublicKey primitives.Ed25519PublicKey) *ConsensusMessageFilter {
+func NewConsensusMessageFilter(myPublicKey primitives.Ed25519PublicKey, logger Logger) *ConsensusMessageFilter {
 	res := &ConsensusMessageFilter{
 		myPublicKey:  myPublicKey,
 		messageCache: make(map[primitives.BlockHeight][]ConsensusMessage),
+		logger:       logger,
 	}
 
 	return res

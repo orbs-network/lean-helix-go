@@ -26,20 +26,36 @@ type LeanHelixTerm struct {
 	committedBlock                  Block
 	leaderPublicKey                 Ed25519PublicKey
 	newViewLocally                  View
+	logger                          Logger
 }
 
-func NewLeanHelixTerm(config *Config, onCommit func(ctx context.Context, block Block), newBlockHeight BlockHeight) *LeanHelixTerm {
+func NewLeanHelixTerm(ctx context.Context, config *Config, onCommit func(ctx context.Context, block Block), newBlockHeight BlockHeight) *LeanHelixTerm {
 	keyManager := config.KeyManager
 	blockUtils := config.BlockUtils
 	myPK := keyManager.MyPublicKey()
 	comm := config.NetworkCommunication
 	messageFactory := NewMessageFactory(keyManager)
-	committeeMembers := comm.RequestOrderedCommittee(uint64(newBlockHeight))
+
+	// TODO Implement me!
+	randomSeed := uint64(12345)
+	// TODO Implement me!
+	maxCommitteeSize := uint32(4)
+	committeeMembers := comm.RequestOrderedCommittee(ctx, newBlockHeight, randomSeed, maxCommitteeSize)
+
+	panicOnLessThanMinimumCommitteeMembers(config.OverrideMinimumCommitteeMembers, committeeMembers)
+
 	otherCommitteeMembers := make([]Ed25519PublicKey, 0)
 	for _, member := range committeeMembers {
 		if !member.Equal(myPK) {
 			otherCommitteeMembers = append(otherCommitteeMembers, member)
 		}
+	}
+	if config.Logger == nil {
+		config.Logger = NewSilentLogger()
+	}
+
+	if config.Storage == nil {
+		config.Storage = NewInMemoryStorage()
 	}
 
 	newTerm := &LeanHelixTerm{
@@ -54,11 +70,25 @@ func NewLeanHelixTerm(config *Config, onCommit func(ctx context.Context, block B
 		otherCommitteeMembersPublicKeys: otherCommitteeMembers,
 		messageFactory:                  messageFactory,
 		myPublicKey:                     myPK,
+		logger:                          config.Logger,
 	}
 
+	newTerm.logger.Debug("H %d V 0 NewLeanHelixTerm: myID=%s committeeMembersCount=%d", newBlockHeight, keyManager.MyPublicKey()[:3], len(committeeMembers))
 	newTerm.initView(0)
 	return newTerm
 }
+
+func panicOnLessThanMinimumCommitteeMembers(minimum int, committeeMembers []Ed25519PublicKey) {
+
+	if minimum == 0 {
+		minimum = LEAN_HELIX_HARD_MINIMUM_COMMITTEE_MEMBERS
+	}
+
+	if len(committeeMembers) < minimum {
+		panic(fmt.Sprintf("LH Received only %d committee members, but the hard minimum is %d", len(committeeMembers), LEAN_HELIX_HARD_MINIMUM_COMMITTEE_MEMBERS))
+	}
+}
+
 
 func (term *LeanHelixTerm) StartTerm(ctx context.Context) {
 	if term.IsLeader() {
@@ -86,6 +116,7 @@ func (term *LeanHelixTerm) initView(view View) {
 	term.view = view
 	term.leaderPublicKey = term.calcLeaderPublicKey(view)
 	term.electionTrigger.RegisterOnElection(term.view, term.moveToNextLeader)
+	term.logger.Debug("H %d V %d initView() set leader to %s", term.height, term.view, term.leaderPublicKey[:3])
 }
 
 func (term *LeanHelixTerm) Dispose() {
@@ -102,6 +133,7 @@ func (term *LeanHelixTerm) moveToNextLeader(ctx context.Context, view View) {
 		return
 	}
 	term.SetView(term.view + 1)
+	term.logger.Debug("H %d V %d moveToNextLeader() newLeader=%s", term.height, term.view, term.leaderPublicKey[:3])
 	preparedMessages := ExtractPreparedMessages(term.height, term.Storage, term.QuorumSize())
 	vcm := term.messageFactory.CreateViewChangeMessage(term.height, term.view, preparedMessages)
 	term.Storage.StoreViewChange(vcm)
@@ -113,32 +145,40 @@ func (term *LeanHelixTerm) moveToNextLeader(ctx context.Context, view View) {
 }
 
 func (term *LeanHelixTerm) sendPreprepare(ctx context.Context, message *PreprepareMessage) {
+	term.logger.Debug("H %d V %d sendPreprepare()", term.height, term.view)
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
 }
 
 func (term *LeanHelixTerm) sendPrepare(ctx context.Context, message *PrepareMessage) {
+	term.logger.Debug("H %s V %s sendPrepare()", term.height, term.view)
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
 }
 
 func (term *LeanHelixTerm) sendCommit(ctx context.Context, message *CommitMessage) {
+	term.logger.Debug("H %s V %s sendCommit()", term.height, term.view)
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
 }
 
 func (term *LeanHelixTerm) sendViewChange(ctx context.Context, message *ViewChangeMessage) {
+	term.logger.Debug("H %s V %s sendViewChange()", term.height, term.view)
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, []Ed25519PublicKey{term.leaderPublicKey}, rawMessage)
 }
 
 func (term *LeanHelixTerm) sendNewView(ctx context.Context, message *NewViewMessage) {
+	term.logger.Debug("H %s V %s sendNewView()", term.height, term.view)
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
 }
 
 func (term *LeanHelixTerm) HandleLeanHelixPrePrepare(ctx context.Context, ppm *PreprepareMessage) {
-	if term.validatePreprepare(ppm) {
+	term.logger.Debug("H %s V %s HandleLeanHelixPrePrepare()", term.height, term.view)
+	if err := term.validatePreprepare(ppm); err != nil {
+		term.logger.Debug("H %s V %s HandleLeanHelixPrePrepare() err=%v", err)
+	} else {
 		term.processPreprepare(ctx, ppm)
 	}
 }
@@ -146,7 +186,7 @@ func (term *LeanHelixTerm) HandleLeanHelixPrePrepare(ctx context.Context, ppm *P
 func (term *LeanHelixTerm) processPreprepare(ctx context.Context, ppm *PreprepareMessage) {
 	header := ppm.content.SignedHeader()
 	if term.view != header.View() {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], processPrePrepare, view doesn't match` });
+		term.logger.Debug("H %s V %s processPreprepare() message from incorrect view %d", term.height, term.view, header.View())
 		return
 	}
 
@@ -157,38 +197,38 @@ func (term *LeanHelixTerm) processPreprepare(ctx context.Context, ppm *Preprepar
 	term.checkPrepared(ctx, header.BlockHeight(), header.View(), header.BlockHash())
 }
 
-func (term *LeanHelixTerm) validatePreprepare(ppm *PreprepareMessage) bool {
+func (term *LeanHelixTerm) validatePreprepare(ppm *PreprepareMessage) error {
 	blockHeight := ppm.BlockHeight()
 	view := ppm.View()
 	if term.hasPreprepare(blockHeight, view) {
-		return false
+		return fmt.Errorf("already received Preprepare for H %s V %s", blockHeight, view)
 	}
 
 	header := ppm.Content().SignedHeader()
 	sender := ppm.Content().Sender()
 	if !term.KeyManager.Verify(header.Raw(), sender) {
-		return false
+		return fmt.Errorf("verification failed for sender %s signature on header", sender.SenderPublicKey()[:3])
 	}
 
 	leaderPublicKey := term.calcLeaderPublicKey(view)
 	senderPublicKey := sender.SenderPublicKey()
 	if !senderPublicKey.Equal(leaderPublicKey) {
 		// Log
-		return false
+		return fmt.Errorf("sender %s is not leader", senderPublicKey[:3])
 	}
 
 	givenBlockHash := term.BlockUtils.CalculateBlockHash(ppm.Block())
 	if !ppm.Content().SignedHeader().BlockHash().Equal(givenBlockHash) {
-		return false
+		return fmt.Errorf("block hash in block and in header are different")
 	}
 
 	isValidBlock := term.BlockUtils.ValidateBlock(ppm.Block())
 
 	if !isValidBlock {
-		return false
+		return fmt.Errorf("block validation failed")
 	}
 
-	return true
+	return nil
 }
 
 func (term *LeanHelixTerm) hasPreprepare(blockHeight BlockHeight, view View) bool {
@@ -197,6 +237,7 @@ func (term *LeanHelixTerm) hasPreprepare(blockHeight BlockHeight, view View) boo
 }
 
 func (term *LeanHelixTerm) HandleLeanHelixPrepare(ctx context.Context, pm *PrepareMessage) {
+	term.logger.Debug("H %s V %s HandleLeanHelixPrepare()", pm.BlockHeight(), pm.View())
 	header := pm.content.SignedHeader()
 	sender := pm.content.Sender()
 
@@ -219,6 +260,7 @@ func (term *LeanHelixTerm) HandleLeanHelixPrepare(ctx context.Context, pm *Prepa
 }
 
 func (term *LeanHelixTerm) HandleLeanHelixViewChange(ctx context.Context, vcm *ViewChangeMessage) {
+	term.logger.Debug("H %s V %s HandleLeanHelixViewChange()", term.height, term.view)
 	header := vcm.content.SignedHeader()
 	if !term.isViewChangeValid(term.myPublicKey, term.view, vcm.content) {
 		fmt.Printf("message ViewChange is not valid\n")
@@ -315,6 +357,7 @@ func (term *LeanHelixTerm) onPrepared(ctx context.Context, blockHeight BlockHeig
 }
 
 func (term *LeanHelixTerm) HandleLeanHelixCommit(ctx context.Context, cm *CommitMessage) {
+	term.logger.Debug("H %s V %s HandleLeanHelixCommit()", term.height, term.view)
 	header := cm.content.SignedHeader()
 	sender := cm.content.Sender()
 
@@ -329,6 +372,7 @@ func (term *LeanHelixTerm) HandleLeanHelixCommit(ctx context.Context, cm *Commit
 }
 
 func (term *LeanHelixTerm) checkCommitted(ctx context.Context, blockHeight BlockHeight, view View, blockHash Uint256) {
+	term.logger.Debug("H %s V %s checkCommitted() H %s V %s BlockHash %s ", term.height, term.view, blockHeight, view, blockHash)
 	if term.committedBlock != nil {
 		return
 	}
@@ -342,8 +386,10 @@ func (term *LeanHelixTerm) checkCommitted(ctx context.Context, blockHeight Block
 	ppm, ok := term.Storage.GetPreprepareMessage(blockHeight, view)
 	if !ok {
 		// log
+		term.logger.Info("H %s V %s checkCommitted() missing PPM", )
 		return
 	}
+	term.logger.Info("H %s V %s checkCommitted() COMMITTED H %s V %s BlockHash %s ", term.height, term.view, blockHeight, view, blockHash)
 	term.committedBlock = ppm.block
 	term.onCommit(ctx, ppm.block)
 }
@@ -394,6 +440,7 @@ func (term *LeanHelixTerm) latestViewChangeVote(confirmations []*ViewChangeMessa
 }
 
 func (term *LeanHelixTerm) HandleLeanHelixNewView(ctx context.Context, nvm *NewViewMessage) {
+	term.logger.Debug("H %s V %s HandleLeanHelixNewView()", term.height, term.view)
 	header := nvm.Content().SignedHeader()
 	sender := nvm.Content().Sender()
 	ppMessageContent := nvm.Content().PreprepareMessageContent()
@@ -469,7 +516,7 @@ func (term *LeanHelixTerm) HandleLeanHelixNewView(ctx context.Context, nvm *NewV
 		block:   nvm.Block(),
 	}
 
-	if term.validatePreprepare(ppm) {
+	if err := term.validatePreprepare(ppm); err == nil {
 		term.newViewLocally = header.View()
 		term.SetView(header.View())
 		term.processPreprepare(ctx, ppm)

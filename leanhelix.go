@@ -10,12 +10,14 @@ type LeanHelix struct {
 	acknowledgeBlockChannel chan Block
 	currentHeight           primitives.BlockHeight
 	config                  *Config
+	logger                  Logger
 	filter                  *ConsensusMessageFilter
 	leanHelixTerm           *LeanHelixTerm
 	commitSubscriptions     []func(block Block)
 }
 
 func (lh *LeanHelix) notifyCommitted(block Block) {
+	lh.logger.Debug("LeanHelix.notifyCommitted()")
 	for _, subscription := range lh.commitSubscriptions {
 		subscription(block)
 	}
@@ -86,12 +88,16 @@ func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, height primitives.
 }
 
 func NewLeanHelix(config *Config) *LeanHelix {
+	if config.Logger == nil {
+		config.Logger = NewSilentLogger()
+	}
 	filter := NewConsensusMessageFilter(config.KeyManager.MyPublicKey())
 	return &LeanHelix{
 		messagesChannel:         make(chan ConsensusRawMessage),
 		acknowledgeBlockChannel: make(chan Block),
 		currentHeight:           0,
 		config:                  config,
+		logger:                  config.Logger,
 		filter:                  filter,
 	}
 }
