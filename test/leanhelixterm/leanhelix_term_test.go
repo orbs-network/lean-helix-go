@@ -12,11 +12,10 @@ import (
 func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(t)
-		h.startConsensus(ctx)
-		h.waitForView(0)
 
-		h.triggerElection()
-		h.waitForView(1)
+		h.checkView(0)
+		h.triggerElection(ctx)
+		h.checkView(1)
 	})
 }
 
@@ -24,22 +23,19 @@ func TestNewViewNotAcceptViewsFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(t)
 
-		h.startConsensus(ctx)
-
-		// moving to node1 as the leader
-		h.waitForView(0)
-		h.triggerElection()
-		h.waitForView(1)
+		h.checkView(0)
+		h.triggerElection(ctx)
+		h.checkView(1)
 
 		// voting node0 as the leader
 		block := builders.CreateBlock(builders.GenesisBlock)
-		h.sendLeaderChanged(ctx, 1, 8, block)
-		h.waitForView(8)
+		h.sendNewView(ctx, 1, 8, block)
+		h.checkView(8)
 
 		// re-voting node0 as the leader, but with a view from the past (4)
 		block = builders.CreateBlock(builders.GenesisBlock)
-		h.sendLeaderChanged(ctx, 1, 4, block)
-		h.waitForView(8) // unchanged
+		h.sendNewView(ctx, 1, 4, block)
+		h.checkView(8) // unchanged
 	})
 }
 
@@ -47,25 +43,22 @@ func TestViewChangeNotAcceptViewsFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(t)
 
-		h.startConsensus(ctx)
-
-		// moving to node1 as the leader
-		h.waitForView(0)
-		h.triggerElection()
-		h.waitForView(1)
-		h.triggerElection()
-		h.waitForView(2)
-
-		// voting node1 (view=5) as the leader
+		// jumping to view=8 me (node0) as the leader
+		h.checkView(0)
 		block := builders.CreateBlock(builders.GenesisBlock)
-		h.sendChangeLeader(ctx, 1, 5, block)
-		viewChangeCount := h.countViewChange(1, 9)
-		require.Equal(t, viewChangeCount, 1, "Term should not ignore ViewChange message on view 9")
+		h.sendNewView(ctx, 1, 8, block)
+		h.checkView(8)
 
-		// re-voting node1 as the leader, but with a view from the past (1)
+		// re-voting me (node0, view=12 -> future) as the leader
 		block = builders.CreateBlock(builders.GenesisBlock)
-		h.sendChangeLeader(ctx, 1, 1, block)
-		viewChangeCount = h.countViewChange(1, 1)
-		require.Equal(t, viewChangeCount, 0, "Term should not ignore ViewChange message on view 1 (From the past)")
+		h.sendViewChange(ctx, 1, 12, block)
+		viewChangeCount := h.countViewChange(1, 12)
+		require.Equal(t, 1, viewChangeCount, "Term should not ignore ViewChange message on view 12")
+
+		// re-voting me (node0, view=4 -> past) as the leader
+		block = builders.CreateBlock(builders.GenesisBlock)
+		h.sendViewChange(ctx, 1, 4, block)
+		viewChangeCount = h.countViewChange(1, 4)
+		require.Equal(t, 0, viewChangeCount, "Term should not ignore ViewChange message on view 4 (From the past)")
 	})
 }

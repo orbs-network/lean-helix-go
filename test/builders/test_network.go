@@ -31,6 +31,14 @@ func (net *TestNetwork) StartConsensus(ctx context.Context) *TestNetwork {
 	return net
 }
 
+func (net *TestNetwork) StartConsensusSync() *TestNetwork {
+	for _, node := range net.Nodes {
+		node.StartConsensusSync()
+	}
+
+	return net
+}
+
 func (net *TestNetwork) RegisterNode(node *Node) {
 	net.Nodes = append(net.Nodes, node)
 }

@@ -260,6 +260,7 @@ func (term *LeanHelixTerm) isViewChangeValid(targetLeaderPublicKey Ed25519Public
 	}
 
 	futureLeaderPublicKey := term.calcLeaderPublicKey(newView)
+	fmt.Println(targetLeaderPublicKey.KeyForMap(), futureLeaderPublicKey.KeyForMap())
 	if !targetLeaderPublicKey.Equal(futureLeaderPublicKey) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], newView:[${newView}], HandleLeanHelixViewChange from "${senderPk}", ignored because the newView doesn't match the target leader` });
 		return false

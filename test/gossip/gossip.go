@@ -27,7 +27,7 @@ type Gossip struct {
 }
 
 func NewGossip(discovery *Discovery) *Gossip {
-	g := &Gossip{
+	return &Gossip{
 		discovery:            discovery,
 		outgoingChannelsMap:  make(map[string]chan *outgoingMessage),
 		totalSubscriptions:   0,
@@ -36,7 +36,6 @@ func NewGossip(discovery *Discovery) *Gossip {
 		incomingWhiteListPKs: nil,
 		statsSentMessages:    []lh.ConsensusRawMessage{},
 	}
-	return g
 }
 
 func (g *Gossip) messageSenderLoop(ctx context.Context, channel chan *outgoingMessage) {

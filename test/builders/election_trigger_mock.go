@@ -27,9 +27,17 @@ func (et *ElectionTriggerMock) ElectionChannel() chan func(ctx context.Context) 
 }
 
 func (et *ElectionTriggerMock) ManualTrigger() {
-	et.electionChannel <- func(ctx context.Context) {
-		if et.cb != nil {
-			et.cb(ctx, et.view)
+	go func() {
+		et.electionChannel <- func(ctx context.Context) {
+			if et.cb != nil {
+				et.cb(ctx, et.view)
+			}
 		}
+	}()
+}
+
+func (et *ElectionTriggerMock) ManualTriggerSync(ctx context.Context) {
+	if et.cb != nil {
+		et.cb(ctx, et.view)
 	}
 }
