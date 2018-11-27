@@ -55,7 +55,7 @@ func (lh *leanHelix) Tick(ctx context.Context) bool {
 
 	case prevBlock := <-lh.acknowledgeBlockChannel:
 		if prevBlock.Height() >= lh.currentHeight {
-			lh.createLeanHelixTerm(ctx, prevBlock.Height()+1)
+			lh.onNewConsensusRound(ctx, prevBlock.Height()+1)
 		}
 	}
 
@@ -75,10 +75,10 @@ func (lh *leanHelix) getElectionChannel() chan func(ctx context.Context) {
 
 func (lh *leanHelix) onCommit(ctx context.Context, block Block) {
 	lh.notifyCommitted(block)
-	lh.createLeanHelixTerm(ctx, block.Height()+1)
+	lh.onNewConsensusRound(ctx, block.Height()+1)
 }
 
-func (lh *leanHelix) createLeanHelixTerm(ctx context.Context, height primitives.BlockHeight) {
+func (lh *leanHelix) onNewConsensusRound(ctx context.Context, height primitives.BlockHeight) {
 	lh.currentHeight = height
 	lh.leanHelixTerm = NewLeanHelixTerm(lh.config, lh.onCommit, lh.currentHeight)
 	lh.filter.SetBlockHeight(ctx, lh.currentHeight, lh.leanHelixTerm)
