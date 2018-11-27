@@ -178,37 +178,37 @@ func (term *LeanHelixTerm) moveToNextLeader(ctx context.Context) {
 }
 
 func (term *LeanHelixTerm) sendPreprepare(ctx context.Context, message *PreprepareMessage) {
-	term.logger.Debug("H %d V %d sendPreprepare()", message.BlockHeight(), message.View())
+	term.logger.Debug("H %d V %d sendPreprepare()", term.height, term.view)
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
 }
 
 func (term *LeanHelixTerm) sendPrepare(ctx context.Context, message *PrepareMessage) {
-	term.logger.Debug("H %s V %s sendPrepare()", message.BlockHeight(), message.View())
+	term.logger.Debug("H %s V %s sendPrepare()", term.height, term.view)
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
 }
 
 func (term *LeanHelixTerm) sendCommit(ctx context.Context, message *CommitMessage) {
-	term.logger.Debug("H %s V %s sendCommit()", message.BlockHeight(), message.View())
+	term.logger.Debug("H %s V %s sendCommit()", term.height, term.view)
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
 }
 
 func (term *LeanHelixTerm) sendViewChange(ctx context.Context, message *ViewChangeMessage) {
-	term.logger.Debug("H %s V %s sendViewChange()", message.BlockHeight(), message.View())
+	term.logger.Debug("H %s V %s sendViewChange()", term.height, term.view)
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, []Ed25519PublicKey{term.leaderPublicKey}, rawMessage)
 }
 
 func (term *LeanHelixTerm) sendNewView(ctx context.Context, message *NewViewMessage) {
-	term.logger.Debug("H %s V %s sendNewView()", message.BlockHeight(), message.View())
+	term.logger.Debug("H %s V %s sendNewView()", term.height, term.view)
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
 }
 
 func (term *LeanHelixTerm) onReceivePreprepare(ctx context.Context, ppm *PreprepareMessage) {
-	term.logger.Debug("H %s V %s onReceivePreprepare()", ppm.BlockHeight(), ppm.View())
+	term.logger.Debug("H %s V %s onReceivePreprepare()", term.height, term.view)
 	if term.validatePreprepare(ppm) {
 		term.processPreprepare(ctx, ppm)
 	}
@@ -217,6 +217,7 @@ func (term *LeanHelixTerm) onReceivePreprepare(ctx context.Context, ppm *Preprep
 func (term *LeanHelixTerm) processPreprepare(ctx context.Context, ppm *PreprepareMessage) {
 	header := ppm.content.SignedHeader()
 	if term.view != header.View() {
+		term.logger.Debug("H %s V %s onReceivePreprepare() message from incorrect view %d", term.height, term.view, header.View())
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], processPrePrepare, view doesn't match` });
 		return
 	}
@@ -291,7 +292,7 @@ func (term *LeanHelixTerm) onReceivePrepare(ctx context.Context, pm *PrepareMess
 }
 
 func (term *LeanHelixTerm) onReceiveViewChange(ctx context.Context, vcm *ViewChangeMessage) {
-	term.logger.Debug("H %s V %s onReceiveViewChange()", vcm.BlockHeight(), vcm.View())
+	term.logger.Debug("H %s V %s onReceiveViewChange()", term.height, term.view)
 	header := vcm.content.SignedHeader()
 	if !term.isViewChangeValid(term.myPublicKey, term.view, vcm.content) {
 		fmt.Printf("message ViewChange is not valid\n")
@@ -387,7 +388,7 @@ func (term *LeanHelixTerm) onPrepared(ctx context.Context, blockHeight BlockHeig
 }
 
 func (term *LeanHelixTerm) onReceiveCommit(ctx context.Context, cm *CommitMessage) {
-	term.logger.Debug("H %s V %s onReceiveCommit()", cm.BlockHeight(), cm.View())
+	term.logger.Debug("H %s V %s onReceiveCommit()", term.height, term.view)
 	header := cm.content.SignedHeader()
 	sender := cm.content.Sender()
 
@@ -467,7 +468,7 @@ func (term *LeanHelixTerm) latestViewChangeVote(confirmations []*ViewChangeMessa
 }
 
 func (term *LeanHelixTerm) onReceiveNewView(ctx context.Context, nvm *NewViewMessage) {
-	term.logger.Debug("H %s V %s onReceiveNewView()", nvm.BlockHeight(), nvm.View())
+	term.logger.Debug("H %s V %s onReceiveNewView()", term.height, term.view)
 	header := nvm.Content().SignedHeader()
 	sender := nvm.Content().Sender()
 	ppMessageContent := nvm.Content().PreprepareMessageContent()
