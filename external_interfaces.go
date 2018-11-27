@@ -1,17 +1,8 @@
 package leanhelix
 
 import (
-	"context"
 	"github.com/orbs-network/lean-helix-go/primitives"
 )
-
-type LeanHelix interface {
-	Run(ctx context.Context)
-	AcknowledgeBlockConsensus(prevBlock Block)
-	GossipMessageReceived(ctx context.Context, msg ConsensusRawMessage)
-	RegisterOnCommitted(cb func(block Block))
-	ValidateBlockConsensus(block Block, blockProof *BlockProof, prevBlockProof *BlockProof) bool
-}
 
 type Config struct {
 	NetworkCommunication NetworkCommunication

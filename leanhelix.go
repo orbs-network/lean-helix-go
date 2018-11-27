@@ -5,7 +5,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/primitives"
 )
 
-type leanHelix struct {
+type LeanHelix struct {
 	messagesChannel         chan ConsensusRawMessage
 	acknowledgeBlockChannel chan Block
 	currentHeight           primitives.BlockHeight
@@ -15,26 +15,26 @@ type leanHelix struct {
 	commitSubscriptions     []func(block Block)
 }
 
-func (lh *leanHelix) notifyCommitted(block Block) {
+func (lh *LeanHelix) notifyCommitted(block Block) {
 	for _, subscription := range lh.commitSubscriptions {
 		subscription(block)
 	}
 }
 
-func (lh *leanHelix) RegisterOnCommitted(cb func(block Block)) {
+func (lh *LeanHelix) RegisterOnCommitted(cb func(block Block)) {
 	lh.commitSubscriptions = append(lh.commitSubscriptions, cb)
 }
 
-func (lh *leanHelix) GossipMessageReceived(ctx context.Context, msg ConsensusRawMessage) {
+func (lh *LeanHelix) GossipMessageReceived(ctx context.Context, msg ConsensusRawMessage) {
 	lh.messagesChannel <- msg
 }
 
-func (lh *leanHelix) ValidateBlockConsensus(block Block, blockProof *BlockProof, prevBlockProof *BlockProof) bool {
+func (lh *LeanHelix) ValidateBlockConsensus(block Block, blockProof *BlockProof, prevBlockProof *BlockProof) bool {
 	// TODO: implement
 	return true
 }
 
-func (lh *leanHelix) Run(ctx context.Context) {
+func (lh *LeanHelix) Run(ctx context.Context) {
 	for {
 		if !lh.Tick(ctx) {
 			return
@@ -42,7 +42,7 @@ func (lh *leanHelix) Run(ctx context.Context) {
 	}
 }
 
-func (lh *leanHelix) Tick(ctx context.Context) bool {
+func (lh *LeanHelix) Tick(ctx context.Context) bool {
 	select {
 	case <-ctx.Done():
 		return false
@@ -62,37 +62,36 @@ func (lh *leanHelix) Tick(ctx context.Context) bool {
 	return true
 }
 
-func (lh *leanHelix) AcknowledgeBlockConsensus(prevBlock Block) {
+func (lh *LeanHelix) AcknowledgeBlockConsensus(prevBlock Block) {
 	lh.acknowledgeBlockChannel <- prevBlock
 }
 
-func (lh *leanHelix) getElectionChannel() chan func(ctx context.Context) {
+func (lh *LeanHelix) getElectionChannel() chan func(ctx context.Context) {
 	if lh.leanHelixTerm == nil {
 		return nil
 	}
 	return lh.leanHelixTerm.electionTrigger.ElectionChannel()
 }
 
-func (lh *leanHelix) onCommit(ctx context.Context, block Block) {
+func (lh *LeanHelix) onCommit(ctx context.Context, block Block) {
 	lh.notifyCommitted(block)
 	lh.onNewConsensusRound(ctx, block.Height()+1)
 }
 
-func (lh *leanHelix) onNewConsensusRound(ctx context.Context, height primitives.BlockHeight) {
+func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, height primitives.BlockHeight) {
 	lh.currentHeight = height
 	lh.leanHelixTerm = NewLeanHelixTerm(lh.config, lh.onCommit, lh.currentHeight)
 	lh.filter.SetBlockHeight(ctx, lh.currentHeight, lh.leanHelixTerm)
 	lh.leanHelixTerm.StartTerm(ctx)
 }
 
-func NewLeanHelix(config *Config) LeanHelix {
+func NewLeanHelix(config *Config) *LeanHelix {
 	filter := NewConsensusMessageFilter(config.KeyManager.MyPublicKey())
-	lh := &leanHelix{
+	return &LeanHelix{
 		messagesChannel:         make(chan ConsensusRawMessage),
 		acknowledgeBlockChannel: make(chan Block),
 		currentHeight:           0,
 		config:                  config,
 		filter:                  filter,
 	}
-	return lh
 }

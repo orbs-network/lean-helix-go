@@ -13,7 +13,7 @@ type NodeState struct {
 }
 
 type Node struct {
-	leanHelix        lh.LeanHelix
+	leanHelix        *lh.LeanHelix
 	blockChain       *InMemoryBlockChain
 	ElectionTrigger  *ElectionTriggerMock
 	BlockUtils       *MockBlockUtils
@@ -42,9 +42,17 @@ func (node *Node) onCommittedBlock(block lh.Block) {
 
 func (node *Node) StartConsensus(ctx context.Context) {
 	if node.leanHelix != nil {
-		lastCommittedBlock := node.GetLatestBlock()
 		go node.leanHelix.Run(ctx)
-		node.leanHelix.AcknowledgeBlockConsensus(lastCommittedBlock)
+		node.leanHelix.AcknowledgeBlockConsensus(node.GetLatestBlock())
+	}
+}
+
+func (node *Node) Tick(ctx context.Context) {
+	node.leanHelix.Tick(ctx)
+}
+func (node *Node) StartConsensusSync() {
+	if node.leanHelix != nil {
+		go node.leanHelix.AcknowledgeBlockConsensus(node.GetLatestBlock())
 	}
 }
 
