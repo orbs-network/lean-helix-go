@@ -15,8 +15,8 @@ type LeanHelixTerm struct {
 	Storage
 	electionTrigger ElectionTrigger
 	BlockUtils
+	onCommit                        func(block Block)
 	messageFactory                  *MessageFactory
-	filter                          *ConsensusMessageFilter
 	myPublicKey                     Ed25519PublicKey
 	committeeMembersPublicKeys      []Ed25519PublicKey
 	otherCommitteeMembersPublicKeys []Ed25519PublicKey
@@ -28,7 +28,7 @@ type LeanHelixTerm struct {
 	newViewLocally                  View
 }
 
-func NewLeanHelixTerm(config *Config, filter *ConsensusMessageFilter, newBlockHeight BlockHeight) *LeanHelixTerm {
+func NewLeanHelixTerm(config *Config, onCommit func(block Block), newBlockHeight BlockHeight) *LeanHelixTerm {
 	keyManager := config.KeyManager
 	blockUtils := config.BlockUtils
 	myPK := keyManager.MyPublicKey()
@@ -43,6 +43,7 @@ func NewLeanHelixTerm(config *Config, filter *ConsensusMessageFilter, newBlockHe
 	}
 
 	newTerm := &LeanHelixTerm{
+		onCommit:                        onCommit,
 		height:                          newBlockHeight,
 		KeyManager:                      keyManager,
 		NetworkCommunication:            comm,
@@ -53,33 +54,10 @@ func NewLeanHelixTerm(config *Config, filter *ConsensusMessageFilter, newBlockHe
 		otherCommitteeMembersPublicKeys: otherCommitteeMembers,
 		messageFactory:                  messageFactory,
 		myPublicKey:                     myPK,
-		filter:                          filter,
 	}
 
 	return newTerm
 }
-
-//func (term *LeanHelixTerm) WaitForBlock(ctx context.Context) Block {
-//	term.startTerm(ctx)
-//
-//	for {
-//		message, err := term.filter.WaitForMessage(ctx, term.height)
-//
-//		if err != nil {
-//			if ctx.Err() == nil {
-//				term.moveToNextLeader(ctx)
-//				continue
-//			}
-//			return nil
-//		}
-//
-//		term.handleMessage(ctx, message)
-//		if term.committedBlock != nil {
-//			return term.committedBlock
-//		}
-//	}
-//	return nil
-//}
 
 func (term *LeanHelixTerm) startTerm(ctx context.Context) {
 	term.initView(0)
@@ -107,6 +85,11 @@ func (term *LeanHelixTerm) initView(view View) {
 	term.preparedLocally = false
 	term.view = view
 	term.leaderPublicKey = term.calcLeaderPublicKey(view)
+	term.electionTrigger.RegisterOnElection(term.view, term.handleElection)
+}
+
+func (term *LeanHelixTerm) handleElection(view View) {
+
 }
 
 func (term *LeanHelixTerm) Dispose() {
@@ -362,6 +345,7 @@ func (term *LeanHelixTerm) checkCommitted(blockHeight BlockHeight, view View, bl
 		return
 	}
 	term.committedBlock = ppm.block
+	term.onCommit(ppm.block)
 }
 
 func (term *LeanHelixTerm) validateViewChangeVotes(targetBlockHeight BlockHeight, targetView View, confirmations []*ViewChangeMessageContent) bool {
@@ -372,7 +356,6 @@ func (term *LeanHelixTerm) validateViewChangeVotes(targetBlockHeight BlockHeight
 	set := make(map[string]bool)
 
 	// Verify that all _Block heights and views match, and all public keys are unique
-	// TODO consider refactor here, the purpose of this code is not apparent
 	for _, confirmation := range confirmations {
 		senderPublicKeyStr := string(confirmation.Sender().SenderPublicKey())
 		if confirmation.SignedHeader().BlockHeight() != targetBlockHeight {
