@@ -25,7 +25,7 @@ func (lh *leanHelix) RegisterOnCommitted(cb func(block Block)) {
 	lh.commitSubscriptions = append(lh.commitSubscriptions, cb)
 }
 
-func (lh *leanHelix) OnGossipMessage(ctx context.Context, msg ConsensusRawMessage) {
+func (lh *leanHelix) GossipMessageReceived(ctx context.Context, msg ConsensusRawMessage) {
 	lh.messagesChannel <- msg
 }
 
@@ -48,7 +48,7 @@ func (lh *leanHelix) Tick(ctx context.Context) bool {
 		return false
 
 	case message := <-lh.messagesChannel:
-		lh.filter.OnGossipMessage(ctx, message)
+		lh.filter.GossipMessageReceived(ctx, message)
 
 	case trigger := <-lh.getElectionChannel():
 		trigger(ctx)

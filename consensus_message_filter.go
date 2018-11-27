@@ -22,7 +22,7 @@ func NewConsensusMessageFilter(myPublicKey primitives.Ed25519PublicKey) *Consens
 	return res
 }
 
-func (f *ConsensusMessageFilter) OnGossipMessage(ctx context.Context, rawMessage ConsensusRawMessage) {
+func (f *ConsensusMessageFilter) GossipMessageReceived(ctx context.Context, rawMessage ConsensusRawMessage) {
 	message := rawMessage.ToConsensusMessage()
 	if f.isMyMessage(message) {
 		return
@@ -67,15 +67,15 @@ func (f *ConsensusMessageFilter) processGossipMessage(ctx context.Context, messa
 
 	switch message := message.(type) {
 	case *PreprepareMessage:
-		f.termMessagesHandler.OnReceivePreprepare(ctx, message)
+		f.termMessagesHandler.HandleLeanHelixPrePrepare(ctx, message)
 	case *PrepareMessage:
-		f.termMessagesHandler.OnReceivePrepare(ctx, message)
+		f.termMessagesHandler.HandleLeanHelixPrepare(ctx, message)
 	case *CommitMessage:
-		f.termMessagesHandler.OnReceiveCommit(ctx, message)
+		f.termMessagesHandler.HandleLeanHelixCommit(ctx, message)
 	case *ViewChangeMessage:
-		f.termMessagesHandler.OnReceiveViewChange(ctx, message)
+		f.termMessagesHandler.HandleLeanHelixViewChange(ctx, message)
 	case *NewViewMessage:
-		f.termMessagesHandler.OnReceiveNewView(ctx, message)
+		f.termMessagesHandler.HandleLeanHelixNewView(ctx, message)
 	default:
 		panic(fmt.Sprintf("unknown message type: %T", message))
 	}

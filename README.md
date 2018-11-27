@@ -236,7 +236,7 @@ type BlockUtils interface {
 
 TODO add this:
 * MessageReceiver
-  * OnReceivePreprepare, OnReceivePrepare, OnReceiveCommit, OnReceiveViewChange, OnReceiveNewView
+  * HandleLeanHelixPrePrepare, HandleLeanHelixPrepare, HandleLeanHelixCommit, HandleLeanHelixViewChange, HandleLeanHelixNewView
 
 
 On creation of the lib instance (of type `LeanHelixLib`) by Orbs, Orbs will pass a service parameter to the lib instance. That `service` will contain implementations of the above interfaces

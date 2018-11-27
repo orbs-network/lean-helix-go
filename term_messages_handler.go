@@ -5,9 +5,9 @@ import (
 )
 
 type TermMessagesHandler interface {
-	OnReceivePreprepare(ctx context.Context, ppm *PreprepareMessage)
-	OnReceivePrepare(ctx context.Context, pm *PrepareMessage)
-	OnReceiveCommit(ctx context.Context, cm *CommitMessage)
-	OnReceiveViewChange(ctx context.Context, vcm *ViewChangeMessage)
-	OnReceiveNewView(ctx context.Context, nvm *NewViewMessage)
+	HandleLeanHelixPrePrepare(ctx context.Context, ppm *PreprepareMessage)
+	HandleLeanHelixPrepare(ctx context.Context, pm *PrepareMessage)
+	HandleLeanHelixCommit(ctx context.Context, cm *CommitMessage)
+	HandleLeanHelixViewChange(ctx context.Context, vcm *ViewChangeMessage)
+	HandleLeanHelixNewView(ctx context.Context, nvm *NewViewMessage)
 }

@@ -137,7 +137,7 @@ func (term *LeanHelixTerm) sendNewView(ctx context.Context, message *NewViewMess
 	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
 }
 
-func (term *LeanHelixTerm) OnReceivePreprepare(ctx context.Context, ppm *PreprepareMessage) {
+func (term *LeanHelixTerm) HandleLeanHelixPrePrepare(ctx context.Context, ppm *PreprepareMessage) {
 	if term.validatePreprepare(ppm) {
 		term.processPreprepare(ctx, ppm)
 	}
@@ -196,7 +196,7 @@ func (term *LeanHelixTerm) hasPreprepare(blockHeight BlockHeight, view View) boo
 	return ok
 }
 
-func (term *LeanHelixTerm) OnReceivePrepare(ctx context.Context, pm *PrepareMessage) {
+func (term *LeanHelixTerm) HandleLeanHelixPrepare(ctx context.Context, pm *PrepareMessage) {
 	header := pm.content.SignedHeader()
 	sender := pm.content.Sender()
 
@@ -218,7 +218,7 @@ func (term *LeanHelixTerm) OnReceivePrepare(ctx context.Context, pm *PrepareMess
 	}
 }
 
-func (term *LeanHelixTerm) OnReceiveViewChange(ctx context.Context, vcm *ViewChangeMessage) {
+func (term *LeanHelixTerm) HandleLeanHelixViewChange(ctx context.Context, vcm *ViewChangeMessage) {
 	header := vcm.content.SignedHeader()
 	if !term.isViewChangeValid(term.myPublicKey, term.view, vcm.content) {
 		fmt.Printf("message ViewChange is not valid\n")
@@ -245,23 +245,23 @@ func (term *LeanHelixTerm) isViewChangeValid(targetLeaderPublicKey Ed25519Public
 	preparedProof := header.PreparedProof()
 
 	if !term.KeyManager.Verify(header.Raw(), sender) {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${newView}], OnReceiveViewChange from "${senderPk}", ignored because the signature verification failed` });
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${newView}], HandleLeanHelixViewChange from "${senderPk}", ignored because the signature verification failed` });
 		return false
 	}
 
 	if view > newView {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${newView}], OnReceiveViewChange from "${senderPk}", ignored because of unrelated view` });
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${newView}], HandleLeanHelixViewChange from "${senderPk}", ignored because of unrelated view` });
 		return false
 	}
 
 	if !ValidatePreparedProof(term.height, newView, preparedProof, term.QuorumSize(), term.KeyManager, term.committeeMembersPublicKeys, func(view View) Ed25519PublicKey { return term.calcLeaderPublicKey(view) }) {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${newView}], OnReceiveViewChange from "${senderPk}", ignored because the preparedProof is invalid` });
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${newView}], HandleLeanHelixViewChange from "${senderPk}", ignored because the preparedProof is invalid` });
 		return false
 	}
 
 	futureLeaderPublicKey := term.calcLeaderPublicKey(newView)
 	if !targetLeaderPublicKey.Equal(futureLeaderPublicKey) {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], newView:[${newView}], OnReceiveViewChange from "${senderPk}", ignored because the newView doesn't match the target leader` });
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], newView:[${newView}], HandleLeanHelixViewChange from "${senderPk}", ignored because the newView doesn't match the target leader` });
 		return false
 	}
 
@@ -313,7 +313,7 @@ func (term *LeanHelixTerm) onPrepared(ctx context.Context, blockHeight BlockHeig
 	term.checkCommitted(ctx, blockHeight, view, blockHash)
 }
 
-func (term *LeanHelixTerm) OnReceiveCommit(ctx context.Context, cm *CommitMessage) {
+func (term *LeanHelixTerm) HandleLeanHelixCommit(ctx context.Context, cm *CommitMessage) {
 	header := cm.content.SignedHeader()
 	sender := cm.content.Sender()
 
@@ -392,7 +392,7 @@ func (term *LeanHelixTerm) latestViewChangeVote(confirmations []*ViewChangeMessa
 	}
 }
 
-func (term *LeanHelixTerm) OnReceiveNewView(ctx context.Context, nvm *NewViewMessage) {
+func (term *LeanHelixTerm) HandleLeanHelixNewView(ctx context.Context, nvm *NewViewMessage) {
 	header := nvm.Content().SignedHeader()
 	sender := nvm.Content().Sender()
 	ppMessageContent := nvm.Content().PreprepareMessageContent()
@@ -406,38 +406,38 @@ func (term *LeanHelixTerm) OnReceiveNewView(ctx context.Context, nvm *NewViewMes
 	}
 
 	if !term.KeyManager.Verify(header.Raw(), sender) {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], OnReceiveNewView from "${senderPk}", ignored because the signature verification failed` });
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderPk}", ignored because the signature verification failed` });
 		fmt.Printf("verify failed\n")
 		return
 	}
 
 	futureLeaderId := term.calcLeaderPublicKey(header.View())
 	if !sender.SenderPublicKey().Equal(futureLeaderId) {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], OnReceiveNewView from "${senderPk}", rejected because it match the new id (${view})` });
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderPk}", rejected because it match the new id (${view})` });
 		fmt.Printf("no match for future leader\n")
 		return
 	}
 
 	if !term.validateViewChangeVotes(header.BlockHeight(), header.View(), viewChangeConfirmations) {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], OnReceiveNewView from "${senderPk}", votes is invalid` });
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderPk}", votes is invalid` });
 		fmt.Printf("validateViewChangeVotes failed\n")
 		return
 	}
 
 	if term.view > header.View() {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], OnReceiveNewView from "${senderPk}", view is from the past` });
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderPk}", view is from the past` });
 		fmt.Printf("current view is higher than message view\n")
 		return
 	}
 
 	if !ppMessageContent.SignedHeader().View().Equal(header.View()) {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], OnReceiveNewView from "${senderPk}", view doesn't match PP.view` });
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderPk}", view doesn't match PP.view` });
 		fmt.Printf("NewView.view and NewView.Preprepare.view do not match\n")
 		return
 	}
 
 	if !ppMessageContent.SignedHeader().BlockHeight().Equal(header.BlockHeight()) {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], OnReceiveNewView from "${senderPk}", blockHeight doesn't match PP.blockHeight` });
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderPk}", blockHeight doesn't match PP.blockHeight` });
 		fmt.Printf("NewView.BlockHeight and NewView.Preprepare.BlockHeight do not match\n")
 		return
 	}
@@ -446,7 +446,7 @@ func (term *LeanHelixTerm) OnReceiveNewView(ctx context.Context, nvm *NewViewMes
 	if latestVote != nil {
 		viewChangeMessageValid := term.isViewChangeValid(futureLeaderId, header.View(), latestVote)
 		if !viewChangeMessageValid {
-			//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], OnReceiveNewView from "${senderPk}", view change votes are invalid` });
+			//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderPk}", view change votes are invalid` });
 			fmt.Printf("NewView.ViewChangeConfirmation (with latest view) is invalid\n")
 			return
 		}
@@ -456,7 +456,7 @@ func (term *LeanHelixTerm) OnReceiveNewView(ctx context.Context, nvm *NewViewMes
 		if latestVoteBlockHash != nil {
 			ppBlockHash := term.BlockUtils.CalculateBlockHash(nvm.Block())
 			if !latestVoteBlockHash.Equal(ppBlockHash) {
-				//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], OnReceiveNewView from "${senderPk}", the given _Block (PP._Block) doesn't match the best _Block from the VCProof` });
+				//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderPk}", the given _Block (PP._Block) doesn't match the best _Block from the VCProof` });
 				fmt.Printf("NewView.ViewChangeConfirmation (with latest view) is invalid\n")
 				return
 			}

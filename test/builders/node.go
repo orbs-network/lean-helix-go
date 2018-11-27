@@ -77,7 +77,7 @@ func NewNode(
 
 	leanHelix := lh.NewLeanHelix(node.BuildConfig())
 	leanHelix.RegisterOnCommitted(node.onCommittedBlock)
-	gossip.RegisterOnMessage(leanHelix.OnGossipMessage)
+	gossip.RegisterOnMessage(leanHelix.GossipMessageReceived)
 
 	node.leanHelix = leanHelix
 	return node

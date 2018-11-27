@@ -63,13 +63,13 @@ func (h *harness) sendLeaderChanged(ctx context.Context, blockHeight primitives.
 	node3 := h.net.Nodes[3]
 	members := []*builders.Node{node1, node2, node3}
 	nvm := builders.AValidNewViewMessage(leader, members, blockHeight, view, block)
-	go h.filter.OnGossipMessage(ctx, nvm.ToConsensusRawMessage())
+	go h.filter.GossipMessageReceived(ctx, nvm.ToConsensusRawMessage())
 }
 
 func (h *harness) sendChangeLeader(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
 	sender := h.net.Nodes[3]
 	vc := builders.AViewChangeMessage(sender.KeyManager, blockHeight, view, nil)
-	go h.filter.OnGossipMessage(ctx, vc.ToConsensusRawMessage())
+	go h.filter.GossipMessageReceived(ctx, vc.ToConsensusRawMessage())
 }
 
 func (h *harness) countViewChange(blockHeight primitives.BlockHeight, view primitives.View) int {

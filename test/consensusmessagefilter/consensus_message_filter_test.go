@@ -57,11 +57,11 @@ func TestGettingAMessage(t *testing.T) {
 		require.Equal(t, 0, len(termMessagesHandler.historyNV))
 		require.Equal(t, 0, len(termMessagesHandler.historyVC))
 
-		filter.OnGossipMessage(ctx, ppm)
-		filter.OnGossipMessage(ctx, pm)
-		filter.OnGossipMessage(ctx, cm)
-		filter.OnGossipMessage(ctx, vcm)
-		filter.OnGossipMessage(ctx, nvm)
+		filter.GossipMessageReceived(ctx, ppm)
+		filter.GossipMessageReceived(ctx, pm)
+		filter.GossipMessageReceived(ctx, cm)
+		filter.GossipMessageReceived(ctx, vcm)
+		filter.GossipMessageReceived(ctx, nvm)
 
 		require.Equal(t, 1, len(termMessagesHandler.historyPP))
 		require.Equal(t, 1, len(termMessagesHandler.historyP))
@@ -82,8 +82,8 @@ func TestFilterMessagesFromThePast(t *testing.T) {
 
 		require.Equal(t, 0, len(termMessagesHandler.historyPP))
 
-		filter.OnGossipMessage(ctx, messageFromThePast)
-		filter.OnGossipMessage(ctx, messageFromThePresent)
+		filter.GossipMessageReceived(ctx, messageFromThePast)
+		filter.GossipMessageReceived(ctx, messageFromThePresent)
 
 		require.Equal(t, 1, len(termMessagesHandler.historyPP))
 	})
@@ -100,8 +100,8 @@ func TestCacheMessagesFromTheFuture(t *testing.T) {
 
 		require.Equal(t, 0, len(termMessagesHandler.historyPP))
 
-		filter.OnGossipMessage(ctx, messageFromTheFuture)
-		filter.OnGossipMessage(ctx, messageFromThePresent)
+		filter.GossipMessageReceived(ctx, messageFromTheFuture)
+		filter.GossipMessageReceived(ctx, messageFromThePresent)
 
 		require.Equal(t, 1, len(termMessagesHandler.historyPP))
 	})
@@ -118,8 +118,8 @@ func TestFilterMessagesWithMyPublicKey(t *testing.T) {
 
 		require.Equal(t, 0, len(termMessagesHandler.historyPP))
 
-		filter.OnGossipMessage(ctx, badMessage)
-		filter.OnGossipMessage(ctx, goodMessage)
+		filter.GossipMessageReceived(ctx, badMessage)
+		filter.GossipMessageReceived(ctx, goodMessage)
 
 		require.Equal(t, 1, len(termMessagesHandler.historyPP))
 	})
