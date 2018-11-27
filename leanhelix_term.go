@@ -85,11 +85,7 @@ func (term *LeanHelixTerm) initView(view View) {
 	term.preparedLocally = false
 	term.view = view
 	term.leaderPublicKey = term.calcLeaderPublicKey(view)
-	term.electionTrigger.RegisterOnElection(term.view, term.handleElection)
-}
-
-func (term *LeanHelixTerm) handleElection(view View) {
-
+	term.electionTrigger.RegisterOnElection(term.view, term.moveToNextLeader)
 }
 
 func (term *LeanHelixTerm) Dispose() {
@@ -101,7 +97,7 @@ func (term *LeanHelixTerm) calcLeaderPublicKey(view View) Ed25519PublicKey {
 	return term.committeeMembersPublicKeys[index]
 }
 
-func (term *LeanHelixTerm) moveToNextLeader(ctx context.Context) {
+func (term *LeanHelixTerm) moveToNextLeader(ctx context.Context, view View) {
 	term.SetView(term.view + 1)
 	preparedMessages := ExtractPreparedMessages(term.height, term.Storage, term.QuorumSize())
 	vcm := term.messageFactory.CreateViewChangeMessage(term.height, term.view, preparedMessages)

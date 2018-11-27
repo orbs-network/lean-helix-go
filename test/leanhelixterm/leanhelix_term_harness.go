@@ -29,9 +29,9 @@ func NewHarness(t *testing.T) *harness {
 
 	// term initialization
 	filter := leanhelix.NewConsensusMessageFilter(termConfig.KeyManager.MyPublicKey())
-	term := leanhelix.NewLeanHelixTerm(termConfig, filter, lastCommittedBlock.Height()+1)
+	term := leanhelix.NewLeanHelixTerm(termConfig, nil, lastCommittedBlock.Height()+1)
 
-	return &harness{
+	h := &harness{
 		t:               t,
 		net:             net,
 		term:            term,
@@ -41,6 +41,7 @@ func NewHarness(t *testing.T) *harness {
 		keyManager:      node.KeyManager,
 		storage:         node.Storage,
 	}
+	return h
 }
 
 func (h *harness) startConsensus(ctx context.Context) {

@@ -1,6 +1,7 @@
 package leanhelix
 
 import (
+	"context"
 	"github.com/orbs-network/lean-helix-go/primitives"
 	"math"
 	"time"
@@ -27,23 +28,23 @@ func setTimeout(cb func(), timeout time.Duration) chan bool {
 }
 
 type TimerBasedElectionTrigger struct {
-	electionChannel chan func()
+	electionChannel chan func(ctx context.Context)
 	minTimeout      time.Duration
 	view            primitives.View
 	firstTime       bool
-	cb              func(view primitives.View)
+	cb              func(ctx context.Context, view primitives.View)
 	clearTimer      chan bool
 }
 
 func NewTimerBasedElectionTrigger(minTimeout time.Duration) *TimerBasedElectionTrigger {
 	return &TimerBasedElectionTrigger{
-		electionChannel: make(chan func()),
+		electionChannel: make(chan func(ctx context.Context)),
 		minTimeout:      minTimeout,
 		firstTime:       true,
 	}
 }
 
-func (t *TimerBasedElectionTrigger) RegisterOnElection(view primitives.View, cb func(view primitives.View)) {
+func (t *TimerBasedElectionTrigger) RegisterOnElection(view primitives.View, cb func(ctx context.Context, view primitives.View)) {
 	t.cb = cb
 	if t.firstTime || t.view != view {
 		t.firstTime = false
@@ -53,7 +54,7 @@ func (t *TimerBasedElectionTrigger) RegisterOnElection(view primitives.View, cb 
 	}
 }
 
-func (t *TimerBasedElectionTrigger) ElectionChannel() chan func() {
+func (t *TimerBasedElectionTrigger) ElectionChannel() chan func(ctx context.Context) {
 	return t.electionChannel
 }
 
@@ -64,9 +65,9 @@ func (t *TimerBasedElectionTrigger) stop() {
 	}
 }
 
-func (t *TimerBasedElectionTrigger) trigger() {
+func (t *TimerBasedElectionTrigger) trigger(ctx context.Context) {
 	if t.cb != nil {
-		t.cb(t.view)
+		t.cb(ctx, t.view)
 	}
 }
 
