@@ -6,9 +6,10 @@ import (
 )
 
 type LeanHelix interface {
-	Start(ctx context.Context, blockHeight primitives.BlockHeight)
+	Run(ctx context.Context)
+	AcknowledgeBlockConsensus(prevBlock Block)
 	RegisterOnCommitted(cb func(block Block))
-	ValidateBlockConsensus(block Block, blockProof *BlockProof, prevBlockProof *BlockProof)
+	ValidateBlockConsensus(block Block, blockProof *BlockProof, prevBlockProof *BlockProof) bool
 }
 
 type Config struct {

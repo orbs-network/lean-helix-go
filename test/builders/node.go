@@ -43,7 +43,8 @@ func (node *Node) onCommittedBlock(block lh.Block) {
 func (node *Node) StartConsensus(ctx context.Context) {
 	if node.leanHelix != nil {
 		lastCommittedBlock := node.GetLatestBlock()
-		go node.leanHelix.Start(ctx, lastCommittedBlock.Height()+1)
+		go node.leanHelix.Run(ctx)
+		node.leanHelix.AcknowledgeBlockConsensus(lastCommittedBlock)
 	}
 }
 

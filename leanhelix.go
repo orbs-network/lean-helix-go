@@ -6,10 +6,13 @@ import (
 )
 
 type leanHelix struct {
-	config              *Config
-	filter              *ConsensusMessageFilter
-	subscriptionToken   int
-	commitSubscriptions []func(block Block)
+	messagesChannel         chan ConsensusRawMessage
+	acknowledgeBlockChannel chan Block
+	currentHeight           primitives.BlockHeight
+	config                  *Config
+	filter                  *ConsensusMessageFilter
+	leanHelixTerm           *LeanHelixTerm
+	commitSubscriptions     []func(block Block)
 }
 
 func (lh *leanHelix) notifyCommitted(block Block) {
@@ -22,25 +25,75 @@ func (lh *leanHelix) RegisterOnCommitted(cb func(block Block)) {
 	lh.commitSubscriptions = append(lh.commitSubscriptions, cb)
 }
 
-func (lh *leanHelix) ValidateBlockConsensus(block Block, blockProof *BlockProof, prevBlockProof *BlockProof) {
-	panic("impl me")
+func (lh *leanHelix) OnGossipMessage(ctx context.Context, msg ConsensusRawMessage) {
+	lh.messagesChannel <- msg
 }
 
-func (lh *leanHelix) Start(ctx context.Context, blockHeight primitives.BlockHeight) {
-	//for {
-	//	leanHelixTerm := NewLeanHelixTerm(lh.config, lh.filter, blockHeight)
-	//	block := leanHelixTerm.WaitForBlock(ctx)
-	//	lh.notifyCommitted(block)
-	//	blockHeight++
-	//}
+func (lh *leanHelix) ValidateBlockConsensus(block Block, blockProof *BlockProof, prevBlockProof *BlockProof) bool {
+	// TODO: implement
+	return true
 }
 
-func (lh *leanHelix) Dispose() {
-	lh.config.NetworkCommunication.UnregisterOnMessage(lh.subscriptionToken)
+func (lh *leanHelix) Run(ctx context.Context) {
+	for {
+		if !lh.Tick(ctx) {
+			return
+		}
+	}
+}
+
+func (lh *leanHelix) Tick(ctx context.Context) bool {
+	select {
+	case <-ctx.Done():
+		return false
+
+	case message := <-lh.messagesChannel:
+		lh.filter.OnGossipMessage(ctx, message)
+
+	case trigger := <-lh.getElectionChannel():
+		trigger(ctx)
+
+	case prevBlock := <-lh.acknowledgeBlockChannel:
+		if prevBlock.Height() >= lh.currentHeight {
+			lh.createLeanHelixTerm(ctx, prevBlock.Height()+1)
+		}
+	}
+
+	return true
+}
+
+func (lh *leanHelix) AcknowledgeBlockConsensus(prevBlock Block) {
+	lh.acknowledgeBlockChannel <- prevBlock
+}
+
+func (lh *leanHelix) getElectionChannel() chan func(ctx context.Context) {
+	if lh.leanHelixTerm == nil {
+		return nil
+	}
+	return lh.leanHelixTerm.electionTrigger.ElectionChannel()
+}
+
+func (lh *leanHelix) onCommit(ctx context.Context, block Block) {
+	lh.notifyCommitted(block)
+	lh.createLeanHelixTerm(ctx, block.Height()+1)
+}
+
+func (lh *leanHelix) createLeanHelixTerm(ctx context.Context, height primitives.BlockHeight) {
+	lh.currentHeight = height
+	lh.leanHelixTerm = NewLeanHelixTerm(lh.config, lh.onCommit, lh.currentHeight)
+	lh.filter.SetBlockHeight(ctx, lh.currentHeight, lh.leanHelixTerm)
+	lh.leanHelixTerm.StartTerm(ctx)
 }
 
 func NewLeanHelix(config *Config) LeanHelix {
 	filter := NewConsensusMessageFilter(config.KeyManager.MyPublicKey())
-	subscriptionToken := config.NetworkCommunication.RegisterOnMessage(filter.OnGossipMessage)
-	return &leanHelix{config, filter, subscriptionToken, nil}
+	lh := &leanHelix{
+		messagesChannel:         make(chan ConsensusRawMessage),
+		acknowledgeBlockChannel: make(chan Block),
+		currentHeight:           0,
+		config:                  config,
+		filter:                  filter,
+	}
+	config.NetworkCommunication.RegisterOnMessage(lh.OnGossipMessage)
+	return lh
 }
