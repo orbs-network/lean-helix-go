@@ -51,7 +51,7 @@ func (g *Gossip) messageSenderLoop(ctx context.Context, channel chan *outgoingMe
 	}
 }
 
-func (g *Gossip) RequestOrderedCommittee(seed uint64) []Ed25519PublicKey {
+func (g *Gossip) RequestOrderedCommittee(ctx context.Context, blockHeight BlockHeight, seed uint64) []Ed25519PublicKey {
 	result := g.discovery.AllGossipsPublicKeys()
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].KeyForMap() < result[j].KeyForMap()

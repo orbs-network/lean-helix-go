@@ -29,13 +29,16 @@ type LeanHelixTerm struct {
 	logger                          Logger
 }
 
-func NewLeanHelixTerm(config *Config, filter *ConsensusMessageFilter, newBlockHeight BlockHeight) *LeanHelixTerm {
+func NewLeanHelixTerm(ctx context.Context, config *Config, filter *ConsensusMessageFilter, newBlockHeight BlockHeight) *LeanHelixTerm {
 	keyManager := config.KeyManager
 	blockUtils := config.BlockUtils
 	myPK := keyManager.MyPublicKey()
 	comm := config.NetworkCommunication
 	messageFactory := NewMessageFactory(keyManager)
-	committeeMembers := comm.RequestOrderedCommittee(uint64(newBlockHeight))
+
+	// TODO Implement me!
+	randomSeed := uint64(12345)
+	committeeMembers := comm.RequestOrderedCommittee(ctx, newBlockHeight, randomSeed)
 
 	panicOnLessThanMinimumCommitteeMembers(config.OverrideMinimumCommitteeMembers, committeeMembers)
 
@@ -153,6 +156,7 @@ func (term *LeanHelixTerm) initView(view View) {
 	term.preparedLocally = false
 	term.view = view
 	term.leaderPublicKey = term.calcLeaderPublicKey(view)
+	term.logger.Debug("H %d V %d initView() set leader to %s", term.height, term.view, term.leaderPublicKey[:3])
 }
 
 func (term *LeanHelixTerm) Dispose() {
@@ -209,7 +213,9 @@ func (term *LeanHelixTerm) sendNewView(ctx context.Context, message *NewViewMess
 
 func (term *LeanHelixTerm) onReceivePreprepare(ctx context.Context, ppm *PreprepareMessage) {
 	term.logger.Debug("H %s V %s onReceivePreprepare()", term.height, term.view)
-	if term.validatePreprepare(ppm) {
+	if err := term.validatePreprepare(ppm); err != nil {
+		term.logger.Debug("H %s V %s onReceivePreprepare() err=%v", err)
+	} else {
 		term.processPreprepare(ctx, ppm)
 	}
 }
@@ -229,38 +235,38 @@ func (term *LeanHelixTerm) processPreprepare(ctx context.Context, ppm *Preprepar
 	term.checkPrepared(ctx, header.BlockHeight(), header.View(), header.BlockHash())
 }
 
-func (term *LeanHelixTerm) validatePreprepare(ppm *PreprepareMessage) bool {
+func (term *LeanHelixTerm) validatePreprepare(ppm *PreprepareMessage) error {
 	blockHeight := ppm.BlockHeight()
 	view := ppm.View()
 	if term.hasPreprepare(blockHeight, view) {
-		return false
+		return fmt.Errorf("already received Preprepare for H %s V %s", blockHeight, view)
 	}
 
 	header := ppm.Content().SignedHeader()
 	sender := ppm.Content().Sender()
 	if !term.KeyManager.Verify(header.Raw(), sender) {
-		return false
+		return fmt.Errorf("verification failed for sender %s signature on header", sender.SenderPublicKey()[:3])
 	}
 
 	leaderPublicKey := term.calcLeaderPublicKey(view)
 	senderPublicKey := sender.SenderPublicKey()
 	if !senderPublicKey.Equal(leaderPublicKey) {
 		// Log
-		return false
+		return fmt.Errorf("sender %s is not leader", senderPublicKey[:3])
 	}
 
 	givenBlockHash := term.BlockUtils.CalculateBlockHash(ppm.Block())
 	if !ppm.Content().SignedHeader().BlockHash().Equal(givenBlockHash) {
-		return false
+		return fmt.Errorf("block hash in block and in header are different")
 	}
 
 	isValidBlock := term.BlockUtils.ValidateBlock(ppm.Block())
 
 	if !isValidBlock {
-		return false
+		return fmt.Errorf("block validation failed")
 	}
 
-	return true
+	return nil
 }
 
 func (term *LeanHelixTerm) hasPreprepare(blockHeight BlockHeight, view View) bool {
@@ -544,7 +550,7 @@ func (term *LeanHelixTerm) onReceiveNewView(ctx context.Context, nvm *NewViewMes
 		block:   nvm.Block(),
 	}
 
-	if term.validatePreprepare(ppm) {
+	if err := term.validatePreprepare(ppm); err == nil {
 		term.newViewLocally = header.View()
 		term.SetView(header.View())
 		term.processPreprepare(ctx, ppm)

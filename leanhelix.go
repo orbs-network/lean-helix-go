@@ -30,7 +30,7 @@ func (lh *leanHelix) ValidateBlockConsensus(block Block, blockProof *BlockProof,
 func (lh *leanHelix) Start(ctx context.Context, blockHeight primitives.BlockHeight) {
 	lh.logger.Debug("LeanHelix.Start")
 	for {
-		leanHelixTerm := NewLeanHelixTerm(lh.config, lh.filter, blockHeight)
+		leanHelixTerm := NewLeanHelixTerm(ctx, lh.config, lh.filter, blockHeight)
 		block := leanHelixTerm.WaitForBlock(ctx)
 		lh.notifyCommitted(block)
 		blockHeight++
