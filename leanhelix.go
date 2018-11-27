@@ -94,6 +94,5 @@ func NewLeanHelix(config *Config) LeanHelix {
 		config:                  config,
 		filter:                  filter,
 	}
-	config.NetworkCommunication.RegisterOnMessage(lh.OnGossipMessage)
 	return lh
 }

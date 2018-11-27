@@ -8,6 +8,7 @@ import (
 type LeanHelix interface {
 	Run(ctx context.Context)
 	AcknowledgeBlockConsensus(prevBlock Block)
+	OnGossipMessage(ctx context.Context, msg ConsensusRawMessage)
 	RegisterOnCommitted(cb func(block Block))
 	ValidateBlockConsensus(block Block, blockProof *BlockProof, prevBlockProof *BlockProof) bool
 }

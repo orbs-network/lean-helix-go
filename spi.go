@@ -19,8 +19,6 @@ type LeanHelixSPI struct {
 type NetworkCommunication interface {
 	RequestOrderedCommittee(seed uint64) []primitives.Ed25519PublicKey
 	IsMember(pk primitives.Ed25519PublicKey) bool
-	RegisterOnMessage(onReceivedMessage func(ctx context.Context, message ConsensusRawMessage)) int
-	UnregisterOnMessage(subscriptionToken int)
 	SendMessage(ctx context.Context, targets []primitives.Ed25519PublicKey, message ConsensusRawMessage)
 }
 
