@@ -11,7 +11,7 @@ import (
 // Leader election //
 func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		h := NewHarness(t)
+		h := NewHarness(ctx, t)
 
 		h.checkView(0)
 		h.triggerElection(ctx)
@@ -21,7 +21,7 @@ func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 
 func TestNewViewNotAcceptViewsFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		h := NewHarness(t)
+		h := NewHarness(ctx, t)
 
 		h.checkView(0)
 		h.triggerElection(ctx)
@@ -41,7 +41,7 @@ func TestNewViewNotAcceptViewsFromThePast(t *testing.T) {
 
 func TestViewChangeNotAcceptViewsFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		h := NewHarness(t)
+		h := NewHarness(ctx, t)
 
 		// jumping to view=8 me (node0) as the leader
 		h.checkView(0)

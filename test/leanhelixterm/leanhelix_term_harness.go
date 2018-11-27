@@ -20,13 +20,13 @@ type harness struct {
 	electionTrigger *builders.ElectionTriggerMock
 }
 
-func NewHarness(t *testing.T) *harness {
+func NewHarness(ctx context.Context, t *testing.T) *harness {
 	net := builders.ABasicTestNetwork()
 	node := net.Nodes[0]
 	myPublicKey := node.KeyManager.MyPublicKey()
 	termConfig := node.BuildConfig()
-	filter := leanhelix.NewConsensusMessageFilter(myPublicKey)
-	term := leanhelix.NewLeanHelixTerm(termConfig, nil, node.GetLatestBlock().Height()+1)
+	filter := leanhelix.NewConsensusMessageFilter(myPublicKey, termConfig.Logger)
+	term := leanhelix.NewLeanHelixTerm(ctx, termConfig, nil, node.GetLatestBlock().Height()+1)
 
 	return &harness{
 		t:               t,

@@ -81,7 +81,7 @@ func (g *Gossip) SendMessage(ctx context.Context, targets []Ed25519PublicKey, me
 	}
 }
 
-func (g *Gossip) RegisterOnMessage(cb lh.MessageHandler) int {
+func (g *Gossip) RegisterOnMessage(cb func(ctx context.Context, message lh.ConsensusRawMessage)) int {
 	g.totalSubscriptions++
 	g.subscriptions[g.totalSubscriptions] = &SubscriptionValue{cb}
 	return g.totalSubscriptions

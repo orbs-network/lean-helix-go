@@ -82,7 +82,7 @@ func (lh *LeanHelix) onCommit(ctx context.Context, block Block) {
 
 func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, height primitives.BlockHeight) {
 	lh.currentHeight = height
-	lh.leanHelixTerm = NewLeanHelixTerm(lh.config, lh.onCommit, lh.currentHeight)
+	lh.leanHelixTerm = NewLeanHelixTerm(ctx, lh.config, lh.onCommit, lh.currentHeight)
 	lh.filter.SetBlockHeight(ctx, lh.currentHeight, lh.leanHelixTerm)
 	lh.leanHelixTerm.StartTerm(ctx)
 }
@@ -91,7 +91,7 @@ func NewLeanHelix(config *Config) *LeanHelix {
 	if config.Logger == nil {
 		config.Logger = NewSilentLogger()
 	}
-	filter := NewConsensusMessageFilter(config.KeyManager.MyPublicKey())
+	filter := NewConsensusMessageFilter(config.KeyManager.MyPublicKey(), config.Logger)
 	return &LeanHelix{
 		messagesChannel:         make(chan ConsensusRawMessage),
 		acknowledgeBlockChannel: make(chan Block),

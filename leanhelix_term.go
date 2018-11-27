@@ -89,7 +89,6 @@ func panicOnLessThanMinimumCommitteeMembers(minimum int, committeeMembers []Ed25
 	}
 }
 
-
 func (term *LeanHelixTerm) StartTerm(ctx context.Context) {
 	if term.IsLeader() {
 		block := term.BlockUtils.RequestNewBlock(ctx, term.height)
@@ -386,7 +385,7 @@ func (term *LeanHelixTerm) checkCommitted(ctx context.Context, blockHeight Block
 	ppm, ok := term.Storage.GetPreprepareMessage(blockHeight, view)
 	if !ok {
 		// log
-		term.logger.Info("H %s V %s checkCommitted() missing PPM", )
+		term.logger.Info("H %s V %s checkCommitted() missing PPM")
 		return
 	}
 	term.logger.Info("H %s V %s checkCommitted() COMMITTED H %s V %s BlockHash %s ", term.height, term.view, blockHeight, view, blockHash)
