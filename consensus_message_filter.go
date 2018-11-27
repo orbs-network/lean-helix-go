@@ -56,7 +56,7 @@ func (f *ConsensusMessageFilter) WaitForMessage(ctx context.Context, blockHeight
 				continue
 			}
 
-			f.logger.Debug("H %s V ? filter.WaitForMessage() accepted")
+			f.logger.Debug("H %s V ? filter.WaitForMessage() accepted", blockHeight)
 			return message, nil
 		}
 	}

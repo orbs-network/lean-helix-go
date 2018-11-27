@@ -411,6 +411,7 @@ func (term *LeanHelixTerm) onReceiveCommit(ctx context.Context, cm *CommitMessag
 }
 
 func (term *LeanHelixTerm) checkCommitted(blockHeight BlockHeight, view View, blockHash Uint256) {
+	term.logger.Debug("H %s V %s checkCommitted() H %s V %s BlockHash %s ", term.height, term.view, blockHeight, view, blockHash)
 	if term.committedBlock != nil {
 		return
 	}
@@ -424,8 +425,10 @@ func (term *LeanHelixTerm) checkCommitted(blockHeight BlockHeight, view View, bl
 	ppm, ok := term.Storage.GetPreprepareMessage(blockHeight, view)
 	if !ok {
 		// log
+		term.logger.Info("H %s V %s checkCommitted() missing PPM", )
 		return
 	}
+	term.logger.Info("H %s V %s checkCommitted() COMMITTED H %s V %s BlockHash %s ", term.height, term.view, blockHeight, view, blockHash)
 	term.committedBlock = ppm.block
 }
 

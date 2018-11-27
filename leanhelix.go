@@ -14,6 +14,7 @@ type leanHelix struct {
 }
 
 func (lh *leanHelix) notifyCommitted(block Block) {
+	lh.logger.Debug("LeanHelix.notifyCommitted()")
 	for _, subscription := range lh.commitSubscriptions {
 		subscription(block)
 	}
