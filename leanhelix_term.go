@@ -365,9 +365,7 @@ func (term *LeanHelixTerm) HandleLeanHelixCommit(ctx context.Context, cm *Commit
 		return
 	}
 	term.Storage.StoreCommit(cm)
-	if term.view == header.View() {
-		term.checkCommitted(ctx, header.BlockHeight(), header.View(), header.BlockHash())
-	}
+	term.checkCommitted(ctx, header.BlockHeight(), header.View(), header.BlockHash())
 }
 
 func (term *LeanHelixTerm) checkCommitted(ctx context.Context, blockHeight BlockHeight, view View, blockHash Uint256) {
