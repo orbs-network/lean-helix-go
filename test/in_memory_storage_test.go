@@ -103,7 +103,7 @@ func TestStoreCommit(t *testing.T) {
 	storage.StoreCommit(message5)
 	storage.StoreCommit(message6)
 
-	actualCommitMessages := storage.GetCommitMessages(blockHeight1, view1, block1Hash)
+	actualCommitMessages, _ := storage.GetCommitMessages(blockHeight1, view1, block1Hash)
 	expectedMessages := []*lh.CommitMessage{message1, message2, message3}
 	require.ElementsMatch(t, actualCommitMessages, expectedMessages, "stored commit messages should match the fetched commit messages")
 
@@ -137,7 +137,7 @@ func TestStoreViewChange(t *testing.T) {
 	storage.StoreViewChange(message4)
 	storage.StoreViewChange(message5)
 
-	actualViewChangeMessages := storage.GetViewChangeMessages(blockHeight1, view1)
+	actualViewChangeMessages, _ := storage.GetViewChangeMessages(blockHeight1, view1)
 	expectedMessages := []*lh.ViewChangeMessage{message1, message2, message3}
 	require.ElementsMatch(t, actualViewChangeMessages, expectedMessages, "stored view-change messages should match the fetched view-change messages")
 }
@@ -264,7 +264,7 @@ func TestClearBlockHeightLogs(t *testing.T) {
 	actualPP, _ := storage.GetPreprepareMessage(blockHeight, view)
 	actualP, _ := storage.GetPrepareMessages(blockHeight, view, blockHash)
 	actualC, _ := storage.GetCommitMessages(blockHeight, view, blockHash)
-	actualVC := storage.GetViewChangeMessages(blockHeight, view)
+	actualVC, _ := storage.GetViewChangeMessages(blockHeight, view)
 	require.Equal(t, actualPP, ppMsg, "stored preprepare message should match the fetched preprepare message")
 	require.Equal(t, 1, len(actualP), "Length of GetPrepareMessages() result array should be 1")
 	require.Equal(t, 1, len(actualC), "Length of GetCommitSendersPKs() result array should be 1")
@@ -275,7 +275,7 @@ func TestClearBlockHeightLogs(t *testing.T) {
 	actualPP, _ = storage.GetPreprepareMessage(blockHeight, view)
 	actualP, _ = storage.GetPrepareMessages(blockHeight, view, blockHash)
 	actualC, _ = storage.GetCommitMessages(blockHeight, view, blockHash)
-	actualVC = storage.GetViewChangeMessages(blockHeight, view)
+	actualVC, _ = storage.GetViewChangeMessages(blockHeight, view)
 
 	require.Nil(t, actualPP, "GetPreprepareMessage() should return nil after ClearBlockHeightLogs()")
 	require.Equal(t, 0, len(actualP), "Length of GetPrepareMessages() result array should be 0")
