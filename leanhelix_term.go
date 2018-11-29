@@ -135,8 +135,8 @@ func (term *LeanHelixTerm) moveToNextLeader(ctx context.Context, view View) {
 	term.logger.Debug("H %d V %d moveToNextLeader() newLeader=%s", term.height, term.view, term.leaderPublicKey[:3])
 	preparedMessages := ExtractPreparedMessages(term.height, term.Storage, term.QuorumSize())
 	vcm := term.messageFactory.CreateViewChangeMessage(term.height, term.view, preparedMessages)
-	term.Storage.StoreViewChange(vcm)
 	if term.IsLeader() {
+		term.Storage.StoreViewChange(vcm)
 		term.checkElected(ctx, term.height, term.view)
 	} else {
 		term.sendViewChange(ctx, vcm)
@@ -313,9 +313,9 @@ func (term *LeanHelixTerm) isViewChangeValid(targetLeaderPublicKey Ed25519Public
 
 func (term *LeanHelixTerm) checkElected(ctx context.Context, height BlockHeight, view View) {
 	if term.newViewLocally < view {
-		vcms := term.Storage.GetViewChangeMessages(height, view)
+		vcms, err := term.Storage.GetViewChangeMessages(height, view)
 		minimumNodes := term.QuorumSize()
-		if len(vcms) >= minimumNodes {
+		if !err && len(vcms) >= minimumNodes {
 			term.onElected(ctx, view, vcms[:minimumNodes])
 		}
 	}
