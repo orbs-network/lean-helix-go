@@ -15,7 +15,6 @@ type harness struct {
 	myPublicKey     primitives.Ed25519PublicKey
 	net             *builders.TestNetwork
 	term            *leanhelix.LeanHelixTerm
-	filter          *leanhelix.ConsensusMessageFilter
 	storage         leanhelix.Storage
 	electionTrigger *builders.ElectionTriggerMock
 }
@@ -25,7 +24,6 @@ func NewHarness(ctx context.Context, t *testing.T) *harness {
 	node := net.Nodes[0]
 	myPublicKey := node.KeyManager.MyPublicKey()
 	termConfig := node.BuildConfig()
-	filter := leanhelix.NewConsensusMessageFilter(myPublicKey, termConfig.Logger)
 	term := leanhelix.NewLeanHelixTerm(ctx, termConfig, nil, node.GetLatestBlock().Height()+1)
 
 	return &harness{
@@ -33,7 +31,6 @@ func NewHarness(ctx context.Context, t *testing.T) *harness {
 		myPublicKey:     myPublicKey,
 		net:             net,
 		term:            term,
-		filter:          filter,
 		storage:         termConfig.Storage,
 		electionTrigger: node.ElectionTrigger,
 	}
@@ -48,13 +45,23 @@ func (h *harness) triggerElection(ctx context.Context) {
 	h.electionTrigger.ManualTriggerSync(ctx)
 }
 
-func (h *harness) sendNewView(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
-	leader := h.net.Nodes[0]
+func (h *harness) setNode1AsTheLeader(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+	me := h.net.Nodes[0]
+	leader := h.net.Nodes[1]
+	node2 := h.net.Nodes[2]
+	node3 := h.net.Nodes[3]
+	members := []*builders.Node{me, node2, node3}
+	nvm := builders.AValidNewViewMessage(leader, members, blockHeight, view, block)
+	h.term.HandleLeanHelixNewView(ctx, nvm)
+}
+
+func (h *harness) setMeAsTheLeader(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+	me := h.net.Nodes[0]
 	node1 := h.net.Nodes[1]
 	node2 := h.net.Nodes[2]
 	node3 := h.net.Nodes[3]
 	members := []*builders.Node{node1, node2, node3}
-	nvm := builders.AValidNewViewMessage(leader, members, blockHeight, view, block)
+	nvm := builders.AValidNewViewMessage(me, members, blockHeight, view, block)
 	h.term.HandleLeanHelixNewView(ctx, nvm)
 }
 
@@ -64,6 +71,24 @@ func (h *harness) sendViewChange(ctx context.Context, blockHeight primitives.Blo
 	h.term.HandleLeanHelixViewChange(ctx, vc)
 }
 
+func (h *harness) sendPreprepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+	leader := h.net.Nodes[fromNode]
+	ppm := builders.APreprepareMessage(leader.KeyManager, blockHeight, view, block)
+	h.term.HandleLeanHelixPrePrepare(ctx, ppm)
+}
+
+func (h *harness) sendPrepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+	sender := h.net.Nodes[fromNode]
+	pm := builders.APrepareMessage(sender.KeyManager, blockHeight, view, block)
+	h.term.HandleLeanHelixPrepare(ctx, pm)
+}
+
 func (h *harness) countViewChange(blockHeight primitives.BlockHeight, view primitives.View) int {
-	return len(h.storage.GetViewChangeMessages(blockHeight, view))
+	messages, _ := h.storage.GetViewChangeMessages(blockHeight, view)
+	return len(messages)
+}
+
+func (h *harness) countCommits(blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) int {
+	messages, _ := h.storage.GetCommitMessages(blockHeight, view, builders.CalculateBlockHash(block))
+	return len(messages)
 }

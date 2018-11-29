@@ -29,12 +29,12 @@ func TestNewViewNotAcceptViewsFromThePast(t *testing.T) {
 
 		// voting node0 as the leader
 		block := builders.CreateBlock(builders.GenesisBlock)
-		h.sendNewView(ctx, 1, 8, block)
+		h.setMeAsTheLeader(ctx, 1, 8, block)
 		h.checkView(8)
 
 		// re-voting node0 as the leader, but with a view from the past (4)
 		block = builders.CreateBlock(builders.GenesisBlock)
-		h.sendNewView(ctx, 1, 4, block)
+		h.setMeAsTheLeader(ctx, 1, 4, block)
 		h.checkView(8) // unchanged
 	})
 }
@@ -46,7 +46,7 @@ func TestViewChangeNotAcceptViewsFromThePast(t *testing.T) {
 		// jumping to view=8 me (node0) as the leader
 		h.checkView(0)
 		block := builders.CreateBlock(builders.GenesisBlock)
-		h.sendNewView(ctx, 1, 8, block)
+		h.setMeAsTheLeader(ctx, 1, 8, block)
 		h.checkView(8)
 
 		// re-voting me (node0, view=12 -> future) as the leader
@@ -60,5 +60,27 @@ func TestViewChangeNotAcceptViewsFromThePast(t *testing.T) {
 		h.sendViewChange(ctx, 1, 4, block)
 		viewChangeCount = h.countViewChange(1, 4)
 		require.Equal(t, 0, viewChangeCount, "Term should not ignore ViewChange message on view 4 (From the past)")
+	})
+}
+
+func TestPrepare2fPlus1ForACommit(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		h := NewHarness(ctx, t)
+
+		block1 := builders.CreateBlock(builders.GenesisBlock)
+		block2 := builders.CreateBlock(block1)
+
+		// set node1 as the leader
+		h.setNode1AsTheLeader(ctx, 1, 1, block1)
+
+		commitChangeCount := h.countCommits(2, 1, block2)
+		require.Equal(t, 0, commitChangeCount, "No commits should exist in the storage")
+
+		h.sendPreprepare(ctx, 1, 2, 1, block2)
+		h.sendPrepare(ctx, 2, 2, 1, block2)
+		h.sendPrepare(ctx, 3, 2, 1, block2)
+
+		commitChangeCount = h.countCommits(2, 1, block2)
+		require.Equal(t, 1, commitChangeCount, "There should be 1 commit in the storage")
 	})
 }
