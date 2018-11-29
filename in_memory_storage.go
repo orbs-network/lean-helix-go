@@ -270,17 +270,17 @@ func (storage *InMemoryStorage) StoreViewChange(vcm *ViewChangeMessage) bool {
 
 }
 
-func (storage *InMemoryStorage) GetViewChangeMessages(blockHeight BlockHeight, view View) []*ViewChangeMessage {
+func (storage *InMemoryStorage) GetViewChangeMessages(blockHeight BlockHeight, view View) ([]*ViewChangeMessage, bool) {
 	storage.mutext.Lock()
 	defer storage.mutext.Unlock()
 
 	views, ok := storage.viewChangeStorage[blockHeight]
 	if !ok {
-		return nil
+		return nil, false
 	}
 	senders, ok := views[view]
 	if !ok {
-		return nil
+		return nil, false
 	}
 
 	result := make([]*ViewChangeMessage, len(senders))
@@ -289,7 +289,7 @@ func (storage *InMemoryStorage) GetViewChangeMessages(blockHeight BlockHeight, v
 		result[i] = value
 		i++
 	}
-	return result
+	return result, true
 }
 
 func (storage *InMemoryStorage) ClearBlockHeightLogs(blockHeight BlockHeight) {

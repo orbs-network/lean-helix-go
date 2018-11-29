@@ -19,7 +19,7 @@ type Storage interface {
 	GetCommitSendersPKs(blockHeight BlockHeight, view View, blockHash Uint256) []Ed25519PublicKey
 
 	StoreViewChange(vcm *ViewChangeMessage) bool
-	GetViewChangeMessages(blockHeight BlockHeight, view View) []*ViewChangeMessage
+	GetViewChangeMessages(blockHeight BlockHeight, view View) ([]*ViewChangeMessage, bool)
 
 	ClearBlockHeightLogs(blockHeight BlockHeight)
 }

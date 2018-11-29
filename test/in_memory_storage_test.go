@@ -103,7 +103,7 @@ func TestStoreCommit(t *testing.T) {
 	storage.StoreCommit(message5)
 	storage.StoreCommit(message6)
 
-	actualCommitMessages, _ := storage.GetCommitMessages(blockHeight1, view1, block1Hash)
+	actualCommitMessages := storage.GetCommitMessages(blockHeight1, view1, block1Hash)
 	expectedMessages := []*lh.CommitMessage{message1, message2, message3}
 	require.ElementsMatch(t, actualCommitMessages, expectedMessages, "stored commit messages should match the fetched commit messages")
 
