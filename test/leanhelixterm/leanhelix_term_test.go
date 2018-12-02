@@ -173,3 +173,34 @@ func TestViewChangeSignature(t *testing.T) {
 		require.Equal(t, 0, viewChangeCountOnView8, "(Still) No view-change should exist in the storage, on view 8")
 	})
 }
+
+func TestNewViewSignature(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		h := NewHarness(ctx, t)
+
+		block1 := builders.CreateBlock(builders.GenesisBlock)
+		block2 := builders.CreateBlock(block1)
+		block3 := builders.CreateBlock(block2)
+
+		h.setNode1AsTheLeader(ctx, 1, 1, block1)
+
+		// start with 0 new-view (Counting the preprepare)
+		hasPreprepare := h.hasPreprepare(1, 1, block2)
+		require.False(t, hasPreprepare, "No preprepare should exist in the storage")
+
+		// sending a new-view
+		h.sendNewView(ctx, 0, 1, 4, block2)
+
+		// Expect the storage to have it
+		hasPreprepare = h.hasPreprepare(1, 4, block2)
+		require.True(t, hasPreprepare, "A preprepare should exist in the storage")
+
+		// sending another (Bad) new-view
+		h.failFutureVerifications()
+		h.sendNewView(ctx, 0, 1, 8, block3)
+
+		// Expect the storage to have it
+		hasPreprepare = h.hasPreprepare(1, 8, block3)
+		require.False(t, hasPreprepare, "A preprepare should NOT exist in the storage")
+	})
+}
