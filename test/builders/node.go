@@ -17,7 +17,7 @@ type Node struct {
 	blockChain       *InMemoryBlockChain
 	ElectionTrigger  *ElectionTriggerMock
 	BlockUtils       *MockBlockUtils
-	KeyManager       lh.KeyManager
+	KeyManager       *MockKeyManager
 	Storage          lh.Storage
 	Gossip           *gossip.Gossip
 	PublicKey        primitives.Ed25519PublicKey

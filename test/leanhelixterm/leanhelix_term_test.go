@@ -70,7 +70,6 @@ func TestPrepare2fPlus1ForACommit(t *testing.T) {
 		block1 := builders.CreateBlock(builders.GenesisBlock)
 		block2 := builders.CreateBlock(block1)
 
-		// set node1 as the leader
 		h.setNode1AsTheLeader(ctx, 1, 1, block1)
 
 		commitChangeCount := h.countCommits(2, 1, block2)
@@ -82,5 +81,36 @@ func TestPrepare2fPlus1ForACommit(t *testing.T) {
 
 		commitChangeCount = h.countCommits(2, 1, block2)
 		require.Equal(t, 1, commitChangeCount, "There should be 1 commit in the storage")
+	})
+}
+
+func TestPreprepareSignature(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		h := NewHarness(ctx, t)
+
+		block1 := builders.CreateBlock(builders.GenesisBlock)
+		block2 := builders.CreateBlock(block1)
+		block3 := builders.CreateBlock(block2)
+
+		h.setNode1AsTheLeader(ctx, 1, 1, block1)
+
+		// start with 0 preprepare
+		preprepareCount := h.countPreprepare(2, 1, block2)
+		require.Equal(t, 0, preprepareCount, "No preprepare should exist in the storage")
+
+		// sending a preprepare (height 2)
+		h.sendPreprepare(ctx, 1, 2, 1, block2)
+
+		// Expect the storage to have it
+		preprepareCount = h.countPreprepare(2, 1, block2)
+		require.Equal(t, 1, preprepareCount, "1 preprepare should exist in the storage")
+
+		// sending another preprepare (height 3)
+		h.failFutureVerifications()
+		h.sendPreprepare(ctx, 1, 3, 1, block3)
+
+		// Expect the storage NOT to have it
+		preprepareCount = h.countPreprepare(3, 1, block3)
+		require.Equal(t, 0, preprepareCount, "No preprepare should exist in the storage")
 	})
 }

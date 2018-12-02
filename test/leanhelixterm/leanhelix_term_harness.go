@@ -11,28 +11,32 @@ import (
 )
 
 type harness struct {
-	t               *testing.T
-	myPublicKey     primitives.Ed25519PublicKey
-	net             *builders.TestNetwork
-	term            *leanhelix.LeanHelixTerm
-	storage         leanhelix.Storage
-	electionTrigger *builders.ElectionTriggerMock
+	t                 *testing.T
+	myPublicKey       primitives.Ed25519PublicKey
+	keyManager        *builders.MockKeyManager
+	net               *builders.TestNetwork
+	term              *leanhelix.LeanHelixTerm
+	storage           leanhelix.Storage
+	electionTrigger   *builders.ElectionTriggerMock
+	failVerifications bool
 }
 
 func NewHarness(ctx context.Context, t *testing.T) *harness {
 	net := builders.ABasicTestNetwork()
-	node := net.Nodes[0]
-	myPublicKey := node.KeyManager.MyPublicKey()
-	termConfig := node.BuildConfig()
-	term := leanhelix.NewLeanHelixTerm(ctx, termConfig, nil, node.GetLatestBlock().Height()+1)
+	myNode := net.Nodes[0]
+	keyManager := myNode.KeyManager
+	termConfig := myNode.BuildConfig()
+	term := leanhelix.NewLeanHelixTerm(ctx, termConfig, nil, myNode.GetLatestBlock().Height()+1)
 
 	return &harness{
-		t:               t,
-		myPublicKey:     myPublicKey,
-		net:             net,
-		term:            term,
-		storage:         termConfig.Storage,
-		electionTrigger: node.ElectionTrigger,
+		t:                 t,
+		myPublicKey:       keyManager.MyPublicKey(),
+		net:               net,
+		keyManager:        myNode.KeyManager,
+		term:              term,
+		storage:           termConfig.Storage,
+		electionTrigger:   myNode.ElectionTrigger,
+		failVerifications: false,
 	}
 }
 
@@ -91,4 +95,12 @@ func (h *harness) countViewChange(blockHeight primitives.BlockHeight, view primi
 func (h *harness) countCommits(blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) int {
 	messages, _ := h.storage.GetCommitMessages(blockHeight, view, builders.CalculateBlockHash(block))
 	return len(messages)
+}
+
+func (h *harness) countPreprepare(blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) int {
+	messages, _ := h.storage.GetPrepareMessages(blockHeight, view, builders.CalculateBlockHash(block))
+	return len(messages)
+}
+func (h *harness) failFutureVerifications() {
+	h.keyManager.FailFutureVerifications = true
 }
