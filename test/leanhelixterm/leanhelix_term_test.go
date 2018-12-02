@@ -84,6 +84,42 @@ func TestPrepareNotAcceptViewsFromThePast(t *testing.T) {
 	})
 }
 
+func TestPreprepareAcceptOnlyMatchingViews(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		h := NewHarness(ctx, t)
+
+		block1 := builders.CreateBlock(builders.GenesisBlock)
+		block2 := builders.CreateBlock(block1)
+
+		// set node 1 as the leader (view 5)
+		h.checkView(0)
+		h.triggerElection(ctx)
+		h.triggerElection(ctx)
+		h.triggerElection(ctx)
+		h.triggerElection(ctx)
+		h.triggerElection(ctx)
+		h.checkView(5)
+
+		hasPreprepare := h.hasPreprepare(1, 5, block2)
+		require.False(t, hasPreprepare, "No preprepare should exist in the storage")
+
+		// current view (5) => valid
+		h.sendPreprepare(ctx, 1, 1, 5, block2)
+		hasPreprepare = h.hasPreprepare(1, 5, block2)
+		require.True(t, hasPreprepare, "A preprepare should exist in the storage")
+
+		// view from the future (9) => invalid, should be ignored
+		h.sendPreprepare(ctx, 1, 1, 9, block2)
+		hasPreprepare = h.hasPreprepare(1, 9, block2)
+		require.False(t, hasPreprepare, "No preprepare should exist in the storage")
+
+		// view from the future (1) => invalid, should be ignored
+		h.sendPreprepare(ctx, 1, 1, 1, block2)
+		hasPreprepare = h.hasPreprepare(1, 1, block2)
+		require.False(t, hasPreprepare, "No preprepare should exist in the storage")
+	})
+}
+
 func TestPrepare2fPlus1ForACommit(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
