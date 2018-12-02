@@ -114,3 +114,30 @@ func TestPreprepareSignature(t *testing.T) {
 		require.False(t, hasPreprepare, "preprepare should NOT exist in the storage")
 	})
 }
+
+func TestPrepareSignature(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		h := NewHarness(ctx, t)
+
+		block := builders.CreateBlock(builders.GenesisBlock)
+
+		// start with 0 prepare
+		prepareCount := h.countPrepare(1, 0, block)
+		require.Equal(t, 0, prepareCount, "No prepare should exist in the storage")
+
+		// sending a prepare
+		h.sendPrepare(ctx, 1, 1, 0, block)
+
+		// Expect the storage to have it
+		prepareCount = h.countPrepare(1, 0, block)
+		require.Equal(t, 1, prepareCount, "1 prepare should exist in the storage")
+
+		// sending another prepare (From a different node)
+		h.failFutureVerifications()
+		h.sendPrepare(ctx, 2, 1, 0, block)
+
+		// Expect the storage NOT to have it
+		prepareCount = h.countPrepare(1, 0, block)
+		require.Equal(t, 1, prepareCount, "(Still) 1 prepare should exist in the storage")
+	})
+}
