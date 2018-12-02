@@ -64,7 +64,7 @@ func (lh *LeanHelix) Tick(ctx context.Context) bool {
 	return true
 }
 
-func (lh *LeanHelix) AcknowledgeBlockConsensus(prevBlock Block) {
+func (lh *LeanHelix) UpdateConsensusRound(prevBlock Block) {
 	lh.acknowledgeBlockChannel <- prevBlock
 }
 

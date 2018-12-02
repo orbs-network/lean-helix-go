@@ -43,7 +43,7 @@ func (node *Node) onCommittedBlock(block lh.Block) {
 func (node *Node) StartConsensus(ctx context.Context) {
 	if node.leanHelix != nil {
 		go node.leanHelix.Run(ctx)
-		node.leanHelix.AcknowledgeBlockConsensus(node.GetLatestBlock())
+		node.leanHelix.UpdateConsensusRound(node.GetLatestBlock())
 	}
 }
 
@@ -52,7 +52,7 @@ func (node *Node) Tick(ctx context.Context) {
 }
 func (node *Node) StartConsensusSync() {
 	if node.leanHelix != nil {
-		go node.leanHelix.AcknowledgeBlockConsensus(node.GetLatestBlock())
+		go node.leanHelix.UpdateConsensusRound(node.GetLatestBlock())
 	}
 }
 
