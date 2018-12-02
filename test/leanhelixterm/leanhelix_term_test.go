@@ -132,12 +132,44 @@ func TestPrepareSignature(t *testing.T) {
 		prepareCount = h.countPrepare(1, 0, block)
 		require.Equal(t, 1, prepareCount, "1 prepare should exist in the storage")
 
-		// sending another prepare (From a different node)
+		// sending another (Bad) prepare (From a different node)
 		h.failFutureVerifications()
 		h.sendPrepare(ctx, 2, 1, 0, block)
 
-		// Expect the storage NOT to have it
+		// Expect the storage NOT to store it
 		prepareCount = h.countPrepare(1, 0, block)
 		require.Equal(t, 1, prepareCount, "(Still) 1 prepare should exist in the storage")
+	})
+}
+
+func TestViewChangeSignature(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		h := NewHarness(ctx, t)
+
+		block := builders.CreateBlock(builders.GenesisBlock)
+
+		// start with 0 view-change
+		viewChangeCountOnView4 := h.countViewChange(1, 4)
+		viewChangeCountOnView8 := h.countViewChange(1, 8)
+		require.Equal(t, 0, viewChangeCountOnView4, "No view-change should exist in the storage, on view 4")
+		require.Equal(t, 0, viewChangeCountOnView8, "No view-change should exist in the storage, on view 8")
+
+		// sending a view-change
+		h.sendViewChange(ctx, 1, 4, block)
+
+		// Expect the storage to have it
+		viewChangeCountOnView4 = h.countViewChange(1, 4)
+		require.Equal(t, 1, viewChangeCountOnView4, "1 view-change should exist in the storage, on view 4")
+		require.Equal(t, 0, viewChangeCountOnView8, "No view-change should exist in the storage, on view 8")
+
+		// sending another (Bad) view-change
+		h.failFutureVerifications()
+		h.sendViewChange(ctx, 2, 8, block)
+
+		// Expect the storage NOT to store it
+		viewChangeCountOnView4 = h.countViewChange(1, 4)
+		viewChangeCountOnView8 = h.countViewChange(1, 8)
+		require.Equal(t, 1, viewChangeCountOnView4, "1 view-change should exist in the storage, on view 4")
+		require.Equal(t, 0, viewChangeCountOnView8, "(Still) No view-change should exist in the storage, on view 8")
 	})
 }
