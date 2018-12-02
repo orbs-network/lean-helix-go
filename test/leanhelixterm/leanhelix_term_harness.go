@@ -75,6 +75,13 @@ func (h *harness) sendPreprepare(ctx context.Context, fromNode int, blockHeight 
 	h.term.HandleLeanHelixPrePrepare(ctx, ppm)
 }
 
+func (h *harness) sendPreprepareWithSpecificBlockHash(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block, blockHash primitives.Uint256) {
+	leader := h.net.Nodes[fromNode]
+	messageFactory := leanhelix.NewMessageFactory(leader.KeyManager)
+	ppm := messageFactory.CreatePreprepareMessage(blockHeight, view, block, blockHash)
+	h.term.HandleLeanHelixPrePrepare(ctx, ppm)
+}
+
 func (h *harness) sendPrepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
 	sender := h.net.Nodes[fromNode]
 	pm := builders.APrepareMessage(sender.KeyManager, blockHeight, view, block)
