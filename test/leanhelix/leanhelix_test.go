@@ -22,7 +22,10 @@ func TestOnlyLeaderIsSendingPrePrepareOnce(t *testing.T) {
 		net := builders.ABasicTestNetwork()
 
 		net.StartConsensusSync()
-		net.TickAllNodes(ctx)
+		net.Nodes[0].Tick(ctx)
+		net.Nodes[1].Tick(ctx)
+		net.Nodes[2].Tick(ctx)
+		net.Nodes[3].Tick(ctx)
 
 		require.Equal(t, 1, net.Nodes[0].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPREPARE))
 		require.Equal(t, 0, net.Nodes[1].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPREPARE))
