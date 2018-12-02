@@ -26,7 +26,7 @@ func NewHarness(ctx context.Context, t *testing.T) *harness {
 	myNode := net.Nodes[0]
 	keyManager := myNode.KeyManager
 	termConfig := myNode.BuildConfig()
-	term := leanhelix.NewLeanHelixTerm(ctx, termConfig, nil, myNode.GetLatestBlock().Height()+1)
+	term := leanhelix.NewLeanHelixTerm(ctx, termConfig, nil, myNode.GetLatestBlock())
 
 	return &harness{
 		t:                 t,
@@ -60,13 +60,7 @@ func (h *harness) setNode1AsTheLeader(ctx context.Context, blockHeight primitive
 }
 
 func (h *harness) setMeAsTheLeader(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
-	me := h.net.Nodes[0]
-	node1 := h.net.Nodes[1]
-	node2 := h.net.Nodes[2]
-	node3 := h.net.Nodes[3]
-	members := []*builders.Node{node1, node2, node3}
-	nvm := builders.AValidNewViewMessage(me, members, blockHeight, view, block)
-	h.term.HandleLeanHelixNewView(ctx, nvm)
+	h.sendNewView(ctx, 0, blockHeight, view, block)
 }
 
 func (h *harness) sendViewChange(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
@@ -85,6 +79,19 @@ func (h *harness) sendPrepare(ctx context.Context, fromNode int, blockHeight pri
 	sender := h.net.Nodes[fromNode]
 	pm := builders.APrepareMessage(sender.KeyManager, blockHeight, view, block)
 	h.term.HandleLeanHelixPrepare(ctx, pm)
+}
+
+func (h *harness) sendNewView(ctx context.Context, leaderNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+	var members []*builders.Node
+	for i, node := range h.net.Nodes {
+		if i != leaderNodeIdx {
+			members = append(members, node)
+		}
+	}
+
+	leaderNode := h.net.Nodes[leaderNodeIdx]
+	nvm := builders.AValidNewViewMessage(leaderNode, members, blockHeight, view, block)
+	h.term.HandleLeanHelixNewView(ctx, nvm)
 }
 
 func (h *harness) countViewChange(blockHeight primitives.BlockHeight, view primitives.View) int {

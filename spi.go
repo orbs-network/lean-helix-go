@@ -30,6 +30,6 @@ type KeyManager interface {
 
 type BlockUtils interface {
 	CalculateBlockHash(block Block) primitives.Uint256
-	RequestNewBlock(ctx context.Context, blockHeight primitives.BlockHeight) Block
+	RequestNewBlock(ctx context.Context, prevBlock Block) Block
 	ValidateBlock(block Block) bool
 }

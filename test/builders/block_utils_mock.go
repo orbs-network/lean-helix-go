@@ -55,7 +55,7 @@ func (b *MockBlockUtils) getNextBlock() lh.Block {
 	return nextBlock
 }
 
-func (b *MockBlockUtils) RequestNewBlock(ctx context.Context, height BlockHeight) lh.Block {
+func (b *MockBlockUtils) RequestNewBlock(ctx context.Context, prevBlock lh.Block) lh.Block {
 	return b.getNextBlock()
 }
 

@@ -27,9 +27,10 @@ type LeanHelixTerm struct {
 	leaderPublicKey                 Ed25519PublicKey
 	newViewLocally                  View
 	logger                          Logger
+	prevBlock                       Block
 }
 
-func NewLeanHelixTerm(ctx context.Context, config *Config, onCommit func(ctx context.Context, block Block), newBlockHeight BlockHeight) *LeanHelixTerm {
+func NewLeanHelixTerm(ctx context.Context, config *Config, onCommit func(ctx context.Context, block Block), prevBlock Block) *LeanHelixTerm {
 	keyManager := config.KeyManager
 	blockUtils := config.BlockUtils
 	myPK := keyManager.MyPublicKey()
@@ -40,6 +41,7 @@ func NewLeanHelixTerm(ctx context.Context, config *Config, onCommit func(ctx con
 	randomSeed := uint64(12345)
 	// TODO Implement me!
 	maxCommitteeSize := uint32(4)
+	newBlockHeight := prevBlock.Height() + 1
 	committeeMembers := comm.RequestOrderedCommittee(ctx, newBlockHeight, randomSeed, maxCommitteeSize)
 
 	panicOnLessThanMinimumCommitteeMembers(config.OverrideMinimumCommitteeMembers, committeeMembers)
@@ -61,6 +63,7 @@ func NewLeanHelixTerm(ctx context.Context, config *Config, onCommit func(ctx con
 	newTerm := &LeanHelixTerm{
 		onCommit:                        onCommit,
 		height:                          newBlockHeight,
+		prevBlock:                       prevBlock,
 		KeyManager:                      keyManager,
 		NetworkCommunication:            comm,
 		Storage:                         config.Storage,
@@ -91,7 +94,7 @@ func panicOnLessThanMinimumCommitteeMembers(minimum int, committeeMembers []Ed25
 
 func (term *LeanHelixTerm) StartTerm(ctx context.Context) {
 	if term.IsLeader() {
-		block := term.BlockUtils.RequestNewBlock(ctx, term.height)
+		block := term.BlockUtils.RequestNewBlock(ctx, term.prevBlock)
 		blockHash := term.BlockUtils.CalculateBlockHash(block)
 		ppm := term.messageFactory.CreatePreprepareMessage(term.height, term.view, block, blockHash)
 
@@ -326,7 +329,7 @@ func (term *LeanHelixTerm) onElected(ctx context.Context, view View, viewChangeM
 	term.SetView(view)
 	block := GetLatestBlockFromViewChangeMessages(viewChangeMessages)
 	if block == nil {
-		block = term.BlockUtils.RequestNewBlock(term.ctx, term.height)
+		block = term.BlockUtils.RequestNewBlock(term.ctx, term.prevBlock)
 	}
 	ppmContentBuilder := term.messageFactory.CreatePreprepareMessageContentBuilder(term.height, view, block, term.BlockUtils.CalculateBlockHash(block))
 	ppm := term.messageFactory.CreatePreprepareMessageFromContentBuilder(ppmContentBuilder, block)
