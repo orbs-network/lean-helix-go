@@ -97,10 +97,21 @@ func (h *harness) countCommits(blockHeight primitives.BlockHeight, view primitiv
 	return len(messages)
 }
 
-func (h *harness) countPreprepare(blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) int {
+func (h *harness) hasPreprepare(blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) bool {
+	message, ok := h.storage.GetPreprepareMessage(blockHeight, view)
+
+	if message == nil || !ok {
+		return false
+	}
+
+	return builders.BlocksAreEqual(message.Block(), block)
+}
+
+func (h *harness) countPrepare(blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) int {
 	messages, _ := h.storage.GetPrepareMessages(blockHeight, view, builders.CalculateBlockHash(block))
 	return len(messages)
 }
+
 func (h *harness) failFutureVerifications() {
 	h.keyManager.FailFutureVerifications = true
 }

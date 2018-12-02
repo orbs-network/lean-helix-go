@@ -95,22 +95,22 @@ func TestPreprepareSignature(t *testing.T) {
 		h.setNode1AsTheLeader(ctx, 1, 1, block1)
 
 		// start with 0 preprepare
-		preprepareCount := h.countPreprepare(2, 1, block2)
-		require.Equal(t, 0, preprepareCount, "No preprepare should exist in the storage")
+		hasPreprepare := h.hasPreprepare(2, 1, block2)
+		require.False(t, hasPreprepare, "No preprepare should exist in the storage")
 
 		// sending a preprepare (height 2)
 		h.sendPreprepare(ctx, 1, 2, 1, block2)
 
 		// Expect the storage to have it
-		preprepareCount = h.countPreprepare(2, 1, block2)
-		require.Equal(t, 1, preprepareCount, "1 preprepare should exist in the storage")
+		hasPreprepare = h.hasPreprepare(2, 1, block2)
+		require.True(t, hasPreprepare, "A preprepare should exist in the storage")
 
 		// sending another preprepare (height 3)
 		h.failFutureVerifications()
 		h.sendPreprepare(ctx, 1, 3, 1, block3)
 
 		// Expect the storage NOT to have it
-		preprepareCount = h.countPreprepare(3, 1, block3)
-		require.Equal(t, 0, preprepareCount, "No preprepare should exist in the storage")
+		hasPreprepare = h.hasPreprepare(3, 1, block3)
+		require.False(t, hasPreprepare, "preprepare should NOT exist in the storage")
 	})
 }
