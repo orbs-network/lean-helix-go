@@ -104,6 +104,26 @@ func TestPrepareNotAcceptingMessagesFromTheLeader(t *testing.T) {
 	})
 }
 
+func TestPreprepareNotAcceptedIfNotFromTheLeader(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		h := NewHarness(ctx, t)
+
+		block := builders.CreateBlock(builders.GenesisBlock)
+
+		h.setNode1AsTheLeader(ctx, 1, 1, block)
+
+		// sending a valid preprepare (From node1, the leader)
+		h.sendPreprepare(ctx, 1, 2, 1, block)
+		hasPreprepare := h.hasPreprepare(2, 1, block)
+		require.True(t, hasPreprepare, "Term should not ignore Prepare message from node2")
+
+		// sending an invalid preprepare (From node2 - NOT the leader)
+		h.sendPreprepare(ctx, 2, 3, 1, block)
+		hasPreprepare = h.hasPreprepare(3, 1, block)
+		require.False(t, hasPreprepare, "Term should ignore Prepare message from node1, the leader")
+	})
+}
+
 func TestPreprepareAcceptOnlyMatchingViews(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
