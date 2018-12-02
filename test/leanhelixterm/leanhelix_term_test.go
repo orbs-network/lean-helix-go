@@ -63,6 +63,27 @@ func TestViewChangeNotAcceptViewsFromThePast(t *testing.T) {
 	})
 }
 
+func TestPrepareNotAcceptViewsFromThePast(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		h := NewHarness(ctx, t)
+
+		block := builders.CreateBlock(builders.GenesisBlock)
+
+		// jumping to view=8 me (node0) as the leader
+		h.setMeAsTheLeader(ctx, 1, 8, block)
+
+		// sending a valid prepare (On view 12)
+		h.sendPrepare(ctx, 1, 1, 12, block)
+		prepareCount := h.countPrepare(1, 12, block)
+		require.Equal(t, 1, prepareCount, "Term should not ignore Prepare message on view 8 (Current view)")
+
+		// sending a bad prepare (On view 4, from the past)
+		h.sendPrepare(ctx, 2, 1, 4, block)
+		prepareCount = h.countPrepare(1, 4, block)
+		require.Equal(t, 0, prepareCount, "Term should ignore Prepare message on view 4 (From the past)")
+	})
+}
+
 func TestPrepare2fPlus1ForACommit(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
