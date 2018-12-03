@@ -63,8 +63,8 @@ func (h *harness) setMeAsTheLeader(ctx context.Context, blockHeight primitives.B
 	h.sendNewView(ctx, 0, blockHeight, view, block)
 }
 
-func (h *harness) sendViewChange(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
-	sender := h.net.Nodes[3]
+func (h *harness) sendViewChange(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+	sender := h.net.Nodes[fromNodeIdx]
 	vc := builders.AViewChangeMessage(sender.KeyManager, blockHeight, view, nil)
 	h.term.HandleLeanHelixViewChange(ctx, vc)
 }
