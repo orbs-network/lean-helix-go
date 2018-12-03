@@ -49,6 +49,15 @@ func (h *harness) triggerElection(ctx context.Context) {
 	h.electionTrigger.ManualTriggerSync(ctx)
 }
 
+func (h *harness) electionTillView(ctx context.Context, view primitives.View) {
+	for {
+		if h.term.GetView() == view {
+			break
+		}
+		h.triggerElection(ctx)
+	}
+}
+
 func (h *harness) setNode1AsTheLeader(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
 	me := h.net.Nodes[0]
 	leader := h.net.Nodes[1]
@@ -75,11 +84,14 @@ func (h *harness) sendPreprepare(ctx context.Context, fromNode int, blockHeight 
 	h.term.HandleLeanHelixPrePrepare(ctx, ppm)
 }
 
-func (h *harness) sendPreprepareWithSpecificBlockHash(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block, blockHash primitives.Uint256) {
+func (h *harness) sendPreprepareMessage(ctx context.Context, ppm *leanhelix.PreprepareMessage) {
+	h.term.HandleLeanHelixPrePrepare(ctx, ppm)
+}
+
+func (h *harness) createPreprepareMessage(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block, blockHash primitives.Uint256) *leanhelix.PreprepareMessage {
 	leader := h.net.Nodes[fromNode]
 	messageFactory := leanhelix.NewMessageFactory(leader.KeyManager)
-	ppm := messageFactory.CreatePreprepareMessage(blockHeight, view, block, blockHash)
-	h.term.HandleLeanHelixPrePrepare(ctx, ppm)
+	return messageFactory.CreatePreprepareMessage(blockHeight, view, block, blockHash)
 }
 
 func (h *harness) sendPrepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
