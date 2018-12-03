@@ -39,19 +39,13 @@ func (f *MessageFactory) CreatePreprepareMessage(
 	block Block,
 	blockHash Uint256) *PreprepareMessage {
 
-	ppmc := f.CreatePreprepareMessageContentBuilder(blockHeight, view, block, blockHash)
+	content := f.CreatePreprepareMessageContentBuilder(blockHeight, view, block, blockHash)
 
-	return &PreprepareMessage{
-		content: ppmc.Build(),
-		block:   block,
-	}
+	return NewPreprepareMessage(content.Build(), block)
 }
 
 func (f *MessageFactory) CreatePreprepareMessageFromContentBuilder(ppmc *PreprepareContentBuilder, block Block) *PreprepareMessage {
-	return &PreprepareMessage{
-		content: ppmc.Build(),
-		block:   block,
-	}
+	return NewPreprepareMessage(ppmc.Build(), block)
 }
 
 func (f *MessageFactory) CreatePrepareMessage(
@@ -71,14 +65,12 @@ func (f *MessageFactory) CreatePrepareMessage(
 		Signature:       Ed25519Sig(f.KeyManager.Sign(signedHeader.Build().Raw())),
 	}
 
-	pContentBuilder := PrepareContentBuilder{
+	contentBuilder := PrepareContentBuilder{
 		SignedHeader: signedHeader,
 		Sender:       sender,
 	}
 
-	return &PrepareMessage{
-		content: pContentBuilder.Build(),
-	}
+	return NewPrepareMessage(contentBuilder.Build())
 }
 
 func (f *MessageFactory) CreateCommitMessage(
@@ -98,14 +90,12 @@ func (f *MessageFactory) CreateCommitMessage(
 		Signature:       Ed25519Sig(f.KeyManager.Sign(signedHeader.Build().Raw())),
 	}
 
-	cContentBuilder := CommitContentBuilder{
+	contentBuilder := CommitContentBuilder{
 		SignedHeader: signedHeader,
 		Sender:       sender,
 	}
 
-	return &CommitMessage{
-		content: cContentBuilder.Build(),
-	}
+	return NewCommitMessage(contentBuilder.Build())
 }
 
 func CreatePreparedProofBuilderFromPreparedMessages(preparedMessages *PreparedMessages) *PreparedProofBuilder {
@@ -197,12 +187,9 @@ func (f *MessageFactory) CreateViewChangeMessage(
 		block = preparedMessages.PreprepareMessage.Block()
 	}
 
-	vcmcb := f.CreateViewChangeMessageContentBuilder(blockHeight, view, preparedMessages)
+	contentBuilder := f.CreateViewChangeMessageContentBuilder(blockHeight, view, preparedMessages)
 
-	return &ViewChangeMessage{
-		content: vcmcb.Build(),
-		block:   block,
-	}
+	return NewViewChangeMessage(contentBuilder.Build(), block)
 }
 
 func (f *MessageFactory) CreateNewViewMessageContentBuilder(
@@ -237,11 +224,8 @@ func (f *MessageFactory) CreateNewViewMessage(
 	confirmations []*ViewChangeMessageContentBuilder,
 	block Block) *NewViewMessage {
 
-	nvmcb := f.CreateNewViewMessageContentBuilder(blockHeight, view, ppContentBuilder, confirmations).Build()
-	return &NewViewMessage{
-		content: nvmcb,
-		block:   block,
-	}
+	contentBuilder := f.CreateNewViewMessageContentBuilder(blockHeight, view, ppContentBuilder, confirmations)
+	return NewNewViewMessage(contentBuilder.Build(), block)
 }
 
 func NewMessageFactory(keyManager KeyManager) *MessageFactory {
