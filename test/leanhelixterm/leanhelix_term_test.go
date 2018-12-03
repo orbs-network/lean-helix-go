@@ -29,7 +29,7 @@ func TestNewViewNotAcceptViewsFromThePast(t *testing.T) {
 
 			block := builders.CreateBlock(builders.GenesisBlock)
 
-			h.sendNewView(ctx, 2, 1, view, block)
+			h.receiveNewView(ctx, 2, 1, view, block)
 
 			if shouldAcceptMessage {
 				h.checkView(view)
@@ -52,7 +52,7 @@ func TestNewViewNotAcceptMessageIfNotFromTheLeader(t *testing.T) {
 			h := NewHarness(ctx, t)
 			block := builders.CreateBlock(builders.GenesisBlock)
 
-			h.sendNewView(ctx, fromNodeIdx, 1, 1, block)
+			h.receiveNewView(ctx, fromNodeIdx, 1, 1, block)
 			if shouldAcceptMessage {
 				h.checkView(1)
 			} else {
@@ -77,7 +77,7 @@ func TestViewChangeNotAcceptViewsFromThePast(t *testing.T) {
 			block := builders.CreateBlock(builders.GenesisBlock)
 
 			viewChangeCountBefore := h.countViewChange(1, view)
-			h.sendViewChange(ctx, 3, 1, view, block)
+			h.receiveViewChange(ctx, 3, 1, view, block)
 			viewChangeCountAfter := h.countViewChange(1, view)
 
 			isMessageAccepted := viewChangeCountAfter == viewChangeCountBefore+1
@@ -109,7 +109,7 @@ func TestViewChangeIsRejectedIfTargetIsNotTheNewLeader(t *testing.T) {
 			block2 := builders.CreateBlock(block1)
 
 			viewChangeCountBefore := h.countViewChange(1, view)
-			h.sendViewChange(ctx, 3, 1, view, block2)
+			h.receiveViewChange(ctx, 3, 1, view, block2)
 			viewChangeCountAfter := h.countViewChange(1, view)
 
 			isMessageAccepted := viewChangeCountAfter == viewChangeCountBefore+1
@@ -137,7 +137,7 @@ func TestPrepareNotAcceptViewsFromThePast(t *testing.T) {
 			block := builders.CreateBlock(builders.GenesisBlock)
 
 			prepareCountBefore := h.countPrepare(1, view, block)
-			h.sendPrepare(ctx, 1, 1, view, block)
+			h.receivePrepare(ctx, 1, 1, view, block)
 			prepareCountAfter := h.countPrepare(1, view, block)
 
 			isMessageAccepted := prepareCountAfter == prepareCountBefore+1
@@ -168,7 +168,7 @@ func TestPrepareNotAcceptingMessagesFromTheLeader(t *testing.T) {
 			block := builders.CreateBlock(builders.GenesisBlock)
 
 			prepareCountBefore := h.countPrepare(1, view, block)
-			h.sendPrepare(ctx, fromNode, 1, view, block)
+			h.receivePrepare(ctx, fromNode, 1, view, block)
 			prepareCountAfter := h.countPrepare(1, view, block)
 
 			isMessageAccepted := prepareCountAfter == prepareCountBefore+1
@@ -178,7 +178,7 @@ func TestPrepareNotAcceptingMessagesFromTheLeader(t *testing.T) {
 				require.False(t, isMessageAccepted)
 			}
 
-			h.sendPrepare(ctx, 2, 2, 1, block)
+			h.receivePrepare(ctx, 2, 2, 1, block)
 			prepareCount := h.countPrepare(2, 1, block)
 			require.Equal(t, 1, prepareCount, "Term should not ignore Prepare message from node2")
 		}
@@ -198,7 +198,7 @@ func TestPreprepareNotAcceptedIfBlockHashDoesNotMatch(t *testing.T) {
 			h.electionTillView(ctx, startView)
 
 			ppm := h.createPreprepareMessage(ctx, 1, 1, 1, block, blockHash)
-			h.sendPreprepareMessage(ctx, ppm)
+			h.receivePreprepareMessage(ctx, ppm)
 
 			hasPreprepare := h.hasPreprepare(1, 1, block)
 			if shouldAcceptMessage {
@@ -232,7 +232,7 @@ func TestPreprepareAcceptOnlyMatchingViews(t *testing.T) {
 			require.False(t, hasPreprepare, "No preprepare should exist in the storage")
 
 			// current view (5) => valid
-			h.sendPreprepare(ctx, 1, 1, view, block)
+			h.receivePreprepare(ctx, 1, 1, view, block)
 			hasPreprepare = h.hasPreprepare(1, view, block)
 			if shouldAcceptMessage {
 				require.True(t, hasPreprepare, "Term should not ignore the Preprepare message")
@@ -262,13 +262,13 @@ func TestPrepare2fPlus1ForACommit(t *testing.T) {
 		h.setNode1AsTheLeader(ctx, 1, 1, block1)
 
 		require.Equal(t, 0, h.countCommits(2, 1, block2), "No commits should exist in the storage")
-		h.sendPreprepare(ctx, 1, 2, 1, block2)
+		h.receivePreprepare(ctx, 1, 2, 1, block2)
 
 		require.Equal(t, 0, h.countCommits(2, 1, block2), "No commits should exist in the storage")
-		h.sendPrepare(ctx, 2, 2, 1, block2)
+		h.receivePrepare(ctx, 2, 2, 1, block2)
 
 		require.Equal(t, 1, h.countCommits(2, 1, block2), "There should be 1 commit in the storage")
-		h.sendPrepare(ctx, 3, 2, 1, block2)
+		h.receivePrepare(ctx, 3, 2, 1, block2)
 
 		require.Equal(t, 1, h.countCommits(2, 1, block2), "There should be 1 commit in the storage")
 	})

@@ -69,22 +69,22 @@ func (h *harness) setNode1AsTheLeader(ctx context.Context, blockHeight primitive
 }
 
 func (h *harness) setMeAsTheLeader(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
-	h.sendNewView(ctx, 0, blockHeight, view, block)
+	h.receiveNewView(ctx, 0, blockHeight, view, block)
 }
 
-func (h *harness) sendViewChange(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+func (h *harness) receiveViewChange(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
 	sender := h.net.Nodes[fromNodeIdx]
 	vc := builders.AViewChangeMessage(sender.KeyManager, blockHeight, view, nil)
 	h.term.HandleLeanHelixViewChange(ctx, vc)
 }
 
-func (h *harness) sendPreprepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+func (h *harness) receivePreprepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
 	leader := h.net.Nodes[fromNode]
 	ppm := builders.APreprepareMessage(leader.KeyManager, blockHeight, view, block)
 	h.term.HandleLeanHelixPrePrepare(ctx, ppm)
 }
 
-func (h *harness) sendPreprepareMessage(ctx context.Context, ppm *leanhelix.PreprepareMessage) {
+func (h *harness) receivePreprepareMessage(ctx context.Context, ppm *leanhelix.PreprepareMessage) {
 	h.term.HandleLeanHelixPrePrepare(ctx, ppm)
 }
 
@@ -94,13 +94,13 @@ func (h *harness) createPreprepareMessage(ctx context.Context, fromNode int, blo
 	return messageFactory.CreatePreprepareMessage(blockHeight, view, block, blockHash)
 }
 
-func (h *harness) sendPrepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+func (h *harness) receivePrepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
 	sender := h.net.Nodes[fromNode]
 	pm := builders.APrepareMessage(sender.KeyManager, blockHeight, view, block)
 	h.term.HandleLeanHelixPrepare(ctx, pm)
 }
 
-func (h *harness) sendNewView(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+func (h *harness) receiveNewView(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
 	var members []*builders.Node
 	for i, node := range h.net.Nodes {
 		if i != fromNodeIdx {
