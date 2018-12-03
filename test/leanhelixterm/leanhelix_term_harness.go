@@ -88,15 +88,15 @@ func (h *harness) sendPrepare(ctx context.Context, fromNode int, blockHeight pri
 	h.term.HandleLeanHelixPrepare(ctx, pm)
 }
 
-func (h *harness) sendNewView(ctx context.Context, leaderNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+func (h *harness) sendNewView(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
 	var members []*builders.Node
 	for i, node := range h.net.Nodes {
-		if i != leaderNodeIdx {
+		if i != fromNodeIdx {
 			members = append(members, node)
 		}
 	}
 
-	leaderNode := h.net.Nodes[leaderNodeIdx]
+	leaderNode := h.net.Nodes[fromNodeIdx]
 	nvm := builders.AValidNewViewMessage(leaderNode, members, blockHeight, view, block)
 	h.term.HandleLeanHelixNewView(ctx, nvm)
 }

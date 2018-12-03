@@ -39,6 +39,19 @@ func TestNewViewNotAcceptViewsFromThePast(t *testing.T) {
 	})
 }
 
+func TestNewViewNotAcceptMessageIfNotFromTheLeader(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		h := NewHarness(ctx, t)
+
+		// node0 (me) is the leader
+		// getting a new view message from node2 about node1 as the new leader
+		block := builders.CreateBlock(builders.GenesisBlock)
+		h.checkView(0)
+		h.sendNewView(ctx, 2, 1, 1, block)
+		h.checkView(0)
+	})
+}
+
 func TestViewChangeNotAcceptViewsFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
