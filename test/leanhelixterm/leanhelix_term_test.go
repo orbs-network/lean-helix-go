@@ -197,7 +197,7 @@ func TestPreprepareNotAcceptedIfBlockHashDoesNotMatch(t *testing.T) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, startView)
 
-			ppm := h.createPreprepareMessage(ctx, 1, 1, 1, block, blockHash)
+			ppm := h.createPreprepareMessage(1, 1, 1, block, blockHash)
 			h.receivePreprepareMessage(ctx, ppm)
 
 			hasPreprepare := h.hasPreprepare(1, 1, block)
@@ -249,6 +249,85 @@ func TestPreprepareAcceptOnlyMatchingViews(t *testing.T) {
 
 		// view from the future (1) => invalid, should be ignored
 		sendPreprepare(5, 1, false)
+	})
+}
+
+func TestNewViewNotAcceptedWithWrongPPDetails(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		sendNewView := func(
+			block leanhelix.Block,
+			blockHeight primitives.BlockHeight,
+			view primitives.View,
+			preprepareBlock leanhelix.Block,
+			preprepareBlockHeight primitives.BlockHeight,
+			preprepareView primitives.View,
+			shouldAcceptMessage bool,
+		) {
+			h := NewHarness(ctx, t)
+
+			h.checkView(0)
+			h.receiveCustomNewViewMessage(ctx,
+				1,
+				blockHeight,
+				view,
+				block,
+				preprepareBlock,
+				preprepareBlockHeight,
+				preprepareView,
+				[3]primitives.BlockHeight{blockHeight, blockHeight, blockHeight},
+				[3]primitives.View{view, view, view},
+			)
+			if shouldAcceptMessage {
+				h.checkView(1)
+			} else {
+				h.checkView(0)
+			}
+		}
+
+		block := builders.CreateBlock(builders.GenesisBlock)
+		mismatchingBlock := builders.CreateBlock(builders.GenesisBlock)
+
+		// good new view
+		sendNewView(block, 10, 1, block, 10, 1, true)
+
+		// mismatching preprepare block
+		sendNewView(block, 10, 1, mismatchingBlock, 10, 1, false)
+
+		// mismatching preprepare view
+		sendNewView(block, 10, 1, block, 10, 666, false)
+
+		// mismatching preprepare block height
+		sendNewView(block, 10, 1, block, 666, 1, false)
+	})
+}
+
+func TestNewViewNotAcceptedWithWrongViewChangeDetails(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		sendNewView := func(blockHeight primitives.BlockHeight, view primitives.View, vcsBlockHeight [3]primitives.BlockHeight, vcsView [3]primitives.View, shouldAcceptMessage bool) {
+			h := NewHarness(ctx, t)
+			block := builders.CreateBlock(builders.GenesisBlock)
+
+			h.checkView(0)
+			h.receiveCustomNewViewMessage(ctx, 1, blockHeight, view, block, block, blockHeight, view, vcsBlockHeight, vcsView)
+			if shouldAcceptMessage {
+				h.checkView(1)
+			} else {
+				h.checkView(0)
+			}
+		}
+
+		// good new view
+		sendNewView(10, 1, [3]primitives.BlockHeight{10, 10, 10}, [3]primitives.View{1, 1, 1}, true)
+
+		// mismatching view-change view
+		sendNewView(10, 1, [3]primitives.BlockHeight{10, 10, 10}, [3]primitives.View{666, 1, 1}, false)
+		sendNewView(10, 1, [3]primitives.BlockHeight{10, 10, 10}, [3]primitives.View{1, 666, 1}, false)
+		sendNewView(10, 1, [3]primitives.BlockHeight{10, 10, 10}, [3]primitives.View{1, 1, 666}, false)
+
+		// mismatching view-change block height
+		sendNewView(10, 1, [3]primitives.BlockHeight{666, 10, 10}, [3]primitives.View{1, 1, 1}, false)
+		sendNewView(10, 1, [3]primitives.BlockHeight{10, 666, 10}, [3]primitives.View{1, 1, 1}, false)
+		sendNewView(10, 1, [3]primitives.BlockHeight{10, 10, 666}, [3]primitives.View{1, 1, 1}, false)
 	})
 }
 

@@ -57,12 +57,12 @@ func ANewViewMessage(
 	return messageFactory.CreateNewViewMessage(blockHeight, view, ppContentBuilder, confirmations, block)
 }
 
-func AValidNewViewMessage(
+func ANewViewContentBuilder(
 	newLeader *Node,
 	members []*Node,
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
-	block leanhelix.Block) *leanhelix.NewViewMessage {
+	block leanhelix.Block) *leanhelix.NewViewMessageContentBuilder {
 
 	ppmFactory := leanhelix.NewMessageFactory(newLeader.KeyManager)
 	ppmCB := ppmFactory.CreatePreprepareMessageContentBuilder(blockHeight, view, block, CalculateBlockHash(block))
@@ -74,5 +74,6 @@ func AValidNewViewMessage(
 		votes = append(votes, vcmCB)
 	}
 
-	return ANewViewMessage(newLeader.KeyManager, blockHeight, view, ppmCB, votes, block)
+	messageFactory := leanhelix.NewMessageFactory(newLeader.KeyManager)
+	return messageFactory.CreateNewViewMessageContentBuilder(blockHeight, view, ppmCB, votes)
 }

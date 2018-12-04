@@ -272,7 +272,6 @@ func NewNewViewMessage(content *NewViewMessageContent, block Block) *NewViewMess
 }
 
 func extractConfirmationsFromViewChangeMessages(vcms []*ViewChangeMessage) []*ViewChangeMessageContentBuilder {
-
 	if len(vcms) == 0 {
 		return nil
 	}

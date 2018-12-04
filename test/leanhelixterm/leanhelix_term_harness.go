@@ -59,13 +59,7 @@ func (h *harness) electionTillView(ctx context.Context, view primitives.View) {
 }
 
 func (h *harness) setNode1AsTheLeader(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
-	me := h.net.Nodes[0]
-	leader := h.net.Nodes[1]
-	node2 := h.net.Nodes[2]
-	node3 := h.net.Nodes[3]
-	members := []*builders.Node{me, node2, node3}
-	nvm := builders.AValidNewViewMessage(leader, members, blockHeight, view, block)
-	h.term.HandleLeanHelixNewView(ctx, nvm)
+	h.receiveNewView(ctx, 1, blockHeight, view, block)
 }
 
 func (h *harness) setMeAsTheLeader(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
@@ -88,29 +82,74 @@ func (h *harness) receivePreprepareMessage(ctx context.Context, ppm *leanhelix.P
 	h.term.HandleLeanHelixPrePrepare(ctx, ppm)
 }
 
-func (h *harness) createPreprepareMessage(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block, blockHash primitives.Uint256) *leanhelix.PreprepareMessage {
-	leader := h.net.Nodes[fromNode]
-	messageFactory := leanhelix.NewMessageFactory(leader.KeyManager)
-	return messageFactory.CreatePreprepareMessage(blockHeight, view, block, blockHash)
-}
-
 func (h *harness) receivePrepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
 	sender := h.net.Nodes[fromNode]
 	pm := builders.APrepareMessage(sender.KeyManager, blockHeight, view, block)
 	h.term.HandleLeanHelixPrepare(ctx, pm)
 }
 
-func (h *harness) receiveNewView(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+func (h *harness) createPreprepareMessage(fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block, blockHash primitives.Uint256) *leanhelix.PreprepareMessage {
+	leader := h.net.Nodes[fromNode]
+	messageFactory := leanhelix.NewMessageFactory(leader.KeyManager)
+	return messageFactory.CreatePreprepareMessage(blockHeight, view, block, blockHash)
+}
+
+func (h *harness) receiveCustomNewViewMessage(
+	ctx context.Context,
+	leaderNode int,
+	blockHeight primitives.BlockHeight,
+	view primitives.View,
+	block leanhelix.Block,
+	preprepareBlock leanhelix.Block,
+	preprepareBlockHeight primitives.BlockHeight,
+	preprepareView primitives.View,
+	vcsBlockHeight [3]primitives.BlockHeight,
+	vcsView [3]primitives.View) {
 	var members []*builders.Node
 	for i, node := range h.net.Nodes {
-		if i != fromNodeIdx {
+		if i != leaderNode {
 			members = append(members, node)
 		}
 	}
 
-	leaderNode := h.net.Nodes[fromNodeIdx]
-	nvm := builders.AValidNewViewMessage(leaderNode, members, blockHeight, view, block)
+	newLeader := h.net.Nodes[leaderNode]
+	ppmFactory := leanhelix.NewMessageFactory(newLeader.KeyManager)
+	ppmCB := ppmFactory.CreatePreprepareMessageContentBuilder(preprepareBlockHeight, preprepareView, preprepareBlock, builders.CalculateBlockHash(preprepareBlock))
+
+	var votes []*leanhelix.ViewChangeMessageContentBuilder
+	for idx, voter := range members {
+		messageFactory := leanhelix.NewMessageFactory(voter.KeyManager)
+		vcmCB := messageFactory.CreateViewChangeMessageContentBuilder(vcsBlockHeight[idx], vcsView[idx], nil)
+		votes = append(votes, vcmCB)
+	}
+
+	messageFactory := leanhelix.NewMessageFactory(newLeader.KeyManager)
+	nvcb := messageFactory.CreateNewViewMessageContentBuilder(blockHeight, view, ppmCB, votes)
+	nvm := leanhelix.NewNewViewMessage(nvcb.Build(), block)
 	h.term.HandleLeanHelixNewView(ctx, nvm)
+}
+
+func (h *harness) receiveNewView(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+	nvcb := h.createNewViewContentBuilder(fromNodeIdx, blockHeight, view, block)
+	nvm := leanhelix.NewNewViewMessage(nvcb.Build(), block)
+	h.term.HandleLeanHelixNewView(ctx, nvm)
+}
+
+func (h *harness) createNewViewContentBuilder(
+	fromNode int,
+	blockHeight primitives.BlockHeight,
+	view primitives.View,
+	block leanhelix.Block) *leanhelix.NewViewMessageContentBuilder {
+
+	var members []*builders.Node
+	for i, node := range h.net.Nodes {
+		if i != fromNode {
+			members = append(members, node)
+		}
+	}
+
+	leader := h.net.Nodes[fromNode]
+	return builders.ANewViewContentBuilder(leader, members, blockHeight, view, block)
 }
 
 func (h *harness) countViewChange(blockHeight primitives.BlockHeight, view primitives.View) int {
