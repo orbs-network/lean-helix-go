@@ -50,7 +50,7 @@ func TestCallbackTriggerOnce(t *testing.T) {
 	})
 }
 
-func TestIgnoreSameView(t *testing.T) {
+func TestIgnoreSameViewOrHeight(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		et := buildElectionTrigger(ctx, 30*time.Millisecond)
 
@@ -66,6 +66,52 @@ func TestIgnoreSameView(t *testing.T) {
 		et.RegisterOnElection(10, 0, cb)
 
 		require.Exactly(t, 1, callCount, "Trigger callback called more than once")
+	})
+}
+
+func TestNotTriggerIfSameViewButDifferentHeight(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		et := buildElectionTrigger(ctx, 30*time.Millisecond)
+
+		callCount := 0
+		cb := func(ctx context.Context, blockHeight BlockHeight, view View) { callCount++ }
+
+		et.RegisterOnElection(10, 0, cb)
+		time.Sleep(time.Duration(10) * time.Millisecond)
+		et.RegisterOnElection(11, 0, cb)
+		time.Sleep(time.Duration(10) * time.Millisecond)
+		et.RegisterOnElection(12, 0, cb)
+		time.Sleep(time.Duration(10) * time.Millisecond)
+		et.RegisterOnElection(13, 0, cb)
+		time.Sleep(time.Duration(10) * time.Millisecond)
+		et.RegisterOnElection(14, 0, cb)
+		time.Sleep(time.Duration(10) * time.Millisecond)
+		et.RegisterOnElection(15, 0, cb)
+
+		require.Exactly(t, 0, callCount, "Trigger callback called")
+	})
+}
+
+func TestNotTriggerIfSameHeightButDifferentView(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		et := buildElectionTrigger(ctx, 30*time.Millisecond)
+
+		callCount := 0
+		cb := func(ctx context.Context, blockHeight BlockHeight, view View) { callCount++ }
+
+		et.RegisterOnElection(10, 0, cb)
+		time.Sleep(time.Duration(10) * time.Millisecond)
+		et.RegisterOnElection(10, 1, cb)
+		time.Sleep(time.Duration(10) * time.Millisecond)
+		et.RegisterOnElection(10, 2, cb)
+		time.Sleep(time.Duration(10) * time.Millisecond)
+		et.RegisterOnElection(10, 3, cb)
+		time.Sleep(time.Duration(10) * time.Millisecond)
+		et.RegisterOnElection(10, 4, cb)
+		time.Sleep(time.Duration(10) * time.Millisecond)
+		et.RegisterOnElection(10, 5, cb)
+
+		require.Exactly(t, 0, callCount, "Trigger callback called")
 	})
 }
 
