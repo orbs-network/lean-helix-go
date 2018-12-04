@@ -220,22 +220,25 @@ func TestPreprepareNotAcceptedIfBlockHashDoesNotMatch(t *testing.T) {
 	})
 }
 
-//func TestNewViewNotAcceptedWithWrongPPView(t *testing.T) {
-//	test.WithContext(func(ctx context.Context) {
-//		h := NewHarness(ctx, t)
-//
-//		ppm := h.createPreprepareMessage(1, 1, 1, block, blockHash)
-//		nvm := h.createNewViewMessage()
-//		h.receivePreprepareMessage(ctx, ppm)
-//
-//		hasPreprepare := h.hasPreprepare(1, 1, block)
-//		if shouldAcceptMessage {
-//			require.True(t, hasPreprepare, "Term should not ignore the Preprepare message")
-//		} else {
-//			require.False(t, hasPreprepare, "Term should ignore the Preprepare message")
-//		}
-//	})
-//}
+func TestNewViewNotAcceptedWithWrongPPView(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		sendNewView := func(view primitives.View, preprepareView primitives.View, shouldAcceptMessage bool) {
+			h := NewHarness(ctx, t)
+			block := builders.CreateBlock(builders.GenesisBlock)
+
+			h.checkView(0)
+			h.receiveCustomNewViewMessage(ctx, 1, 1, view, block, preprepareView)
+			if shouldAcceptMessage {
+				h.checkView(1)
+			} else {
+				h.checkView(0)
+			}
+		}
+
+		sendNewView(1, 1, true)
+		sendNewView(1, 2, false)
+	})
+}
 
 func TestPreprepareAcceptOnlyMatchingViews(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
