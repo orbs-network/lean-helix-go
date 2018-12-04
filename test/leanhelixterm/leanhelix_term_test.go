@@ -220,26 +220,6 @@ func TestPreprepareNotAcceptedIfBlockHashDoesNotMatch(t *testing.T) {
 	})
 }
 
-func TestNewViewNotAcceptedWithWrongPPView(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
-		sendNewView := func(view primitives.View, preprepareView primitives.View, shouldAcceptMessage bool) {
-			h := NewHarness(ctx, t)
-			block := builders.CreateBlock(builders.GenesisBlock)
-
-			h.checkView(0)
-			h.receiveCustomNewViewMessage(ctx, 1, 1, view, block, preprepareView)
-			if shouldAcceptMessage {
-				h.checkView(1)
-			} else {
-				h.checkView(0)
-			}
-		}
-
-		sendNewView(1, 1, true)
-		sendNewView(1, 2, false)
-	})
-}
-
 func TestPreprepareAcceptOnlyMatchingViews(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		sendPreprepare := func(startView primitives.View, view primitives.View, shouldAcceptMessage bool) {
@@ -269,6 +249,32 @@ func TestPreprepareAcceptOnlyMatchingViews(t *testing.T) {
 
 		// view from the future (1) => invalid, should be ignored
 		sendPreprepare(5, 1, false)
+	})
+}
+
+func TestNewViewNotAcceptedWithWrongPPDetails(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		sendNewView := func(view primitives.View, blockHeight primitives.BlockHeight, preprepareBlockHeight primitives.BlockHeight, preprepareView primitives.View, shouldAcceptMessage bool) {
+			h := NewHarness(ctx, t)
+			block := builders.CreateBlock(builders.GenesisBlock)
+
+			h.checkView(0)
+			h.receiveCustomNewViewMessage(ctx, 1, blockHeight, view, block, preprepareBlockHeight, preprepareView)
+			if shouldAcceptMessage {
+				h.checkView(1)
+			} else {
+				h.checkView(0)
+			}
+		}
+
+		// good new view
+		sendNewView(1, 1, 1, 1, true)
+
+		// mismatching preprepare view
+		sendNewView(1, 1, 1, 2, false)
+
+		// mismatching preprepare block height
+		sendNewView(1, 1, 2, 1, false)
 	})
 }
 
