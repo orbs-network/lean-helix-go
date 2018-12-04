@@ -101,7 +101,9 @@ func (h *harness) receiveCustomNewViewMessage(
 	view primitives.View,
 	block leanhelix.Block,
 	preprepareBlockHeight primitives.BlockHeight,
-	preprepareView primitives.View) {
+	preprepareView primitives.View,
+	vcsBlockHeight [3]primitives.BlockHeight,
+	vcsView [3]primitives.View) {
 	var members []*builders.Node
 	for i, node := range h.net.Nodes {
 		if i != leaderNode {
@@ -114,9 +116,9 @@ func (h *harness) receiveCustomNewViewMessage(
 	ppmCB := ppmFactory.CreatePreprepareMessageContentBuilder(preprepareBlockHeight, preprepareView, block, builders.CalculateBlockHash(block))
 
 	var votes []*leanhelix.ViewChangeMessageContentBuilder
-	for _, voter := range members {
+	for idx, voter := range members {
 		messageFactory := leanhelix.NewMessageFactory(voter.KeyManager)
-		vcmCB := messageFactory.CreateViewChangeMessageContentBuilder(blockHeight, view, nil)
+		vcmCB := messageFactory.CreateViewChangeMessageContentBuilder(vcsBlockHeight[idx], vcsView[idx], nil)
 		votes = append(votes, vcmCB)
 	}
 

@@ -254,12 +254,21 @@ func TestPreprepareAcceptOnlyMatchingViews(t *testing.T) {
 
 func TestNewViewNotAcceptedWithWrongPPDetails(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		sendNewView := func(view primitives.View, blockHeight primitives.BlockHeight, preprepareBlockHeight primitives.BlockHeight, preprepareView primitives.View, shouldAcceptMessage bool) {
+		sendNewView := func(blockHeight primitives.BlockHeight, view primitives.View, preprepareBlockHeight primitives.BlockHeight, preprepareView primitives.View, shouldAcceptMessage bool) {
 			h := NewHarness(ctx, t)
 			block := builders.CreateBlock(builders.GenesisBlock)
 
 			h.checkView(0)
-			h.receiveCustomNewViewMessage(ctx, 1, blockHeight, view, block, preprepareBlockHeight, preprepareView)
+			h.receiveCustomNewViewMessage(ctx,
+				1,
+				blockHeight,
+				view,
+				block,
+				preprepareBlockHeight,
+				preprepareView,
+				[3]primitives.BlockHeight{blockHeight, blockHeight, blockHeight},
+				[3]primitives.View{view, view, view},
+			)
 			if shouldAcceptMessage {
 				h.checkView(1)
 			} else {
@@ -268,13 +277,43 @@ func TestNewViewNotAcceptedWithWrongPPDetails(t *testing.T) {
 		}
 
 		// good new view
-		sendNewView(1, 1, 1, 1, true)
+		sendNewView(10, 1, 10, 1, true)
 
 		// mismatching preprepare view
-		sendNewView(1, 1, 1, 2, false)
+		sendNewView(10, 1, 10, 666, false)
 
 		// mismatching preprepare block height
-		sendNewView(1, 1, 2, 1, false)
+		sendNewView(10, 1, 666, 1, false)
+	})
+}
+
+func TestNewViewNotAcceptedWithWrongViewChangeDetails(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		sendNewView := func(blockHeight primitives.BlockHeight, view primitives.View, vcsBlockHeight [3]primitives.BlockHeight, vcsView [3]primitives.View, shouldAcceptMessage bool) {
+			h := NewHarness(ctx, t)
+			block := builders.CreateBlock(builders.GenesisBlock)
+
+			h.checkView(0)
+			h.receiveCustomNewViewMessage(ctx, 1, blockHeight, view, block, blockHeight, view, vcsBlockHeight, vcsView)
+			if shouldAcceptMessage {
+				h.checkView(1)
+			} else {
+				h.checkView(0)
+			}
+		}
+
+		// good new view
+		sendNewView(10, 1, [3]primitives.BlockHeight{10, 10, 10}, [3]primitives.View{1, 1, 1}, true)
+
+		// mismatching view-change view
+		sendNewView(10, 1, [3]primitives.BlockHeight{10, 10, 10}, [3]primitives.View{666, 1, 1}, false)
+		sendNewView(10, 1, [3]primitives.BlockHeight{10, 10, 10}, [3]primitives.View{1, 666, 1}, false)
+		sendNewView(10, 1, [3]primitives.BlockHeight{10, 10, 10}, [3]primitives.View{1, 1, 666}, false)
+
+		// mismatching view-change block height
+		sendNewView(10, 1, [3]primitives.BlockHeight{666, 10, 10}, [3]primitives.View{1, 1, 1}, false)
+		sendNewView(10, 1, [3]primitives.BlockHeight{10, 666, 10}, [3]primitives.View{1, 1, 1}, false)
+		sendNewView(10, 1, [3]primitives.BlockHeight{10, 10, 666}, [3]primitives.View{1, 1, 1}, false)
 	})
 }
 
