@@ -22,12 +22,13 @@ type harness struct {
 	failVerifications bool
 }
 
-func NewHarness(ctx context.Context, t *testing.T) *harness {
-	net := builders.ABasicTestNetwork()
+func NewHarness(ctx context.Context, t *testing.T, blocksPool ...leanhelix.Block) *harness {
+	net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocksPool(blocksPool).Build()
 	myNode := net.Nodes[0]
 	keyManager := myNode.KeyManager
 	termConfig := myNode.BuildConfig()
 	term := leanhelix.NewLeanHelixTerm(ctx, termConfig, nil, myNode.GetLatestBlock())
+	term.StartTerm(ctx)
 
 	return &harness{
 		t:                 t,
@@ -220,4 +221,8 @@ func (h *harness) countPrepare(blockHeight primitives.BlockHeight, view primitiv
 
 func (h *harness) failFutureVerifications() {
 	h.keyManager.FailFutureVerifications = true
+}
+
+func (h *harness) disposeTerm() {
+	h.term.Dispose()
 }

@@ -372,22 +372,45 @@ func TestNewViewNotAcceptedWithDuplicateVotes(t *testing.T) {
 
 func TestPrepare2fPlus1ForACommit(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		h := NewHarness(ctx, t)
+		block := builders.CreateBlock(builders.GenesisBlock)
 
-		block1 := builders.CreateBlock(builders.GenesisBlock)
-		block2 := builders.CreateBlock(block1)
+		h := NewHarness(ctx, t, block)
+		h.setNode1AsTheLeader(ctx, 1, 1, block)
 
-		h.setNode1AsTheLeader(ctx, 1, 1, block1)
+		require.Equal(t, 0, h.countCommits(1, 1, block), "No commits should exist in the storage")
+		h.receivePreprepare(ctx, 1, 1, 1, block)
 
-		require.Equal(t, 0, h.countCommits(2, 1, block2), "No commits should exist in the storage")
-		h.receivePreprepare(ctx, 1, 2, 1, block2)
+		require.Equal(t, 0, h.countCommits(1, 1, block), "No commits should exist in the storage")
+		h.receivePrepare(ctx, 2, 1, 1, block)
 
-		require.Equal(t, 0, h.countCommits(2, 1, block2), "No commits should exist in the storage")
-		h.receivePrepare(ctx, 2, 2, 1, block2)
+		require.Equal(t, 1, h.countCommits(1, 1, block), "There should be 1 commit in the storage")
+		h.receivePrepare(ctx, 3, 1, 1, block)
 
-		require.Equal(t, 1, h.countCommits(2, 1, block2), "There should be 1 commit in the storage")
-		h.receivePrepare(ctx, 3, 2, 1, block2)
+		require.Equal(t, 1, h.countCommits(1, 1, block), "There should be 1 commit in the storage")
+	})
+}
 
-		require.Equal(t, 1, h.countCommits(2, 1, block2), "There should be 1 commit in the storage")
+func TestDisposingALeanHelixTermClearTheStorage(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		block := builders.CreateBlock(builders.GenesisBlock)
+
+		h := NewHarness(ctx, t, block)
+
+		// good consensus on block
+		h.receivePrepare(ctx, 1, 1, 0, block)
+		h.receivePrepare(ctx, 2, 1, 0, block)
+
+		// make sure we have all the messages in the storage
+		require.True(t, h.hasPreprepare(1, 0, block), "There should be a preprepare in the storage")
+		require.Equal(t, 2, h.countPrepare(1, 0, block), "There should be 3 prepares in the storage")
+		require.Equal(t, 1, h.countCommits(1, 0, block), "There should be 1 commit in the storage")
+
+		// dispose the term
+		h.disposeTerm()
+
+		// make sure that all the messages are cleared from the storage
+		require.False(t, h.hasPreprepare(1, 0, block), "There should be no preprepare in the storage")
+		require.Equal(t, 0, h.countPrepare(1, 0, block), "There should be no prepares in the storage")
+		require.Equal(t, 0, h.countCommits(1, 0, block), "There should be no commit in the storage")
 	})
 }

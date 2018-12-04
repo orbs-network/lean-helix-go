@@ -112,8 +112,7 @@ func ABasicTestNetwork() *TestNetwork {
 }
 
 func ATestNetwork(countOfNodes int, blocksPool ...lh.Block) *TestNetwork {
-	testNetwork := NewTestNetworkBuilder()
-	return testNetwork.WithNodeCount(countOfNodes).WithBlocksPool(blocksPool).Build()
+	return NewTestNetworkBuilder().WithNodeCount(countOfNodes).WithBlocksPool(blocksPool).Build()
 }
 
 func CreateTestNetworkForConsumerTests(
