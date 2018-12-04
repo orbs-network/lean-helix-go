@@ -14,6 +14,7 @@ type harness struct {
 	t                 *testing.T
 	myPublicKey       primitives.Ed25519PublicKey
 	keyManager        *builders.MockKeyManager
+	myNode            *builders.Node
 	net               *builders.TestNetwork
 	term              *leanhelix.LeanHelixTerm
 	storage           leanhelix.Storage
@@ -31,6 +32,7 @@ func NewHarness(ctx context.Context, t *testing.T) *harness {
 	return &harness{
 		t:                 t,
 		myPublicKey:       keyManager.MyPublicKey(),
+		myNode:            myNode,
 		net:               net,
 		keyManager:        myNode.KeyManager,
 		term:              term,
@@ -38,6 +40,10 @@ func NewHarness(ctx context.Context, t *testing.T) *harness {
 		electionTrigger:   myNode.ElectionTrigger,
 		failVerifications: false,
 	}
+}
+
+func (h *harness) failValidations() {
+	h.myNode.BlockUtils.ValidationResult = false
 }
 
 func (h *harness) checkView(expectedView primitives.View) {

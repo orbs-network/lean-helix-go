@@ -21,6 +21,34 @@ func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 	})
 }
 
+func TestNewViewNotAcceptedIfDidNotPassValidation(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		sendNewView := func(startView primitives.View, view primitives.View, failValidations bool, shouldAcceptMessage bool) {
+			h := NewHarness(ctx, t)
+			h.electionTillView(ctx, startView)
+
+			block := builders.CreateBlock(builders.GenesisBlock)
+
+			h.checkView(startView)
+			if failValidations {
+				h.failValidations()
+			}
+			h.receiveNewView(ctx, 2, 1, view, block)
+			if shouldAcceptMessage {
+				h.checkView(view)
+			} else {
+				h.checkView(startView)
+			}
+		}
+
+		// a valid new view
+		sendNewView(5, 6, false, true)
+
+		// a failing validation new view
+		sendNewView(5, 6, true, false)
+	})
+}
+
 func TestNewViewNotAcceptViewsFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		sendNewView := func(startView primitives.View, view primitives.View, shouldAcceptMessage bool) {
