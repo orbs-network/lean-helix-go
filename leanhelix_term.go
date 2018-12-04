@@ -117,7 +117,7 @@ func (term *LeanHelixTerm) initView(view View) {
 	term.preparedLocally = false
 	term.view = view
 	term.leaderPublicKey = term.calcLeaderPublicKey(view)
-	term.electionTrigger.RegisterOnElection(term.view, term.moveToNextLeader)
+	term.electionTrigger.RegisterOnElection(term.height, term.view, term.moveToNextLeader)
 	term.logger.Debug("H %d V %d initView() set leader to %s", term.height, term.view, term.leaderPublicKey[:3])
 }
 
@@ -130,8 +130,8 @@ func (term *LeanHelixTerm) calcLeaderPublicKey(view View) Ed25519PublicKey {
 	return term.committeeMembersPublicKeys[index]
 }
 
-func (term *LeanHelixTerm) moveToNextLeader(ctx context.Context, view View) {
-	if view != term.view {
+func (term *LeanHelixTerm) moveToNextLeader(ctx context.Context, height BlockHeight, view View) {
+	if view != term.view || height != term.height {
 		return
 	}
 	term.SetView(term.view + 1)
