@@ -331,6 +331,17 @@ func TestNewViewNotAcceptedWithWrongViewChangeDetails(t *testing.T) {
 	})
 }
 
+func TestNewViewNotAcceptedWithDuplicateVotes(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		h := NewHarness(ctx, t)
+		block := builders.CreateBlock(builders.GenesisBlock)
+
+		h.checkView(0)
+		h.receiveNewViewMessageWithDuplicateVotes(ctx, 1, 10, 1, block)
+		h.checkView(0)
+	})
+}
+
 func TestPrepare2fPlus1ForACommit(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
