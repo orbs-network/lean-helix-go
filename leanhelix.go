@@ -53,6 +53,7 @@ func (lh *LeanHelix) Tick(ctx context.Context) bool {
 		lh.filter.GossipMessageReceived(ctx, message)
 
 	case trigger := <-lh.getElectionChannel():
+		lh.logger.Info("Tick() election")
 		trigger(ctx)
 
 	case prevBlock := <-lh.acknowledgeBlockChannel:
