@@ -254,9 +254,16 @@ func TestPreprepareAcceptOnlyMatchingViews(t *testing.T) {
 
 func TestNewViewNotAcceptedWithWrongPPDetails(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		sendNewView := func(blockHeight primitives.BlockHeight, view primitives.View, preprepareBlockHeight primitives.BlockHeight, preprepareView primitives.View, shouldAcceptMessage bool) {
+		sendNewView := func(
+			block leanhelix.Block,
+			blockHeight primitives.BlockHeight,
+			view primitives.View,
+			preprepareBlock leanhelix.Block,
+			preprepareBlockHeight primitives.BlockHeight,
+			preprepareView primitives.View,
+			shouldAcceptMessage bool,
+		) {
 			h := NewHarness(ctx, t)
-			block := builders.CreateBlock(builders.GenesisBlock)
 
 			h.checkView(0)
 			h.receiveCustomNewViewMessage(ctx,
@@ -264,6 +271,7 @@ func TestNewViewNotAcceptedWithWrongPPDetails(t *testing.T) {
 				blockHeight,
 				view,
 				block,
+				preprepareBlock,
 				preprepareBlockHeight,
 				preprepareView,
 				[3]primitives.BlockHeight{blockHeight, blockHeight, blockHeight},
@@ -276,14 +284,20 @@ func TestNewViewNotAcceptedWithWrongPPDetails(t *testing.T) {
 			}
 		}
 
+		block := builders.CreateBlock(builders.GenesisBlock)
+		mismatchingBlock := builders.CreateBlock(builders.GenesisBlock)
+
 		// good new view
-		sendNewView(10, 1, 10, 1, true)
+		sendNewView(block, 10, 1, block, 10, 1, true)
+
+		// mismatching preprepare block
+		sendNewView(block, 10, 1, mismatchingBlock, 10, 1, false)
 
 		// mismatching preprepare view
-		sendNewView(10, 1, 10, 666, false)
+		sendNewView(block, 10, 1, block, 10, 666, false)
 
 		// mismatching preprepare block height
-		sendNewView(10, 1, 666, 1, false)
+		sendNewView(block, 10, 1, block, 666, 1, false)
 	})
 }
 
@@ -294,7 +308,7 @@ func TestNewViewNotAcceptedWithWrongViewChangeDetails(t *testing.T) {
 			block := builders.CreateBlock(builders.GenesisBlock)
 
 			h.checkView(0)
-			h.receiveCustomNewViewMessage(ctx, 1, blockHeight, view, block, blockHeight, view, vcsBlockHeight, vcsView)
+			h.receiveCustomNewViewMessage(ctx, 1, blockHeight, view, block, block, blockHeight, view, vcsBlockHeight, vcsView)
 			if shouldAcceptMessage {
 				h.checkView(1)
 			} else {
