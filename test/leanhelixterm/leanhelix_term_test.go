@@ -488,6 +488,29 @@ func TestAValidViewChangeMessageWithPreparedProof(t *testing.T) {
 	})
 }
 
+func TestViewChangeMessageWithoutQuorumInThePreparedProof(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		block1 := builders.CreateBlock(builders.GenesisBlock)
+		block2 := builders.CreateBlock(block1)
+
+		// an invalid prepare messages
+		h := NewHarness(ctx, t)
+		h.setNode1AsTheLeader(ctx, 10, 1, block1)
+
+		preparedMessages := &leanhelix.PreparedMessages{
+			PreprepareMessage: builders.APreprepareMessage(h.getMyKeyManager(), 1, 0, block2),
+			PrepareMessages: []*leanhelix.PrepareMessage{
+				builders.APrepareMessage(h.getMemberKeyManager(1), 1, 0, block2),
+			}, // <- not enough
+		}
+
+		msg := builders.AViewChangeMessage(h.getMyKeyManager(), 10, 4, preparedMessages)
+		h.receiveViewChangeMessage(ctx, msg)
+
+		require.Exactly(t, 0, h.countViewChange(10, 4))
+	})
+}
+
 func TestViewChangeMessageWithAnInvalidPreparedProof(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block1 := builders.CreateBlock(builders.GenesisBlock)
