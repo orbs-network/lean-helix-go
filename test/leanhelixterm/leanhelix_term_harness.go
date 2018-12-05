@@ -64,6 +64,14 @@ func (h *harness) getMemberPk(nodeIdx int) primitives.Ed25519PublicKey {
 	return h.net.Nodes[nodeIdx].KeyManager.MyPublicKey()
 }
 
+func (h *harness) getMyKeyManager() leanhelix.KeyManager {
+	return h.getMemberKeyManager(0)
+}
+
+func (h *harness) getMemberKeyManager(nodeIdx int) leanhelix.KeyManager {
+	return h.net.Nodes[nodeIdx].KeyManager
+}
+
 func (h *harness) electionTillView(ctx context.Context, view primitives.View) {
 	for {
 		if h.term.GetView() == view {
@@ -85,6 +93,10 @@ func (h *harness) receiveViewChange(ctx context.Context, fromNodeIdx int, blockH
 	sender := h.net.Nodes[fromNodeIdx]
 	vc := builders.AViewChangeMessage(sender.KeyManager, blockHeight, view, nil)
 	h.term.HandleLeanHelixViewChange(ctx, vc)
+}
+
+func (h *harness) receiveViewChangeMessage(ctx context.Context, msg *leanhelix.ViewChangeMessage) {
+	h.term.HandleLeanHelixViewChange(ctx, msg)
 }
 
 func (h *harness) receivePreprepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
