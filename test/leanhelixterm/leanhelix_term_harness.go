@@ -56,6 +56,14 @@ func (h *harness) triggerElection(ctx context.Context) {
 	h.electionTrigger.ManualTriggerSync(ctx)
 }
 
+func (h *harness) getMyNodePk() primitives.Ed25519PublicKey {
+	return h.getMemberPk(0)
+}
+
+func (h *harness) getMemberPk(nodeIdx int) primitives.Ed25519PublicKey {
+	return h.net.Nodes[nodeIdx].KeyManager.MyPublicKey()
+}
+
 func (h *harness) electionTillView(ctx context.Context, view primitives.View) {
 	for {
 		if h.term.GetView() == view {
@@ -192,6 +200,12 @@ func (h *harness) createNewViewContentBuilder(
 
 	leader := h.net.Nodes[fromNode]
 	return builders.ANewViewContentBuilder(leader, members, blockHeight, view, block)
+}
+
+func (h *harness) getLastSentViewChangeMessage() *leanhelix.ViewChangeMessage {
+	messages := h.myNode.Gossip.GetSentMessages(leanhelix.LEAN_HELIX_VIEW_CHANGE)
+	lastMessage := messages[len(messages)-1].ToConsensusMessage()
+	return lastMessage.(*leanhelix.ViewChangeMessage)
 }
 
 func (h *harness) countViewChange(blockHeight primitives.BlockHeight, view primitives.View) int {

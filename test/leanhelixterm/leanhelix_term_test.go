@@ -414,3 +414,53 @@ func TestDisposingALeanHelixTermClearTheStorage(t *testing.T) {
 		require.Equal(t, 0, h.countCommits(1, 0, block), "There should be no commit in the storage")
 	})
 }
+
+func TestAValidPreparedProofIsSentOnViewChange(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		block := builders.CreateBlock(builders.GenesisBlock)
+
+		h := NewHarness(ctx, t, block)
+
+		// Get prepared on block
+		h.receivePrepare(ctx, 1, 1, 0, block)
+		h.receivePrepare(ctx, 2, 1, 0, block)
+
+		h.triggerElection(ctx)
+
+		msg := h.getLastSentViewChangeMessage()
+		msgContent := msg.Content()
+		vcSenderPK := msgContent.Sender().SenderPublicKey()
+		vcHeader := msgContent.SignedHeader()
+		resultView := vcHeader.View()
+		resultHeight := vcHeader.BlockHeight()
+		preparedProof := vcHeader.PreparedProof()
+		ppSenderPK := preparedProof.PreprepareSender().SenderPublicKey()
+		ppBlockRef := preparedProof.PreprepareBlockRef()
+		pBlockRef := preparedProof.PrepareBlockRef()
+
+		var pSendersPKs []primitives.Ed25519PublicKey
+		pSendersIter := preparedProof.PrepareSendersIterator()
+		for {
+			if !pSendersIter.HasNext() {
+				break
+			}
+			pSendersPKs = append(pSendersPKs, pSendersIter.NextPrepareSenders().SenderPublicKey())
+		}
+
+		member1PK := h.getMemberPk(1)
+		member2PK := h.getMemberPk(2)
+		pSendersEqual := (member1PK.Equal(pSendersPKs[0]) && member2PK.Equal(pSendersPKs[1])) ||
+			(member1PK.Equal(pSendersPKs[1]) && member2PK.Equal(pSendersPKs[0]))
+
+		require.True(t, pSendersEqual)
+		require.Equal(t, primitives.BlockHeight(1), pBlockRef.BlockHeight())
+		require.Equal(t, primitives.View(0), pBlockRef.View())
+		require.Equal(t, primitives.BlockHeight(1), ppBlockRef.BlockHeight())
+		require.Equal(t, primitives.View(0), ppBlockRef.View())
+		require.Equal(t, h.getMyNodePk(), vcSenderPK)
+		require.Equal(t, h.getMyNodePk(), ppSenderPK)
+		require.Equal(t, primitives.View(1), resultView)
+		require.Equal(t, primitives.BlockHeight(1), resultHeight)
+		require.Equal(t, block, msg.Block())
+	})
+}

@@ -159,3 +159,13 @@ func (g *Gossip) CountSentMessages(messageType lh.MessageType) int {
 	}
 	return res
 }
+
+func (g *Gossip) GetSentMessages(messageType lh.MessageType) []lh.ConsensusRawMessage {
+	var res []lh.ConsensusRawMessage
+	for _, msg := range g.statsSentMessages {
+		if msg.ToConsensusMessage().MessageType() == messageType {
+			res = append(res, msg)
+		}
+	}
+	return res
+}
