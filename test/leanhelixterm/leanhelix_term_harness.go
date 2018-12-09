@@ -72,6 +72,17 @@ func (h *harness) getMemberKeyManager(nodeIdx int) leanhelix.KeyManager {
 	return h.net.Nodes[nodeIdx].KeyManager
 }
 
+func (h *harness) getMembersKeyManagers(expectNodeIdx int) []leanhelix.KeyManager {
+	var keyManagers []leanhelix.KeyManager
+	for i, node := range h.net.Nodes {
+		if i != expectNodeIdx {
+			keyManagers = append(keyManagers, node.KeyManager)
+		}
+	}
+
+	return keyManagers
+}
+
 func (h *harness) electionTillView(ctx context.Context, view primitives.View) {
 	for {
 		if h.term.GetView() == view {
@@ -192,26 +203,17 @@ func (h *harness) receiveNewViewMessageWithDuplicateVotes(
 }
 
 func (h *harness) receiveNewView(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
-	nvcb := h.createNewViewContentBuilder(fromNodeIdx, blockHeight, view, block)
-	nvm := leanhelix.NewNewViewMessage(nvcb.Build(), block)
+	leaderKeyManager := h.getMemberKeyManager(fromNodeIdx)
+	membersKeyManagers := h.getMembersKeyManagers(fromNodeIdx)
+	nvm := builders.
+		NewNewViewBuilder().
+		LeadBy(leaderKeyManager).
+		WithMembers(membersKeyManagers).
+		OnBlock(block).
+		OnBlockHeight(blockHeight).
+		OnView(view).
+		Build()
 	h.term.HandleLeanHelixNewView(ctx, nvm)
-}
-
-func (h *harness) createNewViewContentBuilder(
-	fromNode int,
-	blockHeight primitives.BlockHeight,
-	view primitives.View,
-	block leanhelix.Block) *leanhelix.NewViewMessageContentBuilder {
-
-	var members []*builders.Node
-	for i, node := range h.net.Nodes {
-		if i != fromNode {
-			members = append(members, node)
-		}
-	}
-
-	leader := h.net.Nodes[fromNode]
-	return builders.ANewViewContentBuilder(leader, members, blockHeight, view, block)
 }
 
 func (h *harness) getLastSentViewChangeMessage() *leanhelix.ViewChangeMessage {
