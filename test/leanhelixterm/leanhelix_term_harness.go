@@ -132,42 +132,6 @@ func (h *harness) createPreprepareMessage(fromNode int, blockHeight primitives.B
 	return messageFactory.CreatePreprepareMessage(blockHeight, view, block, blockHash)
 }
 
-func (h *harness) receiveCustomNewViewMessage(
-	ctx context.Context,
-	leaderNode int,
-	blockHeight primitives.BlockHeight,
-	view primitives.View,
-	block leanhelix.Block,
-	preprepareBlock leanhelix.Block,
-	preprepareBlockHeight primitives.BlockHeight,
-	preprepareView primitives.View,
-	vcsBlockHeight [3]primitives.BlockHeight,
-	vcsView [3]primitives.View) {
-
-	var members []*builders.Node
-	for i, node := range h.net.Nodes {
-		if i != leaderNode {
-			members = append(members, node)
-		}
-	}
-
-	newLeader := h.net.Nodes[leaderNode]
-	ppmFactory := leanhelix.NewMessageFactory(newLeader.KeyManager)
-	ppmCB := ppmFactory.CreatePreprepareMessageContentBuilder(preprepareBlockHeight, preprepareView, preprepareBlock, builders.CalculateBlockHash(preprepareBlock))
-
-	var votes []*leanhelix.ViewChangeMessageContentBuilder
-	for idx, voter := range members {
-		messageFactory := leanhelix.NewMessageFactory(voter.KeyManager)
-		vcmCB := messageFactory.CreateViewChangeMessageContentBuilder(vcsBlockHeight[idx], vcsView[idx], nil)
-		votes = append(votes, vcmCB)
-	}
-
-	messageFactory := leanhelix.NewMessageFactory(newLeader.KeyManager)
-	nvcb := messageFactory.CreateNewViewMessageContentBuilder(blockHeight, view, ppmCB, votes)
-	nvm := leanhelix.NewNewViewMessage(nvcb.Build(), block)
-	h.term.HandleLeanHelixNewView(ctx, nvm)
-}
-
 func (h *harness) HandleLeanHelixNewView(ctx context.Context, nvm *leanhelix.NewViewMessage) {
 	h.term.HandleLeanHelixNewView(ctx, nvm)
 }
@@ -175,10 +139,11 @@ func (h *harness) HandleLeanHelixNewView(ctx context.Context, nvm *leanhelix.New
 func (h *harness) receiveNewView(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
 	leaderKeyManager := h.getMemberKeyManager(fromNodeIdx)
 	membersKeyManagers := h.getMembersKeyManagers(fromNodeIdx)
+	votes := builders.ASimpleViewChangeVotes(membersKeyManagers, blockHeight, view)
 	nvm := builders.
 		NewNewViewBuilder().
 		LeadBy(leaderKeyManager).
-		WithMembers(membersKeyManagers).
+		WithViewChangeVotes(votes).
 		OnBlock(block).
 		OnBlockHeight(blockHeight).
 		OnView(view).

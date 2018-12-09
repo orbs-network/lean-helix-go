@@ -110,17 +110,22 @@ func TestNewViewNotAcceptedWithWrongPPDetails(t *testing.T) {
 			h := NewHarness(ctx, t)
 
 			h.checkView(0)
-			h.receiveCustomNewViewMessage(ctx,
-				1,
-				blockHeight,
-				view,
-				block,
-				preprepareBlock,
-				preprepareBlockHeight,
-				preprepareView,
-				[3]primitives.BlockHeight{blockHeight, blockHeight, blockHeight},
-				[3]primitives.View{view, view, view},
-			)
+
+			membersKeyManagers := []leanhelix.KeyManager{h.getMemberKeyManager(0), h.getMemberKeyManager(2), h.getMemberKeyManager(3)}
+			votes := builders.ASimpleViewChangeVotes(membersKeyManagers, blockHeight, view)
+
+			newLeaderKeyManager := h.getMemberKeyManager(1)
+			nvm := builders.NewNewViewBuilder().
+				LeadBy(newLeaderKeyManager).
+				OnBlock(block).
+				OnBlockHeight(blockHeight).
+				OnView(view).
+				WithCustomPreprepare(newLeaderKeyManager, preprepareBlockHeight, preprepareView, preprepareBlock).
+				WithViewChangeVotes(votes).
+				Build()
+
+			h.HandleLeanHelixNewView(ctx, nvm)
+
 			if shouldAcceptMessage {
 				h.checkView(1)
 			} else {
@@ -152,7 +157,24 @@ func TestNewViewNotAcceptedWithWrongViewChangeDetails(t *testing.T) {
 			block := builders.CreateBlock(builders.GenesisBlock)
 
 			h.checkView(0)
-			h.receiveCustomNewViewMessage(ctx, 1, blockHeight, view, block, block, blockHeight, view, vcsBlockHeight, vcsView)
+
+			votesBuilder := builders.NewVotesBuilder()
+			votesBuilder.WithVoter(h.getMemberKeyManager(0), vcsBlockHeight[0], vcsView[0])
+			votesBuilder.WithVoter(h.getMemberKeyManager(2), vcsBlockHeight[1], vcsView[1])
+			votesBuilder.WithVoter(h.getMemberKeyManager(3), vcsBlockHeight[2], vcsView[2])
+			votes := votesBuilder.Build()
+
+			newLeaderKeyManager := h.getMemberKeyManager(1)
+			nvm := builders.NewNewViewBuilder().
+				LeadBy(newLeaderKeyManager).
+				OnBlock(block).
+				OnBlockHeight(blockHeight).
+				OnView(view).
+				WithViewChangeVotes(votes).
+				Build()
+
+			h.HandleLeanHelixNewView(ctx, nvm)
+
 			if shouldAcceptMessage {
 				h.checkView(1)
 			} else {
@@ -184,15 +206,16 @@ func TestNewViewNotAcceptedWithBadVotes(t *testing.T) {
 			h.checkView(0)
 
 			leaderKeyManager := h.getMemberKeyManager(leaderNodeIdx)
-			var membersKeyManagers []leanhelix.KeyManager
+
+			votesBuilder := builders.NewVotesBuilder()
 			for _, memberIdx := range members {
-				membersKeyManagers = append(membersKeyManagers, h.net.Nodes[memberIdx].KeyManager)
+				votesBuilder.WithVoter(h.net.Nodes[memberIdx].KeyManager, 10, 1)
 			}
 
 			nvm := builders.
 				NewNewViewBuilder().
 				LeadBy(leaderKeyManager).
-				WithMembers(membersKeyManagers).
+				WithViewChangeVotes(votesBuilder.Build()).
 				OnBlock(block).
 				OnBlockHeight(10).
 				OnView(1).
