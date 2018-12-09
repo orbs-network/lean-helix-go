@@ -177,12 +177,40 @@ func TestNewViewNotAcceptedWithWrongViewChangeDetails(t *testing.T) {
 
 func TestNewViewNotAcceptedWithDuplicateVotes(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		h := NewHarness(ctx, t)
-		block := builders.CreateBlock(builders.GenesisBlock)
+		sendNewView := func(leaderNodeIdx int, members []int, shouldAcceptMessage bool) {
+			h := NewHarness(ctx, t)
+			block := builders.CreateBlock(builders.GenesisBlock)
 
-		h.checkView(0)
-		h.receiveNewViewMessageWithDuplicateVotes(ctx, 1, 10, 1, block)
-		h.checkView(0)
+			h.checkView(0)
+
+			leaderKeyManager := h.getMemberKeyManager(leaderNodeIdx)
+			var membersKeyManagers []leanhelix.KeyManager
+			for _, memberIdx := range members {
+				membersKeyManagers = append(membersKeyManagers, h.net.Nodes[memberIdx].KeyManager)
+			}
+
+			nvm := builders.
+				NewNewViewBuilder().
+				LeadBy(leaderKeyManager).
+				WithMembers(membersKeyManagers).
+				OnBlock(block).
+				OnBlockHeight(10).
+				OnView(1).
+				Build()
+			h.HandleLeanHelixNewView(ctx, nvm)
+
+			if shouldAcceptMessage {
+				h.checkView(1)
+			} else {
+				h.checkView(0)
+			}
+		}
+
+		// good new view
+		sendNewView(1, []int{0, 2, 3}, true)
+
+		// duplicate voters
+		sendNewView(1, []int{0, 2, 2}, false)
 	})
 }
 

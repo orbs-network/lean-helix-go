@@ -168,26 +168,7 @@ func (h *harness) receiveCustomNewViewMessage(
 	h.term.HandleLeanHelixNewView(ctx, nvm)
 }
 
-func (h *harness) receiveNewViewMessageWithDuplicateVotes(
-	ctx context.Context,
-	leaderNode int,
-	blockHeight primitives.BlockHeight,
-	view primitives.View,
-	block leanhelix.Block) {
-
-	leaderKeyManager := h.getMemberKeyManager(leaderNode)
-	membersKeyManagers := h.getMembersKeyManagers(leaderNode)
-
-	// override member 1 with member 2, so vote 1 will be twice
-	membersKeyManagers[1] = membersKeyManagers[2]
-	nvm := builders.
-		NewNewViewBuilder().
-		LeadBy(leaderKeyManager).
-		WithMembers(membersKeyManagers).
-		OnBlock(block).
-		OnBlockHeight(blockHeight).
-		OnView(view).
-		Build()
+func (h *harness) HandleLeanHelixNewView(ctx context.Context, nvm *leanhelix.NewViewMessage) {
 	h.term.HandleLeanHelixNewView(ctx, nvm)
 }
 
