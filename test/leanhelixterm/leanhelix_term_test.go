@@ -175,7 +175,7 @@ func TestNewViewNotAcceptedWithWrongViewChangeDetails(t *testing.T) {
 	})
 }
 
-func TestNewViewNotAcceptedWithDuplicateVotes(t *testing.T) {
+func TestNewViewNotAcceptedWithBadVotes(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		sendNewView := func(leaderNodeIdx int, members []int, shouldAcceptMessage bool) {
 			h := NewHarness(ctx, t)
@@ -211,6 +211,12 @@ func TestNewViewNotAcceptedWithDuplicateVotes(t *testing.T) {
 
 		// duplicate voters
 		sendNewView(1, []int{0, 2, 2}, false)
+
+		// No votes
+		sendNewView(1, []int{}, false)
+
+		// Not enough votes
+		sendNewView(1, []int{0, 2}, false)
 	})
 }
 
