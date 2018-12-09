@@ -428,7 +428,7 @@ func (term *LeanHelixTerm) latestViewChangeVote(confirmations []*ViewChangeMessa
 	}
 
 	sort.Slice(res, func(i, j int) bool {
-		return res[j].SignedHeader().PreparedProof().PreprepareBlockRef().View() > res[i].SignedHeader().PreparedProof().PreprepareBlockRef().View()
+		return res[j].SignedHeader().PreparedProof().PreprepareBlockRef().View() < res[i].SignedHeader().PreparedProof().PreprepareBlockRef().View()
 	})
 
 	if len(res) > 0 {

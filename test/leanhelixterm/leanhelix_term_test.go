@@ -74,6 +74,97 @@ func TestNewViewNotAcceptViewsFromThePast(t *testing.T) {
 	})
 }
 
+func TestNewViewIsSentWithTheHighestBlockFromTheViewChangeProofs(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		h := NewHarness(ctx, t)
+
+		blockOnView3 := builders.CreateBlock(builders.GenesisBlock)
+		preparedMessagesOnView3 := builders.CreatePreparedMessages(
+			h.getMemberKeyManager(3),
+			[]leanhelix.KeyManager{h.getMemberKeyManager(0), h.getMemberKeyManager(1), h.getMemberKeyManager(2)},
+			1,
+			3,
+			blockOnView3)
+
+		blockOnView4 := builders.CreateBlock(builders.GenesisBlock)
+		preparedMessagesOnView4 := builders.CreatePreparedMessages(
+			h.getMemberKeyManager(0),
+			[]leanhelix.KeyManager{h.getMemberKeyManager(1), h.getMemberKeyManager(2), h.getMemberKeyManager(3)},
+			1,
+			4,
+			blockOnView4)
+
+		// voting node1 as the new leader (view 5)
+		votes := builders.NewVotesBuilder().
+			WithVoter(h.getMemberKeyManager(0), 1, 5, preparedMessagesOnView3).
+			WithVoter(h.getMemberKeyManager(2), 1, 5, preparedMessagesOnView4).
+			WithVoter(h.getMemberKeyManager(3), 1, 5, nil).
+			Build()
+
+		h.checkView(0)
+
+		nvm := builders.
+			NewNewViewBuilder().
+			LeadBy(h.getMemberKeyManager(1)).
+			WithViewChangeVotes(votes).
+			OnBlock(blockOnView4).
+			OnBlockHeight(1).
+			OnView(5).
+			Build()
+
+		h.HandleLeanHelixNewView(ctx, nvm)
+
+		h.checkView(5)
+		require.True(t, h.hasPreprepare(1, 5, blockOnView4))
+	})
+}
+
+func TestNewViewWithOlderBlockIsRejected(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		h := NewHarness(ctx, t)
+
+		blockOnView3 := builders.CreateBlock(builders.GenesisBlock)
+		preparedMessagesOnView3 := builders.CreatePreparedMessages(
+			h.getMemberKeyManager(3),
+			[]leanhelix.KeyManager{h.getMemberKeyManager(0), h.getMemberKeyManager(1), h.getMemberKeyManager(2)},
+			1,
+			3,
+			blockOnView3)
+
+		blockOnView4 := builders.CreateBlock(builders.GenesisBlock)
+		preparedMessagesOnView4 := builders.CreatePreparedMessages(
+			h.getMemberKeyManager(0),
+			[]leanhelix.KeyManager{h.getMemberKeyManager(1), h.getMemberKeyManager(2), h.getMemberKeyManager(3)},
+			1,
+			4,
+			blockOnView4)
+
+		// voting node1 as the new leader (view 5)
+		votes := builders.NewVotesBuilder().
+			WithVoter(h.getMemberKeyManager(0), 1, 5, preparedMessagesOnView3).
+			WithVoter(h.getMemberKeyManager(2), 1, 5, preparedMessagesOnView4).
+			WithVoter(h.getMemberKeyManager(3), 1, 5, nil).
+			Build()
+
+		h.checkView(0)
+
+		nvm := builders.
+			NewNewViewBuilder().
+			LeadBy(h.getMemberKeyManager(1)).
+			WithViewChangeVotes(votes).
+			OnBlock(blockOnView3).
+			OnBlockHeight(1).
+			OnView(5).
+			Build()
+
+		h.HandleLeanHelixNewView(ctx, nvm)
+
+		h.checkView(0)
+		require.False(t, h.hasPreprepare(1, 5, blockOnView3))
+		require.False(t, h.hasPreprepare(1, 5, blockOnView4))
+	})
+}
+
 func TestNewViewNotAcceptMessageIfNotFromTheLeader(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		sendNewView := func(fromNodeIdx int, shouldAcceptMessage bool) {
