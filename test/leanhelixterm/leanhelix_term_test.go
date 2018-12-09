@@ -159,9 +159,9 @@ func TestNewViewNotAcceptedWithWrongViewChangeDetails(t *testing.T) {
 			h.checkView(0)
 
 			votesBuilder := builders.NewVotesBuilder()
-			votesBuilder.WithVoter(h.getMemberKeyManager(0), vcsBlockHeight[0], vcsView[0])
-			votesBuilder.WithVoter(h.getMemberKeyManager(2), vcsBlockHeight[1], vcsView[1])
-			votesBuilder.WithVoter(h.getMemberKeyManager(3), vcsBlockHeight[2], vcsView[2])
+			votesBuilder.WithVoter(h.getMemberKeyManager(0), vcsBlockHeight[0], vcsView[0], nil)
+			votesBuilder.WithVoter(h.getMemberKeyManager(2), vcsBlockHeight[1], vcsView[1], nil)
+			votesBuilder.WithVoter(h.getMemberKeyManager(3), vcsBlockHeight[2], vcsView[2], nil)
 			votes := votesBuilder.Build()
 
 			newLeaderKeyManager := h.getMemberKeyManager(1)
@@ -209,7 +209,7 @@ func TestNewViewNotAcceptedWithBadVotes(t *testing.T) {
 
 			votesBuilder := builders.NewVotesBuilder()
 			for _, memberIdx := range members {
-				votesBuilder.WithVoter(h.net.Nodes[memberIdx].KeyManager, 10, 1)
+				votesBuilder.WithVoter(h.net.Nodes[memberIdx].KeyManager, 10, 1, nil)
 			}
 
 			nvm := builders.

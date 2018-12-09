@@ -66,9 +66,10 @@ func NewNewViewBuilder() *NewViewBuilder {
 //////////////////// View Change Votes Builder //////////////////////////
 
 type Voter struct {
-	keyManager  lh.KeyManager
-	blockHeight primitives.BlockHeight
-	view        primitives.View
+	keyManager       lh.KeyManager
+	blockHeight      primitives.BlockHeight
+	view             primitives.View
+	preparedMessages *lh.PreparedMessages
 }
 
 type VotesBuilder struct {
@@ -79,15 +80,15 @@ func (builder *VotesBuilder) Build() []*lh.ViewChangeMessageContentBuilder {
 	var votes []*lh.ViewChangeMessageContentBuilder
 	for _, voter := range builder.voters {
 		messageFactory := lh.NewMessageFactory(voter.keyManager)
-		vcmCB := messageFactory.CreateViewChangeMessageContentBuilder(voter.blockHeight, voter.view, nil)
+		vcmCB := messageFactory.CreateViewChangeMessageContentBuilder(voter.blockHeight, voter.view, voter.preparedMessages)
 		votes = append(votes, vcmCB)
 	}
 
 	return votes
 }
 
-func (builder *VotesBuilder) WithVoter(keyManager lh.KeyManager, blockHeight primitives.BlockHeight, view primitives.View) *VotesBuilder {
-	voter := &Voter{keyManager, blockHeight, view}
+func (builder *VotesBuilder) WithVoter(keyManager lh.KeyManager, blockHeight primitives.BlockHeight, view primitives.View, preparedMessages *lh.PreparedMessages) *VotesBuilder {
+	voter := &Voter{keyManager, blockHeight, view, preparedMessages}
 	builder.voters = append(builder.voters, voter)
 	return builder
 }
@@ -99,7 +100,7 @@ func NewVotesBuilder() *VotesBuilder {
 func ASimpleViewChangeVotes(membersKeyManagers []lh.KeyManager, blockHeight primitives.BlockHeight, view primitives.View) []*lh.ViewChangeMessageContentBuilder {
 	builder := NewVotesBuilder()
 	for _, keyManager := range membersKeyManagers {
-		builder.WithVoter(keyManager, blockHeight, view)
+		builder.WithVoter(keyManager, blockHeight, view, nil)
 	}
 	return builder.Build()
 }
