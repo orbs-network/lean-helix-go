@@ -175,30 +175,19 @@ func (h *harness) receiveNewViewMessageWithDuplicateVotes(
 	view primitives.View,
 	block leanhelix.Block) {
 
-	var members []*builders.Node
-	for i, node := range h.net.Nodes {
-		if i != leaderNode {
-			members = append(members, node)
-		}
-	}
+	leaderKeyManager := h.getMemberKeyManager(leaderNode)
+	membersKeyManagers := h.getMembersKeyManagers(leaderNode)
 
-	newLeader := h.net.Nodes[leaderNode]
-	ppmFactory := leanhelix.NewMessageFactory(newLeader.KeyManager)
-	ppmCB := ppmFactory.CreatePreprepareMessageContentBuilder(blockHeight, view, block, builders.CalculateBlockHash(block))
-
-	var votes []*leanhelix.ViewChangeMessageContentBuilder
-	for _, voter := range members {
-		messageFactory := leanhelix.NewMessageFactory(voter.KeyManager)
-		vcmCB := messageFactory.CreateViewChangeMessageContentBuilder(blockHeight, view, nil)
-		votes = append(votes, vcmCB)
-	}
-
-	// override vote 1 with vote 2, so vote 1 will be twice
-	votes[1] = votes[2]
-
-	messageFactory := leanhelix.NewMessageFactory(newLeader.KeyManager)
-	nvcb := messageFactory.CreateNewViewMessageContentBuilder(blockHeight, view, ppmCB, votes)
-	nvm := leanhelix.NewNewViewMessage(nvcb.Build(), block)
+	// override member 1 with member 2, so vote 1 will be twice
+	membersKeyManagers[1] = membersKeyManagers[2]
+	nvm := builders.
+		NewNewViewBuilder().
+		LeadBy(leaderKeyManager).
+		WithMembers(membersKeyManagers).
+		OnBlock(block).
+		OnBlockHeight(blockHeight).
+		OnView(view).
+		Build()
 	h.term.HandleLeanHelixNewView(ctx, nvm)
 }
 
