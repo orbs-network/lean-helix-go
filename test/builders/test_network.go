@@ -116,6 +116,24 @@ func (net *TestNetwork) ResumeNodesValidation(nodes ...*Node) {
 	}
 }
 
+func (net *TestNetwork) NodesPauseOnRequestNewBlock(nodes ...*Node) {
+	if nodes == nil {
+		nodes = net.Nodes
+	}
+
+	for _, node := range nodes {
+		node.BlockUtils.PauseOnRequestNewBlock = true
+	}
+}
+
+func (net *TestNetwork) WaitForNodeToRequestNewBlock(node *Node) {
+	node.BlockUtils.RequestNewBlockSns.WaitForSignal()
+}
+
+func (net *TestNetwork) ResumeNodeRequestNewBlock(node *Node) {
+	node.BlockUtils.RequestNewBlockSns.Resume()
+}
+
 func (net *TestNetwork) WaitForConsensus() {
 	for _, node := range net.Nodes {
 		<-node.NodeStateChannel

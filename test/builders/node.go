@@ -32,6 +32,10 @@ func (node *Node) TriggerElection() {
 	node.ElectionTrigger.ManualTrigger()
 }
 
+func (node *Node) TriggerElectionSync(ctx context.Context) {
+	node.ElectionTrigger.ManualTriggerSync(ctx)
+}
+
 func (node *Node) onCommittedBlock(block lh.Block) {
 	node.blockChain.AppendBlockToChain(block)
 	node.NodeStateChannel <- &NodeState{

@@ -315,9 +315,9 @@ func (term *LeanHelixTerm) isViewChangeValid(targetLeaderPublicKey Ed25519Public
 
 func (term *LeanHelixTerm) checkElected(ctx context.Context, height BlockHeight, view View) {
 	if term.newViewLocally < view {
-		vcms, err := term.Storage.GetViewChangeMessages(height, view)
+		vcms, ok := term.Storage.GetViewChangeMessages(height, view)
 		minimumNodes := term.QuorumSize()
-		if !err && len(vcms) >= minimumNodes {
+		if ok && len(vcms) >= minimumNodes {
 			term.onElected(ctx, view, vcms[:minimumNodes])
 		}
 	}
