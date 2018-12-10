@@ -23,6 +23,10 @@ func (lh *LeanHelix) notifyCommitted(block Block) {
 	}
 }
 
+func (lh *LeanHelix) IsLeader() bool {
+	return lh.leanHelixTerm != nil && lh.leanHelixTerm.IsLeader()
+}
+
 func (lh *LeanHelix) RegisterOnCommitted(cb func(block Block)) {
 	lh.commitSubscriptions = append(lh.commitSubscriptions, cb)
 }
