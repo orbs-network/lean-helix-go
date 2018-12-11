@@ -18,15 +18,21 @@ func TestCallingCallback(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		et := builders.NewMockElectionTrigger()
 		var actualView primitives.View = 666
+		var actualHeight primitives.BlockHeight = 666
 		var expectedView primitives.View = 10
-		cb := func(ctx context.Context, view primitives.View) { actualView = view }
-		et.RegisterOnElection(expectedView, cb)
+		var expectedHeight primitives.BlockHeight = 20
+		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View) {
+			actualHeight = blockHeight
+			actualView = view
+		}
+		et.RegisterOnElection(expectedHeight, expectedView, cb)
 
 		go et.ManualTrigger()
 		trigger := <-et.ElectionChannel()
 		trigger(ctx)
 
 		require.Equal(t, expectedView, actualView)
+		require.Equal(t, expectedHeight, actualHeight)
 	})
 }
 

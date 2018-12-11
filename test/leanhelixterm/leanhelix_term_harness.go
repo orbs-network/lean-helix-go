@@ -14,6 +14,7 @@ type harness struct {
 	t                 *testing.T
 	myPublicKey       primitives.Ed25519PublicKey
 	keyManager        *builders.MockKeyManager
+	myNode            *builders.Node
 	net               *builders.TestNetwork
 	term              *leanhelix.LeanHelixTerm
 	storage           leanhelix.Storage
@@ -21,16 +22,18 @@ type harness struct {
 	failVerifications bool
 }
 
-func NewHarness(ctx context.Context, t *testing.T) *harness {
-	net := builders.ABasicTestNetwork()
+func NewHarness(ctx context.Context, t *testing.T, blocksPool ...leanhelix.Block) *harness {
+	net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocksPool(blocksPool).Build()
 	myNode := net.Nodes[0]
 	keyManager := myNode.KeyManager
 	termConfig := myNode.BuildConfig()
 	term := leanhelix.NewLeanHelixTerm(ctx, termConfig, nil, myNode.GetLatestBlock())
+	term.StartTerm(ctx)
 
 	return &harness{
 		t:                 t,
 		myPublicKey:       keyManager.MyPublicKey(),
+		myNode:            myNode,
 		net:               net,
 		keyManager:        myNode.KeyManager,
 		term:              term,
@@ -38,6 +41,10 @@ func NewHarness(ctx context.Context, t *testing.T) *harness {
 		electionTrigger:   myNode.ElectionTrigger,
 		failVerifications: false,
 	}
+}
+
+func (h *harness) failValidations() {
+	h.myNode.BlockUtils.ValidationResult = false
 }
 
 func (h *harness) checkView(expectedView primitives.View) {
@@ -49,56 +56,105 @@ func (h *harness) triggerElection(ctx context.Context) {
 	h.electionTrigger.ManualTriggerSync(ctx)
 }
 
+func (h *harness) getMyNodePk() primitives.Ed25519PublicKey {
+	return h.getMemberPk(0)
+}
+
+func (h *harness) getMemberPk(nodeIdx int) primitives.Ed25519PublicKey {
+	return h.net.Nodes[nodeIdx].KeyManager.MyPublicKey()
+}
+
+func (h *harness) getMyKeyManager() leanhelix.KeyManager {
+	return h.getMemberKeyManager(0)
+}
+
+func (h *harness) getMemberKeyManager(nodeIdx int) leanhelix.KeyManager {
+	return h.net.Nodes[nodeIdx].KeyManager
+}
+
+func (h *harness) getMembersKeyManagers(expectNodeIdx int) []leanhelix.KeyManager {
+	var keyManagers []leanhelix.KeyManager
+	for i, node := range h.net.Nodes {
+		if i != expectNodeIdx {
+			keyManagers = append(keyManagers, node.KeyManager)
+		}
+	}
+
+	return keyManagers
+}
+
+func (h *harness) electionTillView(ctx context.Context, view primitives.View) {
+	for {
+		if h.term.GetView() == view {
+			break
+		}
+		h.triggerElection(ctx)
+	}
+}
+
 func (h *harness) setNode1AsTheLeader(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
-	me := h.net.Nodes[0]
-	leader := h.net.Nodes[1]
-	node2 := h.net.Nodes[2]
-	node3 := h.net.Nodes[3]
-	members := []*builders.Node{me, node2, node3}
-	nvm := builders.AValidNewViewMessage(leader, members, blockHeight, view, block)
-	h.term.HandleLeanHelixNewView(ctx, nvm)
+	h.receiveNewView(ctx, 1, blockHeight, view, block)
 }
 
 func (h *harness) setMeAsTheLeader(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
-	h.sendNewView(ctx, 0, blockHeight, view, block)
+	h.receiveNewView(ctx, 0, blockHeight, view, block)
 }
 
-func (h *harness) sendViewChange(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
-	sender := h.net.Nodes[3]
+func (h *harness) receiveViewChange(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+	sender := h.net.Nodes[fromNodeIdx]
 	vc := builders.AViewChangeMessage(sender.KeyManager, blockHeight, view, nil)
 	h.term.HandleLeanHelixViewChange(ctx, vc)
 }
 
-func (h *harness) sendPreprepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+func (h *harness) receiveViewChangeMessage(ctx context.Context, msg *leanhelix.ViewChangeMessage) {
+	h.term.HandleLeanHelixViewChange(ctx, msg)
+}
+
+func (h *harness) receivePreprepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
 	leader := h.net.Nodes[fromNode]
 	ppm := builders.APreprepareMessage(leader.KeyManager, blockHeight, view, block)
 	h.term.HandleLeanHelixPrePrepare(ctx, ppm)
 }
 
-func (h *harness) sendPreprepareWithSpecificBlockHash(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block, blockHash primitives.Uint256) {
-	leader := h.net.Nodes[fromNode]
-	messageFactory := leanhelix.NewMessageFactory(leader.KeyManager)
-	ppm := messageFactory.CreatePreprepareMessage(blockHeight, view, block, blockHash)
+func (h *harness) receivePreprepareMessage(ctx context.Context, ppm *leanhelix.PreprepareMessage) {
 	h.term.HandleLeanHelixPrePrepare(ctx, ppm)
 }
 
-func (h *harness) sendPrepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+func (h *harness) receivePrepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
 	sender := h.net.Nodes[fromNode]
 	pm := builders.APrepareMessage(sender.KeyManager, blockHeight, view, block)
 	h.term.HandleLeanHelixPrepare(ctx, pm)
 }
 
-func (h *harness) sendNewView(ctx context.Context, leaderNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
-	var members []*builders.Node
-	for i, node := range h.net.Nodes {
-		if i != leaderNodeIdx {
-			members = append(members, node)
-		}
-	}
+func (h *harness) createPreprepareMessage(fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block, blockHash primitives.Uint256) *leanhelix.PreprepareMessage {
+	leader := h.net.Nodes[fromNode]
+	messageFactory := leanhelix.NewMessageFactory(leader.KeyManager)
+	return messageFactory.CreatePreprepareMessage(blockHeight, view, block, blockHash)
+}
 
-	leaderNode := h.net.Nodes[leaderNodeIdx]
-	nvm := builders.AValidNewViewMessage(leaderNode, members, blockHeight, view, block)
+func (h *harness) HandleLeanHelixNewView(ctx context.Context, nvm *leanhelix.NewViewMessage) {
 	h.term.HandleLeanHelixNewView(ctx, nvm)
+}
+
+func (h *harness) receiveNewView(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+	leaderKeyManager := h.getMemberKeyManager(fromNodeIdx)
+	membersKeyManagers := h.getMembersKeyManagers(fromNodeIdx)
+	votes := builders.ASimpleViewChangeVotes(membersKeyManagers, blockHeight, view)
+	nvm := builders.
+		NewNewViewBuilder().
+		LeadBy(leaderKeyManager).
+		WithViewChangeVotes(votes).
+		OnBlock(block).
+		OnBlockHeight(blockHeight).
+		OnView(view).
+		Build()
+	h.term.HandleLeanHelixNewView(ctx, nvm)
+}
+
+func (h *harness) getLastSentViewChangeMessage() *leanhelix.ViewChangeMessage {
+	messages := h.myNode.Gossip.GetSentMessages(leanhelix.LEAN_HELIX_VIEW_CHANGE)
+	lastMessage := messages[len(messages)-1].ToConsensusMessage()
+	return lastMessage.(*leanhelix.ViewChangeMessage)
 }
 
 func (h *harness) countViewChange(blockHeight primitives.BlockHeight, view primitives.View) int {
@@ -128,4 +184,8 @@ func (h *harness) countPrepare(blockHeight primitives.BlockHeight, view primitiv
 
 func (h *harness) failFutureVerifications() {
 	h.keyManager.FailFutureVerifications = true
+}
+
+func (h *harness) disposeTerm() {
+	h.term.Dispose()
 }

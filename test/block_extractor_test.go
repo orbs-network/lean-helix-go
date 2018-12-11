@@ -51,18 +51,18 @@ func TestReturnBlockFromPPMWithHighestView(t *testing.T) {
 
 	// view on view 3
 	blockOnView3 := builders.CreateBlock(builders.GenesisBlock)
-	preparedOnView3 := builders.CreatePreparedMessages(node3, []*builders.Node{node1, node2}, 1, 3, blockOnView3)
+	preparedOnView3 := builders.CreatePreparedMessages(node3.KeyManager, []leanhelix.KeyManager{node1.KeyManager, node2.KeyManager}, 1, 3, blockOnView3)
 
 	VCMessageOnView3 := builders.AViewChangeMessage(node0.KeyManager, 1, 5, preparedOnView3)
 
 	// view on view 8
 	blockOnView8 := builders.CreateBlock(builders.GenesisBlock)
-	preparedOnView8 := builders.CreatePreparedMessages(node0, []*builders.Node{node1, node2}, 1, 8, blockOnView8)
+	preparedOnView8 := builders.CreatePreparedMessages(node0.KeyManager, []leanhelix.KeyManager{node1.KeyManager, node2.KeyManager}, 1, 8, blockOnView8)
 	VCMessageOnView8 := builders.AViewChangeMessage(node2.KeyManager, 1, 5, preparedOnView8)
 
 	// view on view 4
 	blockOnView4 := builders.CreateBlock(builders.GenesisBlock)
-	preparedOnView4 := builders.CreatePreparedMessages(node0, []*builders.Node{node1, node2}, 1, 4, blockOnView4)
+	preparedOnView4 := builders.CreatePreparedMessages(node0.KeyManager, []leanhelix.KeyManager{node1.KeyManager, node2.KeyManager}, 1, 4, blockOnView4)
 	VCMessageOnView4 := builders.AViewChangeMessage(node2.KeyManager, 1, 5, preparedOnView4)
 
 	actual := leanhelix.GetLatestBlockFromViewChangeMessages([]*leanhelix.ViewChangeMessage{VCMessageOnView3, VCMessageOnView8, VCMessageOnView4})

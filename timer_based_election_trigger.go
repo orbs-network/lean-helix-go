@@ -31,8 +31,9 @@ type TimerBasedElectionTrigger struct {
 	electionChannel chan func(ctx context.Context)
 	minTimeout      time.Duration
 	view            primitives.View
+	blockHeight     primitives.BlockHeight
 	firstTime       bool
-	cb              func(ctx context.Context, view primitives.View)
+	cb              func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View)
 	clearTimer      chan bool
 }
 
@@ -44,11 +45,12 @@ func NewTimerBasedElectionTrigger(minTimeout time.Duration) *TimerBasedElectionT
 	}
 }
 
-func (t *TimerBasedElectionTrigger) RegisterOnElection(view primitives.View, cb func(ctx context.Context, view primitives.View)) {
+func (t *TimerBasedElectionTrigger) RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, cb func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View)) {
 	t.cb = cb
-	if t.firstTime || t.view != view {
+	if t.firstTime || t.view != view || t.blockHeight != blockHeight {
 		t.firstTime = false
 		t.view = view
+		t.blockHeight = blockHeight
 		t.stop()
 		t.clearTimer = setTimeout(t.onTimeout, t.calcTimeout(view))
 	}
@@ -67,7 +69,7 @@ func (t *TimerBasedElectionTrigger) stop() {
 
 func (t *TimerBasedElectionTrigger) trigger(ctx context.Context) {
 	if t.cb != nil {
-		t.cb(ctx, t.view)
+		t.cb(ctx, t.blockHeight, t.view)
 	}
 }
 

@@ -23,7 +23,7 @@ func TestPreprepareSignature(t *testing.T) {
 		require.False(t, hasPreprepare, "No preprepare should exist in the storage")
 
 		// sending a preprepare (height 2)
-		h.sendPreprepare(ctx, 1, 2, 1, block2)
+		h.receivePreprepare(ctx, 1, 2, 1, block2)
 
 		// Expect the storage to have it
 		hasPreprepare = h.hasPreprepare(2, 1, block2)
@@ -31,7 +31,7 @@ func TestPreprepareSignature(t *testing.T) {
 
 		// sending another preprepare (height 3)
 		h.failFutureVerifications()
-		h.sendPreprepare(ctx, 1, 3, 1, block3)
+		h.receivePreprepare(ctx, 1, 3, 1, block3)
 
 		// Expect the storage NOT to have it
 		hasPreprepare = h.hasPreprepare(3, 1, block3)
@@ -50,7 +50,7 @@ func TestPrepareSignature(t *testing.T) {
 		require.Equal(t, 0, prepareCount, "No prepare should exist in the storage")
 
 		// sending a prepare
-		h.sendPrepare(ctx, 1, 1, 0, block)
+		h.receivePrepare(ctx, 1, 1, 0, block)
 
 		// Expect the storage to have it
 		prepareCount = h.countPrepare(1, 0, block)
@@ -58,7 +58,7 @@ func TestPrepareSignature(t *testing.T) {
 
 		// sending another (Bad) prepare (From a different node)
 		h.failFutureVerifications()
-		h.sendPrepare(ctx, 2, 1, 0, block)
+		h.receivePrepare(ctx, 2, 1, 0, block)
 
 		// Expect the storage NOT to store it
 		prepareCount = h.countPrepare(1, 0, block)
@@ -79,7 +79,7 @@ func TestViewChangeSignature(t *testing.T) {
 		require.Equal(t, 0, viewChangeCountOnView8, "No view-change should exist in the storage, on view 8")
 
 		// sending a view-change
-		h.sendViewChange(ctx, 1, 4, block)
+		h.receiveViewChange(ctx, 3, 1, 4, block)
 
 		// Expect the storage to have it
 		viewChangeCountOnView4 = h.countViewChange(1, 4)
@@ -88,7 +88,7 @@ func TestViewChangeSignature(t *testing.T) {
 
 		// sending another (Bad) view-change
 		h.failFutureVerifications()
-		h.sendViewChange(ctx, 2, 8, block)
+		h.receiveViewChange(ctx, 3, 2, 8, block)
 
 		// Expect the storage NOT to store it
 		viewChangeCountOnView4 = h.countViewChange(1, 4)
@@ -113,7 +113,7 @@ func TestNewViewSignature(t *testing.T) {
 		require.False(t, hasPreprepare, "No preprepare should exist in the storage")
 
 		// sending a new-view
-		h.sendNewView(ctx, 0, 1, 4, block2)
+		h.receiveNewView(ctx, 0, 1, 4, block2)
 
 		// Expect the storage to have it
 		hasPreprepare = h.hasPreprepare(1, 4, block2)
@@ -121,7 +121,7 @@ func TestNewViewSignature(t *testing.T) {
 
 		// sending another (Bad) new-view
 		h.failFutureVerifications()
-		h.sendNewView(ctx, 0, 1, 8, block3)
+		h.receiveNewView(ctx, 0, 1, 8, block3)
 
 		// Expect the storage to have it
 		hasPreprepare = h.hasPreprepare(1, 8, block3)

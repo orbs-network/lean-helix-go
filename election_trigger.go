@@ -6,6 +6,6 @@ import (
 )
 
 type ElectionTrigger interface {
-	RegisterOnElection(view primitives.View, cb func(ctx context.Context, view primitives.View))
+	RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, cb func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View))
 	ElectionChannel() chan func(ctx context.Context)
 }

@@ -6,8 +6,9 @@ import (
 )
 
 type ElectionTriggerMock struct {
+	blockHeight     primitives.BlockHeight
 	view            primitives.View
-	cb              func(ctx context.Context, view primitives.View)
+	cb              func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View)
 	electionChannel chan func(ctx context.Context)
 }
 
@@ -17,8 +18,9 @@ func NewMockElectionTrigger() *ElectionTriggerMock {
 	}
 }
 
-func (et *ElectionTriggerMock) RegisterOnElection(view primitives.View, cb func(ctx context.Context, view primitives.View)) {
+func (et *ElectionTriggerMock) RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, cb func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View)) {
 	et.view = view
+	et.blockHeight = blockHeight
 	et.cb = cb
 }
 
@@ -30,7 +32,7 @@ func (et *ElectionTriggerMock) ManualTrigger() {
 	go func() {
 		et.electionChannel <- func(ctx context.Context) {
 			if et.cb != nil {
-				et.cb(ctx, et.view)
+				et.cb(ctx, et.blockHeight, et.view)
 			}
 		}
 	}()
@@ -38,6 +40,6 @@ func (et *ElectionTriggerMock) ManualTrigger() {
 
 func (et *ElectionTriggerMock) ManualTriggerSync(ctx context.Context) {
 	if et.cb != nil {
-		et.cb(ctx, et.view)
+		et.cb(ctx, et.blockHeight, et.view)
 	}
 }
