@@ -91,7 +91,7 @@ func (g *Gossip) UnregisterOnMessage(subscriptionToken int) {
 	delete(g.subscriptions, subscriptionToken)
 }
 
-func (g *Gossip) onRemoteMessage(ctx context.Context, rawMessage lh.ConsensusRawMessage) {
+func (g *Gossip) OnRemoteMessage(ctx context.Context, rawMessage lh.ConsensusRawMessage) {
 	for _, s := range g.subscriptions {
 		if g.incomingWhiteListPKs != nil {
 			senderPublicKey := rawMessage.ToConsensusMessage().SenderPublicKey()
@@ -145,7 +145,7 @@ func (g *Gossip) SendToNode(ctx context.Context, targetPublicKey Ed25519PublicKe
 	}
 
 	if targetGossip := g.discovery.GetGossipByPK(targetPublicKey); targetGossip != nil {
-		targetGossip.onRemoteMessage(ctx, consensusRawMessage)
+		targetGossip.OnRemoteMessage(ctx, consensusRawMessage)
 	}
 	return
 }

@@ -108,3 +108,39 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 		h.net.WaitForAllNodesToCommitBlock(block3)
 	})
 }
+
+func Test2fPlus1ViewChangeToBeElected(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		block1 := builders.CreateBlock(builders.GenesisBlock)
+		block2 := builders.CreateBlock(block1)
+
+		h := NewHarness(ctx, t, block1, block2)
+
+		node0 := h.net.Nodes[0]
+		node1 := h.net.Nodes[1]
+		node2 := h.net.Nodes[2]
+		node3 := h.net.Nodes[3]
+		h.verifyNodeIsLeader(0)
+
+		// hang the leader (node0)
+		h.net.WaitForNodeToRequestNewBlock(node0)
+
+		// manually cause new-view with 3 view-changes
+		node0VCMessage := builders.AViewChangeMessage(node0.KeyManager, 1, 1, nil)
+		node2VCMessage := builders.AViewChangeMessage(node2.KeyManager, 1, 1, nil)
+		node3VCMessage := builders.AViewChangeMessage(node3.KeyManager, 1, 1, nil)
+		node1.Gossip.OnRemoteMessage(ctx, node0VCMessage.ToConsensusRawMessage())
+		node1.Gossip.OnRemoteMessage(ctx, node2VCMessage.ToConsensusRawMessage())
+		node1.Gossip.OnRemoteMessage(ctx, node3VCMessage.ToConsensusRawMessage())
+
+		// release the hanged the leader (node0)
+		h.net.ResumeNodeRequestNewBlock(node0)
+
+		// now that we caused node1 to be the new leader, he'll ask for a new block (block2)
+		h.net.WaitForNodeToRequestNewBlock(node1)
+		h.net.ResumeNodeRequestNewBlock(node1)
+
+		// make sure that we're on block2
+		h.net.WaitForAllNodesToCommitBlock(block2)
+	})
+}
