@@ -1,4 +1,4 @@
-# LeanHelix Consensus Algo
+# LeanHelix
 > This document details the LeanHelix plug-in specification, focusing  on switching between consensus rounds. The spec for consensus round is described in [LeanHelixOneHeight](/lean-helix-one-height.md). The public API can be found in [LeanHelix](/lean-helix-readme.md).
 
 
@@ -247,7 +247,7 @@
     * If SignaturePair.Signer is not in Committee Return False.
     <!-- * PublicKey = Get PublicKey by calling `Config.KeyManager.GetPublicKey(SignaturePair.Signer, Block_height, KeyType)` -->
     * If `Config.KeyManager.Verify(Block_height, COMMIT_HEADER, SignaturePair.Signature, SignaturePair.Signer, KeyType)` fails Return False.
-#### validate random seed signature as master publicKey 
+#### validate random seed signature against master publicKey 
 * KeyType = Get KeyType to verify for KeyManager.KEY_TYPES.RandomSeed
 * Random_seed_signature = blockProof.Random_seed_signature
 * Random_seed  _(calc above)_
