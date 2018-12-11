@@ -144,3 +144,32 @@ func Test2fPlus1ViewChangeToBeElected(t *testing.T) {
 		h.net.WaitForAllNodesToCommitBlock(block2)
 	})
 }
+
+func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		block1 := builders.CreateBlock(builders.GenesisBlock)
+		block2 := builders.CreateBlock(block1)
+
+		h := NewHarness(ctx, t, block1, block2)
+
+		node0 := h.net.Nodes[0]
+		node1 := h.net.Nodes[1]
+		node2 := h.net.Nodes[2]
+		h.verifyNodeIsLeader(0)
+
+		// hang the leader (node0)
+		h.net.WaitForNodeToRequestNewBlock(node0)
+
+		// sending only 2 view-change (not enough to be elected)
+		node0VCMessage := builders.AViewChangeMessage(node0.KeyManager, 1, 1, nil)
+		node2VCMessage := builders.AViewChangeMessage(node2.KeyManager, 1, 1, nil)
+		node1.Gossip.OnRemoteMessage(ctx, node0VCMessage.ToConsensusRawMessage())
+		node1.Gossip.OnRemoteMessage(ctx, node2VCMessage.ToConsensusRawMessage())
+
+		// release the hanged the leader (node0)
+		h.net.ResumeNodeRequestNewBlock(node0)
+
+		// make sure that we're on block2
+		h.net.WaitForAllNodesToCommitBlock(block2)
+	})
+}
