@@ -10,7 +10,7 @@ import (
 type TestNetworkBuilder struct {
 	NodeCount            int
 	customNodeBuilders   []*NodeBuilder
-	blocksPool           []lh.Block
+	upcomingBlocks       []lh.Block
 	keyManager           lh.KeyManager
 	blockUtils           lh.BlockUtils
 	networkCommunication lh.NetworkCommunication
@@ -26,9 +26,9 @@ func (builder *TestNetworkBuilder) WithCustomNodeBuilder(nodeBuilder *NodeBuilde
 	return builder
 }
 
-func (builder *TestNetworkBuilder) WithBlocksPool(blocksPool []lh.Block) *TestNetworkBuilder {
-	if builder.blocksPool == nil {
-		builder.blocksPool = blocksPool
+func (builder *TestNetworkBuilder) WithBlocks(upcomingBlocks []lh.Block) *TestNetworkBuilder {
+	if builder.upcomingBlocks == nil {
+		builder.upcomingBlocks = upcomingBlocks
 	}
 	return builder
 }
@@ -37,21 +37,21 @@ func (builder *TestNetworkBuilder) Build() *TestNetwork {
 	blocksPool := builder.buildBlocksPool()
 	discovery := gossip.NewGossipDiscovery()
 	nodes := builder.createNodes(discovery, blocksPool)
-	testNetwork := NewTestNetwork(discovery, blocksPool)
+	testNetwork := NewTestNetwork(discovery)
 	testNetwork.RegisterNodes(nodes)
 	return testNetwork
 }
 
-func (builder *TestNetworkBuilder) buildBlocksPool() []lh.Block {
-	if builder.blocksPool == nil {
+func (builder *TestNetworkBuilder) buildBlocksPool() *BlocksPool {
+	if builder.upcomingBlocks == nil {
 		b1 := CreateBlock(GenesisBlock)
 		b2 := CreateBlock(b1)
 		b3 := CreateBlock(b2)
 		b4 := CreateBlock(b3)
 
-		return []lh.Block{b1, b2, b3, b4}
+		return NewBlocksPool([]lh.Block{b1, b2, b3, b4})
 	} else {
-		return builder.blocksPool
+		return NewBlocksPool(builder.upcomingBlocks)
 	}
 }
 
@@ -59,14 +59,14 @@ func (builder *TestNetworkBuilder) buildNode(
 	nodeBuilder *NodeBuilder,
 	publicKey primitives.Ed25519PublicKey,
 	discovery *gossip.Discovery,
-	blocksPool []lh.Block) *Node {
+	blocksPool *BlocksPool) *Node {
 
 	gossip := gossip.NewGossip(discovery)
 	discovery.RegisterGossip(publicKey, gossip)
 	return nodeBuilder.ThatIsPartOf(gossip).WithBlocksPool(blocksPool).WithPublicKey(publicKey).Build()
 }
 
-func (builder *TestNetworkBuilder) createNodes(discovery *gossip.Discovery, blocksPool []lh.Block) []*Node {
+func (builder *TestNetworkBuilder) createNodes(discovery *gossip.Discovery, blocksPool *BlocksPool) []*Node {
 	var nodes []*Node
 	for i := 0; i < builder.NodeCount; i++ {
 		nodeBuilder := NewNodeBuilder()
@@ -103,7 +103,7 @@ func NewTestNetworkBuilder() *TestNetworkBuilder {
 	return &TestNetworkBuilder{
 		NodeCount:          0,
 		customNodeBuilders: nil,
-		blocksPool:         nil,
+		upcomingBlocks:     nil,
 	}
 }
 
@@ -112,7 +112,7 @@ func ABasicTestNetwork() *TestNetwork {
 }
 
 func ATestNetwork(countOfNodes int, blocksPool ...lh.Block) *TestNetwork {
-	return NewTestNetworkBuilder().WithNodeCount(countOfNodes).WithBlocksPool(blocksPool).Build()
+	return NewTestNetworkBuilder().WithNodeCount(countOfNodes).WithBlocks(blocksPool).Build()
 }
 
 func CreateTestNetworkForConsumerTests(
@@ -123,7 +123,7 @@ func CreateTestNetworkForConsumerTests(
 	testNetwork := NewTestNetworkBuilder()
 	return testNetwork.
 		WithNodeCount(countOfNodes).
-		WithBlocksPool(blocks).
+		WithBlocks(blocks).
 		WithNetworkCommunication(spi.Comm).
 		WithKeyManager(spi.Mgr).
 		WithBlockUtils(spi.Utils).

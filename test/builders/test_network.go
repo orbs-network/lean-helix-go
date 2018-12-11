@@ -8,9 +8,8 @@ import (
 )
 
 type TestNetwork struct {
-	Nodes      []*Node
-	BlocksPool []leanhelix.Block
-	Discovery  *gossip.Discovery
+	Nodes     []*Node
+	Discovery *gossip.Discovery
 }
 
 func (net *TestNetwork) GetNodeGossip(publicKey Ed25519PublicKey) *gossip.Gossip {
@@ -141,6 +140,10 @@ func (net *TestNetwork) WaitForConsensus() {
 }
 
 func (net *TestNetwork) WaitForNodesToCommitABlock(nodes ...*Node) {
+	if nodes == nil {
+		nodes = net.Nodes
+	}
+
 	for _, node := range nodes {
 		<-node.NodeStateChannel
 	}
@@ -156,10 +159,9 @@ func (net *TestNetwork) AllNodesValidatedNoMoreThanOnceBeforeCommit() bool {
 	return true
 }
 
-func NewTestNetwork(discovery *gossip.Discovery, blocksPool []leanhelix.Block) *TestNetwork {
+func NewTestNetwork(discovery *gossip.Discovery) *TestNetwork {
 	return &TestNetwork{
-		Nodes:      []*Node{},
-		BlocksPool: blocksPool,
-		Discovery:  discovery,
+		Nodes:     []*Node{},
+		Discovery: discovery,
 	}
 }

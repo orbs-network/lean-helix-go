@@ -2,14 +2,13 @@ package builders
 
 import (
 	"fmt"
-	lh "github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
 )
 
 type NodeBuilder struct {
 	gossip     *gossip.Gossip
-	blocksPool []lh.Block
+	blocksPool *BlocksPool
 	publicKey  primitives.Ed25519PublicKey
 }
 
@@ -31,7 +30,7 @@ func (builder *NodeBuilder) WithPublicKey(publicKey primitives.Ed25519PublicKey)
 	return builder
 }
 
-func (builder *NodeBuilder) WithBlocksPool(blocksPool []lh.Block) *NodeBuilder {
+func (builder *NodeBuilder) WithBlocksPool(blocksPool *BlocksPool) *NodeBuilder {
 	if builder.blocksPool == nil {
 		builder.blocksPool = blocksPool
 	}

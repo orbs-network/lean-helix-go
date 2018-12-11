@@ -23,7 +23,7 @@ type harness struct {
 }
 
 func NewHarness(ctx context.Context, t *testing.T, blocksPool ...leanhelix.Block) *harness {
-	net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocksPool(blocksPool).Build()
+	net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).Build()
 	myNode := net.Nodes[0]
 	keyManager := myNode.KeyManager
 	termConfig := myNode.BuildConfig()
