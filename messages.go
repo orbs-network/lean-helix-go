@@ -281,49 +281,54 @@ func extractConfirmationsFromViewChangeMessages(vcms []*ViewChangeMessage) []*Vi
 		header := vcm.content.SignedHeader()
 		sender := vcm.content.Sender()
 		proof := header.PreparedProof()
-		ppBlockRefBuilder := &BlockRefBuilder{
-			MessageType: proof.PreprepareBlockRef().MessageType(),
-			BlockHeight: proof.PreprepareBlockRef().BlockHeight(),
-			View:        proof.PreprepareBlockRef().View(),
-			BlockHash:   proof.PreprepareBlockRef().BlockHash(),
-		}
-		ppSender := &SenderSignatureBuilder{
-			SenderPublicKey: proof.PreprepareSender().SenderPublicKey(),
-			Signature:       proof.PreprepareSender().Signature(),
-		}
-		pBlockRef := &BlockRefBuilder{
-			MessageType: proof.PrepareBlockRef().MessageType(),
-			BlockHeight: proof.PrepareBlockRef().BlockHeight(),
-			View:        proof.PrepareBlockRef().View(),
-			BlockHash:   proof.PrepareBlockRef().BlockHash(),
-		}
-		pSendersIter := proof.PrepareSendersIterator()
-		pSenders := make([]*SenderSignatureBuilder, 0, 1)
-
-		for {
-			if !pSendersIter.HasNext() {
-				break
+		var proofBuilder *PreparedProofBuilder = nil
+		if proof != nil && len(proof.Raw()) > 0 {
+			ppBlockRefBuilder := &BlockRefBuilder{
+				MessageType: proof.PreprepareBlockRef().MessageType(),
+				BlockHeight: proof.PreprepareBlockRef().BlockHeight(),
+				View:        proof.PreprepareBlockRef().View(),
+				BlockHash:   proof.PreprepareBlockRef().BlockHash(),
 			}
-			nextPSender := pSendersIter.NextPrepareSenders()
-			pSender := &SenderSignatureBuilder{
-				SenderPublicKey: nextPSender.SenderPublicKey(),
-				Signature:       nextPSender.Signature(),
+			ppSender := &SenderSignatureBuilder{
+				SenderPublicKey: proof.PreprepareSender().SenderPublicKey(),
+				Signature:       proof.PreprepareSender().Signature(),
+			}
+			pBlockRef := &BlockRefBuilder{
+				MessageType: proof.PrepareBlockRef().MessageType(),
+				BlockHeight: proof.PrepareBlockRef().BlockHeight(),
+				View:        proof.PrepareBlockRef().View(),
+				BlockHash:   proof.PrepareBlockRef().BlockHash(),
+			}
+			pSendersIter := proof.PrepareSendersIterator()
+			pSenders := make([]*SenderSignatureBuilder, 0, 1)
+
+			for {
+				if !pSendersIter.HasNext() {
+					break
+				}
+				nextPSender := pSendersIter.NextPrepareSenders()
+				pSender := &SenderSignatureBuilder{
+					SenderPublicKey: nextPSender.SenderPublicKey(),
+					Signature:       nextPSender.Signature(),
+				}
+
+				pSenders = append(pSenders, pSender)
 			}
 
-			pSenders = append(pSenders, pSender)
+			proofBuilder = &PreparedProofBuilder{
+				PreprepareBlockRef: ppBlockRefBuilder,
+				PreprepareSender:   ppSender,
+				PrepareBlockRef:    pBlockRef,
+				PrepareSenders:     pSenders,
+			}
 		}
 
 		viewChangeMessageContentBuilder := &ViewChangeMessageContentBuilder{
 			SignedHeader: &ViewChangeHeaderBuilder{
-				MessageType: header.MessageType(),
-				BlockHeight: header.BlockHeight(),
-				View:        header.View(),
-				PreparedProof: &PreparedProofBuilder{
-					PreprepareBlockRef: ppBlockRefBuilder,
-					PreprepareSender:   ppSender,
-					PrepareBlockRef:    pBlockRef,
-					PrepareSenders:     pSenders,
-				},
+				MessageType:   header.MessageType(),
+				BlockHeight:   header.BlockHeight(),
+				View:          header.View(),
+				PreparedProof: proofBuilder,
 			},
 			Sender: &SenderSignatureBuilder{
 				SenderPublicKey: sender.SenderPublicKey(),

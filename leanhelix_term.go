@@ -263,12 +263,12 @@ func (term *LeanHelixTerm) HandleLeanHelixPrepare(ctx context.Context, pm *Prepa
 
 func (term *LeanHelixTerm) HandleLeanHelixViewChange(ctx context.Context, vcm *ViewChangeMessage) {
 	term.logger.Debug("H %s V %s HandleLeanHelixViewChange()", term.height, term.view)
-	header := vcm.content.SignedHeader()
 	if !term.isViewChangeValid(term.myPublicKey, term.view, vcm.content) {
 		term.logger.Info("message ViewChange is not valid")
 		return
 	}
 
+	header := vcm.content.SignedHeader()
 	if vcm.block != nil && header.PreparedProof() != nil {
 		calculatedBlockHash := term.BlockUtils.CalculateBlockHash(vcm.block)
 		isValidDigest := calculatedBlockHash.Equal(header.PreparedProof().PreprepareBlockRef().BlockHash())
@@ -292,6 +292,7 @@ func (term *LeanHelixTerm) isViewChangeValid(targetLeaderPublicKey Ed25519Public
 		term.logger.Debug("isViewChangeValid(): Verify() failed")
 		isVerified := term.KeyManager.Verify(header.Raw(), sender)
 		term.logger.Debug("isViewChangeValid(): isVerified %t", isVerified)
+		return false
 	}
 
 	if view > newView {
