@@ -76,7 +76,7 @@ func NewLeanHelixTerm(ctx context.Context, config *Config, onCommit func(ctx con
 		logger:                          config.Logger,
 	}
 
-	newTerm.logger.Debug("H=%d V=0 NewLeanHelixTerm: myID=%s committeeMembersCount=%d", newBlockHeight, keyManager.MyPublicKey().KeyForMap(), len(committeeMembers))
+	newTerm.logger.Debug("H=%d V=0 myID=%s NewLeanHelixTerm: committeeMembersCount=%d", newBlockHeight, keyManager.MyPublicKey().KeyForMap(), len(committeeMembers))
 	newTerm.initView(0)
 	return newTerm
 }
@@ -118,7 +118,7 @@ func (term *LeanHelixTerm) initView(view View) {
 	term.view = view
 	term.leaderPublicKey = term.calcLeaderPublicKey(view)
 	term.electionTrigger.RegisterOnElection(term.height, term.view, term.moveToNextLeader)
-	term.logger.Debug("H=%d V=%d initView() set leader to %s", term.height, term.view, term.leaderPublicKey.KeyForMap())
+	term.logger.Debug("H=%d V=%d myID=%s initView() set leader to %s", term.height, term.view, term.myPublicKey.KeyForMap(), term.leaderPublicKey.KeyForMap())
 }
 
 func (term *LeanHelixTerm) Dispose() {
@@ -147,31 +147,31 @@ func (term *LeanHelixTerm) moveToNextLeader(ctx context.Context, height BlockHei
 }
 
 func (term *LeanHelixTerm) sendPreprepare(ctx context.Context, message *PreprepareMessage) {
-	term.logger.Debug("H=%d V=%d sendPreprepare()", term.height, term.view)
+	term.logger.Debug("H=%d V=%d myID=%s sendPreprepare()", term.height, term.view, term.myPublicKey.KeyForMap())
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
 }
 
 func (term *LeanHelixTerm) sendPrepare(ctx context.Context, message *PrepareMessage) {
-	term.logger.Debug("H=%s V=%s sendPrepare()", term.height, term.view)
+	term.logger.Debug("H=%s V=%s myID=%s sendPrepare()", term.height, term.view, term.myPublicKey.KeyForMap())
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
 }
 
 func (term *LeanHelixTerm) sendCommit(ctx context.Context, message *CommitMessage) {
-	term.logger.Debug("H=%s V=%s sendCommit()", term.height, term.view)
+	term.logger.Debug("H=%s V=%s myID=%s sendCommit()", term.height, term.view, term.myPublicKey.KeyForMap())
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
 }
 
 func (term *LeanHelixTerm) sendViewChange(ctx context.Context, message *ViewChangeMessage) {
-	term.logger.Debug("H=%s V=%s sendViewChange()", term.height, term.view)
+	term.logger.Debug("H=%s V=%s myID=%s sendViewChange()", term.height, term.view, term.myPublicKey.KeyForMap())
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, []Ed25519PublicKey{term.leaderPublicKey}, rawMessage)
 }
 
 func (term *LeanHelixTerm) sendNewView(ctx context.Context, message *NewViewMessage) {
-	term.logger.Debug("H=%s V=%s sendNewView()", term.height, term.view)
+	term.logger.Debug("H=%s V=%s myID=%s sendNewView()", term.height, term.view, term.myPublicKey.KeyForMap())
 	rawMessage := message.ToConsensusRawMessage()
 	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
 }
