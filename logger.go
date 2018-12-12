@@ -51,11 +51,11 @@ func stdout(format string, args ...interface{}) {
 type SilentLogger struct {
 }
 
-func NewSilentLogger() *SilentLogger {
+func NewSilentLogger() Logger {
 	return &SilentLogger{}
 }
 
-func NewConsoleLogger(id string) *ConsoleLogger {
+func NewConsoleLogger(id string) Logger {
 	return &ConsoleLogger{
 		id:    id,
 		level: LEVEL_DEBUG,

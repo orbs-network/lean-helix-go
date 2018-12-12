@@ -64,13 +64,14 @@ func (node *Node) StartConsensusSync() {
 	}
 }
 
-func (node *Node) BuildConfig() *lh.Config {
+func (node *Node) BuildConfig(logger lh.Logger) *lh.Config {
 	return &lh.Config{
 		NetworkCommunication: node.Gossip,
 		ElectionTrigger:      node.ElectionTrigger,
 		BlockUtils:           node.BlockUtils,
 		KeyManager:           node.KeyManager,
 		Storage:              node.Storage,
+		Logger:               logger,
 	}
 
 }
@@ -79,7 +80,8 @@ func NewNode(
 	publicKey primitives.Ed25519PublicKey,
 	gossip *gossip.Gossip,
 	blockUtils *MockBlockUtils,
-	electionTrigger *ElectionTriggerMock) *Node {
+	electionTrigger *ElectionTriggerMock,
+	logger lh.Logger) *Node {
 	node := &Node{
 		blockChain:       NewInMemoryBlockChain(),
 		ElectionTrigger:  electionTrigger,
@@ -91,7 +93,7 @@ func NewNode(
 		NodeStateChannel: make(chan *NodeState),
 	}
 
-	leanHelix := lh.NewLeanHelix(node.BuildConfig())
+	leanHelix := lh.NewLeanHelix(node.BuildConfig(logger))
 	leanHelix.RegisterOnCommitted(node.onCommittedBlock)
 	gossip.RegisterOnMessage(leanHelix.GossipMessageReceived)
 

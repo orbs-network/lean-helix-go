@@ -9,6 +9,7 @@ import (
 
 type TestNetworkBuilder struct {
 	NodeCount            int
+	logToConsole         bool
 	customNodeBuilders   []*NodeBuilder
 	upcomingBlocks       []lh.Block
 	keyManager           lh.KeyManager
@@ -16,34 +17,39 @@ type TestNetworkBuilder struct {
 	networkCommunication lh.NetworkCommunication
 }
 
-func (builder *TestNetworkBuilder) WithNodeCount(nodeCount int) *TestNetworkBuilder {
-	builder.NodeCount = nodeCount
-	return builder
+func (tb *TestNetworkBuilder) WithNodeCount(nodeCount int) *TestNetworkBuilder {
+	tb.NodeCount = nodeCount
+	return tb
 }
 
-func (builder *TestNetworkBuilder) WithCustomNodeBuilder(nodeBuilder *NodeBuilder) *TestNetworkBuilder {
-	builder.customNodeBuilders = append(builder.customNodeBuilders, nodeBuilder)
-	return builder
+func (tb *TestNetworkBuilder) WithCustomNodeBuilder(nodeBuilder *NodeBuilder) *TestNetworkBuilder {
+	tb.customNodeBuilders = append(tb.customNodeBuilders, nodeBuilder)
+	return tb
 }
 
-func (builder *TestNetworkBuilder) WithBlocks(upcomingBlocks []lh.Block) *TestNetworkBuilder {
-	if builder.upcomingBlocks == nil {
-		builder.upcomingBlocks = upcomingBlocks
+func (tb *TestNetworkBuilder) WithBlocks(upcomingBlocks []lh.Block) *TestNetworkBuilder {
+	if tb.upcomingBlocks == nil {
+		tb.upcomingBlocks = upcomingBlocks
 	}
-	return builder
+	return tb
 }
 
-func (builder *TestNetworkBuilder) Build() *TestNetwork {
-	blocksPool := builder.buildBlocksPool()
+func (tb *TestNetworkBuilder) LogToConsole() *TestNetworkBuilder {
+	tb.logToConsole = true
+	return tb
+}
+
+func (tb *TestNetworkBuilder) Build() *TestNetwork {
+	blocksPool := tb.buildBlocksPool()
 	discovery := gossip.NewGossipDiscovery()
-	nodes := builder.createNodes(discovery, blocksPool)
+	nodes := tb.createNodes(discovery, blocksPool, tb.logToConsole)
 	testNetwork := NewTestNetwork(discovery)
 	testNetwork.RegisterNodes(nodes)
 	return testNetwork
 }
 
-func (builder *TestNetworkBuilder) buildBlocksPool() *BlocksPool {
-	if builder.upcomingBlocks == nil {
+func (tb *TestNetworkBuilder) buildBlocksPool() *BlocksPool {
+	if tb.upcomingBlocks == nil {
 		b1 := CreateBlock(GenesisBlock)
 		b2 := CreateBlock(b1)
 		b3 := CreateBlock(b2)
@@ -51,52 +57,62 @@ func (builder *TestNetworkBuilder) buildBlocksPool() *BlocksPool {
 
 		return NewBlocksPool([]lh.Block{b1, b2, b3, b4})
 	} else {
-		return NewBlocksPool(builder.upcomingBlocks)
+		return NewBlocksPool(tb.upcomingBlocks)
 	}
 }
 
-func (builder *TestNetworkBuilder) buildNode(
+func (tb *TestNetworkBuilder) buildNode(
 	nodeBuilder *NodeBuilder,
 	publicKey primitives.Ed25519PublicKey,
 	discovery *gossip.Discovery,
-	blocksPool *BlocksPool) *Node {
+	blocksPool *BlocksPool,
+	logToConsole bool) *Node {
 
 	gossip := gossip.NewGossip(discovery)
 	discovery.RegisterGossip(publicKey, gossip)
-	return nodeBuilder.ThatIsPartOf(gossip).WithBlocksPool(blocksPool).WithPublicKey(publicKey).Build()
+
+	b := nodeBuilder.
+		ThatIsPartOf(gossip).
+		WithBlocksPool(blocksPool).
+		WithPublicKey(publicKey)
+
+	if logToConsole {
+		b.ThatLogsToConsole()
+	}
+	return b.Build()
 }
 
-func (builder *TestNetworkBuilder) createNodes(discovery *gossip.Discovery, blocksPool *BlocksPool) []*Node {
+func (tb *TestNetworkBuilder) createNodes(discovery *gossip.Discovery, blocksPool *BlocksPool, logToConsole bool) []*Node {
 	var nodes []*Node
-	for i := 0; i < builder.NodeCount; i++ {
+	for i := 0; i < tb.NodeCount; i++ {
 		nodeBuilder := NewNodeBuilder()
 		publicKey := primitives.Ed25519PublicKey(fmt.Sprintf("Node %d", i))
-		node := builder.buildNode(nodeBuilder, publicKey, discovery, blocksPool)
+		node := tb.buildNode(nodeBuilder, publicKey, discovery, blocksPool, logToConsole)
 		nodes = append(nodes, node)
 	}
 
-	for i, customBuilder := range builder.customNodeBuilders {
+	for i, customBuilder := range tb.customNodeBuilders {
 		publicKey := primitives.Ed25519PublicKey(fmt.Sprintf("Custom-Node %d", i))
-		node := builder.buildNode(customBuilder, publicKey, discovery, blocksPool)
+		node := tb.buildNode(customBuilder, publicKey, discovery, blocksPool, logToConsole)
 		nodes = append(nodes, node)
 	}
 
 	return nodes
 }
 
-func (builder *TestNetworkBuilder) WithNetworkCommunication(comm lh.NetworkCommunication) *TestNetworkBuilder {
-	builder.networkCommunication = comm
-	return builder
+func (tb *TestNetworkBuilder) WithNetworkCommunication(comm lh.NetworkCommunication) *TestNetworkBuilder {
+	tb.networkCommunication = comm
+	return tb
 }
 
-func (builder *TestNetworkBuilder) WithBlockUtils(utils lh.BlockUtils) *TestNetworkBuilder {
-	builder.blockUtils = utils
-	return builder
+func (tb *TestNetworkBuilder) WithBlockUtils(utils lh.BlockUtils) *TestNetworkBuilder {
+	tb.blockUtils = utils
+	return tb
 }
 
-func (builder *TestNetworkBuilder) WithKeyManager(mgr lh.KeyManager) *TestNetworkBuilder {
-	builder.keyManager = mgr
-	return builder
+func (tb *TestNetworkBuilder) WithKeyManager(mgr lh.KeyManager) *TestNetworkBuilder {
+	tb.keyManager = mgr
+	return tb
 }
 
 func NewTestNetworkBuilder() *TestNetworkBuilder {
