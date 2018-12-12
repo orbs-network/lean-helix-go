@@ -35,12 +35,22 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 func TestLeaderCircularOrdering(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
+
+		// Nodes might get into prepared state, and send their block in the view-change
+		// meaning that the new leader will not request new block and we can't hang him.
+		// to prevent nodes from getting prepared, we just don't validate the block
+
+		h.net.Nodes[0].BlockUtils.ValidationResult = false
+		h.net.Nodes[1].BlockUtils.ValidationResult = false
+		h.net.Nodes[2].BlockUtils.ValidationResult = false
+		h.net.Nodes[3].BlockUtils.ValidationResult = false
+
 		h.net.WaitForNodeToRequestNewBlock(h.net.Nodes[0])
 
-		// Making sure that node 1 is the leader
+		// Making sure that node 0 is the leader
 		h.verifyNodeIsLeader(0)
 
-		// selection node 1 as the leader
+		// selecting node 1 as the leader
 		h.net.Nodes[0].TriggerElection()
 		h.net.Nodes[2].TriggerElection()
 		h.net.Nodes[3].TriggerElection()
@@ -50,7 +60,7 @@ func TestLeaderCircularOrdering(t *testing.T) {
 
 		h.verifyNodeIsLeader(1)
 
-		// selection node 2 as the leader
+		// selecting node 2 as the leader
 		h.net.Nodes[0].TriggerElection()
 		h.net.Nodes[1].TriggerElection()
 		h.net.Nodes[3].TriggerElection()
@@ -60,7 +70,7 @@ func TestLeaderCircularOrdering(t *testing.T) {
 
 		h.verifyNodeIsLeader(2)
 
-		// selection node 3 as the leader
+		// selecting node 3 as the leader
 		h.net.Nodes[0].TriggerElection()
 		h.net.Nodes[1].TriggerElection()
 		h.net.Nodes[2].TriggerElection()
