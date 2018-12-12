@@ -10,14 +10,12 @@ import (
 type NodeBuilder struct {
 	gossip        *gossip.Gossip
 	blocksPool    *BlocksPool
-	loggerFactory func(id string) leanhelix.Logger
+	logsToConsole bool
 	publicKey     primitives.Ed25519PublicKey
 }
 
 func NewNodeBuilder() *NodeBuilder {
-	return &NodeBuilder{
-		loggerFactory: leanhelix.NewConsoleLogger,
-	}
+	return &NodeBuilder{}
 }
 
 func (builder *NodeBuilder) ThatIsPartOf(gossip *gossip.Gossip) *NodeBuilder {
@@ -42,7 +40,7 @@ func (builder *NodeBuilder) WithBlocksPool(blocksPool *BlocksPool) *NodeBuilder 
 }
 
 func (builder *NodeBuilder) ThatLogsToConsole() *NodeBuilder {
-	builder.loggerFactory = leanhelix.NewConsoleLogger
+	builder.logsToConsole = true
 	return builder
 }
 
@@ -54,6 +52,9 @@ func (builder *NodeBuilder) Build() *Node {
 
 	blockUtils := NewMockBlockUtils(builder.blocksPool)
 	electionTrigger := NewMockElectionTrigger()
-	logger := builder.loggerFactory(publicKey.KeyForMap())
+	var logger leanhelix.Logger
+	if builder.logsToConsole {
+		logger = leanhelix.NewConsoleLogger(publicKey.KeyForMap())
+	}
 	return NewNode(publicKey, builder.gossip, blockUtils, electionTrigger, logger)
 }
