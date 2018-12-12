@@ -17,7 +17,7 @@ type LeanHelix struct {
 }
 
 func (lh *LeanHelix) notifyCommitted(block Block) {
-	lh.logger.Debug("LeanHelix.notifyCommitted() %s", lh.config.KeyManager.MyPublicKey().KeyForMap())
+	lh.logger.Debug("%s LeanHelix.notifyCommitted()", lh.config.KeyManager.MyPublicKey().KeyForMap())
 	for _, subscription := range lh.commitSubscriptions {
 		subscription(block)
 	}
