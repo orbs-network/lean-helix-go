@@ -22,7 +22,13 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 		h.net.ResumeNodeRequestNewBlock(h.net.Nodes[0])
 		h.net.WaitForNodeToRequestNewBlock(h.net.Nodes[1])
 
+		h.net.ResumeNodeRequestNewBlock(h.net.Nodes[1])
+		h.net.WaitForAllNodesToCommitTheSameBlock()
+
 		require.Equal(t, 1, h.net.Nodes[0].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_VIEW_CHANGE))
+		require.Equal(t, 1, h.net.Nodes[2].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_VIEW_CHANGE))
+		require.Equal(t, 1, h.net.Nodes[3].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_VIEW_CHANGE))
+		require.Equal(t, 1, h.net.Nodes[1].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_NEW_VIEW))
 	})
 }
 
@@ -171,5 +177,30 @@ func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 
 		// make sure that we're on block2
 		h.net.WaitForAllNodesToCommitBlock(block2)
+	})
+}
+
+func TestNotCountingViewChangeFromTheSameNode(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		block1 := builders.CreateBlock(builders.GenesisBlock)
+		block2 := builders.CreateBlock(block1)
+
+		h := NewHarness(ctx, t, block1, block2)
+
+		node0 := h.net.Nodes[0]
+		node1 := h.net.Nodes[1]
+		node2 := h.net.Nodes[2]
+		h.verifyNodeIsLeader(0)
+
+		// hang the leader (node0)
+		h.net.WaitForNodeToRequestNewBlock(node0)
+
+		// sending only 4 view-change from the same node
+		node1.Gossip.OnRemoteMessage(ctx, builders.AViewChangeMessage(node2.KeyManager, 1, 1, nil).ToConsensusRawMessage())
+		node1.Gossip.OnRemoteMessage(ctx, builders.AViewChangeMessage(node2.KeyManager, 1, 1, nil).ToConsensusRawMessage())
+		node1.Gossip.OnRemoteMessage(ctx, builders.AViewChangeMessage(node2.KeyManager, 1, 1, nil).ToConsensusRawMessage())
+		node1.Gossip.OnRemoteMessage(ctx, builders.AViewChangeMessage(node2.KeyManager, 1, 1, nil).ToConsensusRawMessage())
+
+		node1.Gossip.CountSentMessages(leanhelix.LEAN_HELIX_NEW_VIEW)
 	})
 }
