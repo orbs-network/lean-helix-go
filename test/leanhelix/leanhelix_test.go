@@ -37,33 +37,28 @@ func TestOnlyLeaderIsSendingPrePrepareOnce(t *testing.T) {
 func TestHappyFlowMessages(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		net := builders.ABasicTestNetwork()
+		net.NodesPauseOnRequestNewBlock()
 
-		net.StartConsensusSync()
+		net.StartConsensus(ctx)
 
-		net.Nodes[0].Tick(ctx)
-		net.Nodes[1].Tick(ctx)
-		net.Nodes[2].Tick(ctx)
-		net.Nodes[3].Tick(ctx)
+		// let the leader run on the first round
+		net.WaitForNodeToRequestNewBlock(net.Nodes[0])
+		net.ResumeNodeRequestNewBlock(net.Nodes[0])
+
+		net.WaitForAllNodesToCommitTheSameBlock()
+
+		// hang the leader before the next round
+		net.WaitForNodeToRequestNewBlock(net.Nodes[0])
 
 		require.Equal(t, 1, net.Nodes[0].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPREPARE))
 		require.Equal(t, 0, net.Nodes[1].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPREPARE))
 		require.Equal(t, 0, net.Nodes[2].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPREPARE))
 		require.Equal(t, 0, net.Nodes[3].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPREPARE))
 
-		net.Nodes[1].Tick(ctx)
-		net.Nodes[2].Tick(ctx)
-		net.Nodes[3].Tick(ctx)
-		net.Nodes[0].Tick(ctx) // order is important
-
 		require.Equal(t, 0, net.Nodes[0].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPARE))
 		require.Equal(t, 1, net.Nodes[1].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPARE))
 		require.Equal(t, 1, net.Nodes[2].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPARE))
 		require.Equal(t, 1, net.Nodes[3].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPARE))
-
-		net.Nodes[0].Tick(ctx)
-		net.Nodes[1].Tick(ctx)
-		net.Nodes[2].Tick(ctx)
-		net.Nodes[3].Tick(ctx)
 
 		require.Equal(t, 1, net.Nodes[0].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_COMMIT))
 		require.Equal(t, 1, net.Nodes[1].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_COMMIT))
