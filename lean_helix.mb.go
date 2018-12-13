@@ -254,7 +254,7 @@ func (w *LeanhelixContentBuilder) Build() *LeanhelixContent {
 
 type PreprepareContent struct {
 	// SignedHeader BlockRef
-	// Sender MemberSignature
+	// Sender SenderSignature
 
 	// internal
 	// implements membuffers.Message
@@ -312,9 +312,9 @@ func (x *PreprepareContent) StringSignedHeader() string {
 	return x.SignedHeader().String()
 }
 
-func (x *PreprepareContent) Sender() *MemberSignature {
+func (x *PreprepareContent) Sender() *SenderSignature {
 	b, s := x._message.GetMessage(1)
-	return MemberSignatureReader(b[:s])
+	return SenderSignatureReader(b[:s])
 }
 
 func (x *PreprepareContent) RawSender() []byte {
@@ -333,7 +333,7 @@ func (x *PreprepareContent) StringSender() string {
 
 type PreprepareContentBuilder struct {
 	SignedHeader *BlockRefBuilder
-	Sender *MemberSignatureBuilder
+	Sender *SenderSignatureBuilder
 
 	// internal
 	// implements membuffers.Builder
@@ -391,7 +391,7 @@ func (w *PreprepareContentBuilder) Build() *PreprepareContent {
 
 type PrepareContent struct {
 	// SignedHeader BlockRef
-	// Sender MemberSignature
+	// Sender SenderSignature
 
 	// internal
 	// implements membuffers.Message
@@ -449,9 +449,9 @@ func (x *PrepareContent) StringSignedHeader() string {
 	return x.SignedHeader().String()
 }
 
-func (x *PrepareContent) Sender() *MemberSignature {
+func (x *PrepareContent) Sender() *SenderSignature {
 	b, s := x._message.GetMessage(1)
-	return MemberSignatureReader(b[:s])
+	return SenderSignatureReader(b[:s])
 }
 
 func (x *PrepareContent) RawSender() []byte {
@@ -470,7 +470,7 @@ func (x *PrepareContent) StringSender() string {
 
 type PrepareContentBuilder struct {
 	SignedHeader *BlockRefBuilder
-	Sender *MemberSignatureBuilder
+	Sender *SenderSignatureBuilder
 
 	// internal
 	// implements membuffers.Builder
@@ -528,7 +528,7 @@ func (w *PrepareContentBuilder) Build() *PrepareContent {
 
 type CommitContent struct {
 	// SignedHeader BlockRef
-	// Sender MemberSignature
+	// Sender SenderSignature
 	// Share primitives.RandomSeedSignature
 
 	// internal
@@ -587,9 +587,9 @@ func (x *CommitContent) StringSignedHeader() string {
 	return x.SignedHeader().String()
 }
 
-func (x *CommitContent) Sender() *MemberSignature {
+func (x *CommitContent) Sender() *SenderSignature {
 	b, s := x._message.GetMessage(1)
-	return MemberSignatureReader(b[:s])
+	return SenderSignatureReader(b[:s])
 }
 
 func (x *CommitContent) RawSender() []byte {
@@ -624,7 +624,7 @@ func (x *CommitContent) StringShare() string {
 
 type CommitContentBuilder struct {
 	SignedHeader *BlockRefBuilder
-	Sender *MemberSignatureBuilder
+	Sender *SenderSignatureBuilder
 	Share primitives.RandomSeedSignature
 
 	// internal
@@ -684,7 +684,7 @@ func (w *CommitContentBuilder) Build() *CommitContent {
 
 type ViewChangeMessageContent struct {
 	// SignedHeader ViewChangeHeader
-	// Sender MemberSignature
+	// Sender SenderSignature
 
 	// internal
 	// implements membuffers.Message
@@ -742,9 +742,9 @@ func (x *ViewChangeMessageContent) StringSignedHeader() string {
 	return x.SignedHeader().String()
 }
 
-func (x *ViewChangeMessageContent) Sender() *MemberSignature {
+func (x *ViewChangeMessageContent) Sender() *SenderSignature {
 	b, s := x._message.GetMessage(1)
-	return MemberSignatureReader(b[:s])
+	return SenderSignatureReader(b[:s])
 }
 
 func (x *ViewChangeMessageContent) RawSender() []byte {
@@ -763,7 +763,7 @@ func (x *ViewChangeMessageContent) StringSender() string {
 
 type ViewChangeMessageContentBuilder struct {
 	SignedHeader *ViewChangeHeaderBuilder
-	Sender *MemberSignatureBuilder
+	Sender *SenderSignatureBuilder
 
 	// internal
 	// implements membuffers.Builder
@@ -821,7 +821,7 @@ func (w *ViewChangeMessageContentBuilder) Build() *ViewChangeMessageContent {
 
 type NewViewMessageContent struct {
 	// SignedHeader NewViewHeader
-	// Sender MemberSignature
+	// Sender SenderSignature
 	// Message PreprepareContent
 
 	// internal
@@ -880,9 +880,9 @@ func (x *NewViewMessageContent) StringSignedHeader() string {
 	return x.SignedHeader().String()
 }
 
-func (x *NewViewMessageContent) Sender() *MemberSignature {
+func (x *NewViewMessageContent) Sender() *SenderSignature {
 	b, s := x._message.GetMessage(1)
-	return MemberSignatureReader(b[:s])
+	return SenderSignatureReader(b[:s])
 }
 
 func (x *NewViewMessageContent) RawSender() []byte {
@@ -918,7 +918,7 @@ func (x *NewViewMessageContent) StringMessage() string {
 
 type NewViewMessageContentBuilder struct {
 	SignedHeader *NewViewHeaderBuilder
-	Sender *MemberSignatureBuilder
+	Sender *SenderSignatureBuilder
 	Message *PreprepareContentBuilder
 
 	// internal
@@ -975,12 +975,12 @@ func (w *NewViewMessageContentBuilder) Build() *NewViewMessageContent {
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// message MemberSignature
+// message SenderSignature
 
 // reader
 
-type MemberSignature struct {
-	// Member primitives.MemberId
+type SenderSignature struct {
+	// MemberId primitives.MemberId
 	// Signature primitives.Signature
 
 	// internal
@@ -988,31 +988,31 @@ type MemberSignature struct {
 	_message membuffers.InternalMessage
 }
 
-func (x *MemberSignature) String() string {
+func (x *SenderSignature) String() string {
 	if x == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("{Member:%s,Signature:%s,}", x.StringMember(), x.StringSignature())
+	return fmt.Sprintf("{MemberId:%s,Signature:%s,}", x.StringMemberId(), x.StringSignature())
 }
 
-var _MemberSignature_Scheme = []membuffers.FieldType{membuffers.TypeBytes,membuffers.TypeBytes,}
-var _MemberSignature_Unions = [][]membuffers.FieldType{}
+var _SenderSignature_Scheme = []membuffers.FieldType{membuffers.TypeBytes,membuffers.TypeBytes,}
+var _SenderSignature_Unions = [][]membuffers.FieldType{}
 
-func MemberSignatureReader(buf []byte) *MemberSignature {
-	x := &MemberSignature{}
-	x._message.Init(buf, membuffers.Offset(len(buf)), _MemberSignature_Scheme, _MemberSignature_Unions)
+func SenderSignatureReader(buf []byte) *SenderSignature {
+	x := &SenderSignature{}
+	x._message.Init(buf, membuffers.Offset(len(buf)), _SenderSignature_Scheme, _SenderSignature_Unions)
 	return x
 }
 
-func (x *MemberSignature) IsValid() bool {
+func (x *SenderSignature) IsValid() bool {
 	return x._message.IsValid()
 }
 
-func (x *MemberSignature) Raw() []byte {
+func (x *SenderSignature) Raw() []byte {
 	return x._message.RawBuffer()
 }
 
-func (x *MemberSignature) Equal(y *MemberSignature) bool {
+func (x *SenderSignature) Equal(y *SenderSignature) bool {
   if x == nil && y == nil {
     return true
   }
@@ -1022,42 +1022,42 @@ func (x *MemberSignature) Equal(y *MemberSignature) bool {
   return bytes.Equal(x.Raw(), y.Raw())
 }
 
-func (x *MemberSignature) Member() primitives.MemberId {
+func (x *SenderSignature) MemberId() primitives.MemberId {
 	return primitives.MemberId(x._message.GetBytes(0))
 }
 
-func (x *MemberSignature) RawMember() []byte {
+func (x *SenderSignature) RawMemberId() []byte {
 	return x._message.RawBufferForField(0, 0)
 }
 
-func (x *MemberSignature) MutateMember(v primitives.MemberId) error {
+func (x *SenderSignature) MutateMemberId(v primitives.MemberId) error {
 	return x._message.SetBytes(0, []byte(v))
 }
 
-func (x *MemberSignature) StringMember() string {
-	return fmt.Sprintf("%s", x.Member())
+func (x *SenderSignature) StringMemberId() string {
+	return fmt.Sprintf("%s", x.MemberId())
 }
 
-func (x *MemberSignature) Signature() primitives.Signature {
+func (x *SenderSignature) Signature() primitives.Signature {
 	return primitives.Signature(x._message.GetBytes(1))
 }
 
-func (x *MemberSignature) RawSignature() []byte {
+func (x *SenderSignature) RawSignature() []byte {
 	return x._message.RawBufferForField(1, 0)
 }
 
-func (x *MemberSignature) MutateSignature(v primitives.Signature) error {
+func (x *SenderSignature) MutateSignature(v primitives.Signature) error {
 	return x._message.SetBytes(1, []byte(v))
 }
 
-func (x *MemberSignature) StringSignature() string {
+func (x *SenderSignature) StringSignature() string {
 	return fmt.Sprintf("%s", x.Signature())
 }
 
 // builder
 
-type MemberSignatureBuilder struct {
-	Member primitives.MemberId
+type SenderSignatureBuilder struct {
+	MemberId primitives.MemberId
 	Signature primitives.Signature
 
 	// internal
@@ -1065,7 +1065,7 @@ type MemberSignatureBuilder struct {
 	_builder membuffers.InternalBuilder
 }
 
-func (w *MemberSignatureBuilder) Write(buf []byte) (err error) {
+func (w *SenderSignatureBuilder) Write(buf []byte) (err error) {
 	if w == nil {
 		return
 	}
@@ -1075,19 +1075,19 @@ func (w *MemberSignatureBuilder) Write(buf []byte) (err error) {
 		}
 	}()
 	w._builder.Reset()
-	w._builder.WriteBytes(buf, []byte(w.Member))
+	w._builder.WriteBytes(buf, []byte(w.MemberId))
 	w._builder.WriteBytes(buf, []byte(w.Signature))
 	return nil
 }
 
-func (w *MemberSignatureBuilder) GetSize() membuffers.Offset {
+func (w *SenderSignatureBuilder) GetSize() membuffers.Offset {
 	if w == nil {
 		return 0
 	}
 	return w._builder.GetSize()
 }
 
-func (w *MemberSignatureBuilder) CalcRequiredSize() membuffers.Offset {
+func (w *SenderSignatureBuilder) CalcRequiredSize() membuffers.Offset {
 	if w == nil {
 		return 0
 	}
@@ -1095,12 +1095,12 @@ func (w *MemberSignatureBuilder) CalcRequiredSize() membuffers.Offset {
 	return w._builder.GetSize()
 }
 
-func (w *MemberSignatureBuilder) Build() *MemberSignature {
+func (w *SenderSignatureBuilder) Build() *SenderSignature {
 	buf := make([]byte, w.CalcRequiredSize())
 	if w.Write(buf) != nil {
 		return nil
 	}
-	return MemberSignatureReader(buf)
+	return SenderSignatureReader(buf)
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1448,9 +1448,9 @@ func (w *ViewChangeHeaderBuilder) Build() *ViewChangeHeader {
 
 type PreparedProof struct {
 	// PreprepareBlockRef BlockRef
-	// PreprepareSender MemberSignature
+	// PreprepareSender SenderSignature
 	// PrepareBlockRef BlockRef
-	// PrepareSenders []MemberSignature
+	// PrepareSenders []SenderSignature
 
 	// internal
 	// implements membuffers.Message
@@ -1508,9 +1508,9 @@ func (x *PreparedProof) StringPreprepareBlockRef() string {
 	return x.PreprepareBlockRef().String()
 }
 
-func (x *PreparedProof) PreprepareSender() *MemberSignature {
+func (x *PreparedProof) PreprepareSender() *SenderSignature {
 	b, s := x._message.GetMessage(1)
-	return MemberSignatureReader(b[:s])
+	return SenderSignatureReader(b[:s])
 }
 
 func (x *PreparedProof) RawPreprepareSender() []byte {
@@ -1554,9 +1554,9 @@ func (i *PreparedProofPrepareSendersIterator) HasNext() bool {
 	return i.iterator.HasNext()
 }
 
-func (i *PreparedProofPrepareSendersIterator) NextPrepareSenders() *MemberSignature {
+func (i *PreparedProofPrepareSendersIterator) NextPrepareSenders() *SenderSignature {
 	b, s := i.iterator.NextMessage()
-	return MemberSignatureReader(b[:s])
+	return SenderSignatureReader(b[:s])
 }
 
 func (x *PreparedProof) RawPrepareSendersArray() []byte {
@@ -1580,9 +1580,9 @@ func (x *PreparedProof) StringPrepareSenders() (res string) {
 
 type PreparedProofBuilder struct {
 	PreprepareBlockRef *BlockRefBuilder
-	PreprepareSender *MemberSignatureBuilder
+	PreprepareSender *SenderSignatureBuilder
 	PrepareBlockRef *BlockRefBuilder
-	PrepareSenders []*MemberSignatureBuilder
+	PrepareSenders []*SenderSignatureBuilder
 
 	// internal
 	// implements membuffers.Builder
@@ -1852,7 +1852,7 @@ func (w *NewViewHeaderBuilder) Build() *NewViewHeader {
 
 type BlockProof struct {
 	// BlockRef BlockRef
-	// Nodes []MemberSignature
+	// Nodes []SenderSignature
 	// RandomSeedSignature primitives.RandomSeedSignature
 
 	// internal
@@ -1923,9 +1923,9 @@ func (i *BlockProofNodesIterator) HasNext() bool {
 	return i.iterator.HasNext()
 }
 
-func (i *BlockProofNodesIterator) NextNodes() *MemberSignature {
+func (i *BlockProofNodesIterator) NextNodes() *SenderSignature {
 	b, s := i.iterator.NextMessage()
-	return MemberSignatureReader(b[:s])
+	return SenderSignatureReader(b[:s])
 }
 
 func (x *BlockProof) RawNodesArray() []byte {
@@ -1965,7 +1965,7 @@ func (x *BlockProof) StringRandomSeedSignature() string {
 
 type BlockProofBuilder struct {
 	BlockRef *BlockRefBuilder
-	Nodes []*MemberSignatureBuilder
+	Nodes []*SenderSignatureBuilder
 	RandomSeedSignature primitives.RandomSeedSignature
 
 	// internal
