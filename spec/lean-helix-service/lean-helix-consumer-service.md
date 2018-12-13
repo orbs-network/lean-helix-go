@@ -51,7 +51,7 @@
     * LeanHelix _(current instance of LeanHelix(Config))_
  
 
-#### ConsensusService
+## ConsensusService
 > Relay committed block information from the consesnsus library to the system.
 
 
@@ -69,44 +69,83 @@
 
 ## `OnCommit(block, blockProof)`  
 > Instructs the service to commit the block (successful consensus) together with its BlockProof. \
-> BlockProof is opaque - byte_array.
-* Set block.TransactionBlockProof (construct based on blockProof)
+> LeanHelix BlockProof is opaque - byte_array.
+* Set block.TransactionBlockProof (construct around LeanHelix BlockProof):
+    * 
 * Set block.ResultsBlockProof  (construct based on blockProof) 
 * Call blockStorage.CommitBlock(block)
 
  
-
-#### BlockUtils
-> Provide block funcionalities including its creation, validation and hashing scheme. 
 &nbsp;
-## `RequestNewBlockProposal(prevBlock) : block, block_hash` 
-> Returns a block interface with a block proposal along with its digest commitment. \
-> The block _(block_hash)_ will then go through consensus.
-> Block := { TransactionBlock, ResultsBlock }
-* Construct the blockProposal = Block, block_hash (block_hash - digest commitment of Block) on top of prevBlock
-* Block:  
-    * Get new TransactionsBlock  (by calling ConsensusContext.RequestNewTransactionsBlock) 
-    * Get new ResultsBlock  (by calling ConsensusContext.RequestNewResultsBlock based on TransactionsBlock) 
-* block_hash
-    * digest(digest(TransactionsBlock) XOR digest(ResultsBlock))
+&nbsp;
+## *BlockUtils*
+> Provide block funcionalities including its creation, validation and hashing scheme. \
+&nbsp;
+## `RequestNewBlockProposal(height, prevBlock) : block, block_hash` 
+> Returns a block interface along with its digest commitment. \
+> Construct the blockProposal = Block, block_hash (block_hash - digest commitment of Block) on top of prevBlock
+> Note: The block _(block_hash)_ will then go through consensus.
+> Note: The block is an aggregate of the TransactionBlock and ResultsBlock. Block := { TransactionBlock, ResultsBlock }
+* newBlockHeight = prevBlock.Height + 1
+* If mismatch newBlockHeight and given height 
+    * Return nil, nil _(error)_
+* Get prevBlockTimeStamp from prevBlock.TransactionsBlock.TimeStamp 
+* TransactionsBlock:
+    * prevTxBlockHash = Sha256(prevBlock.TransactionBlock.Header)
+    * Get new TransactionsBlock by calling `ConsensusContext.RequestNewTransactionsBlock(newBlockHeight, prevBlockTimeStamp, prevTxBlockHash)` 
+* ResultsBlockBlock:
+    * prevRxBlockHash = Sha256(prevBlock.ResultsBlock.Header)  
+    * Get new ResultsBlock by calling `ConsensusContext.RequestNewResultsBlock(newBlockHeight, prevBlockTimeStamp, prevRxBlockHash)`  
+* Construct Block:
+  * TransactionsBlock
+  * ResultsBlock
+* Get BlockHash: 
+    *  Block_hash = XOR(Sha256(TransactionBlock.Header), Sha256(ResultsBlock.Header))
+* Return Block, Block_hash
 
+ 
 
-
-
-
-
+&nbsp;
 ##`ValidateBlock(height, block, block_hash, prevBlock) : is_valid`
 > Validate block proposal against prevBlock and digest commitment.\
 > full validation - content and structure _(Note: this includes validating against previous block _(e.g. pointer _(prevBlockHash)_ and timestamp - whithin acceptable range of local clock)_.)_
+* Validate height against block.Height and prevBlock.Height  
+* Validate blockSize matches `Config.maxBlockSize`
+* Validate the Block commitment by calling  `ValidateBlockHash(height, block, block_hash)`
+* Get prevBlockTimeStamp from prevBlock.TransactionsBlock.TimeStamp 
+* PrevTxBlockHash = Sha256(prevBlock.TransactionBlock.Header)
+* Validate the TransactionsBlock by calling `ConsensusContext.ValidateTransactionsBlock(height, block.TransactionsBlock, PrevTxBlockHash, PrevBlockTimeStamp)`
+* PrevRxBlockHash = Sha256(prevBlock.ResultsBlock.Header)   
+* Validate the ResultsBlock by calling `ConsensusContext.ValidateResultsBlock(height, block.ResultsBlock, block.TransactionsBlock, PrevRxBlockHash, PrevBlockTimeStamp)`
+* Return True If all passed  
 
-
-
+&nbsp;
 ##`ValidateBlockHash(height, block, block_hash) : is_valid` 
-> Validate block proposal against digest commitment (shallow structure validation for composite commitment).
+> Validate block proposal against digest commitment (full structure validation for composite commitment _(inner hash pointers)_).
+> Recursively construct inner hash and compare to its pointer - finally compare to block_hash
+* TxBlockHash = Sha256(block.TransactionBlock.Header)
+* Recursively validate TransactionsBlock inner hash structure:
+  * by calling `validateTransactionsBlockHash(block.TransactionBlock, TxBlockHash)`
+* RxBlockHash = Sha256(block.ResultsBlock.Header)
+* Recursively validate ResultsBlock inner hash structure:
+  * by calling `validateResultsBlockHash(block.ResultsBlock, RxBlockHash)`  
+* Compare block_hash to XOR(TxBlockHash, RxBlockHash)
+* Return True If all passed 
 
+&nbsp;
+##`validateTransactionsBlockHash(transactionBlock, transactionBlockHash) : is_valid` 
+> Validate transactionBlock hash deep structure - recursively compare inner hash pointers
+* Generate the MerkleRoot of transactionBlock.txs
+* Compare MerkleRoot to transactionBlock.Header.MerkleRoot
+* Compare transactionBlockHash to Sha256(transactionBlock.Header)
+* Return True If all passed 
 
+&nbsp;
+##`validateResultsBlockHash(resultsBlock, resultsBlockHash) : is_valid` 
+> Validate resultsBlock hash deep structure - inner hash pointers
+* Return `validateHashStructure(resultsBlock.Header, resultsBlockHash)`
 
-
+ 
 #### Communication
 > Abstraction of sending all consensus related messages. \
 > [LeanHelix message:= {content, block} content is opaque (byte_array) - Message may include a Block].
@@ -119,7 +158,7 @@
 
 
 
-#### Membership
+## *Membership* 
 > Hold information about federation members at a given height (this could include their reputation).
 ## `MyID(height) : memberID` 
 > Obtain unique identifier for the node, used in consensus process.

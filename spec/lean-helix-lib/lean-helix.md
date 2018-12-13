@@ -29,11 +29,11 @@
 * Stores only one valid message per {Block_height, MessageType, Signer, View}
   _(avoid storing duplciates which may be sent as part of an attack)_
 
-#### Random Seed Cache
+<!-- #### Random Seed Cache
 > Stores random seed signatures for current consensus round.
 * Accessed by (Block_height, Signer)
 * Not presistent
-* Stores only one valid info per {Block_height, Signer}
+* Stores only one valid info per {Block_height, Signer} -->
 
 <!-- #### Previous block cache
 * Stores required data from the previous block_height.
@@ -70,8 +70,8 @@
     <!--  * PublicKey = `KeyManager.GetPublicKey(message.Signer, message.Block_height, KeyType)`  -->
     * Random_seed = my_state.OneHeightContext.Random_seed
     * Validate the random_seed _(current block_height)_ signature by calling `KeyManager.Verify(message.Block_height, Random_seed, message.Random_seed_share, message.Signer, KeyType)`. If failed validation - discard.
-    * Log info to random_seed_database:
-        * random_seed_data.add({COMMIT message.Block_height, COMMIT message.Signer, COMMIT message.Random_seed_share})
+    <!-- * Log info to random_seed_database:
+        * random_seed_data.add({COMMIT message.Block_height, COMMIT message.Signer, COMMIT message.Random_seed_share}) -->
 * Call the corresponding `my_state.OneHeight.On<XXX>`
 
 
@@ -195,7 +195,7 @@
 > Generates a block_proof.
 #### Generate PBFT proof
 * From first _(any)_ COMMIT message Extract (Block_height, View, Block_hash)
-* Signers, Signature_pair_list = From COMMIT messages in commits_list Extract Signers and list of pairs (Signer, Signature)
+* Signers, Signature_pair_list, RandomSeedShare_pair_list = From COMMIT messages in commits_list Extract COMMIT Signers and list of pairs (Signer, Signature) and list of RandomSeedSignatures
 * Generate PBFT_proof:
     <!-- * opaque_message_type = COMMIT -->
     * Block_height
@@ -203,16 +203,16 @@
     * Block_hash
     * SignaturesPairs = Signature_pair_list
 #### Generate random seed with proof
-* From random_seed_data extract list of pairs (Signers, Random_seed_share)
-    * RandomSeedShare_list, Signers_list = Get from random_seed_data(Block_height, Signers_(use Signers from the commits_list)_)
+<!-- * From random_seed_data extract list of pairs (Signers, Random_seed_share)
+    * RandomSeedShare_list, Signers_list = Get from random_seed_data(Block_height, Signers_(use Signers from the commits_list)_) -->
 * Aggregate the threshold signatrue
-    * RandomSeed_signature = Get by calling `KeyManager.Aggregate(Block_height, RandomSeedShares_list, Signers_list)`
+    * RandomSeed_signature = Get by calling `KeyManager.Aggregate(Block_height, RandomSeedShare_pair_list)`
 #### Generate LeanHelixBlockProof
 * Generate a LeanHelixBlockProof
   * PBFT_proof
   * RandomSeed_signature
  &nbsp;
-* Return `Config.ConsensusService.NewBlockProof(LeanHelixBlockProof)` _(serialized by ConsensuService)_.
+* Return LeanHelixBlockProof.
 
 
 &nbsp;

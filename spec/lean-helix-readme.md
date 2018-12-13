@@ -49,8 +49,9 @@ Initiates lean-helix library infinite listening loop.
 #### BlockUtils
 > Provide block funcionalities including its creation, validation and hashing scheme. 
 * `RequestNewBlockProposal(height, prevBlock) : block, block_hash` - Returns a block interface with a block proposal along with its digest commitment. The block _(block_hash)_ will then go through consensus. 
-* `ValidateBlock(height, block, block_hash, prevBlock) : is_valid` - Validate block proposal against prevBlock and digest commitment - full validation - content and structure _(Note: this includes validating against previous block _(e.g. pointer _(prevBlockHash)_ and timestamp - whithin acceptable range of local clock)_.)_
-* `ValidateBlockHash(block, block_hash) : is_valid` - Validate block proposal against digest commitment (shallow structure validation for composite commitment)
+* `ValidateBlockProposal(height, block, block_hash, prevBlock) : is_valid` - Validate block proposal against prevBlock and digest commitment - full validation - content and structure _(Note: this includes validating against previous block _(e.g. pointer _(prevBlockHash)_ and timestamp - whithin acceptable range of local clock)_.)_
+* `ValidateBlockHash(height, block, block_hash) : is_valid` - Validate block proposal against digest commitment (shallow structure validation for composite commitment). 
+<!-- * `CompareBlockHashes(height, block_hash1, block_hash2) : is_equal` - Compare two block digests   -->
 
 
 
@@ -63,9 +64,9 @@ Initiates lean-helix library infinite listening loop.
 > Provide signature schemes consumed by LeanHelix. \
 > Hold a mapping of height, memberID to publicKey (for consensusMessages and RandomSeed)
 * `KeyManager.SignConsensusMessage(height, data) : signature` - sign consensus statements using the node's private key. 
-* `KeyManager.VerifyConsensusMessage(height, data, signature, memberID) : valid` - verify the validity of a signature.
+* `KeyManager.VerifyConsensusMessage(height, data, signature, memberID) : is_valid` - verify the validity of a signature.
 * `KeyManager.SignRandomSeed(height, data) : signature` - sign RandomSeed using the node's private key (note: the randomseed and consesnsus keys are independent). 
-* `KeyManager.VerifyRandomSeed(height, data, signature, memberID) : valid` - verify the validity of a signature _(also group aggregated against MasterPublicKey)_.
+* `KeyManager.VerifyRandomSeed(height, data, signature, memberID) : is_valid` - verify the validity of a signature _(also group aggregated against MasterPublicKey)_.
 * `KeyManager.AggregateRandomSeed(height, signature_and_memberID_list) : signature` - aggregate the RandomSeed signatures.
 
 #### Communication
