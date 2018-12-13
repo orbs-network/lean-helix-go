@@ -45,6 +45,38 @@ func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 	})
 }
 
+func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		goodBlock := builders.CreateBlock(builders.GenesisBlock)
+		fakeBlock := builders.CreateBlock(builders.GenesisBlock)
+		net := builders.
+			NewTestNetworkBuilder().
+			WithNodeCount(4).
+			WithBlocks([]leanhelix.Block{goodBlock}).
+			Build()
+
+		node0 := net.Nodes[0]
+		node1 := net.Nodes[1]
+		node2 := net.Nodes[2]
+		byzantineNode := net.Nodes[3]
+		net.NodesPauseOnRequestNewBlock(node0)
+		net.StartConsensus(ctx)
+
+		net.WaitForNodeToRequestNewBlock(node0)
+
+		// fake a preprepare message from node3 (byzantineNode) that points to a unrelated block (Should be ignored)
+		ppm := builders.APreprepareMessage(byzantineNode.KeyManager, 1, 1, fakeBlock)
+		byzantineNode.Gossip.SendMessage(ctx, []primitives.Ed25519PublicKey{node0.PublicKey, node1.PublicKey, node2.PublicKey}, ppm.ToConsensusRawMessage())
+		byzantineNode.Gossip.SendMessage(ctx, []primitives.Ed25519PublicKey{node0.PublicKey, node1.PublicKey, node2.PublicKey}, ppm.ToConsensusRawMessage())
+		byzantineNode.Gossip.SendMessage(ctx, []primitives.Ed25519PublicKey{node0.PublicKey, node1.PublicKey, node2.PublicKey}, ppm.ToConsensusRawMessage())
+		byzantineNode.Gossip.SendMessage(ctx, []primitives.Ed25519PublicKey{node0.PublicKey, node1.PublicKey, node2.PublicKey}, ppm.ToConsensusRawMessage())
+
+		net.ResumeNodeRequestNewBlock(node0)
+
+		net.WaitForAllNodesToCommitBlock(goodBlock)
+	})
+}
+
 func TestThatAByzantineLeaderCanNotCauseAFork(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block1 := builders.CreateBlock(builders.GenesisBlock)
