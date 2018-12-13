@@ -13,41 +13,41 @@ enum MessageType {
     LEAN_HELIX_VIEW_CHANGE = 5;
 }
 
-message LeanhelixMessage {
+message LeanhelixContent {
     oneof message {
-        PreprepareMessage preprepare_message = 1;
-        PrepareMessage prepare_message = 2;
-        CommitMessage commit_message = 3;
-        ViewChangeMessage view_change_message = 4;
-        NewViewMessage new_view_message = 5;
+        PreprepareContent preprepare_message = 1;
+        PrepareContent prepare_message = 2;
+        CommitContent commit_message = 3;
+        ViewChangeMessageContent view_change_message = 4;
+        NewViewMessageContent new_view_message = 5;
     }
 }
 
-message PreprepareMessage {
+message PreprepareContent {
     BlockRef signed_header = 1;
     MemberSignature sender = 2; // signs on signed_header
 }
 
-message PrepareMessage {
+message PrepareContent {
     BlockRef signed_header = 1;
     MemberSignature sender = 2; // signs on signed_header
 }
 
-message CommitMessage {
+message CommitContent {
     BlockRef signed_header = 1;
     MemberSignature sender = 2; // signs on signed_header
     primitives.random_seed_signature share = 3;  // signs on random_seed
 }
 
-message ViewChangeMessage {
+message ViewChangeMessageContent {
     ViewChangeHeader signed_header = 1;
     MemberSignature sender = 2; // signs on signed_header
 }
 
-message NewViewMessage {
+message NewViewMessageContent {
     NewViewHeader signed_header = 1;
     MemberSignature sender = 2; // signs on signed_header
-    PreprepareMessage message = 3;
+    PreprepareContent message = 3;
 }
 
 message MemberSignature {
@@ -80,7 +80,7 @@ message NewViewHeader {
     MessageType message_type = 1;
     primitives.block_height block_height = 2;
     primitives.view view = 3;
-    repeated ViewChangeMessage view_change_confirmations = 4;
+    repeated ViewChangeMessageContent view_change_confirmations = 4;
 }
 
 message BlockProof {
