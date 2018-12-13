@@ -25,33 +25,33 @@ message LeanhelixContent {
 
 message PreprepareContent {
     BlockRef signed_header = 1;
-    MemberSignature sender = 2; // signs on signed_header
+    SenderSignature sender = 2; // signs on signed_header
 }
 
 message PrepareContent {
     BlockRef signed_header = 1;
-    MemberSignature sender = 2; // signs on signed_header
+    SenderSignature sender = 2; // signs on signed_header
 }
 
 message CommitContent {
     BlockRef signed_header = 1;
-    MemberSignature sender = 2; // signs on signed_header
+    SenderSignature sender = 2; // signs on signed_header
     primitives.random_seed_signature share = 3;  // signs on random_seed
 }
 
 message ViewChangeMessageContent {
     ViewChangeHeader signed_header = 1;
-    MemberSignature sender = 2; // signs on signed_header
+    SenderSignature sender = 2; // signs on signed_header
 }
 
 message NewViewMessageContent {
     NewViewHeader signed_header = 1;
-    MemberSignature sender = 2; // signs on signed_header
+    SenderSignature sender = 2; // signs on signed_header
     PreprepareContent message = 3;
 }
 
-message MemberSignature {
-    primitives.member_id member = 1;
+message SenderSignature {
+    primitives.member_id member_id = 1;
     primitives.signature signature = 2;
 }
 
@@ -71,9 +71,9 @@ message ViewChangeHeader {
 
 message PreparedProof {
     BlockRef preprepare_block_ref = 1;
-    MemberSignature preprepare_sender = 2;
+    SenderSignature preprepare_sender = 2;
     BlockRef prepare_block_ref = 3;
-    repeated MemberSignature prepare_senders = 4;
+    repeated SenderSignature prepare_senders = 4;
 }
 
 message NewViewHeader {
@@ -85,6 +85,6 @@ message NewViewHeader {
 
 message BlockProof {
     BlockRef block_ref = 1;
-    repeated MemberSignature nodes = 2;
+    repeated SenderSignature nodes = 2;
     primitives.random_seed_signature random_seed_signature = 3;
 }
