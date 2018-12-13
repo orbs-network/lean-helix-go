@@ -149,6 +149,20 @@ func (net *TestNetwork) WaitForNodesToCommitABlock(nodes ...*Node) {
 	}
 }
 
+func (net *TestNetwork) WaitForNodesToCommitASpecificBlock(block leanhelix.Block, nodes ...*Node) bool {
+	if nodes == nil {
+		nodes = net.Nodes
+	}
+
+	for _, node := range nodes {
+		nodeState := <-node.NodeStateChannel
+		if BlocksAreEqual(block, nodeState.block) == false {
+			return false
+		}
+	}
+	return true
+}
+
 func (net *TestNetwork) AllNodesValidatedNoMoreThanOnceBeforeCommit() bool {
 	for _, node := range net.Nodes {
 		nodeState := <-node.NodeStateChannel

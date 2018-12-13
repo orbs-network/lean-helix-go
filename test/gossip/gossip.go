@@ -125,7 +125,7 @@ func (g *Gossip) SetOutgoingWhitelist(outgoingWhitelist []Ed25519PublicKey) {
 	g.outgoingWhitelist = outgoingWhitelist
 }
 
-func (g *Gossip) ClearOutgoingWhitelist(outgoingWhitelist []Ed25519PublicKey) {
+func (g *Gossip) ClearOutgoingWhitelist() {
 	g.SetOutgoingWhitelist(nil)
 }
 
@@ -133,7 +133,7 @@ func (g *Gossip) SetIncomingWhitelist(incomingWhitelist []Ed25519PublicKey) {
 	g.incomingWhiteListPKs = incomingWhitelist
 }
 
-func (g *Gossip) ClearIncomingWhitelist(incomingWhitelist []Ed25519PublicKey) {
+func (g *Gossip) ClearIncomingWhitelist() {
 	g.SetIncomingWhitelist(nil)
 }
 
