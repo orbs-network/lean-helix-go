@@ -17,10 +17,14 @@ type LeanHelix struct {
 }
 
 func (lh *LeanHelix) notifyCommitted(block Block) {
-	lh.logger.Debug("LeanHelix.notifyCommitted()")
+	lh.logger.Debug("LeanHelix.notifyCommitted() %s", lh.config.KeyManager.MyPublicKey().KeyForMap())
 	for _, subscription := range lh.commitSubscriptions {
 		subscription(block)
 	}
+}
+
+func (lh *LeanHelix) IsLeader() bool {
+	return lh.leanHelixTerm != nil && lh.leanHelixTerm.IsLeader()
 }
 
 func (lh *LeanHelix) RegisterOnCommitted(cb func(block Block)) {

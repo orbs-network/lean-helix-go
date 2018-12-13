@@ -32,6 +32,10 @@ func (node *Node) TriggerElection() {
 	node.ElectionTrigger.ManualTrigger()
 }
 
+func (node *Node) TriggerElectionSync(ctx context.Context) {
+	node.ElectionTrigger.ManualTriggerSync(ctx)
+}
+
 func (node *Node) onCommittedBlock(block lh.Block) {
 	node.blockChain.AppendBlockToChain(block)
 	node.NodeStateChannel <- &NodeState{
@@ -47,6 +51,10 @@ func (node *Node) StartConsensus(ctx context.Context) {
 	}
 }
 
+func (node *Node) IsLeader() bool {
+	return node.leanHelix != nil && node.leanHelix.IsLeader()
+}
+
 func (node *Node) Tick(ctx context.Context) {
 	node.leanHelix.Tick(ctx)
 }
@@ -56,13 +64,14 @@ func (node *Node) StartConsensusSync() {
 	}
 }
 
-func (node *Node) BuildConfig() *lh.Config {
+func (node *Node) BuildConfig(logger lh.Logger) *lh.Config {
 	return &lh.Config{
 		NetworkCommunication: node.Gossip,
 		ElectionTrigger:      node.ElectionTrigger,
 		BlockUtils:           node.BlockUtils,
 		KeyManager:           node.KeyManager,
 		Storage:              node.Storage,
+		Logger:               logger,
 	}
 
 }
@@ -71,7 +80,8 @@ func NewNode(
 	publicKey primitives.Ed25519PublicKey,
 	gossip *gossip.Gossip,
 	blockUtils *MockBlockUtils,
-	electionTrigger *ElectionTriggerMock) *Node {
+	electionTrigger *ElectionTriggerMock,
+	logger lh.Logger) *Node {
 	node := &Node{
 		blockChain:       NewInMemoryBlockChain(),
 		ElectionTrigger:  electionTrigger,
@@ -83,7 +93,7 @@ func NewNode(
 		NodeStateChannel: make(chan *NodeState),
 	}
 
-	leanHelix := lh.NewLeanHelix(node.BuildConfig())
+	leanHelix := lh.NewLeanHelix(node.BuildConfig(logger))
 	leanHelix.RegisterOnCommitted(node.onCommittedBlock)
 	gossip.RegisterOnMessage(leanHelix.GossipMessageReceived)
 

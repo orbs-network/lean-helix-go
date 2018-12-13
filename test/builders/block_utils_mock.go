@@ -20,18 +20,24 @@ func CalculateBlockHash(block lh.Block) Uint256 {
 }
 
 type MockBlockUtils struct {
-	upcomingBlocks    []lh.Block
-	latestBlock       lh.Block
+	blocksPool *BlocksPool
+
+	PauseOnRequestNewBlock bool
+	RequestNewBlockSns     *Sns
+
 	validationCounter int
 	ValidationSns     *Sns
 	PauseOnValidation bool
 	ValidationResult  bool
 }
 
-func NewMockBlockUtils(upcomingBlocks []lh.Block) *MockBlockUtils {
+func NewMockBlockUtils(blocksPool *BlocksPool) *MockBlockUtils {
 	return &MockBlockUtils{
-		upcomingBlocks:    upcomingBlocks,
-		latestBlock:       GenesisBlock,
+		blocksPool: blocksPool,
+
+		PauseOnRequestNewBlock: false,
+		RequestNewBlockSns:     NewSignalAndStop(),
+
 		validationCounter: 0,
 		ValidationSns:     NewSignalAndStop(),
 		PauseOnValidation: false,
@@ -43,25 +49,17 @@ func (b *MockBlockUtils) CalculateBlockHash(block lh.Block) Uint256 {
 	return CalculateBlockHash(block)
 }
 
-func (b *MockBlockUtils) getNextBlock() lh.Block {
-	var nextBlock lh.Block
-	if len(b.upcomingBlocks) > 0 {
-		// Simple queue impl, see https://github.com/golang/go/wiki/SliceTricks
-		nextBlock, b.upcomingBlocks = b.upcomingBlocks[0], b.upcomingBlocks[1:]
-	} else {
-		nextBlock = CreateBlock(b.latestBlock)
-	}
-	b.latestBlock = nextBlock
-	return nextBlock
-}
-
 func (b *MockBlockUtils) RequestNewBlock(ctx context.Context, prevBlock lh.Block) lh.Block {
-	return b.getNextBlock()
+	if b.PauseOnRequestNewBlock {
+		b.RequestNewBlockSns.SignalAndStop()
+	}
+	return b.blocksPool.PopBlock()
 }
 
 func (b *MockBlockUtils) CounterOfValidation() int {
 	return b.validationCounter
 }
+
 func (b *MockBlockUtils) ValidateBlock(block lh.Block) bool {
 	b.validationCounter++
 	if b.PauseOnValidation {

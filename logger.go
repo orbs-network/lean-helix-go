@@ -27,35 +27,35 @@ func (l *ConsoleLogger) Debug(format string, args ...interface{}) {
 	if l.level > LEVEL_DEBUG {
 		return
 	}
-	stdout("[DEBUG] - %s %s", format, args)
+	stdout(fmt.Sprintf("[DEBUG] - %s\n", format), args...)
 }
 
 func (l *ConsoleLogger) Info(format string, args ...interface{}) {
 	if l.level > LEVEL_INFO {
 		return
 	}
-	stdout("[INFO ] - %s %s", format, args)
+	stdout(fmt.Sprintf("[INFO ] - %s\n", format), args...)
 }
 
 func (l *ConsoleLogger) Error(format string, args ...interface{}) {
 	if l.level > LEVEL_ERROR {
 		return
 	}
-	stdout("*ERROR* - %s %s", format, args)
+	stdout(fmt.Sprintf("*ERROR* - %s\n", format), args...)
 }
 
 func stdout(format string, args ...interface{}) {
-	fmt.Printf(format, args)
+	fmt.Printf(format, args...)
 }
 
 type SilentLogger struct {
 }
 
-func NewSilentLogger() *SilentLogger {
+func NewSilentLogger() Logger {
 	return &SilentLogger{}
 }
 
-func NewConsoleLogger(id string) *ConsoleLogger {
+func NewConsoleLogger(id string) Logger {
 	return &ConsoleLogger{
 		id:    id,
 		level: LEVEL_DEBUG,

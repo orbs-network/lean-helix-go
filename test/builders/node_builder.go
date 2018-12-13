@@ -2,19 +2,22 @@ package builders
 
 import (
 	"fmt"
-	lh "github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
 )
 
 type NodeBuilder struct {
-	gossip     *gossip.Gossip
-	blocksPool []lh.Block
-	publicKey  primitives.Ed25519PublicKey
+	gossip        *gossip.Gossip
+	blocksPool    *BlocksPool
+	loggerFactory func(id string) leanhelix.Logger
+	publicKey     primitives.Ed25519PublicKey
 }
 
 func NewNodeBuilder() *NodeBuilder {
-	return &NodeBuilder{}
+	return &NodeBuilder{
+		loggerFactory: leanhelix.NewConsoleLogger,
+	}
 }
 
 func (builder *NodeBuilder) ThatIsPartOf(gossip *gossip.Gossip) *NodeBuilder {
@@ -31,10 +34,15 @@ func (builder *NodeBuilder) WithPublicKey(publicKey primitives.Ed25519PublicKey)
 	return builder
 }
 
-func (builder *NodeBuilder) WithBlocksPool(blocksPool []lh.Block) *NodeBuilder {
+func (builder *NodeBuilder) WithBlocksPool(blocksPool *BlocksPool) *NodeBuilder {
 	if builder.blocksPool == nil {
 		builder.blocksPool = blocksPool
 	}
+	return builder
+}
+
+func (builder *NodeBuilder) ThatLogsToConsole() *NodeBuilder {
+	builder.loggerFactory = leanhelix.NewConsoleLogger
 	return builder
 }
 
@@ -46,5 +54,6 @@ func (builder *NodeBuilder) Build() *Node {
 
 	blockUtils := NewMockBlockUtils(builder.blocksPool)
 	electionTrigger := NewMockElectionTrigger()
-	return NewNode(publicKey, builder.gossip, blockUtils, electionTrigger)
+	logger := builder.loggerFactory(publicKey.KeyForMap())
+	return NewNode(publicKey, builder.gossip, blockUtils, electionTrigger, logger)
 }
