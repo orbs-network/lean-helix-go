@@ -36,7 +36,7 @@ func (lh *LeanHelix) GossipMessageReceived(ctx context.Context, msg ConsensusRaw
 }
 
 func (lh *LeanHelix) ValidateBlockConsensus(block Block, blockProof *BlockProof, prevBlockProof *BlockProof) bool {
-	// TODO: implement
+	// TODO: implement after 16-DEC-2018 - spec on lh-outline is incomplete!
 	return true
 }
 
