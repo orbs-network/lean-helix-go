@@ -1,7 +1,7 @@
 package leanhelix
 
 import (
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
 // The algorithm cannot function with less committee members

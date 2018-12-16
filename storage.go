@@ -1,7 +1,7 @@
 package leanhelix
 
 import (
-	. "github.com/orbs-network/lean-helix-go/primitives"
+	. "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
 type Storage interface {
@@ -11,12 +11,12 @@ type Storage interface {
 	GetLatestPreprepare(blockHeight BlockHeight) (*PreprepareMessage, bool)
 
 	StorePrepare(pp *PrepareMessage) bool
-	GetPrepareMessages(blockHeight BlockHeight, view View, blockHash Uint256) ([]*PrepareMessage, bool)
-	GetPrepareSendersPKs(blockHeight BlockHeight, view View, blockHash Uint256) []Ed25519PublicKey
+	GetPrepareMessages(blockHeight BlockHeight, view View, blockHash BlockHash) ([]*PrepareMessage, bool)
+	GetPrepareSendersPKs(blockHeight BlockHeight, view View, blockHash BlockHash) []MemberId
 
 	StoreCommit(cm *CommitMessage) bool
-	GetCommitMessages(blockHeight BlockHeight, view View, blockHash Uint256) ([]*CommitMessage, bool)
-	GetCommitSendersPKs(blockHeight BlockHeight, view View, blockHash Uint256) []Ed25519PublicKey
+	GetCommitMessages(blockHeight BlockHeight, view View, blockHash BlockHash) ([]*CommitMessage, bool)
+	GetCommitSendersPKs(blockHeight BlockHeight, view View, blockHash BlockHash) []MemberId
 
 	StoreViewChange(vcm *ViewChangeMessage) bool
 	GetViewChangeMessages(blockHeight BlockHeight, view View) ([]*ViewChangeMessage, bool)

@@ -2,7 +2,7 @@ package test
 
 import (
 	"github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -14,7 +14,7 @@ func TestNoViewChangeMessages(t *testing.T) {
 }
 
 func TestReturnNilWhenNoViewChangeMessages(t *testing.T) {
-	keyManager := builders.NewMockKeyManager(primitives.Ed25519PublicKey("PublicKey 1"))
+	keyManager := builders.NewMockKeyManager(primitives.MemberId("PublicKey 1"))
 	VCMessage := builders.AViewChangeMessage(keyManager, 1, 2, nil)
 
 	actual := leanhelix.GetLatestBlockFromViewChangeMessages([]*leanhelix.ViewChangeMessage{VCMessage})
@@ -22,9 +22,9 @@ func TestReturnNilWhenNoViewChangeMessages(t *testing.T) {
 }
 
 func TestKeepOnlyMessagesWithBlock(t *testing.T) {
-	keyManager1 := builders.NewMockKeyManager(primitives.Ed25519PublicKey("PublicKey 1"))
-	keyManager2 := builders.NewMockKeyManager(primitives.Ed25519PublicKey("PublicKey 2"))
-	keyManager3 := builders.NewMockKeyManager(primitives.Ed25519PublicKey("PublicKey 3"))
+	keyManager1 := builders.NewMockKeyManager(primitives.MemberId("PublicKey 1"))
+	keyManager2 := builders.NewMockKeyManager(primitives.MemberId("PublicKey 2"))
+	keyManager3 := builders.NewMockKeyManager(primitives.MemberId("PublicKey 3"))
 
 	block := builders.CreateBlock(builders.GenesisBlock)
 

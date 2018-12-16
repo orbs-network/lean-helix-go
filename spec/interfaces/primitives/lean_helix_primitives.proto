@@ -1,46 +1,47 @@
 syntax = "proto3";
 package primitives;
-option go_package = "github.com/orbs-network/lean-helix-go/primitives";
+option go_package = "github.com/orbs-network/lean-helix-go/spec/types/go/primitives";
 
 option inline = true;
 
-
-message Bls1_public_key {
-    option inline_type = "bytes";
-    bytes value = 1;
-    // TODO size
-}
-
-
-message Bls1_sig {
-    option inline_type = "bytes";
-    bytes value = 1;
-    // TODO size
-}
-
-message Ed25519_public_key {
+message member_id {
     option inline_type = "bytes";
     bytes value = 1;
     // size 32 bytes
 }
-message Ed25519_sig {
+
+message signature {
     option inline_type = "bytes";
     bytes value = 1;
-    // size 64 bytes
+    // variable length
 }
-message Uint256 {
+
+message random_seed_signature {
+    option inline_type = "bytes";
+    bytes value = 1;
+    // variable length
+}
+
+message uint256 {
     option inline_type = "bytes";
     bytes value = 1;
     // size 32 bytes
 }
-message BlockHeight {
-    option inline_type = "uint64";
-    uint64 value = 1;
-    // size 8 bytes
-}
-message View {
+
+message block_height {
     option inline_type = "uint64";
     uint64 value = 1;
     // size 8 bytes
 }
 
+message view {
+    option inline_type = "uint64";
+    uint64 value = 1;
+    // size 8 bytes
+}
+
+message block_hash {
+    option inline_type = "bytes";
+    bytes value = 1;
+    // variable length, typiclly size 32 bytes
+}

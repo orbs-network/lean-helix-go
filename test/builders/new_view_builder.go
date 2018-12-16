@@ -2,13 +2,14 @@ package builders
 
 import (
 	lh "github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
 type NewViewBuilder struct {
 	leaderKeyManager lh.KeyManager
-	votes            []*lh.ViewChangeMessageContentBuilder
-	customPP         *lh.PreprepareContentBuilder
+	votes            []*protocol.ViewChangeMessageContentBuilder
+	customPP         *protocol.PreprepareContentBuilder
 	block            lh.Block
 	blockHeight      primitives.BlockHeight
 	view             primitives.View
@@ -37,7 +38,7 @@ func (builder *NewViewBuilder) WithCustomPreprepare(keyManager lh.KeyManager, bl
 	return builder
 }
 
-func (builder *NewViewBuilder) WithViewChangeVotes(votes []*lh.ViewChangeMessageContentBuilder) *NewViewBuilder {
+func (builder *NewViewBuilder) WithViewChangeVotes(votes []*protocol.ViewChangeMessageContentBuilder) *NewViewBuilder {
 	builder.votes = votes
 	return builder
 }
@@ -76,8 +77,8 @@ type VotesBuilder struct {
 	voters []*Voter
 }
 
-func (builder *VotesBuilder) Build() []*lh.ViewChangeMessageContentBuilder {
-	var votes []*lh.ViewChangeMessageContentBuilder
+func (builder *VotesBuilder) Build() []*protocol.ViewChangeMessageContentBuilder {
+	var votes []*protocol.ViewChangeMessageContentBuilder
 	for _, voter := range builder.voters {
 		messageFactory := lh.NewMessageFactory(voter.keyManager)
 		vcmCB := messageFactory.CreateViewChangeMessageContentBuilder(voter.blockHeight, voter.view, voter.preparedMessages)
@@ -97,7 +98,7 @@ func NewVotesBuilder() *VotesBuilder {
 	return &VotesBuilder{}
 }
 
-func ASimpleViewChangeVotes(membersKeyManagers []lh.KeyManager, blockHeight primitives.BlockHeight, view primitives.View) []*lh.ViewChangeMessageContentBuilder {
+func ASimpleViewChangeVotes(membersKeyManagers []lh.KeyManager, blockHeight primitives.BlockHeight, view primitives.View) []*protocol.ViewChangeMessageContentBuilder {
 	builder := NewVotesBuilder()
 	for _, keyManager := range membersKeyManagers {
 		builder.WithVoter(keyManager, blockHeight, view, nil)

@@ -1,7 +1,7 @@
 package leanhelix
 
 import (
-	. "github.com/orbs-network/lean-helix-go/primitives"
+	. "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"sort"
 	"sync"
 )
@@ -109,7 +109,7 @@ func (storage *InMemoryStorage) StorePrepare(pp *PrepareMessage) bool {
 		senders = make(map[PublicKeyStr]*PrepareMessage)
 		blockHashes[ppBlockHash] = senders
 	}
-	pk := PublicKeyStr(pp.Content().Sender().SenderPublicKey())
+	pk := PublicKeyStr(pp.Content().Sender().MemberId())
 	_, ok = senders[pk]
 	if ok {
 		return false
@@ -119,7 +119,7 @@ func (storage *InMemoryStorage) StorePrepare(pp *PrepareMessage) bool {
 	return true
 }
 
-func (storage *InMemoryStorage) getPrepare(blockHeight BlockHeight, view View, blockHash Uint256) (map[PublicKeyStr]*PrepareMessage, bool) {
+func (storage *InMemoryStorage) getPrepare(blockHeight BlockHeight, view View, blockHash BlockHash) (map[PublicKeyStr]*PrepareMessage, bool) {
 	views, ok := storage.prepareStorage[blockHeight]
 	if !ok {
 		return nil, false
@@ -131,7 +131,7 @@ func (storage *InMemoryStorage) getPrepare(blockHeight BlockHeight, view View, b
 	return blockHashes[BlockHashStr(blockHash)], true
 }
 
-func (storage *InMemoryStorage) GetPrepareMessages(blockHeight BlockHeight, view View, blockHash Uint256) ([]*PrepareMessage, bool) {
+func (storage *InMemoryStorage) GetPrepareMessages(blockHeight BlockHeight, view View, blockHash BlockHash) ([]*PrepareMessage, bool) {
 	storage.mutext.Lock()
 	defer storage.mutext.Unlock()
 
@@ -146,18 +146,18 @@ func (storage *InMemoryStorage) GetPrepareMessages(blockHeight BlockHeight, view
 	return values, true
 }
 
-func (storage *InMemoryStorage) GetPrepareSendersPKs(blockHeight BlockHeight, view View, blockHash Uint256) []Ed25519PublicKey {
+func (storage *InMemoryStorage) GetPrepareSendersPKs(blockHeight BlockHeight, view View, blockHash BlockHash) []MemberId {
 	storage.mutext.Lock()
 	defer storage.mutext.Unlock()
 
 	senders, ok := storage.getPrepare(blockHeight, view, blockHash)
 	if !ok {
-		return []Ed25519PublicKey{}
+		return []MemberId{}
 	}
-	keys := make([]Ed25519PublicKey, len(senders))
+	keys := make([]MemberId, len(senders))
 	i := 0
 	for k := range senders {
-		keys[i] = Ed25519PublicKey(k)
+		keys[i] = MemberId(k)
 		i++
 	}
 	return keys
@@ -187,7 +187,7 @@ func (storage *InMemoryStorage) StoreCommit(cm *CommitMessage) bool {
 		senders = make(map[PublicKeyStr]*CommitMessage)
 		blockHashes[cmBlockHash] = senders
 	}
-	pk := PublicKeyStr(cm.Content().Sender().SenderPublicKey())
+	pk := PublicKeyStr(cm.Content().Sender().MemberId())
 	_, ok = senders[pk]
 	if ok {
 		return false
@@ -198,7 +198,7 @@ func (storage *InMemoryStorage) StoreCommit(cm *CommitMessage) bool {
 
 }
 
-func (storage *InMemoryStorage) getCommit(blockHeight BlockHeight, view View, blockHash Uint256) (map[PublicKeyStr]*CommitMessage, bool) {
+func (storage *InMemoryStorage) getCommit(blockHeight BlockHeight, view View, blockHash BlockHash) (map[PublicKeyStr]*CommitMessage, bool) {
 	views, ok := storage.commitStorage[blockHeight]
 	if !ok {
 		return nil, false
@@ -210,7 +210,7 @@ func (storage *InMemoryStorage) getCommit(blockHeight BlockHeight, view View, bl
 	return blockHashes[BlockHashStr(blockHash)], true
 }
 
-func (storage *InMemoryStorage) GetCommitMessages(blockHeight BlockHeight, view View, blockHash Uint256) ([]*CommitMessage, bool) {
+func (storage *InMemoryStorage) GetCommitMessages(blockHeight BlockHeight, view View, blockHash BlockHash) ([]*CommitMessage, bool) {
 	storage.mutext.Lock()
 	defer storage.mutext.Unlock()
 
@@ -225,18 +225,18 @@ func (storage *InMemoryStorage) GetCommitMessages(blockHeight BlockHeight, view 
 	return values, true
 }
 
-func (storage *InMemoryStorage) GetCommitSendersPKs(blockHeight BlockHeight, view View, blockHash Uint256) []Ed25519PublicKey {
+func (storage *InMemoryStorage) GetCommitSendersPKs(blockHeight BlockHeight, view View, blockHash BlockHash) []MemberId {
 	storage.mutext.Lock()
 	defer storage.mutext.Unlock()
 
 	senders, ok := storage.getCommit(blockHeight, view, blockHash)
 	if !ok {
-		return []Ed25519PublicKey{}
+		return []MemberId{}
 	}
-	keys := make([]Ed25519PublicKey, len(senders))
+	keys := make([]MemberId, len(senders))
 	i := 0
 	for k := range senders {
-		keys[i] = Ed25519PublicKey(k)
+		keys[i] = MemberId(k)
 		i++
 	}
 	return keys
@@ -259,7 +259,7 @@ func (storage *InMemoryStorage) StoreViewChange(vcm *ViewChangeMessage) bool {
 		views[view] = senders
 	}
 
-	pk := PublicKeyStr(vcm.Content().Sender().SenderPublicKey())
+	pk := PublicKeyStr(vcm.Content().Sender().MemberId())
 	_, ok = senders[pk]
 	if ok {
 		return false

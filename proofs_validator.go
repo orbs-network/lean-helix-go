@@ -1,10 +1,11 @@
 package leanhelix
 
 import (
-	. "github.com/orbs-network/lean-helix-go/primitives"
+	. "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
-func isInMembers(membersPKs []Ed25519PublicKey, publicKey Ed25519PublicKey) bool {
+func isInMembers(membersPKs []MemberId, publicKey MemberId) bool {
 	for _, memberPK := range membersPKs {
 		if memberPK.Equal(publicKey) {
 			return true
@@ -13,19 +14,19 @@ func isInMembers(membersPKs []Ed25519PublicKey, publicKey Ed25519PublicKey) bool
 	return false
 }
 
-func verifyBlockRefMessage(blockRef *BlockRef, sender *SenderSignature, keyManager KeyManager) bool {
+func verifyBlockRefMessage(blockRef *protocol.BlockRef, sender *protocol.SenderSignature, keyManager KeyManager) bool {
 	return keyManager.Verify(blockRef.Raw(), sender)
 }
 
-type CalcLeaderPk = func(view View) Ed25519PublicKey
+type CalcLeaderPk = func(view View) MemberId
 
 func ValidatePreparedProof(
 	targetHeight BlockHeight,
 	targetView View,
-	preparedProof *PreparedProof,
+	preparedProof *protocol.PreparedProof,
 	q int,
 	keyManager KeyManager,
-	membersPKs []Ed25519PublicKey,
+	membersPKs []MemberId,
 	calcLeaderPk CalcLeaderPk) bool {
 	if preparedProof == nil || len(preparedProof.Raw()) == 0 {
 		return true
@@ -35,7 +36,7 @@ func ValidatePreparedProof(
 	ppSender := preparedProof.PreprepareSender()
 	pBlockRef := preparedProof.PrepareBlockRef()
 	pSendersIter := preparedProof.PrepareSendersIterator()
-	pSenders := make([]*SenderSignature, 0, 1)
+	pSenders := make([]*protocol.SenderSignature, 0, 1)
 
 	for {
 		if !pSendersIter.HasNext() {
@@ -67,7 +68,7 @@ func ValidatePreparedProof(
 		return false
 	}
 
-	leaderFromPPMessage := ppSender.SenderPublicKey()
+	leaderFromPPMessage := ppSender.MemberId()
 	leaderFromView := calcLeaderPk(ppView)
 	if !leaderFromView.Equal(leaderFromPPMessage) {
 		return false
@@ -87,7 +88,7 @@ func ValidatePreparedProof(
 
 	set := make(map[PublicKeyStr]bool)
 	for _, pSender := range pSenders {
-		pSenderPublicKey := pSender.SenderPublicKey()
+		pSenderPublicKey := pSender.MemberId()
 		if keyManager.Verify(pBlockRef.Raw(), pSender) == false {
 			return false
 		}

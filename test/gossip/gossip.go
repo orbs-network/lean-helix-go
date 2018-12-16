@@ -3,7 +3,8 @@ package gossip
 import (
 	"context"
 	lh "github.com/orbs-network/lean-helix-go"
-	. "github.com/orbs-network/lean-helix-go/primitives"
+	. "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"sort"
 )
 
@@ -12,7 +13,7 @@ type SubscriptionValue struct {
 }
 
 type outgoingMessage struct {
-	target  Ed25519PublicKey
+	target  MemberId
 	message lh.ConsensusRawMessage
 }
 
@@ -21,8 +22,8 @@ type Gossip struct {
 	outgoingChannelsMap  map[string]chan *outgoingMessage
 	totalSubscriptions   int
 	subscriptions        map[int]*SubscriptionValue
-	outgoingWhitelist    []Ed25519PublicKey
-	incomingWhiteListPKs []Ed25519PublicKey
+	outgoingWhitelist    []MemberId
+	incomingWhiteListPKs []MemberId
 	statsSentMessages    []lh.ConsensusRawMessage
 }
 
@@ -50,7 +51,7 @@ func (g *Gossip) messageSenderLoop(ctx context.Context, channel chan *outgoingMe
 	}
 }
 
-func (g *Gossip) RequestOrderedCommittee(ctx context.Context, blockHeight BlockHeight, seed uint64, maxCommitteeSize uint32) []Ed25519PublicKey {
+func (g *Gossip) RequestOrderedCommittee(ctx context.Context, blockHeight BlockHeight, seed uint64, maxCommitteeSize uint32) []MemberId {
 	result := g.discovery.AllGossipsPublicKeys()
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].KeyForMap() < result[j].KeyForMap()
@@ -58,11 +59,11 @@ func (g *Gossip) RequestOrderedCommittee(ctx context.Context, blockHeight BlockH
 	return result
 }
 
-func (g *Gossip) IsMember(pk Ed25519PublicKey) bool {
+func (g *Gossip) IsMember(pk MemberId) bool {
 	return g.discovery.GetGossipByPK(pk) != nil
 }
 
-func (g *Gossip) getOutgoingChannelByTarget(ctx context.Context, target Ed25519PublicKey) chan *outgoingMessage {
+func (g *Gossip) getOutgoingChannelByTarget(ctx context.Context, target MemberId) chan *outgoingMessage {
 	channel := g.outgoingChannelsMap[target.String()]
 	if channel == nil {
 		channel = make(chan *outgoingMessage, 100)
@@ -73,7 +74,7 @@ func (g *Gossip) getOutgoingChannelByTarget(ctx context.Context, target Ed25519P
 	return channel
 }
 
-func (g *Gossip) SendMessage(ctx context.Context, targets []Ed25519PublicKey, message lh.ConsensusRawMessage) {
+func (g *Gossip) SendMessage(ctx context.Context, targets []MemberId, message lh.ConsensusRawMessage) {
 	g.statsSentMessages = append(g.statsSentMessages, message)
 	for _, target := range targets {
 		channel := g.getOutgoingChannelByTarget(ctx, target)
@@ -103,7 +104,7 @@ func (g *Gossip) OnRemoteMessage(ctx context.Context, rawMessage lh.ConsensusRaw
 	}
 }
 
-func (g *Gossip) inIncomingWhitelist(publicKey Ed25519PublicKey) bool {
+func (g *Gossip) inIncomingWhitelist(publicKey MemberId) bool {
 	for _, currentPK := range g.incomingWhiteListPKs {
 		if currentPK.Equal(publicKey) {
 			return true
@@ -112,7 +113,7 @@ func (g *Gossip) inIncomingWhitelist(publicKey Ed25519PublicKey) bool {
 	return false
 }
 
-func (g *Gossip) inOutgoingWhitelist(pk Ed25519PublicKey) bool {
+func (g *Gossip) inOutgoingWhitelist(pk MemberId) bool {
 	for _, currentPK := range g.outgoingWhitelist {
 		if currentPK.Equal(pk) {
 			return true
@@ -121,7 +122,7 @@ func (g *Gossip) inOutgoingWhitelist(pk Ed25519PublicKey) bool {
 	return false
 }
 
-func (g *Gossip) SetOutgoingWhitelist(outgoingWhitelist []Ed25519PublicKey) {
+func (g *Gossip) SetOutgoingWhitelist(outgoingWhitelist []MemberId) {
 	g.outgoingWhitelist = outgoingWhitelist
 }
 
@@ -129,7 +130,7 @@ func (g *Gossip) ClearOutgoingWhitelist() {
 	g.SetOutgoingWhitelist(nil)
 }
 
-func (g *Gossip) SetIncomingWhitelist(incomingWhitelist []Ed25519PublicKey) {
+func (g *Gossip) SetIncomingWhitelist(incomingWhitelist []MemberId) {
 	g.incomingWhiteListPKs = incomingWhitelist
 }
 
@@ -137,7 +138,7 @@ func (g *Gossip) ClearIncomingWhitelist() {
 	g.SetIncomingWhitelist(nil)
 }
 
-func (g *Gossip) SendToNode(ctx context.Context, targetPublicKey Ed25519PublicKey, consensusRawMessage lh.ConsensusRawMessage) {
+func (g *Gossip) SendToNode(ctx context.Context, targetPublicKey MemberId, consensusRawMessage lh.ConsensusRawMessage) {
 	if g.outgoingWhitelist != nil {
 		if !g.inOutgoingWhitelist(targetPublicKey) {
 			return
@@ -150,7 +151,7 @@ func (g *Gossip) SendToNode(ctx context.Context, targetPublicKey Ed25519PublicKe
 	return
 }
 
-func (g *Gossip) CountSentMessages(messageType lh.MessageType) int {
+func (g *Gossip) CountSentMessages(messageType protocol.MessageType) int {
 	res := 0
 	for _, msg := range g.statsSentMessages {
 		if msg.ToConsensusMessage().MessageType() == messageType {
@@ -160,7 +161,7 @@ func (g *Gossip) CountSentMessages(messageType lh.MessageType) int {
 	return res
 }
 
-func (g *Gossip) GetSentMessages(messageType lh.MessageType) []lh.ConsensusRawMessage {
+func (g *Gossip) GetSentMessages(messageType protocol.MessageType) []lh.ConsensusRawMessage {
 	var res []lh.ConsensusRawMessage
 	for _, msg := range g.statsSentMessages {
 		if msg.ToConsensusMessage().MessageType() == messageType {

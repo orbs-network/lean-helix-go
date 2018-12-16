@@ -3,7 +3,7 @@ package byzantineattacks
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/orbs-network-go/test"
 	"testing"
@@ -19,7 +19,7 @@ func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
 			WithBlocks([]leanhelix.Block{block}).
 			Build()
 
-		net.Nodes[3].Gossip.SetIncomingWhitelist([]primitives.Ed25519PublicKey{})
+		net.Nodes[3].Gossip.SetIncomingWhitelist([]primitives.MemberId{})
 
 		net.StartConsensus(ctx)
 
@@ -36,8 +36,8 @@ func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 			WithBlocks([]leanhelix.Block{block}).
 			Build()
 
-		net.Nodes[1].Gossip.SetIncomingWhitelist([]primitives.Ed25519PublicKey{})
-		net.Nodes[2].Gossip.SetIncomingWhitelist([]primitives.Ed25519PublicKey{})
+		net.Nodes[1].Gossip.SetIncomingWhitelist([]primitives.MemberId{})
+		net.Nodes[2].Gossip.SetIncomingWhitelist([]primitives.MemberId{})
 
 		net.StartConsensus(ctx)
 
@@ -59,7 +59,7 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 		node2 := net.Nodes[2]
 		//node3 := net.Nodes[3]
 
-		node0.Gossip.SetOutgoingWhitelist([]primitives.Ed25519PublicKey{node1.PublicKey, node2.PublicKey})
+		node0.Gossip.SetOutgoingWhitelist([]primitives.MemberId{node1.PublicKey, node2.PublicKey})
 
 		// the leader (node0) is suggesting block1 to node1 and node2 (not to node3)
 		net.StartConsensus(ctx)
@@ -92,10 +92,10 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 
 		// fake a preprepare message from node3 (byzantineNode) that points to a unrelated block (Should be ignored)
 		ppm := builders.APreprepareMessage(byzantineNode.KeyManager, 1, 1, fakeBlock)
-		byzantineNode.Gossip.SendMessage(ctx, []primitives.Ed25519PublicKey{node0.PublicKey, node1.PublicKey, node2.PublicKey}, ppm.ToConsensusRawMessage())
-		byzantineNode.Gossip.SendMessage(ctx, []primitives.Ed25519PublicKey{node0.PublicKey, node1.PublicKey, node2.PublicKey}, ppm.ToConsensusRawMessage())
-		byzantineNode.Gossip.SendMessage(ctx, []primitives.Ed25519PublicKey{node0.PublicKey, node1.PublicKey, node2.PublicKey}, ppm.ToConsensusRawMessage())
-		byzantineNode.Gossip.SendMessage(ctx, []primitives.Ed25519PublicKey{node0.PublicKey, node1.PublicKey, node2.PublicKey}, ppm.ToConsensusRawMessage())
+		byzantineNode.Gossip.SendMessage(ctx, []primitives.MemberId{node0.PublicKey, node1.PublicKey, node2.PublicKey}, ppm.ToConsensusRawMessage())
+		byzantineNode.Gossip.SendMessage(ctx, []primitives.MemberId{node0.PublicKey, node1.PublicKey, node2.PublicKey}, ppm.ToConsensusRawMessage())
+		byzantineNode.Gossip.SendMessage(ctx, []primitives.MemberId{node0.PublicKey, node1.PublicKey, node2.PublicKey}, ppm.ToConsensusRawMessage())
+		byzantineNode.Gossip.SendMessage(ctx, []primitives.MemberId{node0.PublicKey, node1.PublicKey, node2.PublicKey}, ppm.ToConsensusRawMessage())
 
 		net.ResumeNodeRequestNewBlock(node0)
 
@@ -118,10 +118,10 @@ func TestThatAByzantineLeaderCanNotCauseAFork(t *testing.T) {
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
 		node3 := net.Nodes[3]
-		node0.Gossip.SetOutgoingWhitelist([]primitives.Ed25519PublicKey{node1.PublicKey, node2.PublicKey})
-		node1.Gossip.SetOutgoingWhitelist([]primitives.Ed25519PublicKey{node2.PublicKey})
-		node2.Gossip.SetOutgoingWhitelist([]primitives.Ed25519PublicKey{})
-		node3.Gossip.SetOutgoingWhitelist([]primitives.Ed25519PublicKey{})
+		node0.Gossip.SetOutgoingWhitelist([]primitives.MemberId{node1.PublicKey, node2.PublicKey})
+		node1.Gossip.SetOutgoingWhitelist([]primitives.MemberId{node2.PublicKey})
+		node2.Gossip.SetOutgoingWhitelist([]primitives.MemberId{})
+		node3.Gossip.SetOutgoingWhitelist([]primitives.MemberId{})
 
 		net.StartConsensus(ctx)
 
@@ -142,8 +142,8 @@ func TestThatAByzantineLeaderCanNotCauseAFork(t *testing.T) {
 		node2.Gossip.ClearOutgoingWhitelist()
 		node3.Gossip.ClearOutgoingWhitelist()
 
-		node2.Gossip.SetOutgoingWhitelist([]primitives.Ed25519PublicKey{})
-		node2.Gossip.SetIncomingWhitelist([]primitives.Ed25519PublicKey{})
+		node2.Gossip.SetOutgoingWhitelist([]primitives.MemberId{})
+		node2.Gossip.SetIncomingWhitelist([]primitives.MemberId{})
 
 		// selection node 1 as the leader
 		node0.TriggerElection()

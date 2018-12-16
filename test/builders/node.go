@@ -3,7 +3,7 @@ package builders
 import (
 	"context"
 	lh "github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
 )
 
@@ -20,7 +20,7 @@ type Node struct {
 	KeyManager       *MockKeyManager
 	Storage          lh.Storage
 	Gossip           *gossip.Gossip
-	PublicKey        primitives.Ed25519PublicKey
+	PublicKey        primitives.MemberId
 	NodeStateChannel chan *NodeState
 }
 
@@ -77,7 +77,7 @@ func (node *Node) BuildConfig(logger lh.Logger) *lh.Config {
 }
 
 func NewNode(
-	publicKey primitives.Ed25519PublicKey,
+	publicKey primitives.MemberId,
 	gossip *gossip.Gossip,
 	blockUtils *MockBlockUtils,
 	electionTrigger *ElectionTriggerMock,

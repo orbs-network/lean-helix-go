@@ -3,7 +3,7 @@ package builders
 import (
 	"fmt"
 	lh "github.com/orbs-network/lean-helix-go"
-	. "github.com/orbs-network/lean-helix-go/primitives"
+	. "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
 var GenesisBlock = CreateBlock(nil)

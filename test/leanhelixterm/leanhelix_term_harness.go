@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -12,7 +13,7 @@ import (
 
 type harness struct {
 	t                 *testing.T
-	myPublicKey       primitives.Ed25519PublicKey
+	myPublicKey       primitives.MemberId
 	keyManager        *builders.MockKeyManager
 	myNode            *builders.Node
 	net               *builders.TestNetwork
@@ -56,11 +57,11 @@ func (h *harness) triggerElection(ctx context.Context) {
 	h.electionTrigger.ManualTriggerSync(ctx)
 }
 
-func (h *harness) getMyNodePk() primitives.Ed25519PublicKey {
+func (h *harness) getMyNodePk() primitives.MemberId {
 	return h.getMemberPk(0)
 }
 
-func (h *harness) getMemberPk(nodeIdx int) primitives.Ed25519PublicKey {
+func (h *harness) getMemberPk(nodeIdx int) primitives.MemberId {
 	return h.net.Nodes[nodeIdx].KeyManager.MyPublicKey()
 }
 
@@ -126,7 +127,7 @@ func (h *harness) receivePrepare(ctx context.Context, fromNode int, blockHeight 
 	h.term.HandleLeanHelixPrepare(ctx, pm)
 }
 
-func (h *harness) createPreprepareMessage(fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block, blockHash primitives.Uint256) *leanhelix.PreprepareMessage {
+func (h *harness) createPreprepareMessage(fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block, blockHash primitives.BlockHash) *leanhelix.PreprepareMessage {
 	leader := h.net.Nodes[fromNode]
 	messageFactory := leanhelix.NewMessageFactory(leader.KeyManager)
 	return messageFactory.CreatePreprepareMessage(blockHeight, view, block, blockHash)
@@ -152,7 +153,7 @@ func (h *harness) receiveNewView(ctx context.Context, fromNodeIdx int, blockHeig
 }
 
 func (h *harness) getLastSentViewChangeMessage() *leanhelix.ViewChangeMessage {
-	messages := h.myNode.Gossip.GetSentMessages(leanhelix.LEAN_HELIX_VIEW_CHANGE)
+	messages := h.myNode.Gossip.GetSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE)
 	lastMessage := messages[len(messages)-1].ToConsensusMessage()
 	return lastMessage.(*leanhelix.ViewChangeMessage)
 }

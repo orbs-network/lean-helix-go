@@ -3,7 +3,7 @@ package builders
 import (
 	"fmt"
 	lh "github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
 )
 
@@ -63,7 +63,7 @@ func (tb *TestNetworkBuilder) buildBlocksPool() *BlocksPool {
 
 func (tb *TestNetworkBuilder) buildNode(
 	nodeBuilder *NodeBuilder,
-	publicKey primitives.Ed25519PublicKey,
+	publicKey primitives.MemberId,
 	discovery *gossip.Discovery,
 	blocksPool *BlocksPool,
 	logToConsole bool) *Node {
@@ -86,13 +86,13 @@ func (tb *TestNetworkBuilder) createNodes(discovery *gossip.Discovery, blocksPoo
 	var nodes []*Node
 	for i := 0; i < tb.NodeCount; i++ {
 		nodeBuilder := NewNodeBuilder()
-		publicKey := primitives.Ed25519PublicKey(fmt.Sprintf("Node %d", i))
+		publicKey := primitives.MemberId(fmt.Sprintf("Node %d", i))
 		node := tb.buildNode(nodeBuilder, publicKey, discovery, blocksPool, logToConsole)
 		nodes = append(nodes, node)
 	}
 
 	for i, customBuilder := range tb.customNodeBuilders {
-		publicKey := primitives.Ed25519PublicKey(fmt.Sprintf("Custom-Node %d", i))
+		publicKey := primitives.MemberId(fmt.Sprintf("Custom-Node %d", i))
 		node := tb.buildNode(customBuilder, publicKey, discovery, blocksPool, logToConsole)
 		nodes = append(nodes, node)
 	}

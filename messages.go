@@ -1,7 +1,8 @@
 package leanhelix
 
 import (
-	. "github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
 // SHARED interfaces //
@@ -11,7 +12,6 @@ type Serializable interface {
 }
 
 type ConsensusRawMessage interface {
-	MessageType() MessageType
 	Content() []byte
 	Block() Block
 	ToConsensusMessage() ConsensusMessage
@@ -24,10 +24,10 @@ type ConsensusRawMessageConverter interface {
 type ConsensusMessage interface {
 	Serializable
 	ConsensusRawMessageConverter
-	MessageType() MessageType
-	SenderPublicKey() Ed25519PublicKey
-	BlockHeight() BlockHeight
-	View() View
+	MessageType() protocol.MessageType
+	SenderPublicKey() primitives.MemberId
+	BlockHeight() primitives.BlockHeight
+	View() primitives.View
 }
 
 /***************************************************/
@@ -40,15 +40,15 @@ type ConsensusMessage interface {
 
 type PreprepareMessage struct {
 	ConsensusMessage
-	content *PreprepareContent
+	content *protocol.PreprepareContent
 	block   Block
 }
 
-func (ppm *PreprepareMessage) MessageType() MessageType {
+func (ppm *PreprepareMessage) MessageType() protocol.MessageType {
 	return ppm.content.SignedHeader().MessageType()
 }
 
-func (ppm *PreprepareMessage) Content() *PreprepareContent {
+func (ppm *PreprepareMessage) Content() *protocol.PreprepareContent {
 	return ppm.content
 }
 
@@ -64,23 +64,23 @@ func (ppm *PreprepareMessage) Block() Block {
 	return ppm.block
 }
 
-func (ppm *PreprepareMessage) SenderPublicKey() Ed25519PublicKey {
-	return ppm.content.Sender().SenderPublicKey()
+func (ppm *PreprepareMessage) SenderPublicKey() primitives.MemberId {
+	return ppm.content.Sender().MemberId()
 }
 
-func (ppm *PreprepareMessage) BlockHeight() BlockHeight {
+func (ppm *PreprepareMessage) BlockHeight() primitives.BlockHeight {
 	return ppm.content.SignedHeader().BlockHeight()
 }
 
-func (ppm *PreprepareMessage) View() View {
+func (ppm *PreprepareMessage) View() primitives.View {
 	return ppm.content.SignedHeader().View()
 }
 
 func (ppm *PreprepareMessage) ToConsensusRawMessage() ConsensusRawMessage {
-	return CreateConsensusRawMessage(LEAN_HELIX_PREPREPARE, ppm.content.Raw(), ppm.block)
+	return CreateConsensusRawMessage(ppm.content.Raw(), ppm.block)
 }
 
-func NewPreprepareMessage(content *PreprepareContent, block Block) *PreprepareMessage {
+func NewPreprepareMessage(content *protocol.PreprepareContent, block Block) *PreprepareMessage {
 	return &PreprepareMessage{
 		content: content,
 		block:   block,
@@ -91,14 +91,14 @@ func NewPreprepareMessage(content *PreprepareContent, block Block) *PreprepareMe
 // Prepare
 //---------
 type PrepareMessage struct {
-	content *PrepareContent
+	content *protocol.PrepareContent
 }
 
-func (pm *PrepareMessage) MessageType() MessageType {
+func (pm *PrepareMessage) MessageType() protocol.MessageType {
 	return pm.content.SignedHeader().MessageType()
 }
 
-func (pm *PrepareMessage) Content() *PrepareContent {
+func (pm *PrepareMessage) Content() *protocol.PrepareContent {
 	return pm.content
 }
 
@@ -110,22 +110,22 @@ func (pm *PrepareMessage) String() string {
 	return pm.content.String()
 }
 
-func (pm *PrepareMessage) SenderPublicKey() Ed25519PublicKey {
-	return pm.content.Sender().SenderPublicKey()
+func (pm *PrepareMessage) SenderPublicKey() primitives.MemberId {
+	return pm.content.Sender().MemberId()
 }
 
-func (pm *PrepareMessage) BlockHeight() BlockHeight {
+func (pm *PrepareMessage) BlockHeight() primitives.BlockHeight {
 	return pm.content.SignedHeader().BlockHeight()
 }
-func (pm *PrepareMessage) View() View {
+func (pm *PrepareMessage) View() primitives.View {
 	return pm.content.SignedHeader().View()
 }
 
 func (pm *PrepareMessage) ToConsensusRawMessage() ConsensusRawMessage {
-	return CreateConsensusRawMessage(LEAN_HELIX_PREPARE, pm.content.Raw(), nil)
+	return CreateConsensusRawMessage(pm.content.Raw(), nil)
 }
 
-func NewPrepareMessage(content *PrepareContent) *PrepareMessage {
+func NewPrepareMessage(content *protocol.PrepareContent) *PrepareMessage {
 	return &PrepareMessage{content: content}
 }
 
@@ -133,14 +133,14 @@ func NewPrepareMessage(content *PrepareContent) *PrepareMessage {
 // Commit
 //---------
 type CommitMessage struct {
-	content *CommitContent
+	content *protocol.CommitContent
 }
 
-func (cm *CommitMessage) MessageType() MessageType {
+func (cm *CommitMessage) MessageType() protocol.MessageType {
 	return cm.content.SignedHeader().MessageType()
 }
 
-func (cm *CommitMessage) Content() *CommitContent {
+func (cm *CommitMessage) Content() *protocol.CommitContent {
 	return cm.content
 }
 
@@ -152,22 +152,22 @@ func (cm *CommitMessage) String() string {
 	return cm.content.String()
 }
 
-func (cm *CommitMessage) SenderPublicKey() Ed25519PublicKey {
-	return cm.content.Sender().SenderPublicKey()
+func (cm *CommitMessage) SenderPublicKey() primitives.MemberId {
+	return cm.content.Sender().MemberId()
 }
 
-func (cm *CommitMessage) BlockHeight() BlockHeight {
+func (cm *CommitMessage) BlockHeight() primitives.BlockHeight {
 	return cm.content.SignedHeader().BlockHeight()
 }
-func (cm *CommitMessage) View() View {
+func (cm *CommitMessage) View() primitives.View {
 	return cm.content.SignedHeader().View()
 }
 
 func (cm *CommitMessage) ToConsensusRawMessage() ConsensusRawMessage {
-	return CreateConsensusRawMessage(LEAN_HELIX_COMMIT, cm.content.Raw(), nil)
+	return CreateConsensusRawMessage(cm.content.Raw(), nil)
 }
 
-func NewCommitMessage(content *CommitContent) *CommitMessage {
+func NewCommitMessage(content *protocol.CommitContent) *CommitMessage {
 	return &CommitMessage{content: content}
 }
 
@@ -175,15 +175,15 @@ func NewCommitMessage(content *CommitContent) *CommitMessage {
 // View Change
 //-------------
 type ViewChangeMessage struct {
-	content *ViewChangeMessageContent
+	content *protocol.ViewChangeMessageContent
 	block   Block
 }
 
-func (vcm *ViewChangeMessage) MessageType() MessageType {
+func (vcm *ViewChangeMessage) MessageType() protocol.MessageType {
 	return vcm.content.SignedHeader().MessageType()
 }
 
-func (vcm *ViewChangeMessage) Content() *ViewChangeMessageContent {
+func (vcm *ViewChangeMessage) Content() *protocol.ViewChangeMessageContent {
 	return vcm.content
 }
 
@@ -195,26 +195,26 @@ func (vcm *ViewChangeMessage) String() string {
 	return vcm.content.String()
 }
 
-func (vcm *ViewChangeMessage) SenderPublicKey() Ed25519PublicKey {
-	return vcm.content.Sender().SenderPublicKey()
+func (vcm *ViewChangeMessage) SenderPublicKey() primitives.MemberId {
+	return vcm.content.Sender().MemberId()
 }
 
-func (vcm *ViewChangeMessage) BlockHeight() BlockHeight {
+func (vcm *ViewChangeMessage) BlockHeight() primitives.BlockHeight {
 	return vcm.content.SignedHeader().BlockHeight()
 }
 
 func (vcm *ViewChangeMessage) Block() Block {
 	return vcm.block
 }
-func (vcm *ViewChangeMessage) View() View {
+func (vcm *ViewChangeMessage) View() primitives.View {
 	return vcm.content.SignedHeader().View()
 }
 
 func (vcm *ViewChangeMessage) ToConsensusRawMessage() ConsensusRawMessage {
-	return CreateConsensusRawMessage(LEAN_HELIX_VIEW_CHANGE, vcm.content.Raw(), vcm.block)
+	return CreateConsensusRawMessage(vcm.content.Raw(), vcm.block)
 }
 
-func NewViewChangeMessage(content *ViewChangeMessageContent, block Block) *ViewChangeMessage {
+func NewViewChangeMessage(content *protocol.ViewChangeMessageContent, block Block) *ViewChangeMessage {
 	return &ViewChangeMessage{
 		content: content,
 		block:   block,
@@ -225,15 +225,15 @@ func NewViewChangeMessage(content *ViewChangeMessageContent, block Block) *ViewC
 // New View
 //----------
 type NewViewMessage struct {
-	content *NewViewMessageContent
+	content *protocol.NewViewMessageContent
 	block   Block
 }
 
-func (nvm *NewViewMessage) MessageType() MessageType {
+func (nvm *NewViewMessage) MessageType() protocol.MessageType {
 	return nvm.content.SignedHeader().MessageType()
 }
 
-func (nvm *NewViewMessage) Content() *NewViewMessageContent {
+func (nvm *NewViewMessage) Content() *protocol.NewViewMessageContent {
 	return nvm.content
 }
 
@@ -245,77 +245,77 @@ func (nvm *NewViewMessage) String() string {
 	return nvm.content.String()
 }
 
-func (nvm *NewViewMessage) SenderPublicKey() Ed25519PublicKey {
-	return nvm.content.Sender().SenderPublicKey()
+func (nvm *NewViewMessage) SenderPublicKey() primitives.MemberId {
+	return nvm.content.Sender().MemberId()
 }
 
-func (nvm *NewViewMessage) BlockHeight() BlockHeight {
+func (nvm *NewViewMessage) BlockHeight() primitives.BlockHeight {
 	return nvm.content.SignedHeader().BlockHeight()
 }
 
 func (nvm *NewViewMessage) Block() Block {
 	return nvm.block
 }
-func (nvm *NewViewMessage) View() View {
+func (nvm *NewViewMessage) View() primitives.View {
 	return nvm.content.SignedHeader().View()
 }
 
 func (nvm *NewViewMessage) ToConsensusRawMessage() ConsensusRawMessage {
-	return CreateConsensusRawMessage(LEAN_HELIX_NEW_VIEW, nvm.content.Raw(), nvm.block)
+	return CreateConsensusRawMessage(nvm.content.Raw(), nvm.block)
 }
 
-func NewNewViewMessage(content *NewViewMessageContent, block Block) *NewViewMessage {
+func NewNewViewMessage(content *protocol.NewViewMessageContent, block Block) *NewViewMessage {
 	return &NewViewMessage{
 		content: content,
 		block:   block,
 	}
 }
 
-func extractConfirmationsFromViewChangeMessages(vcms []*ViewChangeMessage) []*ViewChangeMessageContentBuilder {
+func extractConfirmationsFromViewChangeMessages(vcms []*ViewChangeMessage) []*protocol.ViewChangeMessageContentBuilder {
 	if len(vcms) == 0 {
 		return nil
 	}
 
-	res := make([]*ViewChangeMessageContentBuilder, 0, len(vcms))
+	res := make([]*protocol.ViewChangeMessageContentBuilder, 0, len(vcms))
 	for _, vcm := range vcms {
 		header := vcm.content.SignedHeader()
 		sender := vcm.content.Sender()
 		proof := header.PreparedProof()
-		var proofBuilder *PreparedProofBuilder = nil
+		var proofBuilder *protocol.PreparedProofBuilder = nil
 		if proof != nil && len(proof.Raw()) > 0 {
-			ppBlockRefBuilder := &BlockRefBuilder{
+			ppBlockRefBuilder := &protocol.BlockRefBuilder{
 				MessageType: proof.PreprepareBlockRef().MessageType(),
 				BlockHeight: proof.PreprepareBlockRef().BlockHeight(),
 				View:        proof.PreprepareBlockRef().View(),
 				BlockHash:   proof.PreprepareBlockRef().BlockHash(),
 			}
-			ppSender := &SenderSignatureBuilder{
-				SenderPublicKey: proof.PreprepareSender().SenderPublicKey(),
-				Signature:       proof.PreprepareSender().Signature(),
+			ppSender := &protocol.SenderSignatureBuilder{
+				MemberId:  proof.PreprepareSender().MemberId(),
+				Signature: proof.PreprepareSender().Signature(),
 			}
-			pBlockRef := &BlockRefBuilder{
+			pBlockRef := &protocol.BlockRefBuilder{
 				MessageType: proof.PrepareBlockRef().MessageType(),
 				BlockHeight: proof.PrepareBlockRef().BlockHeight(),
 				View:        proof.PrepareBlockRef().View(),
 				BlockHash:   proof.PrepareBlockRef().BlockHash(),
 			}
 			pSendersIter := proof.PrepareSendersIterator()
-			pSenders := make([]*SenderSignatureBuilder, 0, 1)
+			pSenders := make([]*protocol.SenderSignatureBuilder, 0, 1)
 
 			for {
 				if !pSendersIter.HasNext() {
 					break
 				}
 				nextPSender := pSendersIter.NextPrepareSenders()
-				pSender := &SenderSignatureBuilder{
-					SenderPublicKey: nextPSender.SenderPublicKey(),
-					Signature:       nextPSender.Signature(),
+				pSender := &protocol.SenderSignatureBuilder{
+					MemberId:  nextPSender.MemberId(),
+					Signature: nextPSender.Signature(),
 				}
 
 				pSenders = append(pSenders, pSender)
 			}
 
-			proofBuilder = &PreparedProofBuilder{
+			proofBuilder = &protocol.PreparedProofBuilder{
 				PreprepareBlockRef: ppBlockRefBuilder,
 				PreprepareSender:   ppSender,
 				PrepareBlockRef:    pBlockRef,
@@ -323,16 +323,16 @@ func extractConfirmationsFromViewChangeMessages(vcms []*ViewChangeMessage) []*Vi
 			}
 		}
 
-		viewChangeMessageContentBuilder := &ViewChangeMessageContentBuilder{
-			SignedHeader: &ViewChangeHeaderBuilder{
+		viewChangeMessageContentBuilder := &protocol.ViewChangeMessageContentBuilder{
+			SignedHeader: &protocol.ViewChangeHeaderBuilder{
 				MessageType:   header.MessageType(),
 				BlockHeight:   header.BlockHeight(),
 				View:          header.View(),
 				PreparedProof: proofBuilder,
 			},
-			Sender: &SenderSignatureBuilder{
-				SenderPublicKey: sender.SenderPublicKey(),
-				Signature:       sender.Signature(),
+			Sender: &protocol.SenderSignatureBuilder{
+				MemberId:  sender.MemberId(),
+				Signature: sender.Signature(),
 			},
 		}
 		res = append(res, viewChangeMessageContentBuilder)

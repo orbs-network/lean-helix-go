@@ -2,7 +2,7 @@ package test
 
 import (
 	lh "github.com/orbs-network/lean-helix-go"
-	. "github.com/orbs-network/lean-helix-go/primitives"
+	. "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/stretchr/testify/require"
 	"math"
@@ -15,8 +15,8 @@ func TestStorePreprepare(t *testing.T) {
 	var storage lh.Storage = lh.NewInMemoryStorage()
 	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000000))
 	view := View(math.Floor(rand.Float64() * 1000000))
-	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId1 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId2 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	keyManager1 := builders.NewMockKeyManager(senderId1)
 	keyManager2 := builders.NewMockKeyManager(senderId2)
 	block := builders.CreateBlock(builders.GenesisBlock)
@@ -40,9 +40,9 @@ func TestStorePrepare(t *testing.T) {
 	blockHeight2 := BlockHeight(math.Floor(rand.Float64() * 1000000))
 	view1 := View(math.Floor(rand.Float64() * 1000000))
 	view2 := View(math.Floor(rand.Float64() * 1000000))
-	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	senderId3 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId1 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId2 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId3 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	keyManager1 := builders.NewMockKeyManager(senderId1)
 	keyManager2 := builders.NewMockKeyManager(senderId2)
 	keyManager3 := builders.NewMockKeyManager(senderId3)
@@ -69,7 +69,7 @@ func TestStorePrepare(t *testing.T) {
 	require.ElementsMatch(t, actualPrepareMessages, expectedMessages, "stored prepare messages should match the fetched prepare messages")
 
 	actualPrepareSendersPks := storage.GetPrepareSendersPKs(blockHeight1, view1, block1Hash)
-	expectedPks := []Ed25519PublicKey{senderId1, senderId2, senderId3}
+	expectedPks := []MemberId{senderId1, senderId2, senderId3}
 	require.ElementsMatch(t, actualPrepareSendersPks, expectedPks, "stored prepare messages senders should match the fetched prepare messages senders")
 }
 
@@ -79,9 +79,9 @@ func TestStoreCommit(t *testing.T) {
 	blockHeight2 := BlockHeight(math.Floor(rand.Float64() * 1000000))
 	view1 := View(math.Floor(rand.Float64() * 1000000))
 	view2 := View(math.Floor(rand.Float64() * 1000000))
-	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	senderId3 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId1 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId2 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId3 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	keyManager1 := builders.NewMockKeyManager(senderId1)
 	keyManager2 := builders.NewMockKeyManager(senderId2)
 	keyManager3 := builders.NewMockKeyManager(senderId3)
@@ -108,7 +108,7 @@ func TestStoreCommit(t *testing.T) {
 	require.ElementsMatch(t, actualCommitMessages, expectedMessages, "stored commit messages should match the fetched commit messages")
 
 	actualCommitSendersPks := storage.GetCommitSendersPKs(blockHeight1, view1, block1Hash)
-	expectedPks := []Ed25519PublicKey{senderId1, senderId2, senderId3}
+	expectedPks := []MemberId{senderId1, senderId2, senderId3}
 	require.ElementsMatch(t, actualCommitSendersPks, expectedPks, "stored commit messages senders should match the fetched commit messages senders")
 }
 
@@ -118,9 +118,9 @@ func TestStoreViewChange(t *testing.T) {
 	blockHeight2 := BlockHeight(math.Floor(rand.Float64() * 1000000))
 	view1 := View(math.Floor(rand.Float64() * 1000000))
 	view2 := View(math.Floor(rand.Float64() * 1000000))
-	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	senderId3 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId1 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId2 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId3 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	keyManager1 := builders.NewMockKeyManager(senderId1)
 	keyManager2 := builders.NewMockKeyManager(senderId2)
 	keyManager3 := builders.NewMockKeyManager(senderId3)
@@ -145,8 +145,8 @@ func TestStoreViewChange(t *testing.T) {
 func TestLatestPreprepare(t *testing.T) {
 	var storage lh.Storage = lh.NewInMemoryStorage()
 	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000000))
-	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId1 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId2 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	keyManager1 := builders.NewMockKeyManager(senderId1)
 	keyManager2 := builders.NewMockKeyManager(senderId2)
 	block := builders.CreateBlock(builders.GenesisBlock)
@@ -165,7 +165,7 @@ func TestLatestPreprepare(t *testing.T) {
 func TestDuplicatePreprepare(t *testing.T) {
 	var storage lh.Storage = lh.NewInMemoryStorage()
 	block := builders.CreateBlock(builders.GenesisBlock)
-	keyManager := builders.NewMockKeyManager(Ed25519PublicKey("PK"))
+	keyManager := builders.NewMockKeyManager(MemberId("PK"))
 	ppm := builders.APreprepareMessage(keyManager, 1, 1, block)
 
 	firstTime := storage.StorePreprepare(ppm)
@@ -179,8 +179,8 @@ func TestDuplicatePrepare(t *testing.T) {
 	var storage lh.Storage = lh.NewInMemoryStorage()
 	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000000))
 	view := View(math.Floor(rand.Float64() * 1000000))
-	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId1 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId2 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	sender1KeyManager := builders.NewMockKeyManager(senderId1)
 	sender2KeyManager := builders.NewMockKeyManager(senderId2)
 	block := builders.CreateBlock(builders.GenesisBlock)
@@ -201,8 +201,8 @@ func TestDuplicateCommit(t *testing.T) {
 	var storage lh.Storage = lh.NewInMemoryStorage()
 	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000000))
 	view := View(math.Floor(rand.Float64() * 1000000))
-	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId1 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId2 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	sender1KeyManager := builders.NewMockKeyManager(senderId1)
 	sender2KeyManager := builders.NewMockKeyManager(senderId2)
 	block := builders.CreateBlock(builders.GenesisBlock)
@@ -225,8 +225,8 @@ func TestDuplicateViewChange(t *testing.T) {
 	var storage lh.Storage = lh.NewInMemoryStorage()
 	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000000))
 	view := View(math.Floor(rand.Float64() * 1000000))
-	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId1 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId2 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	sender1KeyManager := builders.NewMockKeyManager(senderId1)
 	sender2KeyManager := builders.NewMockKeyManager(senderId2)
 	vc1 := builders.AViewChangeMessage(sender1KeyManager, blockHeight, view, nil)
@@ -249,7 +249,7 @@ func TestClearBlockHeightLogs(t *testing.T) {
 	view := View(math.Floor(rand.Float64() * 1000000))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	blockHash := builders.CalculateBlockHash(block)
-	keyManager := builders.NewMockKeyManager(Ed25519PublicKey("PK"))
+	keyManager := builders.NewMockKeyManager(MemberId("PK"))
 
 	ppMsg := builders.APreprepareMessage(keyManager, blockHeight, view, block)
 	pMsg := builders.APrepareMessage(keyManager, blockHeight, view, block)

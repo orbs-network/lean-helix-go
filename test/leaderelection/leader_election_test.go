@@ -2,8 +2,8 @@ package leaderelection
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/stretchr/testify/require"
@@ -24,7 +24,7 @@ func Test2fPlus1ViewChangeToBeElected(t *testing.T) {
 
 		// hang the leader (node0)
 		h.net.WaitForNodeToRequestNewBlock(node0)
-		node0.Gossip.SetOutgoingWhitelist([]primitives.Ed25519PublicKey{})
+		node0.Gossip.SetOutgoingWhitelist([]primitives.MemberId{})
 
 		// manually cause new-view with 3 view-changes
 		node0VCMessage := builders.AViewChangeMessage(node0.KeyManager, 1, 1, nil)
@@ -64,7 +64,7 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 
 		// processing block 2
 		h.net.WaitForNodeToRequestNewBlock(node0)
-		node0.Gossip.SetOutgoingWhitelist([]primitives.Ed25519PublicKey{})
+		node0.Gossip.SetOutgoingWhitelist([]primitives.MemberId{})
 		// selection node 1 as the leader (dropping block2)
 		h.net.Nodes[0].TriggerElection()
 		h.net.Nodes[1].TriggerElection()
@@ -92,7 +92,7 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 		node3 := h.net.Nodes[3]
 
 		h.net.WaitForNodeToRequestNewBlock(node0)
-		node0.Gossip.SetOutgoingWhitelist([]primitives.Ed25519PublicKey{})
+		node0.Gossip.SetOutgoingWhitelist([]primitives.MemberId{})
 
 		// selection node 1 as the leader
 		node0.TriggerElection()
@@ -107,10 +107,10 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 		h.net.ResumeNodeRequestNewBlock(node1)
 		h.net.WaitForAllNodesToCommitTheSameBlock()
 
-		require.Equal(t, 1, node0.Gossip.CountSentMessages(leanhelix.LEAN_HELIX_VIEW_CHANGE))
-		require.Equal(t, 1, node2.Gossip.CountSentMessages(leanhelix.LEAN_HELIX_VIEW_CHANGE))
-		require.Equal(t, 1, node3.Gossip.CountSentMessages(leanhelix.LEAN_HELIX_VIEW_CHANGE))
-		require.Equal(t, 1, node1.Gossip.CountSentMessages(leanhelix.LEAN_HELIX_NEW_VIEW))
+		require.Equal(t, 1, node0.Gossip.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))
+		require.Equal(t, 1, node2.Gossip.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))
+		require.Equal(t, 1, node3.Gossip.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))
+		require.Equal(t, 1, node1.Gossip.CountSentMessages(protocol.LEAN_HELIX_NEW_VIEW))
 	})
 }
 
@@ -134,7 +134,7 @@ func TestNotCountingViewChangeFromTheSameNode(t *testing.T) {
 		node1.Gossip.OnRemoteMessage(ctx, builders.AViewChangeMessage(node2.KeyManager, 1, 1, nil).ToConsensusRawMessage())
 		node1.Gossip.OnRemoteMessage(ctx, builders.AViewChangeMessage(node2.KeyManager, 1, 1, nil).ToConsensusRawMessage())
 
-		node1.Gossip.CountSentMessages(leanhelix.LEAN_HELIX_NEW_VIEW)
+		node1.Gossip.CountSentMessages(protocol.LEAN_HELIX_NEW_VIEW)
 	})
 }
 

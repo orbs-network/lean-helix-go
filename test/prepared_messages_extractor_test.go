@@ -3,7 +3,7 @@ package test
 import (
 	"bytes"
 	lh "github.com/orbs-network/lean-helix-go"
-	. "github.com/orbs-network/lean-helix-go/primitives"
+	. "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/stretchr/testify/require"
 	"math"
@@ -16,12 +16,12 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000000))
 	view := View(math.Floor(rand.Float64() * 1000000))
 	block := builders.CreateBlock(builders.GenesisBlock)
-	leaderId := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	senderId1 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	senderId2 := Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	leaderKeyManager := builders.NewMockKeyManager(Ed25519PublicKey(leaderId))
-	sender1KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId1))
-	sender2KeyManager := builders.NewMockKeyManager(Ed25519PublicKey(senderId2))
+	leaderId := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId1 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId2 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	leaderKeyManager := builders.NewMockKeyManager(MemberId(leaderId))
+	sender1KeyManager := builders.NewMockKeyManager(MemberId(senderId1))
+	sender2KeyManager := builders.NewMockKeyManager(MemberId(senderId2))
 
 	t.Run("should return the prepare proof", func(t *testing.T) {
 		ppm := builders.APreprepareMessage(leaderKeyManager, blockHeight, view, block)

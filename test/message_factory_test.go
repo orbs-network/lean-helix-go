@@ -2,8 +2,9 @@ package test
 
 import (
 	"bytes"
-	lh "github.com/orbs-network/lean-helix-go"
-	. "github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/stretchr/testify/require"
 	"math"
@@ -12,75 +13,75 @@ import (
 )
 
 func TestMessageFactory(t *testing.T) {
-	keyManager := builders.NewMockKeyManager(Ed25519PublicKey("PK0"))
-	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000000000))
-	view := View(math.Floor(rand.Float64() * 1000000000))
+	keyManager := builders.NewMockKeyManager(primitives.MemberId("PK0"))
+	blockHeight := primitives.BlockHeight(math.Floor(rand.Float64() * 1000000000))
+	view := primitives.View(math.Floor(rand.Float64() * 1000000000))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	blockHash := builders.CalculateBlockHash(block)
-	node1KeyManager := builders.NewMockKeyManager(Ed25519PublicKey("PK1"))
-	node2KeyManager := builders.NewMockKeyManager(Ed25519PublicKey("PK2"))
-	leaderFac := lh.NewMessageFactory(keyManager)
-	node1Fac := lh.NewMessageFactory(node1KeyManager)
-	node2Fac := lh.NewMessageFactory(node2KeyManager)
+	node1KeyManager := builders.NewMockKeyManager(primitives.MemberId("PK1"))
+	node2KeyManager := builders.NewMockKeyManager(primitives.MemberId("PK2"))
+	leaderFac := leanhelix.NewMessageFactory(keyManager)
+	node1Fac := leanhelix.NewMessageFactory(node1KeyManager)
+	node2Fac := leanhelix.NewMessageFactory(node2KeyManager)
 
 	t.Run("create PreprepareMessage", func(t *testing.T) {
-		signedHeader := &lh.BlockRefBuilder{
-			MessageType: lh.LEAN_HELIX_PREPREPARE,
+		signedHeader := &protocol.BlockRefBuilder{
+			MessageType: protocol.LEAN_HELIX_PREPREPARE,
 			BlockHeight: blockHeight,
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		ppmcb := &lh.PreprepareContentBuilder{
+		ppmcb := &protocol.PreprepareContentBuilder{
 			SignedHeader: signedHeader,
-			Sender: &lh.SenderSignatureBuilder{
-				SenderPublicKey: keyManager.MyPublicKey(),
-				Signature:       keyManager.Sign(signedHeader.Build().Raw()),
+			Sender: &protocol.SenderSignatureBuilder{
+				MemberId:  keyManager.MyPublicKey(),
+				Signature: keyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
 
-		expectedPPM := lh.NewPreprepareMessage(ppmcb.Build(), block)
+		expectedPPM := leanhelix.NewPreprepareMessage(ppmcb.Build(), block)
 		actualPPM := leaderFac.CreatePreprepareMessage(blockHeight, view, block, blockHash)
 
 		require.True(t, bytes.Compare(expectedPPM.Raw(), actualPPM.Raw()) == 0, "compared bytes of PPM")
 	})
 
 	t.Run("create PrepareMessage", func(t *testing.T) {
-		signedHeader := &lh.BlockRefBuilder{
-			MessageType: lh.LEAN_HELIX_PREPARE,
+		signedHeader := &protocol.BlockRefBuilder{
+			MessageType: protocol.LEAN_HELIX_PREPARE,
 			BlockHeight: blockHeight,
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		prepareContentBuilder := &lh.PrepareContentBuilder{
+		prepareContentBuilder := &protocol.PrepareContentBuilder{
 			SignedHeader: signedHeader,
-			Sender: &lh.SenderSignatureBuilder{
-				SenderPublicKey: keyManager.MyPublicKey(),
-				Signature:       keyManager.Sign(signedHeader.Build().Raw()),
+			Sender: &protocol.SenderSignatureBuilder{
+				MemberId:  keyManager.MyPublicKey(),
+				Signature: keyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
 
-		expectedPM := lh.NewPrepareMessage(prepareContentBuilder.Build())
+		expectedPM := leanhelix.NewPrepareMessage(prepareContentBuilder.Build())
 		actualPM := leaderFac.CreatePrepareMessage(blockHeight, view, blockHash)
 
 		require.True(t, bytes.Compare(expectedPM.Raw(), actualPM.Raw()) == 0, "compared bytes of PM")
 	})
 
 	t.Run("create CommitMessage", func(t *testing.T) {
-		signedHeader := &lh.BlockRefBuilder{
-			MessageType: lh.LEAN_HELIX_COMMIT,
+		signedHeader := &protocol.BlockRefBuilder{
+			MessageType: protocol.LEAN_HELIX_COMMIT,
 			BlockHeight: blockHeight,
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		cmcb := &lh.CommitContentBuilder{
+		cmcb := &protocol.CommitContentBuilder{
 			SignedHeader: signedHeader,
-			Sender: &lh.SenderSignatureBuilder{
-				SenderPublicKey: keyManager.MyPublicKey(),
-				Signature:       keyManager.Sign(signedHeader.Build().Raw()),
+			Sender: &protocol.SenderSignatureBuilder{
+				MemberId:  keyManager.MyPublicKey(),
+				Signature: keyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
 
-		expectedCM := lh.NewCommitMessage(cmcb.Build())
+		expectedCM := leanhelix.NewCommitMessage(cmcb.Build())
 		actualCM := leaderFac.CreateCommitMessage(blockHeight, view, blockHash)
 
 		require.True(t, bytes.Compare(expectedCM.Raw(), actualCM.Raw()) == 0, "compared bytes of CM")
@@ -91,22 +92,22 @@ func TestMessageFactory(t *testing.T) {
 		senderKeyManager := node1KeyManager
 		senderMessageFactory := node1Fac
 
-		signedHeader := &lh.ViewChangeHeaderBuilder{
-			MessageType:   lh.LEAN_HELIX_VIEW_CHANGE,
+		signedHeader := &protocol.ViewChangeHeaderBuilder{
+			MessageType:   protocol.LEAN_HELIX_VIEW_CHANGE,
 			BlockHeight:   blockHeight,
 			View:          view,
 			PreparedProof: nil,
 		}
-		vcmContentBuilder := &lh.ViewChangeMessageContentBuilder{
+		vcmContentBuilder := &protocol.ViewChangeMessageContentBuilder{
 			SignedHeader: signedHeader,
-			Sender: &lh.SenderSignatureBuilder{
-				SenderPublicKey: senderKeyManager.MyPublicKey(),
-				Signature:       senderKeyManager.Sign(signedHeader.Build().Raw()),
+			Sender: &protocol.SenderSignatureBuilder{
+				MemberId:  senderKeyManager.MyPublicKey(),
+				Signature: senderKeyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
 
 		actualVCM := senderMessageFactory.CreateViewChangeMessage(blockHeight, view, nil)
-		expectedVCM := lh.NewViewChangeMessage(vcmContentBuilder.Build(), nil)
+		expectedVCM := leanhelix.NewViewChangeMessage(vcmContentBuilder.Build(), nil)
 
 		require.True(t, bytes.Compare(expectedVCM.Raw(), actualVCM.Raw()) == 0, "compared bytes of VCM")
 	})
@@ -115,62 +116,62 @@ func TestMessageFactory(t *testing.T) {
 		senderKeyManager := node1KeyManager
 		senderMessageFactory := node1Fac
 
-		ppBlockRefBuilder := &lh.BlockRefBuilder{
-			MessageType: lh.LEAN_HELIX_PREPREPARE,
+		ppBlockRefBuilder := &protocol.BlockRefBuilder{
+			MessageType: protocol.LEAN_HELIX_PREPREPARE,
 			BlockHeight: blockHeight,
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		ppSender := &lh.SenderSignatureBuilder{
-			SenderPublicKey: keyManager.MyPublicKey(),
-			Signature:       keyManager.Sign(ppBlockRefBuilder.Build().Raw()),
+		ppSender := &protocol.SenderSignatureBuilder{
+			MemberId:  keyManager.MyPublicKey(),
+			Signature: keyManager.Sign(ppBlockRefBuilder.Build().Raw()),
 		}
-		pBlockRefBuilder := &lh.BlockRefBuilder{
-			MessageType: lh.LEAN_HELIX_PREPARE,
+		pBlockRefBuilder := &protocol.BlockRefBuilder{
+			MessageType: protocol.LEAN_HELIX_PREPARE,
 			BlockHeight: blockHeight,
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		pSenders := []*lh.SenderSignatureBuilder{
+		pSenders := []*protocol.SenderSignatureBuilder{
 			{
-				SenderPublicKey: node1KeyManager.MyPublicKey(),
-				Signature:       node1KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
+				MemberId:  node1KeyManager.MyPublicKey(),
+				Signature: node1KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
 			},
 			{
-				SenderPublicKey: node2KeyManager.MyPublicKey(),
-				Signature:       node2KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
+				MemberId:  node2KeyManager.MyPublicKey(),
+				Signature: node2KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
 			},
 		}
-		proofBuilder := &lh.PreparedProofBuilder{
+		proofBuilder := &protocol.PreparedProofBuilder{
 			PreprepareBlockRef: ppBlockRefBuilder,
 			PreprepareSender:   ppSender,
 			PrepareBlockRef:    pBlockRefBuilder,
 			PrepareSenders:     pSenders,
 		}
-		signedHeader := &lh.ViewChangeHeaderBuilder{
-			MessageType:   lh.LEAN_HELIX_VIEW_CHANGE,
+		signedHeader := &protocol.ViewChangeHeaderBuilder{
+			MessageType:   protocol.LEAN_HELIX_VIEW_CHANGE,
 			BlockHeight:   blockHeight,
 			View:          view,
 			PreparedProof: proofBuilder,
 		}
-		vcmContentBuilder := &lh.ViewChangeMessageContentBuilder{
+		vcmContentBuilder := &protocol.ViewChangeMessageContentBuilder{
 			SignedHeader: signedHeader,
-			Sender: &lh.SenderSignatureBuilder{
-				SenderPublicKey: senderKeyManager.MyPublicKey(),
-				Signature:       senderKeyManager.Sign(signedHeader.Build().Raw()),
+			Sender: &protocol.SenderSignatureBuilder{
+				MemberId:  senderKeyManager.MyPublicKey(),
+				Signature: senderKeyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
 
-		preparedMessages := &lh.PreparedMessages{
+		preparedMessages := &leanhelix.PreparedMessages{
 			PreprepareMessage: leaderFac.CreatePreprepareMessage(blockHeight, view, block, blockHash),
-			PrepareMessages: []*lh.PrepareMessage{
+			PrepareMessages: []*leanhelix.PrepareMessage{
 				node1Fac.CreatePrepareMessage(blockHeight, view, blockHash),
 				node2Fac.CreatePrepareMessage(blockHeight, view, blockHash),
 			},
 		}
 
 		actualVCM := senderMessageFactory.CreateViewChangeMessage(blockHeight, view, preparedMessages)
-		expectedVCM := lh.NewViewChangeMessage(vcmContentBuilder.Build(), block)
+		expectedVCM := leanhelix.NewViewChangeMessage(vcmContentBuilder.Build(), block)
 
 		require.True(t, bytes.Compare(expectedVCM.Raw(), actualVCM.Raw()) == 0, "compared bytes of VCM")
 	})
@@ -179,75 +180,75 @@ func TestMessageFactory(t *testing.T) {
 		// This test assumes all non-leader nodes hold PreparedProof and also that it is the same for all of them
 
 		// Construct the "expected" message manually
-		ppBlockRefBuilder := &lh.BlockRefBuilder{
-			MessageType: lh.LEAN_HELIX_PREPREPARE,
+		ppBlockRefBuilder := &protocol.BlockRefBuilder{
+			MessageType: protocol.LEAN_HELIX_PREPREPARE,
 			BlockHeight: blockHeight,
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		ppSender := &lh.SenderSignatureBuilder{
-			SenderPublicKey: keyManager.MyPublicKey(),
-			Signature:       keyManager.Sign(ppBlockRefBuilder.Build().Raw()),
+		ppSender := &protocol.SenderSignatureBuilder{
+			MemberId:  keyManager.MyPublicKey(),
+			Signature: keyManager.Sign(ppBlockRefBuilder.Build().Raw()),
 		}
-		pBlockRefBuilder := &lh.BlockRefBuilder{
-			MessageType: lh.LEAN_HELIX_PREPARE,
+		pBlockRefBuilder := &protocol.BlockRefBuilder{
+			MessageType: protocol.LEAN_HELIX_PREPARE,
 			BlockHeight: blockHeight,
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		pSenders := []*lh.SenderSignatureBuilder{
+		pSenders := []*protocol.SenderSignatureBuilder{
 			{
-				SenderPublicKey: node1KeyManager.MyPublicKey(),
-				Signature:       node1KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
+				MemberId:  node1KeyManager.MyPublicKey(),
+				Signature: node1KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
 			},
 			{
-				SenderPublicKey: node2KeyManager.MyPublicKey(),
-				Signature:       node2KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
+				MemberId:  node2KeyManager.MyPublicKey(),
+				Signature: node2KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
 			},
 		}
-		proofBuilder := &lh.PreparedProofBuilder{
+		proofBuilder := &protocol.PreparedProofBuilder{
 			PreprepareBlockRef: ppBlockRefBuilder,
 			PreprepareSender:   ppSender,
 			PrepareBlockRef:    pBlockRefBuilder,
 			PrepareSenders:     pSenders,
 		}
 
-		nodesVCHeader := &lh.ViewChangeHeaderBuilder{
-			MessageType:   lh.LEAN_HELIX_VIEW_CHANGE,
+		nodesVCHeader := &protocol.ViewChangeHeaderBuilder{
+			MessageType:   protocol.LEAN_HELIX_VIEW_CHANGE,
 			BlockHeight:   blockHeight,
 			View:          view,
 			PreparedProof: proofBuilder,
 		}
-		node1Confirmation := &lh.ViewChangeMessageContentBuilder{
+		node1Confirmation := &protocol.ViewChangeMessageContentBuilder{
 			SignedHeader: nodesVCHeader,
-			Sender: &lh.SenderSignatureBuilder{
-				SenderPublicKey: node1KeyManager.MyPublicKey(),
-				Signature:       node1KeyManager.Sign(nodesVCHeader.Build().Raw()),
+			Sender: &protocol.SenderSignatureBuilder{
+				MemberId:  node1KeyManager.MyPublicKey(),
+				Signature: node1KeyManager.Sign(nodesVCHeader.Build().Raw()),
 			},
 		}
-		node2Confirmation := &lh.ViewChangeMessageContentBuilder{
+		node2Confirmation := &protocol.ViewChangeMessageContentBuilder{
 			SignedHeader: nodesVCHeader,
-			Sender: &lh.SenderSignatureBuilder{
-				SenderPublicKey: node2KeyManager.MyPublicKey(),
-				Signature:       node2KeyManager.Sign(nodesVCHeader.Build().Raw()),
+			Sender: &protocol.SenderSignatureBuilder{
+				MemberId:  node2KeyManager.MyPublicKey(),
+				Signature: node2KeyManager.Sign(nodesVCHeader.Build().Raw()),
 			},
 		}
-		nvmHeader := &lh.NewViewHeaderBuilder{
-			MessageType: lh.LEAN_HELIX_NEW_VIEW,
+		nvmHeader := &protocol.NewViewHeaderBuilder{
+			MessageType: protocol.LEAN_HELIX_NEW_VIEW,
 			BlockHeight: blockHeight,
 			View:        view,
-			ViewChangeConfirmations: []*lh.ViewChangeMessageContentBuilder{
+			ViewChangeConfirmations: []*protocol.ViewChangeMessageContentBuilder{
 				node1Confirmation, node2Confirmation,
 			},
 		}
-		nvmSender := &lh.SenderSignatureBuilder{
-			SenderPublicKey: keyManager.MyPublicKey(),
-			Signature:       keyManager.Sign(nvmHeader.Build().Raw()),
+		nvmSender := &protocol.SenderSignatureBuilder{
+			MemberId:  keyManager.MyPublicKey(),
+			Signature: keyManager.Sign(nvmHeader.Build().Raw()),
 		}
-		nvmContentBuilder := &lh.NewViewMessageContentBuilder{
+		nvmContentBuilder := &protocol.NewViewMessageContentBuilder{
 			SignedHeader: nvmHeader,
 			Sender:       nvmSender,
-			PreprepareMessageContent: &lh.PreprepareContentBuilder{
+			Message: &protocol.PreprepareContentBuilder{
 				SignedHeader: ppBlockRefBuilder,
 				Sender:       ppSender,
 			},
@@ -255,14 +256,14 @@ func TestMessageFactory(t *testing.T) {
 
 		// Construct "actual" message with message factories
 		ppm := leaderFac.CreatePreprepareMessage(blockHeight, view, block, blockHash)
-		preparedMessages := &lh.PreparedMessages{
+		preparedMessages := &leanhelix.PreparedMessages{
 			PreprepareMessage: ppm,
-			PrepareMessages: []*lh.PrepareMessage{
+			PrepareMessages: []*leanhelix.PrepareMessage{
 				node1Fac.CreatePrepareMessage(blockHeight, view, blockHash),
 				node2Fac.CreatePrepareMessage(blockHeight, view, blockHash),
 			},
 		}
-		confirmations := []*lh.ViewChangeMessageContentBuilder{
+		confirmations := []*protocol.ViewChangeMessageContentBuilder{
 			node1Fac.CreateViewChangeMessageContentBuilder(blockHeight, view, preparedMessages),
 			node2Fac.CreateViewChangeMessageContentBuilder(blockHeight, view, preparedMessages),
 		}
@@ -273,7 +274,7 @@ func TestMessageFactory(t *testing.T) {
 			leaderFac.CreatePreprepareMessageContentBuilder(blockHeight, view, block, blockHash),
 			confirmations,
 			block)
-		expectedNVM := lh.NewNewViewMessage(nvmContentBuilder.Build(), block)
+		expectedNVM := leanhelix.NewNewViewMessage(nvmContentBuilder.Build(), block)
 
 		require.True(t, bytes.Compare(expectedNVM.Raw(), actualNVM.Raw()) == 0, "compared bytes of NVM")
 

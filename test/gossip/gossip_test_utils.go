@@ -3,12 +3,12 @@ package gossip
 //import "github.com/orbs-network/lean-helix-go"
 //import "github.com/orbs-network/lean-helix-go"
 
-//func MessageToGossip(message leanhelix.ConsensusMessage) leanhelix.ConsensusRawMessage {
+//func MessageToGossip(message protocol.ConsensusMessage) protocol.ConsensusRawMessage {
 //
 //	switch typedMessage := message.(type) {
-//	case *leanhelix.PreprepareMessage:
-//		return leanhelix.CreateConsensusMessage(typedMessage.Raw())
+//	case *protocol.PreprepareMessage:
+//		return protocol.CreateConsensusMessage(typedMessage.Raw())
 //	}
 //
-//	return leanhelix.CreateConsensusMessage(message.Raw(), message.Block())
+//	return protocol.CreateConsensusMessage(message.Raw(), message.Block())
 //}

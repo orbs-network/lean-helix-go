@@ -2,7 +2,7 @@ package test
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/orbs-network-go/test"
 	"github.com/stretchr/testify/require"

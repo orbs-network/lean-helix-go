@@ -3,7 +3,7 @@ package leanhelixterm
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/stretchr/testify/require"
@@ -459,7 +459,7 @@ func TestPrepareNotAcceptingMessagesFromTheLeader(t *testing.T) {
 
 func TestPreprepareNotAcceptedIfBlockHashDoesNotMatch(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		sendPreprepare := func(startView primitives.View, block leanhelix.Block, blockHash primitives.Uint256, shouldAcceptMessage bool) {
+		sendPreprepare := func(startView primitives.View, block leanhelix.Block, blockHash primitives.BlockHash, shouldAcceptMessage bool) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, startView)
 
@@ -577,22 +577,22 @@ func TestAValidPreparedProofIsSentOnViewChange(t *testing.T) {
 
 		msg := h.getLastSentViewChangeMessage()
 		msgContent := msg.Content()
-		vcSenderPK := msgContent.Sender().SenderPublicKey()
+		vcSenderPK := msgContent.Sender().MemberId()
 		vcHeader := msgContent.SignedHeader()
 		resultView := vcHeader.View()
 		resultHeight := vcHeader.BlockHeight()
 		preparedProof := vcHeader.PreparedProof()
-		ppSenderPK := preparedProof.PreprepareSender().SenderPublicKey()
+		ppSenderPK := preparedProof.PreprepareSender().MemberId()
 		ppBlockRef := preparedProof.PreprepareBlockRef()
 		pBlockRef := preparedProof.PrepareBlockRef()
 
-		var pSendersPKs []primitives.Ed25519PublicKey
+		var pSendersPKs []primitives.MemberId
 		pSendersIter := preparedProof.PrepareSendersIterator()
 		for {
 			if !pSendersIter.HasNext() {
 				break
 			}
-			pSendersPKs = append(pSendersPKs, pSendersIter.NextPrepareSenders().SenderPublicKey())
+			pSendersPKs = append(pSendersPKs, pSendersIter.NextPrepareSenders().MemberId())
 		}
 
 		member1PK := h.getMemberPk(1)

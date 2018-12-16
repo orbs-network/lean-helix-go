@@ -2,7 +2,7 @@ package test
 
 import (
 	lh "github.com/orbs-network/lean-helix-go"
-	. "github.com/orbs-network/lean-helix-go/primitives"
+	. "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/stretchr/testify/require"
 	"math"
@@ -10,18 +10,18 @@ import (
 )
 
 func TestProofsValidator(t *testing.T) {
-	myPK := Ed25519PublicKey("My PublicKey")
-	leaderPK := Ed25519PublicKey("Leader PK")
-	node1PK := Ed25519PublicKey("Node 1")
-	node2PK := Ed25519PublicKey("Node 2")
-	node3PK := Ed25519PublicKey("Node 3")
+	myPK := MemberId("My PublicKey")
+	leaderPK := MemberId("Leader PK")
+	node1PK := MemberId("Node 1")
+	node2PK := MemberId("Node 2")
+	node3PK := MemberId("Node 3")
 	myKeyManager := builders.NewMockKeyManager(myPK)
 	leaderKeyManager := builders.NewMockKeyManager(leaderPK)
 	node1KeyManager := builders.NewMockKeyManager(node1PK)
 	node2KeyManager := builders.NewMockKeyManager(node2PK)
 	node3KeyManager := builders.NewMockKeyManager(node3PK)
 
-	membersPKs := []Ed25519PublicKey{leaderPK, node1PK, node2PK, node3PK}
+	membersPKs := []MemberId{leaderPK, node1PK, node2PK, node3PK}
 
 	nodeCount := 4
 	f := int(math.Floor(float64(nodeCount) / 3))
@@ -34,7 +34,7 @@ func TestProofsValidator(t *testing.T) {
 	blockHash := builders.CalculateBlockHash(block)
 	goodPrepareProof := builders.CreatePreparedProof(leaderKeyManager, []lh.KeyManager{node1KeyManager, node2KeyManager, node3KeyManager}, blockHeight, view, blockHash)
 
-	calcLeaderPk := func(view View) Ed25519PublicKey {
+	calcLeaderPk := func(view View) MemberId {
 		return membersPKs[view]
 	}
 
@@ -94,7 +94,7 @@ func TestProofsValidator(t *testing.T) {
 	})
 
 	t.Run("TestProofsValidatorWithANonMember", func(t *testing.T) {
-		nonMemberKeyManager := builders.NewMockKeyManager(Ed25519PublicKey("Not in members PK"))
+		nonMemberKeyManager := builders.NewMockKeyManager(MemberId("Not in members PK"))
 		preparedProof := builders.CreatePreparedProof(leaderKeyManager, []lh.KeyManager{node1KeyManager, node2KeyManager, nonMemberKeyManager}, blockHeight, view, blockHash)
 		result := lh.ValidatePreparedProof(targetBlockHeight, targetView, preparedProof, q, myKeyManager, membersPKs, calcLeaderPk)
 		require.False(t, result, "Did not reject a proof with a none member")
@@ -107,8 +107,8 @@ func TestProofsValidator(t *testing.T) {
 	})
 
 	t.Run("TestProofsValidatorWithMismatchingViewToLeader", func(t *testing.T) {
-		calcLeaderPk := func(view View) Ed25519PublicKey {
-			return Ed25519PublicKey("Some other node PK")
+		calcLeaderPk := func(view View) MemberId {
+			return MemberId("Some other node PK")
 		}
 		result := lh.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, q, myKeyManager, membersPKs, calcLeaderPk)
 		require.False(t, result, "Did not reject a proof with a mismatching view to leader")

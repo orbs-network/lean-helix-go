@@ -3,17 +3,17 @@ package builders
 import (
 	"bytes"
 	"fmt"
-	lh "github.com/orbs-network/lean-helix-go"
-	. "github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
 type MockKeyManager struct {
-	myPublicKey             Ed25519PublicKey
-	rejectedPublicKeys      []Ed25519PublicKey
+	myPublicKey             primitives.MemberId
+	rejectedPublicKeys      []primitives.MemberId
 	FailFutureVerifications bool
 }
 
-func NewMockKeyManager(publicKey Ed25519PublicKey, rejectedPublicKeys ...Ed25519PublicKey) *MockKeyManager {
+func NewMockKeyManager(publicKey primitives.MemberId, rejectedPublicKeys ...primitives.MemberId) *MockKeyManager {
 	return &MockKeyManager{
 		myPublicKey:             publicKey,
 		rejectedPublicKeys:      rejectedPublicKeys,
@@ -26,22 +26,22 @@ func (km *MockKeyManager) Sign(content []byte) []byte {
 	return []byte(str)
 }
 
-func (km *MockKeyManager) Verify(content []byte, sender *lh.SenderSignature) bool {
+func (km *MockKeyManager) Verify(content []byte, sender *protocol.SenderSignature) bool {
 	if km.FailFutureVerifications {
 		return false
 	}
 
 	for _, rejectedKey := range km.rejectedPublicKeys {
-		if rejectedKey.Equal(sender.SenderPublicKey()) {
+		if rejectedKey.Equal(sender.MemberId()) {
 			return false
 		}
 	}
 
-	str := fmt.Sprintf("SIG|%s|%x", sender.SenderPublicKey().KeyForMap(), content)
+	str := fmt.Sprintf("SIG|%s|%x", sender.MemberId().KeyForMap(), content)
 	expected := []byte(str)
 	return bytes.Equal(expected, sender.Signature())
 }
 
-func (km *MockKeyManager) MyPublicKey() Ed25519PublicKey {
+func (km *MockKeyManager) MyPublicKey() primitives.MemberId {
 	return km.myPublicKey
 }

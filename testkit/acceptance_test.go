@@ -8,7 +8,7 @@ package testkit
 //
 
 // TODO uncomment and use spi struct
-//func TestHappyFlow(t *testing.T, spi *leanhelix.LeanHelixSPI) {
+//func TestHappyFlow(t *testing.T, spi *protocol.LeanHelixSPI) {
 //
 //	test.WithContext(func(ctx context.Context) {
 //		block1 := builders.CreateBlock(builders.GenesisBlock)

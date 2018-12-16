@@ -2,7 +2,7 @@ package builders
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
 type ElectionTriggerMock struct {

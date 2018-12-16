@@ -2,7 +2,8 @@ package leanhelix
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
 type LeanHelix struct {
@@ -17,7 +18,7 @@ type LeanHelix struct {
 }
 
 func (lh *LeanHelix) notifyCommitted(block Block) {
-	lh.logger.Debug("%s LeanHelix.notifyCommitted()", lh.config.KeyManager.MyPublicKey().KeyForMap())
+	lh.logger.Debug("%s LeanHelix.notifyCommitted(), %s", lh.config.KeyManager.MyPublicKey().KeyForMap(), block)
 	for _, subscription := range lh.commitSubscriptions {
 		subscription(block)
 	}
@@ -35,7 +36,7 @@ func (lh *LeanHelix) GossipMessageReceived(ctx context.Context, msg ConsensusRaw
 	lh.messagesChannel <- msg
 }
 
-func (lh *LeanHelix) ValidateBlockConsensus(block Block, blockProof *BlockProof, prevBlockProof *BlockProof) bool {
+func (lh *LeanHelix) ValidateBlockConsensus(block Block, blockProof *protocol.BlockProof, prevBlockProof *protocol.BlockProof) bool {
 	// TODO: implement after 16-DEC-2018 - spec on lh-outline is incomplete!
 	return true
 }

@@ -1,6 +1,9 @@
 package leanhelix
 
-import "github.com/orbs-network/lean-helix-go/primitives"
+import (
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
+)
 
 // Sorting View arrays
 type ViewCounters []primitives.View
@@ -9,16 +12,9 @@ func (arr ViewCounters) Len() int           { return len(arr) }
 func (arr ViewCounters) Swap(i, j int)      { arr[i], arr[j] = arr[j], arr[i] }
 func (arr ViewCounters) Less(i, j int) bool { return arr[i] < arr[j] }
 
-// TODO lh-outline: Remove MessageType
-
 type consensusRawMessage struct {
-	messageType MessageType
-	content     []byte
-	block       Block
-}
-
-func (c *consensusRawMessage) MessageType() MessageType {
-	return c.messageType
+	content []byte
+	block   Block
 }
 
 func (c *consensusRawMessage) Content() []byte {
@@ -30,48 +26,52 @@ func (c *consensusRawMessage) Block() Block {
 }
 
 func (c *consensusRawMessage) ToConsensusMessage() ConsensusMessage {
-	var message ConsensusMessage
-	switch c.MessageType() {
-	case LEAN_HELIX_PREPREPARE:
-		content := PreprepareContentReader(c.Content())
-		message = &PreprepareMessage{
-			content: content,
-			block:   c.Block(),
-		}
+	content := protocol.LeanhelixContentReader(c.Content())
 
-	case LEAN_HELIX_PREPARE:
-		content := PrepareContentReader(c.Content())
-		message = &PrepareMessage{
-			content: content,
-		}
-
-	case LEAN_HELIX_COMMIT:
-		content := CommitContentReader(c.Content())
-		message = &CommitMessage{
-			content: content,
-		}
-	case LEAN_HELIX_VIEW_CHANGE:
-		content := ViewChangeMessageContentReader(c.Content())
-		message = &ViewChangeMessage{
-			content: content,
-			block:   c.Block(),
-		}
-
-	case LEAN_HELIX_NEW_VIEW:
-		content := NewViewMessageContentReader(c.Content())
-		message = &NewViewMessage{
+	if content.IsMessagePreprepareMessage() {
+		content := protocol.PreprepareContentReader(c.Content())
+		return &PreprepareMessage{
 			content: content,
 			block:   c.Block(),
 		}
 	}
-	return message
 
+	if content.IsMessagePrepareMessage() {
+		content := protocol.PrepareContentReader(c.Content())
+		return &PrepareMessage{
+			content: content,
+		}
+	}
+
+	if content.IsMessagePrepareMessage() {
+		content := protocol.CommitContentReader(c.Content())
+		return &CommitMessage{
+			content: content,
+		}
+	}
+
+	if content.IsMessagePrepareMessage() {
+		content := protocol.ViewChangeMessageContentReader(c.Content())
+		return &ViewChangeMessage{
+			content: content,
+			block:   c.Block(),
+		}
+	}
+
+	if content.IsMessagePrepareMessage() {
+		content := protocol.NewViewMessageContentReader(c.Content())
+		return &NewViewMessage{
+			content: content,
+			block:   c.Block(),
+		}
+	}
+
+	return nil // handle with error
 }
 
-func CreateConsensusRawMessage(messageType MessageType, content []byte, block Block) ConsensusRawMessage {
+func CreateConsensusRawMessage(content []byte, block Block) ConsensusRawMessage {
 	return &consensusRawMessage{
-		messageType: messageType,
-		content:     content,
-		block:       block,
+		content: content,
+		block:   block,
 	}
 }

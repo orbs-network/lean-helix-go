@@ -2,7 +2,8 @@ package builders
 
 import (
 	. "github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
 func CreatePreparedProof(
@@ -10,28 +11,28 @@ func CreatePreparedProof(
 	pKeyManagers []KeyManager,
 	height primitives.BlockHeight,
 	view primitives.View,
-	blockHash primitives.Uint256) *PreparedProof {
+	blockHash primitives.BlockHash) *protocol.PreparedProof {
 
-	var ppBlockRef *BlockRefBuilder
-	var pBlockRef *BlockRefBuilder
-	var ppSender *SenderSignatureBuilder
-	var pSenders []*SenderSignatureBuilder
+	var ppBlockRef *protocol.BlockRefBuilder
+	var pBlockRef *protocol.BlockRefBuilder
+	var ppSender *protocol.SenderSignatureBuilder
+	var pSenders []*protocol.SenderSignatureBuilder
 
 	if len(pKeyManagers) == 0 {
 		pBlockRef = nil
 		pSenders = nil
 	} else {
-		pBlockRef = &BlockRefBuilder{
-			MessageType: LEAN_HELIX_PREPARE,
+		pBlockRef = &protocol.BlockRefBuilder{
+			MessageType: protocol.LEAN_HELIX_PREPARE,
 			BlockHeight: height,
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		pSenders = make([]*SenderSignatureBuilder, len(pKeyManagers))
+		pSenders = make([]*protocol.SenderSignatureBuilder, len(pKeyManagers))
 		for i, mgr := range pKeyManagers {
-			pSenders[i] = &SenderSignatureBuilder{
-				SenderPublicKey: mgr.MyPublicKey(),
-				Signature:       mgr.Sign(pBlockRef.Build().Raw()),
+			pSenders[i] = &protocol.SenderSignatureBuilder{
+				MemberId:  mgr.MyPublicKey(),
+				Signature: mgr.Sign(pBlockRef.Build().Raw()),
 			}
 		}
 	}
@@ -39,18 +40,18 @@ func CreatePreparedProof(
 		ppBlockRef = nil
 		ppSender = nil
 	} else {
-		ppBlockRef = &BlockRefBuilder{
-			MessageType: LEAN_HELIX_PREPREPARE,
+		ppBlockRef = &protocol.BlockRefBuilder{
+			MessageType: protocol.LEAN_HELIX_PREPREPARE,
 			BlockHeight: height,
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		ppSender = &SenderSignatureBuilder{
-			SenderPublicKey: ppKeyManager.MyPublicKey(),
-			Signature:       ppKeyManager.Sign(ppBlockRef.Build().Raw()),
+		ppSender = &protocol.SenderSignatureBuilder{
+			MemberId:  ppKeyManager.MyPublicKey(),
+			Signature: ppKeyManager.Sign(ppBlockRef.Build().Raw()),
 		}
 	}
-	preparedProof := &PreparedProofBuilder{
+	preparedProof := &protocol.PreparedProofBuilder{
 		PreprepareBlockRef: ppBlockRef,
 		PreprepareSender:   ppSender,
 		PrepareBlockRef:    pBlockRef,
@@ -60,7 +61,7 @@ func CreatePreparedProof(
 	return preparedProof.Build()
 }
 
-func APreparedProofByMessages(PPMessage *PreprepareMessage, PMessages []*PrepareMessage) *PreparedProof {
+func APreparedProofByMessages(PPMessage *PreprepareMessage, PMessages []*PrepareMessage) *protocol.PreparedProof {
 	preparedMessages := &PreparedMessages{
 		PreprepareMessage: PPMessage,
 		PrepareMessages:   PMessages,

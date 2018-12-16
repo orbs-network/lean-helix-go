@@ -3,7 +3,7 @@ package builders
 import (
 	"fmt"
 	"github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
 )
 
@@ -11,7 +11,7 @@ type NodeBuilder struct {
 	gossip        *gossip.Gossip
 	blocksPool    *BlocksPool
 	logsToConsole bool
-	publicKey     primitives.Ed25519PublicKey
+	publicKey     primitives.MemberId
 }
 
 func NewNodeBuilder() *NodeBuilder {
@@ -25,7 +25,7 @@ func (builder *NodeBuilder) ThatIsPartOf(gossip *gossip.Gossip) *NodeBuilder {
 	return builder
 }
 
-func (builder *NodeBuilder) WithPublicKey(publicKey primitives.Ed25519PublicKey) *NodeBuilder {
+func (builder *NodeBuilder) WithPublicKey(publicKey primitives.MemberId) *NodeBuilder {
 	if builder.publicKey == nil {
 		builder.publicKey = publicKey
 	}
@@ -47,7 +47,7 @@ func (builder *NodeBuilder) ThatLogsToConsole() *NodeBuilder {
 func (builder *NodeBuilder) Build() *Node {
 	publicKey := builder.publicKey
 	if publicKey == nil {
-		publicKey = primitives.Ed25519PublicKey(fmt.Sprintf("Dummy PublicKey"))
+		publicKey = primitives.MemberId(fmt.Sprintf("Dummy PublicKey"))
 	}
 
 	blockUtils := NewMockBlockUtils(builder.blocksPool)

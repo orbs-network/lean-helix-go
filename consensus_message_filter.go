@@ -3,18 +3,18 @@ package leanhelix
 import (
 	"context"
 	"fmt"
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
 type ConsensusMessageFilter struct {
 	blockHeight         primitives.BlockHeight
 	termMessagesHandler TermMessagesHandler
-	myPublicKey         primitives.Ed25519PublicKey
+	myPublicKey         primitives.MemberId
 	messageCache        map[primitives.BlockHeight][]ConsensusMessage
 	logger              Logger
 }
 
-func NewConsensusMessageFilter(myPublicKey primitives.Ed25519PublicKey, logger Logger) *ConsensusMessageFilter {
+func NewConsensusMessageFilter(myPublicKey primitives.MemberId, logger Logger) *ConsensusMessageFilter {
 	res := &ConsensusMessageFilter{
 		myPublicKey:  myPublicKey,
 		messageCache: make(map[primitives.BlockHeight][]ConsensusMessage),

@@ -2,7 +2,7 @@ package leanhelixterm
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/stretchr/testify/require"
@@ -27,10 +27,10 @@ func TestOnlyLeaderIsSendingPrePrepareOnce(t *testing.T) {
 		net.Nodes[2].Tick(ctx)
 		net.Nodes[3].Tick(ctx)
 
-		require.Equal(t, 1, net.Nodes[0].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPREPARE))
-		require.Equal(t, 0, net.Nodes[1].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPREPARE))
-		require.Equal(t, 0, net.Nodes[2].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPREPARE))
-		require.Equal(t, 0, net.Nodes[3].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPREPARE))
+		require.Equal(t, 1, net.Nodes[0].Gossip.CountSentMessages(protocol.LEAN_HELIX_PREPREPARE))
+		require.Equal(t, 0, net.Nodes[1].Gossip.CountSentMessages(protocol.LEAN_HELIX_PREPREPARE))
+		require.Equal(t, 0, net.Nodes[2].Gossip.CountSentMessages(protocol.LEAN_HELIX_PREPREPARE))
+		require.Equal(t, 0, net.Nodes[3].Gossip.CountSentMessages(protocol.LEAN_HELIX_PREPREPARE))
 	})
 }
 
@@ -50,20 +50,20 @@ func TestHappyFlowMessages(t *testing.T) {
 		// hang the leader before the next round
 		net.WaitForNodeToRequestNewBlock(net.Nodes[0])
 
-		require.Equal(t, 1, net.Nodes[0].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPREPARE))
-		require.Equal(t, 0, net.Nodes[1].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPREPARE))
-		require.Equal(t, 0, net.Nodes[2].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPREPARE))
-		require.Equal(t, 0, net.Nodes[3].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPREPARE))
+		require.Equal(t, 1, net.Nodes[0].Gossip.CountSentMessages(protocol.LEAN_HELIX_PREPREPARE))
+		require.Equal(t, 0, net.Nodes[1].Gossip.CountSentMessages(protocol.LEAN_HELIX_PREPREPARE))
+		require.Equal(t, 0, net.Nodes[2].Gossip.CountSentMessages(protocol.LEAN_HELIX_PREPREPARE))
+		require.Equal(t, 0, net.Nodes[3].Gossip.CountSentMessages(protocol.LEAN_HELIX_PREPREPARE))
 
-		require.Equal(t, 0, net.Nodes[0].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPARE))
-		require.Equal(t, 1, net.Nodes[1].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPARE))
-		require.Equal(t, 1, net.Nodes[2].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPARE))
-		require.Equal(t, 1, net.Nodes[3].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_PREPARE))
+		require.Equal(t, 0, net.Nodes[0].Gossip.CountSentMessages(protocol.LEAN_HELIX_PREPARE))
+		require.Equal(t, 1, net.Nodes[1].Gossip.CountSentMessages(protocol.LEAN_HELIX_PREPARE))
+		require.Equal(t, 1, net.Nodes[2].Gossip.CountSentMessages(protocol.LEAN_HELIX_PREPARE))
+		require.Equal(t, 1, net.Nodes[3].Gossip.CountSentMessages(protocol.LEAN_HELIX_PREPARE))
 
-		require.Equal(t, 1, net.Nodes[0].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_COMMIT))
-		require.Equal(t, 1, net.Nodes[1].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_COMMIT))
-		require.Equal(t, 1, net.Nodes[2].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_COMMIT))
-		require.Equal(t, 1, net.Nodes[3].Gossip.CountSentMessages(leanhelix.LEAN_HELIX_COMMIT))
+		require.Equal(t, 1, net.Nodes[0].Gossip.CountSentMessages(protocol.LEAN_HELIX_COMMIT))
+		require.Equal(t, 1, net.Nodes[1].Gossip.CountSentMessages(protocol.LEAN_HELIX_COMMIT))
+		require.Equal(t, 1, net.Nodes[2].Gossip.CountSentMessages(protocol.LEAN_HELIX_COMMIT))
+		require.Equal(t, 1, net.Nodes[3].Gossip.CountSentMessages(protocol.LEAN_HELIX_COMMIT))
 	})
 }
 

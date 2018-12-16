@@ -18,7 +18,7 @@
 
 
 
-	NodePublicKey() primitives.Ed25519PublicKey
+	NodePublicKey() primitives.MemberId
 	NodePrivateKey() primitives.Ed25519PrivateKey
 	FederationNodes(asOfBlock uint64) map[string]config.FederationNode
 	LeanHelixConsensusRoundTimeoutInterval() time.Duration

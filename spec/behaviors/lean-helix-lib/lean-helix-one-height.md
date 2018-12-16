@@ -105,7 +105,7 @@
         * Block_height = my_state.block_height
         * Block_hash
     * Signer = my_state.My_ID
-    * Signature = Get Signature by calling `Config.keyManager.SignConsensusMessage(PRE_PREPARE_HEADER)`
+    * Signature = Get Signature by calling `Config.KeyManager.Sign(PRE_PREPARE_HEADER)`
     * Block _(constructed block proposal)_
 * Update the Messages Log
     * Log the PRE_PREPARE message
@@ -196,7 +196,7 @@
         * Block_height = my_state.block_height
         * Block_hash = Message.Block_hash
     * Signer = my_state.My_ID
-    * Signature = Get Signature by calling `Config.keyManager.SignConsensusMessage(PREPARE_HEADER)`
+    * Signature = Get Signature by calling `Config.KeyManager.Sign(PREPARE_HEADER)`
 * Update the Messages Log
   * Log the PREPARE message
 * Send PREPARE Message to members
@@ -260,7 +260,7 @@
         * View
         * Block_hash
     * Signer = my_state.My_ID
-    * Signature = Get Signature by calling `Config.keyManager.SignConsensusMessage(COMMIT_HEADER)`
+    * Signature = Get Signature by calling `Config.KeyManager.Sign(COMMIT_HEADER)`
 * Update the MessagesLog
   * Log the COMMIT message
 * Send COMMIT Message to members
@@ -354,7 +354,7 @@
         * PreparedProof
     * Block _(Matches the Block_hash in PreparedProof - could be None)_
     * Signer = my_state.My_ID
-    * Signature = Get Signature by calling `Config.keyManager.SignConsensusMessage(VIEW_CHANGE_HEADER)`
+    * Signature = Get Signature by calling `Config.KeyManager.Sign(VIEW_CHANGE_HEADER)`
 
 #### Leader logs message and checks criteria, others send to leader
 * If `IsLeader(my_state.View, my_state.My_ID)`
@@ -495,7 +495,7 @@
         * Block_height = my_state.block_height
         * Block_hash = Get Block_hash by calling `Config.BlockUtils.CalcBlockHash(Block)`
     * Signer = my_state.My_ID
-    * Signature = Get Signature by calling `Config.keyManager.SignConsensusMessage(PRE_PREPARE_HEADER)`
+    * Signature = Get Signature by calling `Config.KeyManager.Sign(PRE_PREPARE_HEADER)`
     * Block
 * Update the Messages Log
   * Log the PRE_PREPARE message
@@ -507,7 +507,7 @@
         * ElectedProof
     * PrePrepare message
     * Signer = my_state.My_ID
-    * Signature = Get Signature by calling `Config.keyManager.SignConsensusMessage(NEW_VIEW_HEADER)`
+    * Signature = Get Signature by calling `Config.KeyManager.Sign(NEW_VIEW_HEADER)`
 * Send NEW_VIEW Message to members
     * `Config.Communication.SendConsensusMessage(my_state.Block_height, my_state.Members, NEW_VIEW message)`
 

@@ -2,7 +2,7 @@ package gossip
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/stretchr/testify/require"
 	"math"
@@ -12,8 +12,8 @@ import (
 )
 
 func TestGossipDiscovery(t *testing.T) {
-	genPublicKey := func() primitives.Ed25519PublicKey {
-		return primitives.Ed25519PublicKey(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000000))))
+	genPublicKey := func() primitives.MemberId {
+		return primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000000))))
 	}
 
 	t.Run("create a Discovery instance", func(t *testing.T) {
@@ -90,7 +90,7 @@ func TestGossipDiscovery(t *testing.T) {
 			gd.RegisterGossip(id1, g1)
 			gd.RegisterGossip(id2, g2)
 			gd.RegisterGossip(id3, g3)
-			actual := gd.Gossips([]primitives.Ed25519PublicKey{id1, id3})
+			actual := gd.Gossips([]primitives.MemberId{id1, id3})
 			expected := []*Gossip{g1, g3}
 			require.ElementsMatch(t, actual, expected, "list of requested gossips")
 		})

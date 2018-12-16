@@ -3,7 +3,7 @@ package consensusmessagefilter
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/stretchr/testify/require"
@@ -15,37 +15,37 @@ func testLogger() leanhelix.Logger {
 }
 
 func GeneratePreprepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderPublicKey string) leanhelix.ConsensusRawMessage {
-	keyManager := builders.NewMockKeyManager(primitives.Ed25519PublicKey(senderPublicKey))
+	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderPublicKey))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	return builders.APreprepareMessage(keyManager, blockHeight, view, block).ToConsensusRawMessage()
 }
 
 func GeneratePrepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderPublicKey string) leanhelix.ConsensusRawMessage {
-	keyManager := builders.NewMockKeyManager(primitives.Ed25519PublicKey(senderPublicKey))
+	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderPublicKey))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	return builders.APrepareMessage(keyManager, blockHeight, view, block).ToConsensusRawMessage()
 }
 
 func GenerateCommitMessage(blockHeight primitives.BlockHeight, view primitives.View, senderPublicKey string) leanhelix.ConsensusRawMessage {
-	keyManager := builders.NewMockKeyManager(primitives.Ed25519PublicKey(senderPublicKey))
+	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderPublicKey))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	return builders.ACommitMessage(keyManager, blockHeight, view, block).ToConsensusRawMessage()
 }
 
 func GenerateViewChangeMessage(blockHeight primitives.BlockHeight, view primitives.View, senderPublicKey string) leanhelix.ConsensusRawMessage {
-	keyManager := builders.NewMockKeyManager(primitives.Ed25519PublicKey(senderPublicKey))
+	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderPublicKey))
 	return builders.AViewChangeMessage(keyManager, blockHeight, view, nil).ToConsensusRawMessage()
 }
 
 func GenerateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.View, senderPublicKey string) leanhelix.ConsensusRawMessage {
-	keyManager := builders.NewMockKeyManager(primitives.Ed25519PublicKey(senderPublicKey))
+	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderPublicKey))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	return builders.ANewViewMessage(keyManager, blockHeight, view, nil, nil, block).ToConsensusRawMessage()
 }
 
 func TestGettingAMessage(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"), testLogger())
+		filter := leanhelix.NewConsensusMessageFilter(primitives.MemberId("My PublicKey"), testLogger())
 		termMessagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, termMessagesHandler)
 
@@ -77,7 +77,7 @@ func TestGettingAMessage(t *testing.T) {
 
 func TestFilterMessagesFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"), testLogger())
+		filter := leanhelix.NewConsensusMessageFilter(primitives.MemberId("My PublicKey"), testLogger())
 		termMessagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, termMessagesHandler)
 
@@ -95,7 +95,7 @@ func TestFilterMessagesFromThePast(t *testing.T) {
 
 func TestCacheMessagesFromTheFuture(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"), testLogger())
+		filter := leanhelix.NewConsensusMessageFilter(primitives.MemberId("My PublicKey"), testLogger())
 		termMessagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, termMessagesHandler)
 
@@ -113,7 +113,7 @@ func TestCacheMessagesFromTheFuture(t *testing.T) {
 
 func TestFilterMessagesWithMyPublicKey(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := leanhelix.NewConsensusMessageFilter(primitives.Ed25519PublicKey("My PublicKey"), testLogger())
+		filter := leanhelix.NewConsensusMessageFilter(primitives.MemberId("My PublicKey"), testLogger())
 		termMessagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, termMessagesHandler)
 

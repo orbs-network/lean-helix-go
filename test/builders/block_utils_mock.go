@@ -5,14 +5,14 @@ import (
 	"crypto/sha256"
 	"fmt"
 	lh "github.com/orbs-network/lean-helix-go"
-	. "github.com/orbs-network/lean-helix-go/primitives"
+	. "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
 func BlocksAreEqual(block1 lh.Block, block2 lh.Block) bool {
 	return CalculateBlockHash(block1).Equal(CalculateBlockHash(block2))
 }
 
-func CalculateBlockHash(block lh.Block) Uint256 {
+func CalculateBlockHash(block lh.Block) BlockHash {
 	mockBlock := block.(*MockBlock)
 	str := fmt.Sprintf("%d_%s", mockBlock.Height(), mockBlock.Body())
 	hash := sha256.Sum256([]byte(str))
@@ -45,7 +45,7 @@ func NewMockBlockUtils(blocksPool *BlocksPool) *MockBlockUtils {
 	}
 }
 
-func (b *MockBlockUtils) CalculateBlockHash(block lh.Block) Uint256 {
+func (b *MockBlockUtils) CalculateBlockHash(block lh.Block) BlockHash {
 	return CalculateBlockHash(block)
 }
 

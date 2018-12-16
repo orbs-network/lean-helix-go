@@ -2,7 +2,7 @@ package builders
 
 import (
 	"github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
 func CreatePreparedMessages(

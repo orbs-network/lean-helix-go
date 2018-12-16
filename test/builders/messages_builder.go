@@ -2,7 +2,8 @@ package builders
 
 import (
 	"github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	leanhelixProtos "github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
 func APreprepareMessage(
@@ -49,8 +50,8 @@ func ANewViewMessage(
 	keyManager leanhelix.KeyManager,
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
-	ppContentBuilder *leanhelix.PreprepareContentBuilder,
-	confirmations []*leanhelix.ViewChangeMessageContentBuilder,
+	ppContentBuilder *leanhelixProtos.PreprepareContentBuilder,
+	confirmations []*leanhelixProtos.ViewChangeMessageContentBuilder,
 	block leanhelix.Block) *leanhelix.NewViewMessage {
 
 	messageFactory := leanhelix.NewMessageFactory(keyManager)

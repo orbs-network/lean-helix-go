@@ -1,6 +1,6 @@
 package leanhelix
 
-import "github.com/orbs-network/lean-helix-go/primitives"
+import "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 
 type PreparedMessages struct {
 	PreprepareMessage *PreprepareMessage
