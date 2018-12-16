@@ -1,10 +1,24 @@
-// AUTO GENERATED FILE (by membufc proto compiler v0.0.20)
+// AUTO GENERATED FILE (by membufc proto compiler v0.0.21)
 package primitives
 
 import (
 	"bytes"
 	"fmt"
 )
+
+type Bls1PublicKey []byte
+
+func (x Bls1PublicKey) String() string {
+	return fmt.Sprintf("%x", []byte(x))
+}
+
+func (x Bls1PublicKey) Equal(y Bls1PublicKey) bool {
+	return bytes.Equal(x, y)
+}
+
+func (x Bls1PublicKey) KeyForMap() string {
+	return string(x)
+}
 
 type Bls1Sig []byte
 
