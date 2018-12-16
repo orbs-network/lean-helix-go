@@ -18,7 +18,7 @@ Lean Helix consensus algorithm implementation in Go.
 * `Consumer` - the user of this library
 * `API` - methods in the library that the consumer can execute (e.g. `NewLeanHelix()`)
 * `SPI` - Service Programming Interface - interfaces defined in the library, for which the consumer provides the implementation
-  * For example - `NetworkCommunication` is responsible for transferring messages between nodes in the network. The library cannot assume anything about the consumer's network, therefore it is up to the consumer to provide the actual implementation of message transfer.
+  * For example - `Communication` is responsible for transferring messages between nodes in the network. The library cannot assume anything about the consumer's network, therefore it is up to the consumer to provide the actual implementation of message transfer.
 * `membuffers` - the 3rd party dependency that the library uses for serializing its messages into and from byte arrays
   * Repo on [github](https://github.com/orbs-network/membuffers)
 * `protos` - the *.proto files (in [Google's Protobuf](https://developers.google.com/protocol-buffers/) language) which define the structure of messages passing between Lean Helix and its consumer.
@@ -205,7 +205,7 @@ type BlockProof interface {
 ```
 type NetworkCommunication interface {
 	SendToMembers(publicKeys []PublicKey, messageType string, message []MessageTransporter)
-	RequestOrderedCommittee(seed uint64) []PublicKey
+	RequestCommittee(seed uint64) []PublicKey
 	IsMember(pk PublicKey) bool
 	SendPreprepare(publicKeys []PublicKey, message PreprepareMessage)
 	SendPrepare(publicKeys []PublicKey, message PrepareMessage)
