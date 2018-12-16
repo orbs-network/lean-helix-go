@@ -21,6 +21,9 @@ Lean Helix consensus algorithm implementation in Go.
   * For example - `NetworkCommunication` is responsible for transferring messages between nodes in the network. The library cannot assume anything about the consumer's network, therefore it is up to the consumer to provide the actual implementation of message transfer.
 * `membuffers` - the 3rd party dependency that the library uses for serializing its messages into and from byte arrays
   * Repo on [github](https://github.com/orbs-network/membuffers)
+* `protos` - the *.proto files (in [Google's Protobuf](https://developers.google.com/protocol-buffers/) language) which define the structure of messages passing between Lean Helix and its consumer.
+  * The `membuffers` library takes *.proto files and compiles them to *.mb.go files
+  * Any change to *.proto files *requires* running `cd types; ./build.sh` to regenerate the respective *.mb.go !
 
 * Lean Helix (object) - runs the infinite loop that with every iteration requests a new block, reaches consensus, and broadcasts the commit message.
   There is only a single instance of this type, it is aware of all blocks pending consensus (of all heights). It holds one or more `LeanHelixTerm` instances.

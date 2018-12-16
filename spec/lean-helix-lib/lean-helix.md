@@ -1,4 +1,4 @@
-# LeanHelix
+# LeanHelix Consensus Algo
 > This document details the LeanHelix plug-in specification, focusing  on switching between consensus rounds. The spec for consensus round is described in [LeanHelixOneHeight](/lean-helix-one-height.md). The public API can be found in [LeanHelix](/lean-helix-readme.md).
 
 
@@ -29,11 +29,11 @@
 * Stores only one valid message per {Block_height, MessageType, Signer, View}
   _(avoid storing duplciates which may be sent as part of an attack)_
 
-<!-- #### Random Seed Cache
+#### Random Seed Cache
 > Stores random seed signatures for current consensus round.
 * Accessed by (Block_height, Signer)
 * Not presistent
-* Stores only one valid info per {Block_height, Signer} -->
+* Stores only one valid info per {Block_height, Signer}
 
 <!-- #### Previous block cache
 * Stores required data from the previous block_height.
@@ -70,8 +70,8 @@
     <!--  * PublicKey = `KeyManager.GetPublicKey(message.Signer, message.Block_height, KeyType)`  -->
     * Random_seed = my_state.OneHeightContext.Random_seed
     * Validate the random_seed _(current block_height)_ signature by calling `KeyManager.Verify(message.Block_height, Random_seed, message.Random_seed_share, message.Signer, KeyType)`. If failed validation - discard.
-    <!-- * Log info to random_seed_database:
-        * random_seed_data.add({COMMIT message.Block_height, COMMIT message.Signer, COMMIT message.Random_seed_share}) -->
+    * Log info to random_seed_database:
+        * random_seed_data.add({COMMIT message.Block_height, COMMIT message.Signer, COMMIT message.Random_seed_share})
 * Call the corresponding `my_state.OneHeight.On<XXX>`
 
 
@@ -95,7 +95,7 @@
         * Random_seed = SHA256(previousBlockProof.Random_seed_signature).
 * MyID = Get by calling `Membership.MyID(block_height)`
 #### Get Committee
-* Committee = Get an ordered list of committee members by calling `Membership.RequestOrderedCommittee(Current_block_height, Random_seed, Config.Committee_size(Current_block_height))`
+* Committee = Get an ordered list of committee members by calling `Membership.RequestCommittee(Current_block_height, Random_seed, Config.Committee_size(Current_block_height))`
 #### setup OneHeight config. Override BlockUtils, Communication and KeyManager - embed context
 * Generate OneHeight Config _(Pass\\override functionalities from Config)_:
   * `CommitBlock(Block, commits_list)` - Callback on OneHeight.committedLocally.
@@ -163,7 +163,7 @@
 > Override KeyManager.Sign for OneHeight consensus sign.
 * KeyType = Get KeyType to sign for KeyManager.KEY_TYPES.Consensus
 * Height = my_state.OneHeightContext.Current_block_height
-* Return `Config.KeyManager.Sign(Height, object, KeyType)`
+* Return `Config.keyManager.SignConsensusMessage(Height, object, KeyType)`
 
 
 ## `SendConsensusMessage(height, member_list, message)`
@@ -173,7 +173,7 @@
     * KeyType = Get KeyType to sign for KeyManager.KEY_TYPES.RandomSeed
     * RandomSeed = my_state.OneHeightContext.RandomSeed
     * Add Random_seed_share to message
-        * message.Random_seed_share = Get signature on random_seed by calling `Config.KeyManager.Sign(height, RandomSeed, KeyType)`
+        * message.Random_seed_share = Get signature on random_seed by calling `Config.keyManager.SignConsensusMessage(height, RandomSeed, KeyType)`
 * Call `Communication.SendConsensusMessage(height, member_list, message)`
 
 
@@ -195,7 +195,7 @@
 > Generates a block_proof.
 #### Generate PBFT proof
 * From first _(any)_ COMMIT message Extract (Block_height, View, Block_hash)
-* Signers, Signature_pair_list, RandomSeedShare_pair_list = From COMMIT messages in commits_list Extract COMMIT Signers and list of pairs (Signer, Signature) and list of RandomSeedSignatures
+* Signers, Signature_pair_list = From COMMIT messages in commits_list Extract Signers and list of pairs (Signer, Signature)
 * Generate PBFT_proof:
     <!-- * opaque_message_type = COMMIT -->
     * Block_height
@@ -203,16 +203,16 @@
     * Block_hash
     * SignaturesPairs = Signature_pair_list
 #### Generate random seed with proof
-<!-- * From random_seed_data extract list of pairs (Signers, Random_seed_share)
-    * RandomSeedShare_list, Signers_list = Get from random_seed_data(Block_height, Signers_(use Signers from the commits_list)_) -->
+* From random_seed_data extract list of pairs (Signers, Random_seed_share)
+    * RandomSeedShare_list, Signers_list = Get from random_seed_data(Block_height, Signers_(use Signers from the commits_list)_)
 * Aggregate the threshold signatrue
-    * RandomSeed_signature = Get by calling `KeyManager.Aggregate(Block_height, RandomSeedShare_pair_list)`
+    * RandomSeed_signature = Get by calling `KeyManager.Aggregate(Block_height, RandomSeedShares_list, Signers_list)`
 #### Generate LeanHelixBlockProof
 * Generate a LeanHelixBlockProof
   * PBFT_proof
   * RandomSeed_signature
  &nbsp;
-* Return LeanHelixBlockProof.
+* Return `Config.ConsensusService.NewBlockProof(LeanHelixBlockProof)` _(serialized by ConsensuService)_.
 
 
 &nbsp;
@@ -233,7 +233,7 @@
 * Calculate the random seed from prevBlockProof:
     * Random_seed = SHA256(prevBlockProof.Random_seed_signature).
 #### Get Committee
-* Committee = Get an ordered list of committee members by calling `Membership.RequestOrderedCommittee(Block_height, Random_seed, Config.Committee_size(BlockHeight))`
+* Committee = Get an ordered list of committee members by calling `Membership.RequestCommittee(Block_height, Random_seed, Config.Committee_size(BlockHeight))`
 * QuorumSize = `QuoromSize(Committee.length)`
 #### validate PBFT signatures
 * If SignaturesPairs are not QuorumSize of all unique Signers Return False.
@@ -247,7 +247,7 @@
     * If SignaturePair.Signer is not in Committee Return False.
     <!-- * PublicKey = Get PublicKey by calling `Config.KeyManager.GetPublicKey(SignaturePair.Signer, Block_height, KeyType)` -->
     * If `Config.KeyManager.Verify(Block_height, COMMIT_HEADER, SignaturePair.Signature, SignaturePair.Signer, KeyType)` fails Return False.
-#### validate random seed signature against master publicKey 
+#### validate random seed signature as master publicKey 
 * KeyType = Get KeyType to verify for KeyManager.KEY_TYPES.RandomSeed
 * Random_seed_signature = blockProof.Random_seed_signature
 * Random_seed  _(calc above)_
