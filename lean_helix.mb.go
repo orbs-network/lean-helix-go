@@ -1,4 +1,4 @@
-// AUTO GENERATED FILE (by membufc proto compiler v0.0.20)
+// AUTO GENERATED FILE (by membufc proto compiler v0.0.21)
 package leanhelix
 
 import (
@@ -7,6 +7,308 @@ import (
 	"github.com/orbs-network/lean-helix-go/primitives"
 	"github.com/orbs-network/membuffers/go"
 )
+
+/////////////////////////////////////////////////////////////////////////////
+// message LeanHelixMessageContent
+
+// reader
+
+type LeanHelixMessageContent struct {
+	// SignedHeader SignedHeader
+	// Sender SenderSignature
+
+	// internal
+	// implements membuffers.Message
+	_message membuffers.InternalMessage
+}
+
+func (x *LeanHelixMessageContent) String() string {
+	if x == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("{SignedHeader:%s,Sender:%s,}", x.StringSignedHeader(), x.StringSender())
+}
+
+var _LeanHelixMessageContent_Scheme = []membuffers.FieldType{membuffers.TypeMessage, membuffers.TypeMessage}
+var _LeanHelixMessageContent_Unions = [][]membuffers.FieldType{}
+
+func LeanHelixMessageContentReader(buf []byte) *LeanHelixMessageContent {
+	x := &LeanHelixMessageContent{}
+	x._message.Init(buf, membuffers.Offset(len(buf)), _LeanHelixMessageContent_Scheme, _LeanHelixMessageContent_Unions)
+	return x
+}
+
+func (x *LeanHelixMessageContent) IsValid() bool {
+	return x._message.IsValid()
+}
+
+func (x *LeanHelixMessageContent) Raw() []byte {
+	return x._message.RawBuffer()
+}
+
+func (x *LeanHelixMessageContent) Equal(y *LeanHelixMessageContent) bool {
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return bytes.Equal(x.Raw(), y.Raw())
+}
+
+func (x *LeanHelixMessageContent) SignedHeader() *SignedHeader {
+	b, s := x._message.GetMessage(0)
+	return SignedHeaderReader(b[:s])
+}
+
+func (x *LeanHelixMessageContent) RawSignedHeader() []byte {
+	return x._message.RawBufferForField(0, 0)
+}
+
+func (x *LeanHelixMessageContent) RawSignedHeaderWithHeader() []byte {
+	return x._message.RawBufferWithHeaderForField(0, 0)
+}
+
+func (x *LeanHelixMessageContent) StringSignedHeader() string {
+	return x.SignedHeader().String()
+}
+
+func (x *LeanHelixMessageContent) Sender() *SenderSignature {
+	b, s := x._message.GetMessage(1)
+	return SenderSignatureReader(b[:s])
+}
+
+func (x *LeanHelixMessageContent) RawSender() []byte {
+	return x._message.RawBufferForField(1, 0)
+}
+
+func (x *LeanHelixMessageContent) RawSenderWithHeader() []byte {
+	return x._message.RawBufferWithHeaderForField(1, 0)
+}
+
+func (x *LeanHelixMessageContent) StringSender() string {
+	return x.Sender().String()
+}
+
+// builder
+
+type LeanHelixMessageContentBuilder struct {
+	SignedHeader *SignedHeaderBuilder
+	Sender       *SenderSignatureBuilder
+
+	// internal
+	// implements membuffers.Builder
+	_builder               membuffers.InternalBuilder
+	_overrideWithRawBuffer []byte
+}
+
+func (w *LeanHelixMessageContentBuilder) Write(buf []byte) (err error) {
+	if w == nil {
+		return
+	}
+	w._builder.NotifyBuildStart()
+	defer w._builder.NotifyBuildEnd()
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	if w._overrideWithRawBuffer != nil {
+		return w._builder.WriteOverrideWithRawBuffer(buf, w._overrideWithRawBuffer)
+	}
+	w._builder.Reset()
+	err = w._builder.WriteMessage(buf, w.SignedHeader)
+	if err != nil {
+		return
+	}
+	err = w._builder.WriteMessage(buf, w.Sender)
+	if err != nil {
+		return
+	}
+	return nil
+}
+
+func (w *LeanHelixMessageContentBuilder) HexDump(prefix string, offsetFromStart membuffers.Offset) (err error) {
+	if w == nil {
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	w._builder.Reset()
+	err = w._builder.HexDumpMessage(prefix, offsetFromStart, "LeanHelixMessageContent.SignedHeader", w.SignedHeader)
+	if err != nil {
+		return
+	}
+	err = w._builder.HexDumpMessage(prefix, offsetFromStart, "LeanHelixMessageContent.Sender", w.Sender)
+	if err != nil {
+		return
+	}
+	return nil
+}
+
+func (w *LeanHelixMessageContentBuilder) GetSize() membuffers.Offset {
+	if w == nil {
+		return 0
+	}
+	return w._builder.GetSize()
+}
+
+func (w *LeanHelixMessageContentBuilder) CalcRequiredSize() membuffers.Offset {
+	if w == nil {
+		return 0
+	}
+	w.Write(nil)
+	return w._builder.GetSize()
+}
+
+func (w *LeanHelixMessageContentBuilder) Build() *LeanHelixMessageContent {
+	buf := make([]byte, w.CalcRequiredSize())
+	if w.Write(buf) != nil {
+		return nil
+	}
+	return LeanHelixMessageContentReader(buf)
+}
+
+func LeanHelixMessageContentBuilderFromRaw(raw []byte) *LeanHelixMessageContentBuilder {
+	return &LeanHelixMessageContentBuilder{_overrideWithRawBuffer: raw}
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// message SignedHeader
+
+// reader
+
+type SignedHeader struct {
+	// MessageType MessageType
+
+	// internal
+	// implements membuffers.Message
+	_message membuffers.InternalMessage
+}
+
+func (x *SignedHeader) String() string {
+	if x == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("{MessageType:%s,}", x.StringMessageType())
+}
+
+var _SignedHeader_Scheme = []membuffers.FieldType{membuffers.TypeUint16}
+var _SignedHeader_Unions = [][]membuffers.FieldType{}
+
+func SignedHeaderReader(buf []byte) *SignedHeader {
+	x := &SignedHeader{}
+	x._message.Init(buf, membuffers.Offset(len(buf)), _SignedHeader_Scheme, _SignedHeader_Unions)
+	return x
+}
+
+func (x *SignedHeader) IsValid() bool {
+	return x._message.IsValid()
+}
+
+func (x *SignedHeader) Raw() []byte {
+	return x._message.RawBuffer()
+}
+
+func (x *SignedHeader) Equal(y *SignedHeader) bool {
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return bytes.Equal(x.Raw(), y.Raw())
+}
+
+func (x *SignedHeader) MessageType() MessageType {
+	return MessageType(x._message.GetUint16(0))
+}
+
+func (x *SignedHeader) RawMessageType() []byte {
+	return x._message.RawBufferForField(0, 0)
+}
+
+func (x *SignedHeader) MutateMessageType(v MessageType) error {
+	return x._message.SetUint16(0, uint16(v))
+}
+
+func (x *SignedHeader) StringMessageType() string {
+	return x.MessageType().String()
+}
+
+// builder
+
+type SignedHeaderBuilder struct {
+	MessageType MessageType
+
+	// internal
+	// implements membuffers.Builder
+	_builder               membuffers.InternalBuilder
+	_overrideWithRawBuffer []byte
+}
+
+func (w *SignedHeaderBuilder) Write(buf []byte) (err error) {
+	if w == nil {
+		return
+	}
+	w._builder.NotifyBuildStart()
+	defer w._builder.NotifyBuildEnd()
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	if w._overrideWithRawBuffer != nil {
+		return w._builder.WriteOverrideWithRawBuffer(buf, w._overrideWithRawBuffer)
+	}
+	w._builder.Reset()
+	w._builder.WriteUint16(buf, uint16(w.MessageType))
+	return nil
+}
+
+func (w *SignedHeaderBuilder) HexDump(prefix string, offsetFromStart membuffers.Offset) (err error) {
+	if w == nil {
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	w._builder.Reset()
+	w._builder.HexDumpUint16(prefix, offsetFromStart, "SignedHeader.MessageType", uint16(w.MessageType))
+	return nil
+}
+
+func (w *SignedHeaderBuilder) GetSize() membuffers.Offset {
+	if w == nil {
+		return 0
+	}
+	return w._builder.GetSize()
+}
+
+func (w *SignedHeaderBuilder) CalcRequiredSize() membuffers.Offset {
+	if w == nil {
+		return 0
+	}
+	w.Write(nil)
+	return w._builder.GetSize()
+}
+
+func (w *SignedHeaderBuilder) Build() *SignedHeader {
+	buf := make([]byte, w.CalcRequiredSize())
+	if w.Write(buf) != nil {
+		return nil
+	}
+	return SignedHeaderReader(buf)
+}
+
+func SignedHeaderBuilderFromRaw(raw []byte) *SignedHeaderBuilder {
+	return &SignedHeaderBuilder{_overrideWithRawBuffer: raw}
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // message PreprepareContent
@@ -98,10 +400,37 @@ type PreprepareContentBuilder struct {
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
+	_overrideWithRawBuffer []byte
 }
 
 func (w *PreprepareContentBuilder) Write(buf []byte) (err error) {
+	if w == nil {
+		return
+	}
+	w._builder.NotifyBuildStart()
+	defer w._builder.NotifyBuildEnd()
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	if w._overrideWithRawBuffer != nil {
+		return w._builder.WriteOverrideWithRawBuffer(buf, w._overrideWithRawBuffer)
+	}
+	w._builder.Reset()
+	err = w._builder.WriteMessage(buf, w.SignedHeader)
+	if err != nil {
+		return
+	}
+	err = w._builder.WriteMessage(buf, w.Sender)
+	if err != nil {
+		return
+	}
+	return nil
+}
+
+func (w *PreprepareContentBuilder) HexDump(prefix string, offsetFromStart membuffers.Offset) (err error) {
 	if w == nil {
 		return
 	}
@@ -111,11 +440,11 @@ func (w *PreprepareContentBuilder) Write(buf []byte) (err error) {
 		}
 	}()
 	w._builder.Reset()
-	err = w._builder.WriteMessage(buf, w.SignedHeader)
+	err = w._builder.HexDumpMessage(prefix, offsetFromStart, "PreprepareContent.SignedHeader", w.SignedHeader)
 	if err != nil {
 		return
 	}
-	err = w._builder.WriteMessage(buf, w.Sender)
+	err = w._builder.HexDumpMessage(prefix, offsetFromStart, "PreprepareContent.Sender", w.Sender)
 	if err != nil {
 		return
 	}
@@ -143,6 +472,10 @@ func (w *PreprepareContentBuilder) Build() *PreprepareContent {
 		return nil
 	}
 	return PreprepareContentReader(buf)
+}
+
+func PreprepareContentBuilderFromRaw(raw []byte) *PreprepareContentBuilder {
+	return &PreprepareContentBuilder{_overrideWithRawBuffer: raw}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -235,10 +568,37 @@ type PrepareContentBuilder struct {
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
+	_overrideWithRawBuffer []byte
 }
 
 func (w *PrepareContentBuilder) Write(buf []byte) (err error) {
+	if w == nil {
+		return
+	}
+	w._builder.NotifyBuildStart()
+	defer w._builder.NotifyBuildEnd()
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	if w._overrideWithRawBuffer != nil {
+		return w._builder.WriteOverrideWithRawBuffer(buf, w._overrideWithRawBuffer)
+	}
+	w._builder.Reset()
+	err = w._builder.WriteMessage(buf, w.SignedHeader)
+	if err != nil {
+		return
+	}
+	err = w._builder.WriteMessage(buf, w.Sender)
+	if err != nil {
+		return
+	}
+	return nil
+}
+
+func (w *PrepareContentBuilder) HexDump(prefix string, offsetFromStart membuffers.Offset) (err error) {
 	if w == nil {
 		return
 	}
@@ -248,11 +608,11 @@ func (w *PrepareContentBuilder) Write(buf []byte) (err error) {
 		}
 	}()
 	w._builder.Reset()
-	err = w._builder.WriteMessage(buf, w.SignedHeader)
+	err = w._builder.HexDumpMessage(prefix, offsetFromStart, "PrepareContent.SignedHeader", w.SignedHeader)
 	if err != nil {
 		return
 	}
-	err = w._builder.WriteMessage(buf, w.Sender)
+	err = w._builder.HexDumpMessage(prefix, offsetFromStart, "PrepareContent.Sender", w.Sender)
 	if err != nil {
 		return
 	}
@@ -282,6 +642,10 @@ func (w *PrepareContentBuilder) Build() *PrepareContent {
 	return PrepareContentReader(buf)
 }
 
+func PrepareContentBuilderFromRaw(raw []byte) *PrepareContentBuilder {
+	return &PrepareContentBuilder{_overrideWithRawBuffer: raw}
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // message CommitContent
 
@@ -290,6 +654,7 @@ func (w *PrepareContentBuilder) Build() *PrepareContent {
 type CommitContent struct {
 	// SignedHeader BlockRef
 	// Sender SenderSignature
+	// Share RandomSeedShare
 
 	// internal
 	// implements membuffers.Message
@@ -300,10 +665,10 @@ func (x *CommitContent) String() string {
 	if x == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("{SignedHeader:%s,Sender:%s,}", x.StringSignedHeader(), x.StringSender())
+	return fmt.Sprintf("{SignedHeader:%s,Sender:%s,Share:%s,}", x.StringSignedHeader(), x.StringSender(), x.StringShare())
 }
 
-var _CommitContent_Scheme = []membuffers.FieldType{membuffers.TypeMessage, membuffers.TypeMessage}
+var _CommitContent_Scheme = []membuffers.FieldType{membuffers.TypeMessage, membuffers.TypeMessage, membuffers.TypeMessage}
 var _CommitContent_Unions = [][]membuffers.FieldType{}
 
 func CommitContentReader(buf []byte) *CommitContent {
@@ -364,18 +729,67 @@ func (x *CommitContent) StringSender() string {
 	return x.Sender().String()
 }
 
+func (x *CommitContent) Share() *RandomSeedShare {
+	b, s := x._message.GetMessage(2)
+	return RandomSeedShareReader(b[:s])
+}
+
+func (x *CommitContent) RawShare() []byte {
+	return x._message.RawBufferForField(2, 0)
+}
+
+func (x *CommitContent) RawShareWithHeader() []byte {
+	return x._message.RawBufferWithHeaderForField(2, 0)
+}
+
+func (x *CommitContent) StringShare() string {
+	return x.Share().String()
+}
+
 // builder
 
 type CommitContentBuilder struct {
 	SignedHeader *BlockRefBuilder
 	Sender       *SenderSignatureBuilder
+	Share        *RandomSeedShareBuilder
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
+	_overrideWithRawBuffer []byte
 }
 
 func (w *CommitContentBuilder) Write(buf []byte) (err error) {
+	if w == nil {
+		return
+	}
+	w._builder.NotifyBuildStart()
+	defer w._builder.NotifyBuildEnd()
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	if w._overrideWithRawBuffer != nil {
+		return w._builder.WriteOverrideWithRawBuffer(buf, w._overrideWithRawBuffer)
+	}
+	w._builder.Reset()
+	err = w._builder.WriteMessage(buf, w.SignedHeader)
+	if err != nil {
+		return
+	}
+	err = w._builder.WriteMessage(buf, w.Sender)
+	if err != nil {
+		return
+	}
+	err = w._builder.WriteMessage(buf, w.Share)
+	if err != nil {
+		return
+	}
+	return nil
+}
+
+func (w *CommitContentBuilder) HexDump(prefix string, offsetFromStart membuffers.Offset) (err error) {
 	if w == nil {
 		return
 	}
@@ -385,11 +799,15 @@ func (w *CommitContentBuilder) Write(buf []byte) (err error) {
 		}
 	}()
 	w._builder.Reset()
-	err = w._builder.WriteMessage(buf, w.SignedHeader)
+	err = w._builder.HexDumpMessage(prefix, offsetFromStart, "CommitContent.SignedHeader", w.SignedHeader)
 	if err != nil {
 		return
 	}
-	err = w._builder.WriteMessage(buf, w.Sender)
+	err = w._builder.HexDumpMessage(prefix, offsetFromStart, "CommitContent.Sender", w.Sender)
+	if err != nil {
+		return
+	}
+	err = w._builder.HexDumpMessage(prefix, offsetFromStart, "CommitContent.Share", w.Share)
 	if err != nil {
 		return
 	}
@@ -417,6 +835,10 @@ func (w *CommitContentBuilder) Build() *CommitContent {
 		return nil
 	}
 	return CommitContentReader(buf)
+}
+
+func CommitContentBuilderFromRaw(raw []byte) *CommitContentBuilder {
+	return &CommitContentBuilder{_overrideWithRawBuffer: raw}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -509,10 +931,37 @@ type ViewChangeMessageContentBuilder struct {
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
+	_overrideWithRawBuffer []byte
 }
 
 func (w *ViewChangeMessageContentBuilder) Write(buf []byte) (err error) {
+	if w == nil {
+		return
+	}
+	w._builder.NotifyBuildStart()
+	defer w._builder.NotifyBuildEnd()
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	if w._overrideWithRawBuffer != nil {
+		return w._builder.WriteOverrideWithRawBuffer(buf, w._overrideWithRawBuffer)
+	}
+	w._builder.Reset()
+	err = w._builder.WriteMessage(buf, w.SignedHeader)
+	if err != nil {
+		return
+	}
+	err = w._builder.WriteMessage(buf, w.Sender)
+	if err != nil {
+		return
+	}
+	return nil
+}
+
+func (w *ViewChangeMessageContentBuilder) HexDump(prefix string, offsetFromStart membuffers.Offset) (err error) {
 	if w == nil {
 		return
 	}
@@ -522,11 +971,11 @@ func (w *ViewChangeMessageContentBuilder) Write(buf []byte) (err error) {
 		}
 	}()
 	w._builder.Reset()
-	err = w._builder.WriteMessage(buf, w.SignedHeader)
+	err = w._builder.HexDumpMessage(prefix, offsetFromStart, "ViewChangeMessageContent.SignedHeader", w.SignedHeader)
 	if err != nil {
 		return
 	}
-	err = w._builder.WriteMessage(buf, w.Sender)
+	err = w._builder.HexDumpMessage(prefix, offsetFromStart, "ViewChangeMessageContent.Sender", w.Sender)
 	if err != nil {
 		return
 	}
@@ -554,6 +1003,10 @@ func (w *ViewChangeMessageContentBuilder) Build() *ViewChangeMessageContent {
 		return nil
 	}
 	return ViewChangeMessageContentReader(buf)
+}
+
+func ViewChangeMessageContentBuilderFromRaw(raw []byte) *ViewChangeMessageContentBuilder {
+	return &ViewChangeMessageContentBuilder{_overrideWithRawBuffer: raw}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -665,18 +1118,24 @@ type NewViewMessageContentBuilder struct {
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
+	_overrideWithRawBuffer []byte
 }
 
 func (w *NewViewMessageContentBuilder) Write(buf []byte) (err error) {
 	if w == nil {
 		return
 	}
+	w._builder.NotifyBuildStart()
+	defer w._builder.NotifyBuildEnd()
 	defer func() {
 		if r := recover(); r != nil {
 			err = &membuffers.ErrBufferOverrun{}
 		}
 	}()
+	if w._overrideWithRawBuffer != nil {
+		return w._builder.WriteOverrideWithRawBuffer(buf, w._overrideWithRawBuffer)
+	}
 	w._builder.Reset()
 	err = w._builder.WriteMessage(buf, w.SignedHeader)
 	if err != nil {
@@ -687,6 +1146,31 @@ func (w *NewViewMessageContentBuilder) Write(buf []byte) (err error) {
 		return
 	}
 	err = w._builder.WriteMessage(buf, w.PreprepareMessageContent)
+	if err != nil {
+		return
+	}
+	return nil
+}
+
+func (w *NewViewMessageContentBuilder) HexDump(prefix string, offsetFromStart membuffers.Offset) (err error) {
+	if w == nil {
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	w._builder.Reset()
+	err = w._builder.HexDumpMessage(prefix, offsetFromStart, "NewViewMessageContent.SignedHeader", w.SignedHeader)
+	if err != nil {
+		return
+	}
+	err = w._builder.HexDumpMessage(prefix, offsetFromStart, "NewViewMessageContent.Sender", w.Sender)
+	if err != nil {
+		return
+	}
+	err = w._builder.HexDumpMessage(prefix, offsetFromStart, "NewViewMessageContent.PreprepareMessageContent", w.PreprepareMessageContent)
 	if err != nil {
 		return
 	}
@@ -716,185 +1200,8 @@ func (w *NewViewMessageContentBuilder) Build() *NewViewMessageContent {
 	return NewViewMessageContentReader(buf)
 }
 
-/////////////////////////////////////////////////////////////////////////////
-// message BlockProof
-
-// reader
-
-type BlockProof struct {
-	// BlockRef BlockRef
-	// Nodes []SenderSignature
-	// RandomSeedSignature primitives.Bls1Sig
-
-	// internal
-	// implements membuffers.Message
-	_message membuffers.InternalMessage
-}
-
-func (x *BlockProof) String() string {
-	if x == nil {
-		return "<nil>"
-	}
-	return fmt.Sprintf("{BlockRef:%s,Nodes:%s,RandomSeedSignature:%s,}", x.StringBlockRef(), x.StringNodes(), x.StringRandomSeedSignature())
-}
-
-var _BlockProof_Scheme = []membuffers.FieldType{membuffers.TypeMessage, membuffers.TypeMessageArray, membuffers.TypeBytes}
-var _BlockProof_Unions = [][]membuffers.FieldType{}
-
-func BlockProofReader(buf []byte) *BlockProof {
-	x := &BlockProof{}
-	x._message.Init(buf, membuffers.Offset(len(buf)), _BlockProof_Scheme, _BlockProof_Unions)
-	return x
-}
-
-func (x *BlockProof) IsValid() bool {
-	return x._message.IsValid()
-}
-
-func (x *BlockProof) Raw() []byte {
-	return x._message.RawBuffer()
-}
-
-func (x *BlockProof) Equal(y *BlockProof) bool {
-	if x == nil && y == nil {
-		return true
-	}
-	if x == nil || y == nil {
-		return false
-	}
-	return bytes.Equal(x.Raw(), y.Raw())
-}
-
-func (x *BlockProof) BlockRef() *BlockRef {
-	b, s := x._message.GetMessage(0)
-	return BlockRefReader(b[:s])
-}
-
-func (x *BlockProof) RawBlockRef() []byte {
-	return x._message.RawBufferForField(0, 0)
-}
-
-func (x *BlockProof) RawBlockRefWithHeader() []byte {
-	return x._message.RawBufferWithHeaderForField(0, 0)
-}
-
-func (x *BlockProof) StringBlockRef() string {
-	return x.BlockRef().String()
-}
-
-func (x *BlockProof) NodesIterator() *BlockProofNodesIterator {
-	return &BlockProofNodesIterator{iterator: x._message.GetMessageArrayIterator(1)}
-}
-
-type BlockProofNodesIterator struct {
-	iterator *membuffers.Iterator
-}
-
-func (i *BlockProofNodesIterator) HasNext() bool {
-	return i.iterator.HasNext()
-}
-
-func (i *BlockProofNodesIterator) NextNodes() *SenderSignature {
-	b, s := i.iterator.NextMessage()
-	return SenderSignatureReader(b[:s])
-}
-
-func (x *BlockProof) RawNodesArray() []byte {
-	return x._message.RawBufferForField(1, 0)
-}
-
-func (x *BlockProof) RawNodesArrayWithHeader() []byte {
-	return x._message.RawBufferWithHeaderForField(1, 0)
-}
-
-func (x *BlockProof) StringNodes() (res string) {
-	res = "["
-	for i := x.NodesIterator(); i.HasNext(); {
-		res += i.NextNodes().String() + ","
-	}
-	res += "]"
-	return
-}
-
-func (x *BlockProof) RandomSeedSignature() primitives.Bls1Sig {
-	return primitives.Bls1Sig(x._message.GetBytes(2))
-}
-
-func (x *BlockProof) RawRandomSeedSignature() []byte {
-	return x._message.RawBufferForField(2, 0)
-}
-
-func (x *BlockProof) MutateRandomSeedSignature(v primitives.Bls1Sig) error {
-	return x._message.SetBytes(2, []byte(v))
-}
-
-func (x *BlockProof) StringRandomSeedSignature() string {
-	return fmt.Sprintf("%s", x.RandomSeedSignature())
-}
-
-// builder
-
-type BlockProofBuilder struct {
-	BlockRef            *BlockRefBuilder
-	Nodes               []*SenderSignatureBuilder
-	RandomSeedSignature primitives.Bls1Sig
-
-	// internal
-	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
-}
-
-func (w *BlockProofBuilder) arrayOfNodes() []membuffers.MessageWriter {
-	res := make([]membuffers.MessageWriter, len(w.Nodes))
-	for i, v := range w.Nodes {
-		res[i] = v
-	}
-	return res
-}
-
-func (w *BlockProofBuilder) Write(buf []byte) (err error) {
-	if w == nil {
-		return
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = &membuffers.ErrBufferOverrun{}
-		}
-	}()
-	w._builder.Reset()
-	err = w._builder.WriteMessage(buf, w.BlockRef)
-	if err != nil {
-		return
-	}
-	err = w._builder.WriteMessageArray(buf, w.arrayOfNodes())
-	if err != nil {
-		return
-	}
-	w._builder.WriteBytes(buf, []byte(w.RandomSeedSignature))
-	return nil
-}
-
-func (w *BlockProofBuilder) GetSize() membuffers.Offset {
-	if w == nil {
-		return 0
-	}
-	return w._builder.GetSize()
-}
-
-func (w *BlockProofBuilder) CalcRequiredSize() membuffers.Offset {
-	if w == nil {
-		return 0
-	}
-	w.Write(nil)
-	return w._builder.GetSize()
-}
-
-func (w *BlockProofBuilder) Build() *BlockProof {
-	buf := make([]byte, w.CalcRequiredSize())
-	if w.Write(buf) != nil {
-		return nil
-	}
-	return BlockProofReader(buf)
+func NewViewMessageContentBuilderFromRaw(raw []byte) *NewViewMessageContentBuilder {
+	return &NewViewMessageContentBuilder{_overrideWithRawBuffer: raw}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -985,10 +1292,31 @@ type SenderSignatureBuilder struct {
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
+	_overrideWithRawBuffer []byte
 }
 
 func (w *SenderSignatureBuilder) Write(buf []byte) (err error) {
+	if w == nil {
+		return
+	}
+	w._builder.NotifyBuildStart()
+	defer w._builder.NotifyBuildEnd()
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	if w._overrideWithRawBuffer != nil {
+		return w._builder.WriteOverrideWithRawBuffer(buf, w._overrideWithRawBuffer)
+	}
+	w._builder.Reset()
+	w._builder.WriteBytes(buf, []byte(w.SenderPublicKey))
+	w._builder.WriteBytes(buf, []byte(w.Signature))
+	return nil
+}
+
+func (w *SenderSignatureBuilder) HexDump(prefix string, offsetFromStart membuffers.Offset) (err error) {
 	if w == nil {
 		return
 	}
@@ -998,8 +1326,8 @@ func (w *SenderSignatureBuilder) Write(buf []byte) (err error) {
 		}
 	}()
 	w._builder.Reset()
-	w._builder.WriteBytes(buf, []byte(w.SenderPublicKey))
-	w._builder.WriteBytes(buf, []byte(w.Signature))
+	w._builder.HexDumpBytes(prefix, offsetFromStart, "SenderSignature.SenderPublicKey", []byte(w.SenderPublicKey))
+	w._builder.HexDumpBytes(prefix, offsetFromStart, "SenderSignature.Signature", []byte(w.Signature))
 	return nil
 }
 
@@ -1024,6 +1352,164 @@ func (w *SenderSignatureBuilder) Build() *SenderSignature {
 		return nil
 	}
 	return SenderSignatureReader(buf)
+}
+
+func SenderSignatureBuilderFromRaw(raw []byte) *SenderSignatureBuilder {
+	return &SenderSignatureBuilder{_overrideWithRawBuffer: raw}
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// message RandomSeedShare
+
+// reader
+
+type RandomSeedShare struct {
+	// SenderPublicKey primitives.Bls1PublicKey
+	// Signature primitives.Bls1Sig
+
+	// internal
+	// implements membuffers.Message
+	_message membuffers.InternalMessage
+}
+
+func (x *RandomSeedShare) String() string {
+	if x == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("{SenderPublicKey:%s,Signature:%s,}", x.StringSenderPublicKey(), x.StringSignature())
+}
+
+var _RandomSeedShare_Scheme = []membuffers.FieldType{membuffers.TypeBytes, membuffers.TypeBytes}
+var _RandomSeedShare_Unions = [][]membuffers.FieldType{}
+
+func RandomSeedShareReader(buf []byte) *RandomSeedShare {
+	x := &RandomSeedShare{}
+	x._message.Init(buf, membuffers.Offset(len(buf)), _RandomSeedShare_Scheme, _RandomSeedShare_Unions)
+	return x
+}
+
+func (x *RandomSeedShare) IsValid() bool {
+	return x._message.IsValid()
+}
+
+func (x *RandomSeedShare) Raw() []byte {
+	return x._message.RawBuffer()
+}
+
+func (x *RandomSeedShare) Equal(y *RandomSeedShare) bool {
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return bytes.Equal(x.Raw(), y.Raw())
+}
+
+func (x *RandomSeedShare) SenderPublicKey() primitives.Bls1PublicKey {
+	return primitives.Bls1PublicKey(x._message.GetBytes(0))
+}
+
+func (x *RandomSeedShare) RawSenderPublicKey() []byte {
+	return x._message.RawBufferForField(0, 0)
+}
+
+func (x *RandomSeedShare) MutateSenderPublicKey(v primitives.Bls1PublicKey) error {
+	return x._message.SetBytes(0, []byte(v))
+}
+
+func (x *RandomSeedShare) StringSenderPublicKey() string {
+	return fmt.Sprintf("%s", x.SenderPublicKey())
+}
+
+func (x *RandomSeedShare) Signature() primitives.Bls1Sig {
+	return primitives.Bls1Sig(x._message.GetBytes(1))
+}
+
+func (x *RandomSeedShare) RawSignature() []byte {
+	return x._message.RawBufferForField(1, 0)
+}
+
+func (x *RandomSeedShare) MutateSignature(v primitives.Bls1Sig) error {
+	return x._message.SetBytes(1, []byte(v))
+}
+
+func (x *RandomSeedShare) StringSignature() string {
+	return fmt.Sprintf("%s", x.Signature())
+}
+
+// builder
+
+type RandomSeedShareBuilder struct {
+	SenderPublicKey primitives.Bls1PublicKey
+	Signature       primitives.Bls1Sig
+
+	// internal
+	// implements membuffers.Builder
+	_builder               membuffers.InternalBuilder
+	_overrideWithRawBuffer []byte
+}
+
+func (w *RandomSeedShareBuilder) Write(buf []byte) (err error) {
+	if w == nil {
+		return
+	}
+	w._builder.NotifyBuildStart()
+	defer w._builder.NotifyBuildEnd()
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	if w._overrideWithRawBuffer != nil {
+		return w._builder.WriteOverrideWithRawBuffer(buf, w._overrideWithRawBuffer)
+	}
+	w._builder.Reset()
+	w._builder.WriteBytes(buf, []byte(w.SenderPublicKey))
+	w._builder.WriteBytes(buf, []byte(w.Signature))
+	return nil
+}
+
+func (w *RandomSeedShareBuilder) HexDump(prefix string, offsetFromStart membuffers.Offset) (err error) {
+	if w == nil {
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	w._builder.Reset()
+	w._builder.HexDumpBytes(prefix, offsetFromStart, "RandomSeedShare.SenderPublicKey", []byte(w.SenderPublicKey))
+	w._builder.HexDumpBytes(prefix, offsetFromStart, "RandomSeedShare.Signature", []byte(w.Signature))
+	return nil
+}
+
+func (w *RandomSeedShareBuilder) GetSize() membuffers.Offset {
+	if w == nil {
+		return 0
+	}
+	return w._builder.GetSize()
+}
+
+func (w *RandomSeedShareBuilder) CalcRequiredSize() membuffers.Offset {
+	if w == nil {
+		return 0
+	}
+	w.Write(nil)
+	return w._builder.GetSize()
+}
+
+func (w *RandomSeedShareBuilder) Build() *RandomSeedShare {
+	buf := make([]byte, w.CalcRequiredSize())
+	if w.Write(buf) != nil {
+		return nil
+	}
+	return RandomSeedShareReader(buf)
+}
+
+func RandomSeedShareBuilderFromRaw(raw []byte) *RandomSeedShareBuilder {
+	return &RandomSeedShareBuilder{_overrideWithRawBuffer: raw}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1150,10 +1636,33 @@ type BlockRefBuilder struct {
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
+	_overrideWithRawBuffer []byte
 }
 
 func (w *BlockRefBuilder) Write(buf []byte) (err error) {
+	if w == nil {
+		return
+	}
+	w._builder.NotifyBuildStart()
+	defer w._builder.NotifyBuildEnd()
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	if w._overrideWithRawBuffer != nil {
+		return w._builder.WriteOverrideWithRawBuffer(buf, w._overrideWithRawBuffer)
+	}
+	w._builder.Reset()
+	w._builder.WriteUint16(buf, uint16(w.MessageType))
+	w._builder.WriteUint64(buf, uint64(w.BlockHeight))
+	w._builder.WriteUint64(buf, uint64(w.View))
+	w._builder.WriteBytes(buf, []byte(w.BlockHash))
+	return nil
+}
+
+func (w *BlockRefBuilder) HexDump(prefix string, offsetFromStart membuffers.Offset) (err error) {
 	if w == nil {
 		return
 	}
@@ -1163,10 +1672,10 @@ func (w *BlockRefBuilder) Write(buf []byte) (err error) {
 		}
 	}()
 	w._builder.Reset()
-	w._builder.WriteUint16(buf, uint16(w.MessageType))
-	w._builder.WriteUint64(buf, uint64(w.BlockHeight))
-	w._builder.WriteUint64(buf, uint64(w.View))
-	w._builder.WriteBytes(buf, []byte(w.BlockHash))
+	w._builder.HexDumpUint16(prefix, offsetFromStart, "BlockRef.MessageType", uint16(w.MessageType))
+	w._builder.HexDumpUint64(prefix, offsetFromStart, "BlockRef.BlockHeight", uint64(w.BlockHeight))
+	w._builder.HexDumpUint64(prefix, offsetFromStart, "BlockRef.View", uint64(w.View))
+	w._builder.HexDumpBytes(prefix, offsetFromStart, "BlockRef.BlockHash", []byte(w.BlockHash))
 	return nil
 }
 
@@ -1191,6 +1700,10 @@ func (w *BlockRefBuilder) Build() *BlockRef {
 		return nil
 	}
 	return BlockRefReader(buf)
+}
+
+func BlockRefBuilderFromRaw(raw []byte) *BlockRefBuilder {
+	return &BlockRefBuilder{_overrideWithRawBuffer: raw}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1318,10 +1831,36 @@ type ViewChangeHeaderBuilder struct {
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
+	_overrideWithRawBuffer []byte
 }
 
 func (w *ViewChangeHeaderBuilder) Write(buf []byte) (err error) {
+	if w == nil {
+		return
+	}
+	w._builder.NotifyBuildStart()
+	defer w._builder.NotifyBuildEnd()
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	if w._overrideWithRawBuffer != nil {
+		return w._builder.WriteOverrideWithRawBuffer(buf, w._overrideWithRawBuffer)
+	}
+	w._builder.Reset()
+	w._builder.WriteUint16(buf, uint16(w.MessageType))
+	w._builder.WriteUint64(buf, uint64(w.BlockHeight))
+	w._builder.WriteUint64(buf, uint64(w.View))
+	err = w._builder.WriteMessage(buf, w.PreparedProof)
+	if err != nil {
+		return
+	}
+	return nil
+}
+
+func (w *ViewChangeHeaderBuilder) HexDump(prefix string, offsetFromStart membuffers.Offset) (err error) {
 	if w == nil {
 		return
 	}
@@ -1331,10 +1870,10 @@ func (w *ViewChangeHeaderBuilder) Write(buf []byte) (err error) {
 		}
 	}()
 	w._builder.Reset()
-	w._builder.WriteUint16(buf, uint16(w.MessageType))
-	w._builder.WriteUint64(buf, uint64(w.BlockHeight))
-	w._builder.WriteUint64(buf, uint64(w.View))
-	err = w._builder.WriteMessage(buf, w.PreparedProof)
+	w._builder.HexDumpUint16(prefix, offsetFromStart, "ViewChangeHeader.MessageType", uint16(w.MessageType))
+	w._builder.HexDumpUint64(prefix, offsetFromStart, "ViewChangeHeader.BlockHeight", uint64(w.BlockHeight))
+	w._builder.HexDumpUint64(prefix, offsetFromStart, "ViewChangeHeader.View", uint64(w.View))
+	err = w._builder.HexDumpMessage(prefix, offsetFromStart, "ViewChangeHeader.PreparedProof", w.PreparedProof)
 	if err != nil {
 		return
 	}
@@ -1362,6 +1901,10 @@ func (w *ViewChangeHeaderBuilder) Build() *ViewChangeHeader {
 		return nil
 	}
 	return ViewChangeHeaderReader(buf)
+}
+
+func ViewChangeHeaderBuilderFromRaw(raw []byte) *ViewChangeHeaderBuilder {
+	return &ViewChangeHeaderBuilder{_overrideWithRawBuffer: raw}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1509,7 +2052,8 @@ type PreparedProofBuilder struct {
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
+	_overrideWithRawBuffer []byte
 }
 
 func (w *PreparedProofBuilder) arrayOfPrepareSenders() []membuffers.MessageWriter {
@@ -1524,11 +2068,16 @@ func (w *PreparedProofBuilder) Write(buf []byte) (err error) {
 	if w == nil {
 		return
 	}
+	w._builder.NotifyBuildStart()
+	defer w._builder.NotifyBuildEnd()
 	defer func() {
 		if r := recover(); r != nil {
 			err = &membuffers.ErrBufferOverrun{}
 		}
 	}()
+	if w._overrideWithRawBuffer != nil {
+		return w._builder.WriteOverrideWithRawBuffer(buf, w._overrideWithRawBuffer)
+	}
 	w._builder.Reset()
 	err = w._builder.WriteMessage(buf, w.PreprepareBlockRef)
 	if err != nil {
@@ -1543,6 +2092,35 @@ func (w *PreparedProofBuilder) Write(buf []byte) (err error) {
 		return
 	}
 	err = w._builder.WriteMessageArray(buf, w.arrayOfPrepareSenders())
+	if err != nil {
+		return
+	}
+	return nil
+}
+
+func (w *PreparedProofBuilder) HexDump(prefix string, offsetFromStart membuffers.Offset) (err error) {
+	if w == nil {
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	w._builder.Reset()
+	err = w._builder.HexDumpMessage(prefix, offsetFromStart, "PreparedProof.PreprepareBlockRef", w.PreprepareBlockRef)
+	if err != nil {
+		return
+	}
+	err = w._builder.HexDumpMessage(prefix, offsetFromStart, "PreparedProof.PreprepareSender", w.PreprepareSender)
+	if err != nil {
+		return
+	}
+	err = w._builder.HexDumpMessage(prefix, offsetFromStart, "PreparedProof.PrepareBlockRef", w.PrepareBlockRef)
+	if err != nil {
+		return
+	}
+	err = w._builder.HexDumpMessageArray(prefix, offsetFromStart, "PreparedProof.PrepareSenders", w.arrayOfPrepareSenders())
 	if err != nil {
 		return
 	}
@@ -1570,6 +2148,10 @@ func (w *PreparedProofBuilder) Build() *PreparedProof {
 		return nil
 	}
 	return PreparedProofReader(buf)
+}
+
+func PreparedProofBuilderFromRaw(raw []byte) *PreparedProofBuilder {
+	return &PreparedProofBuilder{_overrideWithRawBuffer: raw}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1714,7 +2296,8 @@ type NewViewHeaderBuilder struct {
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
+	_overrideWithRawBuffer []byte
 }
 
 func (w *NewViewHeaderBuilder) arrayOfViewChangeConfirmations() []membuffers.MessageWriter {
@@ -1729,16 +2312,41 @@ func (w *NewViewHeaderBuilder) Write(buf []byte) (err error) {
 	if w == nil {
 		return
 	}
+	w._builder.NotifyBuildStart()
+	defer w._builder.NotifyBuildEnd()
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	if w._overrideWithRawBuffer != nil {
+		return w._builder.WriteOverrideWithRawBuffer(buf, w._overrideWithRawBuffer)
+	}
+	w._builder.Reset()
+	w._builder.WriteUint16(buf, uint16(w.MessageType))
+	w._builder.WriteUint64(buf, uint64(w.BlockHeight))
+	w._builder.WriteUint64(buf, uint64(w.View))
+	err = w._builder.WriteMessageArray(buf, w.arrayOfViewChangeConfirmations())
+	if err != nil {
+		return
+	}
+	return nil
+}
+
+func (w *NewViewHeaderBuilder) HexDump(prefix string, offsetFromStart membuffers.Offset) (err error) {
+	if w == nil {
+		return
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			err = &membuffers.ErrBufferOverrun{}
 		}
 	}()
 	w._builder.Reset()
-	w._builder.WriteUint16(buf, uint16(w.MessageType))
-	w._builder.WriteUint64(buf, uint64(w.BlockHeight))
-	w._builder.WriteUint64(buf, uint64(w.View))
-	err = w._builder.WriteMessageArray(buf, w.arrayOfViewChangeConfirmations())
+	w._builder.HexDumpUint16(prefix, offsetFromStart, "NewViewHeader.MessageType", uint16(w.MessageType))
+	w._builder.HexDumpUint64(prefix, offsetFromStart, "NewViewHeader.BlockHeight", uint64(w.BlockHeight))
+	w._builder.HexDumpUint64(prefix, offsetFromStart, "NewViewHeader.View", uint64(w.View))
+	err = w._builder.HexDumpMessageArray(prefix, offsetFromStart, "NewViewHeader.ViewChangeConfirmations", w.arrayOfViewChangeConfirmations())
 	if err != nil {
 		return
 	}
@@ -1766,6 +2374,223 @@ func (w *NewViewHeaderBuilder) Build() *NewViewHeader {
 		return nil
 	}
 	return NewViewHeaderReader(buf)
+}
+
+func NewViewHeaderBuilderFromRaw(raw []byte) *NewViewHeaderBuilder {
+	return &NewViewHeaderBuilder{_overrideWithRawBuffer: raw}
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// message BlockProof
+
+// reader
+
+type BlockProof struct {
+	// BlockRef BlockRef
+	// Nodes []SenderSignature
+	// RandomSeedSignature primitives.Bls1Sig
+
+	// internal
+	// implements membuffers.Message
+	_message membuffers.InternalMessage
+}
+
+func (x *BlockProof) String() string {
+	if x == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("{BlockRef:%s,Nodes:%s,RandomSeedSignature:%s,}", x.StringBlockRef(), x.StringNodes(), x.StringRandomSeedSignature())
+}
+
+var _BlockProof_Scheme = []membuffers.FieldType{membuffers.TypeMessage, membuffers.TypeMessageArray, membuffers.TypeBytes}
+var _BlockProof_Unions = [][]membuffers.FieldType{}
+
+func BlockProofReader(buf []byte) *BlockProof {
+	x := &BlockProof{}
+	x._message.Init(buf, membuffers.Offset(len(buf)), _BlockProof_Scheme, _BlockProof_Unions)
+	return x
+}
+
+func (x *BlockProof) IsValid() bool {
+	return x._message.IsValid()
+}
+
+func (x *BlockProof) Raw() []byte {
+	return x._message.RawBuffer()
+}
+
+func (x *BlockProof) Equal(y *BlockProof) bool {
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return bytes.Equal(x.Raw(), y.Raw())
+}
+
+func (x *BlockProof) BlockRef() *BlockRef {
+	b, s := x._message.GetMessage(0)
+	return BlockRefReader(b[:s])
+}
+
+func (x *BlockProof) RawBlockRef() []byte {
+	return x._message.RawBufferForField(0, 0)
+}
+
+func (x *BlockProof) RawBlockRefWithHeader() []byte {
+	return x._message.RawBufferWithHeaderForField(0, 0)
+}
+
+func (x *BlockProof) StringBlockRef() string {
+	return x.BlockRef().String()
+}
+
+func (x *BlockProof) NodesIterator() *BlockProofNodesIterator {
+	return &BlockProofNodesIterator{iterator: x._message.GetMessageArrayIterator(1)}
+}
+
+type BlockProofNodesIterator struct {
+	iterator *membuffers.Iterator
+}
+
+func (i *BlockProofNodesIterator) HasNext() bool {
+	return i.iterator.HasNext()
+}
+
+func (i *BlockProofNodesIterator) NextNodes() *SenderSignature {
+	b, s := i.iterator.NextMessage()
+	return SenderSignatureReader(b[:s])
+}
+
+func (x *BlockProof) RawNodesArray() []byte {
+	return x._message.RawBufferForField(1, 0)
+}
+
+func (x *BlockProof) RawNodesArrayWithHeader() []byte {
+	return x._message.RawBufferWithHeaderForField(1, 0)
+}
+
+func (x *BlockProof) StringNodes() (res string) {
+	res = "["
+	for i := x.NodesIterator(); i.HasNext(); {
+		res += i.NextNodes().String() + ","
+	}
+	res += "]"
+	return
+}
+
+func (x *BlockProof) RandomSeedSignature() primitives.Bls1Sig {
+	return primitives.Bls1Sig(x._message.GetBytes(2))
+}
+
+func (x *BlockProof) RawRandomSeedSignature() []byte {
+	return x._message.RawBufferForField(2, 0)
+}
+
+func (x *BlockProof) MutateRandomSeedSignature(v primitives.Bls1Sig) error {
+	return x._message.SetBytes(2, []byte(v))
+}
+
+func (x *BlockProof) StringRandomSeedSignature() string {
+	return fmt.Sprintf("%s", x.RandomSeedSignature())
+}
+
+// builder
+
+type BlockProofBuilder struct {
+	BlockRef            *BlockRefBuilder
+	Nodes               []*SenderSignatureBuilder
+	RandomSeedSignature primitives.Bls1Sig
+
+	// internal
+	// implements membuffers.Builder
+	_builder               membuffers.InternalBuilder
+	_overrideWithRawBuffer []byte
+}
+
+func (w *BlockProofBuilder) arrayOfNodes() []membuffers.MessageWriter {
+	res := make([]membuffers.MessageWriter, len(w.Nodes))
+	for i, v := range w.Nodes {
+		res[i] = v
+	}
+	return res
+}
+
+func (w *BlockProofBuilder) Write(buf []byte) (err error) {
+	if w == nil {
+		return
+	}
+	w._builder.NotifyBuildStart()
+	defer w._builder.NotifyBuildEnd()
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	if w._overrideWithRawBuffer != nil {
+		return w._builder.WriteOverrideWithRawBuffer(buf, w._overrideWithRawBuffer)
+	}
+	w._builder.Reset()
+	err = w._builder.WriteMessage(buf, w.BlockRef)
+	if err != nil {
+		return
+	}
+	err = w._builder.WriteMessageArray(buf, w.arrayOfNodes())
+	if err != nil {
+		return
+	}
+	w._builder.WriteBytes(buf, []byte(w.RandomSeedSignature))
+	return nil
+}
+
+func (w *BlockProofBuilder) HexDump(prefix string, offsetFromStart membuffers.Offset) (err error) {
+	if w == nil {
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = &membuffers.ErrBufferOverrun{}
+		}
+	}()
+	w._builder.Reset()
+	err = w._builder.HexDumpMessage(prefix, offsetFromStart, "BlockProof.BlockRef", w.BlockRef)
+	if err != nil {
+		return
+	}
+	err = w._builder.HexDumpMessageArray(prefix, offsetFromStart, "BlockProof.Nodes", w.arrayOfNodes())
+	if err != nil {
+		return
+	}
+	w._builder.HexDumpBytes(prefix, offsetFromStart, "BlockProof.RandomSeedSignature", []byte(w.RandomSeedSignature))
+	return nil
+}
+
+func (w *BlockProofBuilder) GetSize() membuffers.Offset {
+	if w == nil {
+		return 0
+	}
+	return w._builder.GetSize()
+}
+
+func (w *BlockProofBuilder) CalcRequiredSize() membuffers.Offset {
+	if w == nil {
+		return 0
+	}
+	w.Write(nil)
+	return w._builder.GetSize()
+}
+
+func (w *BlockProofBuilder) Build() *BlockProof {
+	buf := make([]byte, w.CalcRequiredSize())
+	if w.Write(buf) != nil {
+		return nil
+	}
+	return BlockProofReader(buf)
+}
+
+func BlockProofBuilderFromRaw(raw []byte) *BlockProofBuilder {
+	return &BlockProofBuilder{_overrideWithRawBuffer: raw}
 }
 
 /////////////////////////////////////////////////////////////////////////////

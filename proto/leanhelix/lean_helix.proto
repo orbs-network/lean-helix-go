@@ -13,6 +13,24 @@ enum MessageType {
     LEAN_HELIX_VIEW_CHANGE = 5;
 }
 
+//message Leanhelix {
+//
+//    oneof message {
+//        PreprepareContent
+//        PrepareContent
+//
+//    }
+//}
+
+message LeanHelixMessageContent {
+    SignedHeader signed_header = 1;
+    SenderSignature sender = 2;
+}
+
+message SignedHeader {
+    MessageType message_type = 1;
+}
+
 message PreprepareContent {
     BlockRef signed_header = 1;
     SenderSignature sender = 2; // signs on signed_header
@@ -26,6 +44,7 @@ message PrepareContent {
 message CommitContent {
     BlockRef signed_header = 1;
     SenderSignature sender = 2; // signs on signed_header
+    RandomSeedShare share = 3;
 }
 
 message ViewChangeMessageContent {
@@ -39,16 +58,18 @@ message NewViewMessageContent {
     PreprepareContent preprepare_message_content = 3;
 }
 
-message BlockProof {
-    BlockRef block_ref = 1;
-    repeated SenderSignature nodes = 2;
-    primitives.Bls1_sig random_seed_signature = 3;
-}
 
 message SenderSignature {
     primitives.Ed25519_public_key sender_public_key = 1;
     primitives.Ed25519_sig signature = 2;
 }
+
+
+message RandomSeedShare {
+    primitives.Bls1_public_key sender_public_key = 1;
+    primitives.Bls1_sig signature = 2;
+}
+
 
 message BlockRef {
     MessageType message_type = 1;
@@ -78,3 +99,9 @@ message NewViewHeader {
     repeated ViewChangeMessageContent view_change_confirmations = 4;
 }
 
+
+message BlockProof {
+    BlockRef block_ref = 1;
+    repeated SenderSignature nodes = 2;
+    primitives.Bls1_sig random_seed_signature = 3;
+}

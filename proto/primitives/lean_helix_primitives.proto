@@ -4,6 +4,14 @@ option go_package = "github.com/orbs-network/lean-helix-go/primitives";
 
 option inline = true;
 
+
+message Bls1_public_key {
+    option inline_type = "bytes";
+    bytes value = 1;
+    // TODO size
+}
+
+
 message Bls1_sig {
     option inline_type = "bytes";
     bytes value = 1;
