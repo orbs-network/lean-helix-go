@@ -45,6 +45,32 @@ func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 	})
 }
 
+func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		block1 := builders.CreateBlock(builders.GenesisBlock)
+		net := builders.
+			NewTestNetworkBuilder().
+			WithNodeCount(4).
+			WithBlocks([]leanhelix.Block{block1}).
+			Build()
+
+		node0 := net.Nodes[0]
+		node1 := net.Nodes[1]
+		node2 := net.Nodes[2]
+		//node3 := net.Nodes[3]
+
+		node0.Gossip.SetOutgoingWhitelist([]primitives.Ed25519PublicKey{node1.PublicKey, node2.PublicKey})
+
+		// the leader (node0) is suggesting block1 to node1 and node2 (not to node3)
+		net.StartConsensus(ctx)
+
+		// node0, node1 and node2 should reach consensus
+		net.WaitForNodesToCommitASpecificBlock(block1, node0, node1, node2)
+
+		node0.StartConsensus(ctx)
+	})
+}
+
 func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		goodBlock := builders.CreateBlock(builders.GenesisBlock)
