@@ -59,10 +59,6 @@ func (g *Gossip) RequestOrderedCommittee(ctx context.Context, blockHeight primit
 	return result
 }
 
-func (g *Gossip) IsMember(pk primitives.MemberId) bool {
-	return g.discovery.GetGossipByPK(pk) != nil
-}
-
 func (g *Gossip) getOutgoingChannelByTarget(ctx context.Context, target primitives.MemberId) chan *outgoingMessage {
 	channel := g.outgoingChannelsMap[target.String()]
 	if channel == nil {
