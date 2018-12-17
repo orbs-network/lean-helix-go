@@ -8,12 +8,12 @@ import (
 )
 
 type SubscriptionValue struct {
-	cb func(ctx context.Context, message leanhelix.ConsensusRawMessage)
+	cb func(ctx context.Context, message *leanhelix.ConsensusRawMessage)
 }
 
 type outgoingMessage struct {
 	target  primitives.MemberId
-	message leanhelix.ConsensusRawMessage
+	message *leanhelix.ConsensusRawMessage
 }
 
 type Gossip struct {
@@ -23,7 +23,7 @@ type Gossip struct {
 	subscriptions              map[int]*SubscriptionValue
 	outgoingWhitelist          []primitives.MemberId
 	incomingWhiteListMemberIds []primitives.MemberId
-	statsSentMessages          []leanhelix.ConsensusRawMessage
+	statsSentMessages          []*leanhelix.ConsensusRawMessage
 }
 
 func NewGossip(discovery *Discovery) *Gossip {
@@ -34,7 +34,7 @@ func NewGossip(discovery *Discovery) *Gossip {
 		subscriptions:              make(map[int]*SubscriptionValue),
 		outgoingWhitelist:          nil,
 		incomingWhiteListMemberIds: nil,
-		statsSentMessages:          []leanhelix.ConsensusRawMessage{},
+		statsSentMessages:          []*leanhelix.ConsensusRawMessage{},
 	}
 }
 
@@ -61,7 +61,7 @@ func (g *Gossip) getOutgoingChannelByTarget(ctx context.Context, target primitiv
 	return channel
 }
 
-func (g *Gossip) SendConsensusMessage(ctx context.Context, targets []primitives.MemberId, message leanhelix.ConsensusRawMessage) {
+func (g *Gossip) SendConsensusMessage(ctx context.Context, targets []primitives.MemberId, message *leanhelix.ConsensusRawMessage) {
 	g.statsSentMessages = append(g.statsSentMessages, message)
 	for _, target := range targets {
 		channel := g.getOutgoingChannelByTarget(ctx, target)
@@ -69,7 +69,7 @@ func (g *Gossip) SendConsensusMessage(ctx context.Context, targets []primitives.
 	}
 }
 
-func (g *Gossip) RegisterOnMessage(cb func(ctx context.Context, message leanhelix.ConsensusRawMessage)) int {
+func (g *Gossip) RegisterOnMessage(cb func(ctx context.Context, message *leanhelix.ConsensusRawMessage)) int {
 	g.totalSubscriptions++
 	g.subscriptions[g.totalSubscriptions] = &SubscriptionValue{cb}
 	return g.totalSubscriptions
@@ -79,10 +79,10 @@ func (g *Gossip) UnregisterOnMessage(subscriptionToken int) {
 	delete(g.subscriptions, subscriptionToken)
 }
 
-func (g *Gossip) OnRemoteMessage(ctx context.Context, rawMessage leanhelix.ConsensusRawMessage) {
+func (g *Gossip) OnRemoteMessage(ctx context.Context, rawMessage *leanhelix.ConsensusRawMessage) {
 	for _, s := range g.subscriptions {
 		if g.incomingWhiteListMemberIds != nil {
-			senderMemberId := rawMessage.ToConsensusMessage().SenderMemberId()
+			senderMemberId := leanhelix.ToConsensusMessage(rawMessage).SenderMemberId()
 			if !g.inIncomingWhitelist(senderMemberId) {
 				continue
 			}
@@ -125,7 +125,7 @@ func (g *Gossip) ClearIncomingWhitelist() {
 	g.SetIncomingWhitelist(nil)
 }
 
-func (g *Gossip) SendToNode(ctx context.Context, targetMemberId primitives.MemberId, consensusRawMessage leanhelix.ConsensusRawMessage) {
+func (g *Gossip) SendToNode(ctx context.Context, targetMemberId primitives.MemberId, consensusRawMessage *leanhelix.ConsensusRawMessage) {
 	if g.outgoingWhitelist != nil {
 		if !g.inOutgoingWhitelist(targetMemberId) {
 			return
@@ -141,17 +141,17 @@ func (g *Gossip) SendToNode(ctx context.Context, targetMemberId primitives.Membe
 func (g *Gossip) CountSentMessages(messageType protocol.MessageType) int {
 	res := 0
 	for _, msg := range g.statsSentMessages {
-		if msg.ToConsensusMessage().MessageType() == messageType {
+		if leanhelix.ToConsensusMessage(msg).MessageType() == messageType {
 			res++
 		}
 	}
 	return res
 }
 
-func (g *Gossip) GetSentMessages(messageType protocol.MessageType) []leanhelix.ConsensusRawMessage {
-	var res []leanhelix.ConsensusRawMessage
+func (g *Gossip) GetSentMessages(messageType protocol.MessageType) []*leanhelix.ConsensusRawMessage {
+	var res []*leanhelix.ConsensusRawMessage
 	for _, msg := range g.statsSentMessages {
-		if msg.ToConsensusMessage().MessageType() == messageType {
+		if leanhelix.ToConsensusMessage(msg).MessageType() == messageType {
 			res = append(res, msg)
 		}
 	}

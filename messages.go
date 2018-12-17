@@ -12,14 +12,8 @@ type Serializable interface {
 	Raw() []byte
 }
 
-type ConsensusRawMessage interface {
-	Content() []byte
-	Block() Block
-	ToConsensusMessage() ConsensusMessage
-}
-
 type ConsensusRawMessageConverter interface {
-	ToConsensusRawMessage() ConsensusRawMessage
+	ToConsensusRawMessage() *ConsensusRawMessage
 }
 
 type ConsensusMessage interface {
@@ -31,7 +25,7 @@ type ConsensusMessage interface {
 	View() primitives.View
 }
 
-func CreateConsensusRawMessage(message ConsensusMessage) *consensusRawMessage {
+func CreateConsensusRawMessage(message ConsensusMessage) *ConsensusRawMessage {
 	var content *protocol.LeanhelixContentBuilder
 	var block Block
 
@@ -74,11 +68,51 @@ func CreateConsensusRawMessage(message ConsensusMessage) *consensusRawMessage {
 		panic(fmt.Sprintf("unknown message type: %T", message))
 	}
 
-	rawMessage := &consensusRawMessage{
-		content: content.Build().Raw(),
-		block:   block,
+	rawMessage := &ConsensusRawMessage{
+		Content: content.Build().Raw(),
+		Block:   block,
 	}
 	return rawMessage
+}
+
+func ToConsensusMessage(consensusMessage *ConsensusRawMessage) ConsensusMessage {
+	var message ConsensusMessage
+	lhContentReader := protocol.LeanhelixContentReader(consensusMessage.Content)
+
+	if lhContentReader.IsMessagePreprepareMessage() {
+		message = &PreprepareMessage{
+			content: lhContentReader.PreprepareMessage(),
+			block:   consensusMessage.Block,
+		}
+	}
+
+	if lhContentReader.IsMessagePrepareMessage() {
+		message = &PrepareMessage{
+			content: lhContentReader.PrepareMessage(),
+		}
+	}
+
+	if lhContentReader.IsMessageCommitMessage() {
+		message = &CommitMessage{
+			content: lhContentReader.CommitMessage(),
+		}
+		return message
+	}
+
+	if lhContentReader.IsMessageViewChangeMessage() {
+		message = &ViewChangeMessage{
+			content: lhContentReader.ViewChangeMessage(),
+			block:   consensusMessage.Block,
+		}
+	}
+
+	if lhContentReader.IsMessageNewViewMessage() {
+		message = &NewViewMessage{
+			content: lhContentReader.NewViewMessage(),
+			block:   consensusMessage.Block,
+		}
+	}
+	return message // handle with error
 }
 
 /***************************************************/
@@ -127,7 +161,7 @@ func (ppm *PreprepareMessage) View() primitives.View {
 	return ppm.content.SignedHeader().View()
 }
 
-func (ppm *PreprepareMessage) ToConsensusRawMessage() ConsensusRawMessage {
+func (ppm *PreprepareMessage) ToConsensusRawMessage() *ConsensusRawMessage {
 	return CreateConsensusRawMessage(ppm)
 }
 
@@ -172,7 +206,7 @@ func (pm *PrepareMessage) View() primitives.View {
 	return pm.content.SignedHeader().View()
 }
 
-func (pm *PrepareMessage) ToConsensusRawMessage() ConsensusRawMessage {
+func (pm *PrepareMessage) ToConsensusRawMessage() *ConsensusRawMessage {
 	return CreateConsensusRawMessage(pm)
 }
 
@@ -214,7 +248,7 @@ func (cm *CommitMessage) View() primitives.View {
 	return cm.content.SignedHeader().View()
 }
 
-func (cm *CommitMessage) ToConsensusRawMessage() ConsensusRawMessage {
+func (cm *CommitMessage) ToConsensusRawMessage() *ConsensusRawMessage {
 	return CreateConsensusRawMessage(cm)
 }
 
@@ -261,7 +295,7 @@ func (vcm *ViewChangeMessage) View() primitives.View {
 	return vcm.content.SignedHeader().View()
 }
 
-func (vcm *ViewChangeMessage) ToConsensusRawMessage() ConsensusRawMessage {
+func (vcm *ViewChangeMessage) ToConsensusRawMessage() *ConsensusRawMessage {
 	return CreateConsensusRawMessage(vcm)
 }
 
@@ -311,7 +345,7 @@ func (nvm *NewViewMessage) View() primitives.View {
 	return nvm.content.SignedHeader().View()
 }
 
-func (nvm *NewViewMessage) ToConsensusRawMessage() ConsensusRawMessage {
+func (nvm *NewViewMessage) ToConsensusRawMessage() *ConsensusRawMessage {
 	return CreateConsensusRawMessage(nvm)
 }
 

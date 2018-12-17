@@ -9,6 +9,13 @@ import (
 type BlockHashStr string
 type MemberIdStr string
 
+// Sorting View arrays
+type viewCounters []primitives.View
+
+func (arr viewCounters) Len() int           { return len(arr) }
+func (arr viewCounters) Swap(i, j int)      { arr[i], arr[j] = arr[j], arr[i] }
+func (arr viewCounters) Less(i, j int) bool { return arr[i] < arr[j] }
+
 type InMemoryStorage struct {
 	mutext            sync.RWMutex
 	preprepareStorage map[primitives.BlockHeight]map[primitives.View]*PreprepareMessage
@@ -80,7 +87,7 @@ func (storage *InMemoryStorage) GetLatestPreprepare(blockHeight primitives.Block
 	if len(viewKeys) == 0 {
 		return nil, false
 	}
-	sort.Sort(ViewCounters(viewKeys))
+	sort.Sort(viewCounters(viewKeys))
 	lastView := viewKeys[len(viewKeys)-1]
 	return views[lastView], true
 }

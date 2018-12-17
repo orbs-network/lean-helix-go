@@ -7,7 +7,7 @@ import (
 )
 
 type LeanHelix struct {
-	messagesChannel         chan ConsensusRawMessage
+	messagesChannel         chan *ConsensusRawMessage
 	acknowledgeBlockChannel chan Block
 	currentHeight           primitives.BlockHeight
 	config                  *Config
@@ -21,7 +21,7 @@ func (lh *LeanHelix) IsLeader() bool {
 	return lh.leanHelixTerm != nil && lh.leanHelixTerm.IsLeader()
 }
 
-func (lh *LeanHelix) GossipMessageReceived(ctx context.Context, msg ConsensusRawMessage) {
+func (lh *LeanHelix) GossipMessageReceived(ctx context.Context, msg *ConsensusRawMessage) {
 	lh.messagesChannel <- msg
 }
 
@@ -90,7 +90,7 @@ func NewLeanHelix(config *Config, onCommitCallback OnCommitCallback) *LeanHelix 
 	}
 	filter := NewConsensusMessageFilter(config.Membership.MyMemberId(), config.Logger)
 	return &LeanHelix{
-		messagesChannel:         make(chan ConsensusRawMessage),
+		messagesChannel:         make(chan *ConsensusRawMessage),
 		acknowledgeBlockChannel: make(chan Block),
 		currentHeight:           0,
 		config:                  config,

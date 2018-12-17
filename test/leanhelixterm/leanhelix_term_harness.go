@@ -163,7 +163,7 @@ func (h *harness) receiveNewView(ctx context.Context, fromNodeIdx int, blockHeig
 
 func (h *harness) getLastSentViewChangeMessage() *leanhelix.ViewChangeMessage {
 	messages := h.myNode.Gossip.GetSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE)
-	lastMessage := messages[len(messages)-1].ToConsensusMessage()
+	lastMessage := leanhelix.ToConsensusMessage(messages[len(messages)-1])
 	return lastMessage.(*leanhelix.ViewChangeMessage)
 }
 

@@ -21,8 +21,13 @@ type Membership interface {
 	RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, seed uint64, maxCommitteeSize uint32) []primitives.MemberId
 }
 
+type ConsensusRawMessage struct {
+	Content []byte
+	Block   Block
+}
+
 type Communication interface {
-	SendConsensusMessage(ctx context.Context, targets []primitives.MemberId, message ConsensusRawMessage)
+	SendConsensusMessage(ctx context.Context, targets []primitives.MemberId, message *ConsensusRawMessage)
 }
 
 type KeyManager interface {
