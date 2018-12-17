@@ -208,8 +208,6 @@ func (cm *CommitMessage) SenderPublicKey() primitives.MemberId {
 }
 
 func (cm *CommitMessage) BlockHeight() primitives.BlockHeight {
-	fmt.Println(" BlockHeight  : ", cm.content.SignedHeader().BlockHeight())
-
 	return cm.content.SignedHeader().BlockHeight()
 }
 func (cm *CommitMessage) View() primitives.View {

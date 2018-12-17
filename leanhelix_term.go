@@ -153,36 +153,6 @@ func (term *LeanHelixTerm) sendConsensusMessage(ctx context.Context, message Con
 	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
 }
 
-func (term *LeanHelixTerm) sendPreprepare(ctx context.Context, message *PreprepareMessage) {
-	term.logger.Debug("H=%d V=%d %s sendPreprepare()", term.height, term.view, term.myPublicKey.KeyForMap())
-	rawMessage := message.ToConsensusRawMessage()
-	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
-}
-
-func (term *LeanHelixTerm) sendPrepare(ctx context.Context, message *PrepareMessage) {
-	term.logger.Debug("H=%s V=%s %s sendPrepare()", term.height, term.view, term.myPublicKey.KeyForMap())
-	rawMessage := message.ToConsensusRawMessage()
-	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
-}
-
-func (term *LeanHelixTerm) sendCommit(ctx context.Context, message *CommitMessage) {
-	term.logger.Debug("H=%s V=%s %s sendCommit()", term.height, term.view, term.myPublicKey.KeyForMap())
-	rawMessage := message.ToConsensusRawMessage()
-	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
-}
-
-func (term *LeanHelixTerm) sendViewChange(ctx context.Context, message *ViewChangeMessage) {
-	term.logger.Debug("H=%s V=%s %s sendViewChange()", term.height, term.view, term.myPublicKey.KeyForMap())
-	rawMessage := message.ToConsensusRawMessage()
-	term.NetworkCommunication.SendMessage(ctx, []MemberId{term.leaderPublicKey}, rawMessage)
-}
-
-func (term *LeanHelixTerm) sendNewView(ctx context.Context, message *NewViewMessage) {
-	term.logger.Debug("H=%s V=%s %s sendNewView()", term.height, term.view, term.myPublicKey.KeyForMap())
-	rawMessage := message.ToConsensusRawMessage()
-	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
-}
-
 func (term *LeanHelixTerm) HandleLeanHelixPrePrepare(ctx context.Context, ppm *PreprepareMessage) {
 	term.logger.Debug("H=%s V=%s %s HandleLeanHelixPrePrepare()", term.height, term.view, term.myPublicKey.KeyForMap())
 	if err := term.validatePreprepare(ppm); err != nil {
