@@ -1,16 +1,16 @@
 package builders
 
 import (
-	lh "github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go"
 )
 
 type BlocksPool struct {
-	upcomingBlocks []lh.Block
-	latestBlock    lh.Block
+	upcomingBlocks []leanhelix.Block
+	latestBlock    leanhelix.Block
 }
 
-func (bp *BlocksPool) PopBlock() lh.Block {
-	var nextBlock lh.Block
+func (bp *BlocksPool) PopBlock() leanhelix.Block {
+	var nextBlock leanhelix.Block
 	if len(bp.upcomingBlocks) > 0 {
 		// Simple queue impl, see https://github.com/golang/go/wiki/SliceTricks
 		nextBlock, bp.upcomingBlocks = bp.upcomingBlocks[0], bp.upcomingBlocks[1:]
@@ -21,7 +21,7 @@ func (bp *BlocksPool) PopBlock() lh.Block {
 	return nextBlock
 }
 
-func NewBlocksPool(upcomingBlocks []lh.Block) *BlocksPool {
+func NewBlocksPool(upcomingBlocks []leanhelix.Block) *BlocksPool {
 	return &BlocksPool{
 		latestBlock:    GenesisBlock,
 		upcomingBlocks: upcomingBlocks,

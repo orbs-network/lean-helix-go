@@ -1,7 +1,7 @@
 package leanhelix
 
 import (
-	. "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
@@ -10,10 +10,10 @@ type MessageFactory struct {
 }
 
 func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
-	blockHeight BlockHeight,
-	view View,
+	blockHeight primitives.BlockHeight,
+	view primitives.View,
 	block Block,
-	blockHash BlockHash) *protocol.PreprepareContentBuilder {
+	blockHash primitives.BlockHash) *protocol.PreprepareContentBuilder {
 
 	signedHeader := &protocol.BlockRefBuilder{
 		MessageType: protocol.LEAN_HELIX_PREPREPARE,
@@ -25,7 +25,7 @@ func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
 	dataToSign := signedHeader.Build().Raw()
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.KeyManager.MyPublicKey(),
-		Signature: Signature(f.KeyManager.Sign(dataToSign)),
+		Signature: primitives.Signature(f.KeyManager.Sign(dataToSign)),
 	}
 
 	return &protocol.PreprepareContentBuilder{
@@ -35,10 +35,10 @@ func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
 }
 
 func (f *MessageFactory) CreatePreprepareMessage(
-	blockHeight BlockHeight,
-	view View,
+	blockHeight primitives.BlockHeight,
+	view primitives.View,
 	block Block,
-	blockHash BlockHash) *PreprepareMessage {
+	blockHash primitives.BlockHash) *PreprepareMessage {
 
 	content := f.CreatePreprepareMessageContentBuilder(blockHeight, view, block, blockHash)
 
@@ -50,9 +50,9 @@ func (f *MessageFactory) CreatePreprepareMessageFromContentBuilder(ppmc *protoco
 }
 
 func (f *MessageFactory) CreatePrepareMessage(
-	blockHeight BlockHeight,
-	view View,
-	blockHash BlockHash) *PrepareMessage {
+	blockHeight primitives.BlockHeight,
+	view primitives.View,
+	blockHash primitives.BlockHash) *PrepareMessage {
 
 	signedHeader := &protocol.BlockRefBuilder{
 		MessageType: protocol.LEAN_HELIX_PREPARE,
@@ -62,8 +62,8 @@ func (f *MessageFactory) CreatePrepareMessage(
 	}
 
 	sender := &protocol.SenderSignatureBuilder{
-		MemberId:  MemberId(f.KeyManager.MyPublicKey()),
-		Signature: Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
+		MemberId:  primitives.MemberId(f.KeyManager.MyPublicKey()),
+		Signature: primitives.Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
 	}
 
 	contentBuilder := protocol.PrepareContentBuilder{
@@ -75,9 +75,9 @@ func (f *MessageFactory) CreatePrepareMessage(
 }
 
 func (f *MessageFactory) CreateCommitMessage(
-	blockHeight BlockHeight,
-	view View,
-	blockHash BlockHash) *CommitMessage {
+	blockHeight primitives.BlockHeight,
+	view primitives.View,
+	blockHash primitives.BlockHash) *CommitMessage {
 
 	signedHeader := &protocol.BlockRefBuilder{
 		MessageType: protocol.LEAN_HELIX_COMMIT,
@@ -87,8 +87,8 @@ func (f *MessageFactory) CreateCommitMessage(
 	}
 
 	sender := &protocol.SenderSignatureBuilder{
-		MemberId:  MemberId(f.KeyManager.MyPublicKey()),
-		Signature: Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
+		MemberId:  primitives.MemberId(f.KeyManager.MyPublicKey()),
+		Signature: primitives.Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
 	}
 
 	contentBuilder := protocol.CommitContentBuilder{
@@ -155,8 +155,8 @@ func CreatePreparedProofBuilderFromPreparedMessages(preparedMessages *PreparedMe
 }
 
 func (f *MessageFactory) CreateViewChangeMessageContentBuilder(
-	blockHeight BlockHeight,
-	view View,
+	blockHeight primitives.BlockHeight,
+	view primitives.View,
 	preparedMessages *PreparedMessages) *protocol.ViewChangeMessageContentBuilder {
 
 	preparedProofBuilder := CreatePreparedProofBuilderFromPreparedMessages(preparedMessages)
@@ -168,8 +168,8 @@ func (f *MessageFactory) CreateViewChangeMessageContentBuilder(
 	}
 
 	sender := &protocol.SenderSignatureBuilder{
-		MemberId:  MemberId(f.KeyManager.MyPublicKey()),
-		Signature: Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
+		MemberId:  primitives.MemberId(f.KeyManager.MyPublicKey()),
+		Signature: primitives.Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
 	}
 
 	return &protocol.ViewChangeMessageContentBuilder{
@@ -179,8 +179,8 @@ func (f *MessageFactory) CreateViewChangeMessageContentBuilder(
 }
 
 func (f *MessageFactory) CreateViewChangeMessage(
-	blockHeight BlockHeight,
-	view View,
+	blockHeight primitives.BlockHeight,
+	view primitives.View,
 	preparedMessages *PreparedMessages) *ViewChangeMessage {
 
 	var block Block
@@ -194,8 +194,8 @@ func (f *MessageFactory) CreateViewChangeMessage(
 }
 
 func (f *MessageFactory) CreateNewViewMessageContentBuilder(
-	blockHeight BlockHeight,
-	view View,
+	blockHeight primitives.BlockHeight,
+	view primitives.View,
 	ppContentBuilder *protocol.PreprepareContentBuilder,
 	confirmations []*protocol.ViewChangeMessageContentBuilder) *protocol.NewViewMessageContentBuilder {
 
@@ -207,8 +207,8 @@ func (f *MessageFactory) CreateNewViewMessageContentBuilder(
 	}
 
 	sender := &protocol.SenderSignatureBuilder{
-		MemberId:  MemberId(f.KeyManager.MyPublicKey()),
-		Signature: Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
+		MemberId:  primitives.MemberId(f.KeyManager.MyPublicKey()),
+		Signature: primitives.Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
 	}
 
 	return &protocol.NewViewMessageContentBuilder{
@@ -219,8 +219,8 @@ func (f *MessageFactory) CreateNewViewMessageContentBuilder(
 }
 
 func (f *MessageFactory) CreateNewViewMessage(
-	blockHeight BlockHeight,
-	view View,
+	blockHeight primitives.BlockHeight,
+	view primitives.View,
 	ppContentBuilder *protocol.PreprepareContentBuilder,
 	confirmations []*protocol.ViewChangeMessageContentBuilder,
 	block Block) *NewViewMessage {

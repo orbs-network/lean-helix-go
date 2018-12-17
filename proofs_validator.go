@@ -1,11 +1,11 @@
 package leanhelix
 
 import (
-	. "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
-func isInMembers(membersPKs []MemberId, publicKey MemberId) bool {
+func isInMembers(membersPKs []primitives.MemberId, publicKey primitives.MemberId) bool {
 	for _, memberPK := range membersPKs {
 		if memberPK.Equal(publicKey) {
 			return true
@@ -18,15 +18,15 @@ func verifyBlockRefMessage(blockRef *protocol.BlockRef, sender *protocol.SenderS
 	return keyManager.Verify(blockRef.Raw(), sender)
 }
 
-type CalcLeaderPk = func(view View) MemberId
+type CalcLeaderPk = func(view primitives.View) primitives.MemberId
 
 func ValidatePreparedProof(
-	targetHeight BlockHeight,
-	targetView View,
+	targetHeight primitives.BlockHeight,
+	targetView primitives.View,
 	preparedProof *protocol.PreparedProof,
 	q int,
 	keyManager KeyManager,
-	membersPKs []MemberId,
+	membersPKs []primitives.MemberId,
 	calcLeaderPk CalcLeaderPk) bool {
 	if preparedProof == nil || len(preparedProof.Raw()) == 0 {
 		return true

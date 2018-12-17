@@ -2,8 +2,8 @@ package test
 
 import (
 	"bytes"
-	lh "github.com/orbs-network/lean-helix-go"
-	. "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/stretchr/testify/require"
 	"math"
@@ -13,28 +13,28 @@ import (
 )
 
 func TestPreparedMessagesExtractor(t *testing.T) {
-	blockHeight := BlockHeight(math.Floor(rand.Float64() * 1000000))
-	view := View(math.Floor(rand.Float64() * 1000000))
+	blockHeight := primitives.BlockHeight(math.Floor(rand.Float64() * 1000000))
+	view := primitives.View(math.Floor(rand.Float64() * 1000000))
 	block := builders.CreateBlock(builders.GenesisBlock)
-	leaderId := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	senderId1 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	senderId2 := MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	leaderKeyManager := builders.NewMockKeyManager(MemberId(leaderId))
-	sender1KeyManager := builders.NewMockKeyManager(MemberId(senderId1))
-	sender2KeyManager := builders.NewMockKeyManager(MemberId(senderId2))
+	leaderId := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId1 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	leaderKeyManager := builders.NewMockKeyManager(primitives.MemberId(leaderId))
+	sender1KeyManager := builders.NewMockKeyManager(primitives.MemberId(senderId1))
+	sender2KeyManager := builders.NewMockKeyManager(primitives.MemberId(senderId2))
 
 	t.Run("should return the prepare proof", func(t *testing.T) {
 		ppm := builders.APreprepareMessage(leaderKeyManager, blockHeight, view, block)
 		pm1 := builders.APrepareMessage(sender1KeyManager, blockHeight, view, block)
 		pm2 := builders.APrepareMessage(sender2KeyManager, blockHeight, view, block)
-		storage := lh.NewInMemoryStorage()
+		storage := leanhelix.NewInMemoryStorage()
 		storage.StorePreprepare(ppm)
 		storage.StorePrepare(pm1)
 		storage.StorePrepare(pm2)
 
-		expectedProof := &lh.PreparedMessages{
+		expectedProof := &leanhelix.PreparedMessages{
 			PreprepareMessage: ppm,
-			PrepareMessages:   []*lh.PrepareMessage{pm1, pm2},
+			PrepareMessages:   []*leanhelix.PrepareMessage{pm1, pm2},
 		}
 
 		q := 3
@@ -43,7 +43,7 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 		xp0 := expectedProof.PrepareMessages[0].Raw()
 		xp1 := expectedProof.PrepareMessages[1].Raw()
 
-		actualProof := lh.ExtractPreparedMessages(blockHeight, storage, q)
+		actualProof := leanhelix.ExtractPreparedMessages(blockHeight, storage, q)
 		app := actualProof.PreprepareMessage.Raw()
 		ap0 := actualProof.PrepareMessages[0].Raw()
 		ap1 := actualProof.PrepareMessages[1].Raw()
@@ -54,7 +54,7 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	})
 
 	t.Run("should return the latest (highest view) Prepare Proof", func(t *testing.T) {
-		storage := lh.NewInMemoryStorage()
+		storage := leanhelix.NewInMemoryStorage()
 		ppm10 := builders.APreprepareMessage(leaderKeyManager, blockHeight, 10, block)
 		pm10a := builders.APrepareMessage(sender1KeyManager, blockHeight, 10, block)
 		pm10b := builders.APrepareMessage(sender2KeyManager, blockHeight, 10, block)
@@ -79,9 +79,9 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 		storage.StorePrepare(pm30a)
 		storage.StorePrepare(pm30b)
 
-		expectedProof := &lh.PreparedMessages{
+		expectedProof := &leanhelix.PreparedMessages{
 			PreprepareMessage: ppm30,
-			PrepareMessages:   []*lh.PrepareMessage{pm30a, pm30b},
+			PrepareMessages:   []*leanhelix.PrepareMessage{pm30a, pm30b},
 		}
 		q := 3
 
@@ -89,7 +89,7 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 		xp0 := expectedProof.PrepareMessages[0].Raw()
 		xp1 := expectedProof.PrepareMessages[1].Raw()
 
-		actualProof := lh.ExtractPreparedMessages(blockHeight, storage, q)
+		actualProof := leanhelix.ExtractPreparedMessages(blockHeight, storage, q)
 		app := actualProof.PreprepareMessage.Raw()
 		ap0 := actualProof.PrepareMessages[0].Raw()
 		ap1 := actualProof.PrepareMessages[1].Raw()
@@ -102,31 +102,31 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	t.Run("TestReturnNothingIfNoPrePrepare", func(t *testing.T) {
 		pm1 := builders.APrepareMessage(sender1KeyManager, blockHeight, view, block)
 		pm2 := builders.APrepareMessage(sender2KeyManager, blockHeight, view, block)
-		storage := lh.NewInMemoryStorage()
+		storage := leanhelix.NewInMemoryStorage()
 		storage.StorePrepare(pm1)
 		storage.StorePrepare(pm2)
 		q := 3
-		actualPreparedMessages := lh.ExtractPreparedMessages(blockHeight, storage, q)
+		actualPreparedMessages := leanhelix.ExtractPreparedMessages(blockHeight, storage, q)
 		require.Nil(t, actualPreparedMessages, "Don't return PreparedMessages from latest view if no PrePrepare in storage")
 	})
 
 	t.Run("TestReturnNothingIfNoPrepares", func(t *testing.T) {
 		ppm := builders.APreprepareMessage(leaderKeyManager, blockHeight, view, block)
-		storage := lh.NewInMemoryStorage()
+		storage := leanhelix.NewInMemoryStorage()
 		storage.StorePreprepare(ppm)
 		q := 3
-		actualPreparedMessages := lh.ExtractPreparedMessages(blockHeight, storage, q)
+		actualPreparedMessages := leanhelix.ExtractPreparedMessages(blockHeight, storage, q)
 		require.Nil(t, actualPreparedMessages, "Don't return PreparedMessages from latest view if no Prepare in storage")
 	})
 
 	t.Run("TestReturnNothingIfNotEnoughPrepares", func(t *testing.T) {
 		ppm := builders.APreprepareMessage(leaderKeyManager, blockHeight, view, block)
 		pm1 := builders.APrepareMessage(sender1KeyManager, blockHeight, view, block)
-		storage := lh.NewInMemoryStorage()
+		storage := leanhelix.NewInMemoryStorage()
 		storage.StorePreprepare(ppm)
 		storage.StorePrepare(pm1)
 		q := 3
-		actualPreparedMessages := lh.ExtractPreparedMessages(blockHeight, storage, q)
+		actualPreparedMessages := leanhelix.ExtractPreparedMessages(blockHeight, storage, q)
 		require.Nil(t, actualPreparedMessages, "Don't return PreparedMessages from latest view if not enough Prepares in storage (# Prepares < 2*f)")
 	})
 }

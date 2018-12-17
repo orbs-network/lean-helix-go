@@ -2,16 +2,16 @@ package test
 
 import (
 	"context"
-	lh "github.com/orbs-network/lean-helix-go"
-	. "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/orbs-network-go/test"
 	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
 
-func buildElectionTrigger(ctx context.Context, timeout time.Duration) *lh.TimerBasedElectionTrigger {
-	et := lh.NewTimerBasedElectionTrigger(timeout)
+func buildElectionTrigger(ctx context.Context, timeout time.Duration) *leanhelix.TimerBasedElectionTrigger {
+	et := leanhelix.NewTimerBasedElectionTrigger(timeout)
 	go func() {
 		for {
 			trigger := <-et.ElectionChannel()
@@ -27,7 +27,7 @@ func TestCallbackTrigger(t *testing.T) {
 		et := buildElectionTrigger(ctx, 10*time.Millisecond)
 
 		wasCalled := false
-		cb := func(ctx context.Context, blockHeight BlockHeight, view View) { wasCalled = true }
+		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View) { wasCalled = true }
 		et.RegisterOnElection(10, 0, cb)
 
 		time.Sleep(time.Duration(15) * time.Millisecond)
@@ -41,7 +41,7 @@ func TestCallbackTriggerOnce(t *testing.T) {
 		et := buildElectionTrigger(ctx, 10*time.Millisecond)
 
 		callCount := 0
-		cb := func(ctx context.Context, blockHeight BlockHeight, view View) { callCount++ }
+		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View) { callCount++ }
 		et.RegisterOnElection(10, 0, cb)
 
 		time.Sleep(time.Duration(25) * time.Millisecond)
@@ -55,7 +55,7 @@ func TestIgnoreSameViewOrHeight(t *testing.T) {
 		et := buildElectionTrigger(ctx, 30*time.Millisecond)
 
 		callCount := 0
-		cb := func(ctx context.Context, blockHeight BlockHeight, view View) { callCount++ }
+		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View) { callCount++ }
 
 		et.RegisterOnElection(10, 0, cb)
 		time.Sleep(time.Duration(10) * time.Millisecond)
@@ -74,7 +74,7 @@ func TestNotTriggerIfSameViewButDifferentHeight(t *testing.T) {
 		et := buildElectionTrigger(ctx, 30*time.Millisecond)
 
 		callCount := 0
-		cb := func(ctx context.Context, blockHeight BlockHeight, view View) { callCount++ }
+		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View) { callCount++ }
 
 		et.RegisterOnElection(10, 0, cb)
 		time.Sleep(time.Duration(10) * time.Millisecond)
@@ -97,7 +97,7 @@ func TestNotTriggerIfSameHeightButDifferentView(t *testing.T) {
 		et := buildElectionTrigger(ctx, 30*time.Millisecond)
 
 		callCount := 0
-		cb := func(ctx context.Context, blockHeight BlockHeight, view View) { callCount++ }
+		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View) { callCount++ }
 
 		et.RegisterOnElection(10, 0, cb)
 		time.Sleep(time.Duration(10) * time.Millisecond)
@@ -120,7 +120,7 @@ func TestViewChanges(t *testing.T) {
 		et := buildElectionTrigger(ctx, 20*time.Millisecond)
 
 		wasCalled := false
-		cb := func(ctx context.Context, blockHeight BlockHeight, view View) { wasCalled = true }
+		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View) { wasCalled = true }
 
 		et.RegisterOnElection(10, 0, cb) // 2 ** 0 * 20 = 20
 		time.Sleep(time.Duration(10) * time.Millisecond)
@@ -142,7 +142,7 @@ func TestViewPowTimeout(t *testing.T) {
 		et := buildElectionTrigger(ctx, 10*time.Millisecond)
 
 		wasCalled := false
-		cb := func(ctx context.Context, blockHeight BlockHeight, view View) { wasCalled = true }
+		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View) { wasCalled = true }
 
 		et.RegisterOnElection(10, 2, cb) // 2 ** 2 * 10 = 40
 		time.Sleep(time.Duration(30) * time.Millisecond)

@@ -1,25 +1,25 @@
 package leanhelix
 
 import (
-	. "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
 type Storage interface {
 	StorePreprepare(ppm *PreprepareMessage) bool
-	GetPreprepareMessage(blockHeight BlockHeight, view View) (*PreprepareMessage, bool)
-	GetPreprepareBlock(blockHeight BlockHeight, view View) (Block, bool)
-	GetLatestPreprepare(blockHeight BlockHeight) (*PreprepareMessage, bool)
+	GetPreprepareMessage(blockHeight primitives.BlockHeight, view primitives.View) (*PreprepareMessage, bool)
+	GetPreprepareBlock(blockHeight primitives.BlockHeight, view primitives.View) (Block, bool)
+	GetLatestPreprepare(blockHeight primitives.BlockHeight) (*PreprepareMessage, bool)
 
 	StorePrepare(pp *PrepareMessage) bool
-	GetPrepareMessages(blockHeight BlockHeight, view View, blockHash BlockHash) ([]*PrepareMessage, bool)
-	GetPrepareSendersPKs(blockHeight BlockHeight, view View, blockHash BlockHash) []MemberId
+	GetPrepareMessages(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) ([]*PrepareMessage, bool)
+	GetPrepareSendersPKs(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) []primitives.MemberId
 
 	StoreCommit(cm *CommitMessage) bool
-	GetCommitMessages(blockHeight BlockHeight, view View, blockHash BlockHash) ([]*CommitMessage, bool)
-	GetCommitSendersPKs(blockHeight BlockHeight, view View, blockHash BlockHash) []MemberId
+	GetCommitMessages(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) ([]*CommitMessage, bool)
+	GetCommitSendersPKs(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) []primitives.MemberId
 
 	StoreViewChange(vcm *ViewChangeMessage) bool
-	GetViewChangeMessages(blockHeight BlockHeight, view View) ([]*ViewChangeMessage, bool)
+	GetViewChangeMessages(blockHeight primitives.BlockHeight, view primitives.View) ([]*ViewChangeMessage, bool)
 
-	ClearBlockHeightLogs(blockHeight BlockHeight)
+	ClearBlockHeightLogs(blockHeight primitives.BlockHeight)
 }

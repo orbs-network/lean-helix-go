@@ -1,22 +1,22 @@
 package builders
 
 import (
-	lh "github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
 type NewViewBuilder struct {
-	leaderKeyManager lh.KeyManager
+	leaderKeyManager leanhelix.KeyManager
 	votes            []*protocol.ViewChangeMessageContentBuilder
 	customPP         *protocol.PreprepareContentBuilder
-	block            lh.Block
+	block            leanhelix.Block
 	blockHeight      primitives.BlockHeight
 	view             primitives.View
 }
 
-func (builder *NewViewBuilder) Build() *lh.NewViewMessage {
-	messageFactory := lh.NewMessageFactory(builder.leaderKeyManager)
+func (builder *NewViewBuilder) Build() *leanhelix.NewViewMessage {
+	messageFactory := leanhelix.NewMessageFactory(builder.leaderKeyManager)
 
 	ppmCB := builder.customPP
 	if ppmCB == nil {
@@ -24,16 +24,16 @@ func (builder *NewViewBuilder) Build() *lh.NewViewMessage {
 	}
 
 	nvcb := messageFactory.CreateNewViewMessageContentBuilder(builder.blockHeight, builder.view, ppmCB, builder.votes)
-	return lh.NewNewViewMessage(nvcb.Build(), builder.block)
+	return leanhelix.NewNewViewMessage(nvcb.Build(), builder.block)
 }
 
-func (builder *NewViewBuilder) LeadBy(keyManager lh.KeyManager) *NewViewBuilder {
+func (builder *NewViewBuilder) LeadBy(keyManager leanhelix.KeyManager) *NewViewBuilder {
 	builder.leaderKeyManager = keyManager
 	return builder
 }
 
-func (builder *NewViewBuilder) WithCustomPreprepare(keyManager lh.KeyManager, blockHeight primitives.BlockHeight, view primitives.View, block lh.Block) *NewViewBuilder {
-	messageFactory := lh.NewMessageFactory(keyManager)
+func (builder *NewViewBuilder) WithCustomPreprepare(keyManager leanhelix.KeyManager, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) *NewViewBuilder {
+	messageFactory := leanhelix.NewMessageFactory(keyManager)
 	builder.customPP = messageFactory.CreatePreprepareMessageContentBuilder(blockHeight, view, block, CalculateBlockHash(block))
 	return builder
 }
@@ -53,7 +53,7 @@ func (builder *NewViewBuilder) OnView(view primitives.View) *NewViewBuilder {
 	return builder
 }
 
-func (builder *NewViewBuilder) OnBlock(block lh.Block) *NewViewBuilder {
+func (builder *NewViewBuilder) OnBlock(block leanhelix.Block) *NewViewBuilder {
 	builder.block = block
 	return builder
 }
@@ -67,10 +67,10 @@ func NewNewViewBuilder() *NewViewBuilder {
 //////////////////// View Change Votes Builder //////////////////////////
 
 type Voter struct {
-	keyManager       lh.KeyManager
+	keyManager       leanhelix.KeyManager
 	blockHeight      primitives.BlockHeight
 	view             primitives.View
-	preparedMessages *lh.PreparedMessages
+	preparedMessages *leanhelix.PreparedMessages
 }
 
 type VotesBuilder struct {
@@ -80,7 +80,7 @@ type VotesBuilder struct {
 func (builder *VotesBuilder) Build() []*protocol.ViewChangeMessageContentBuilder {
 	var votes []*protocol.ViewChangeMessageContentBuilder
 	for _, voter := range builder.voters {
-		messageFactory := lh.NewMessageFactory(voter.keyManager)
+		messageFactory := leanhelix.NewMessageFactory(voter.keyManager)
 		vcmCB := messageFactory.CreateViewChangeMessageContentBuilder(voter.blockHeight, voter.view, voter.preparedMessages)
 		votes = append(votes, vcmCB)
 	}
@@ -88,7 +88,7 @@ func (builder *VotesBuilder) Build() []*protocol.ViewChangeMessageContentBuilder
 	return votes
 }
 
-func (builder *VotesBuilder) WithVoter(keyManager lh.KeyManager, blockHeight primitives.BlockHeight, view primitives.View, preparedMessages *lh.PreparedMessages) *VotesBuilder {
+func (builder *VotesBuilder) WithVoter(keyManager leanhelix.KeyManager, blockHeight primitives.BlockHeight, view primitives.View, preparedMessages *leanhelix.PreparedMessages) *VotesBuilder {
 	voter := &Voter{keyManager, blockHeight, view, preparedMessages}
 	builder.voters = append(builder.voters, voter)
 	return builder
@@ -98,7 +98,7 @@ func NewVotesBuilder() *VotesBuilder {
 	return &VotesBuilder{}
 }
 
-func ASimpleViewChangeVotes(membersKeyManagers []lh.KeyManager, blockHeight primitives.BlockHeight, view primitives.View) []*protocol.ViewChangeMessageContentBuilder {
+func ASimpleViewChangeVotes(membersKeyManagers []leanhelix.KeyManager, blockHeight primitives.BlockHeight, view primitives.View) []*protocol.ViewChangeMessageContentBuilder {
 	builder := NewVotesBuilder()
 	for _, keyManager := range membersKeyManagers {
 		builder.WithVoter(keyManager, blockHeight, view, nil)

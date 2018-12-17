@@ -2,19 +2,19 @@ package builders
 
 import (
 	"fmt"
-	lh "github.com/orbs-network/lean-helix-go"
-	. "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
 var GenesisBlock = CreateBlock(nil)
 
 // MockBlock
 type MockBlock struct {
-	height BlockHeight
+	height primitives.BlockHeight
 	body   string
 }
 
-func (b *MockBlock) Height() BlockHeight {
+func (b *MockBlock) Height() primitives.BlockHeight {
 	return b.height
 }
 
@@ -22,8 +22,8 @@ func (b *MockBlock) Body() string {
 	return b.body
 }
 
-func CreateBlock(previousBlock lh.Block) lh.Block {
-	var height BlockHeight = 0
+func CreateBlock(previousBlock leanhelix.Block) leanhelix.Block {
+	var height primitives.BlockHeight = 0
 	if previousBlock != nil {
 		height = previousBlock.Height() + 1
 	}
@@ -37,7 +37,7 @@ func CreateBlock(previousBlock lh.Block) lh.Block {
 
 var blocksCounter = 0
 
-func genBody(height BlockHeight) string {
+func genBody(height primitives.BlockHeight) string {
 	body := fmt.Sprintf("Block #%d Height:%d", blocksCounter, height)
 	if height == 0 {
 		body = body + " (Genesis)"

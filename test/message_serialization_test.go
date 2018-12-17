@@ -2,7 +2,7 @@ package test
 
 import (
 	"github.com/orbs-network/lean-helix-go"
-	. "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/stretchr/testify/require"
@@ -12,11 +12,11 @@ import (
 )
 
 func TestMessageBuilderAndReader(t *testing.T) {
-	height := BlockHeight(math.Floor(rand.Float64() * 1000000000))
-	view := View(math.Floor(rand.Float64() * 1000000000))
+	height := primitives.BlockHeight(math.Floor(rand.Float64() * 1000000000))
+	view := primitives.View(math.Floor(rand.Float64() * 1000000000))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	b1 := builders.CreateBlock(builders.GenesisBlock)
-	mockKeyManager := builders.NewMockKeyManager(MemberId("PK"), nil)
+	mockKeyManager := builders.NewMockKeyManager(primitives.MemberId("PK"), nil)
 	mf := &leanhelix.MessageFactory{
 		KeyManager: mockKeyManager,
 	}

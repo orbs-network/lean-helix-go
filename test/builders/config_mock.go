@@ -1,11 +1,11 @@
 package builders
 
-import lh "github.com/orbs-network/lean-helix-go"
+import "github.com/orbs-network/lean-helix-go"
 
 type mockConfig struct {
-	electionTrigger lh.ElectionTrigger
+	electionTrigger leanhelix.ElectionTrigger
 }
 
-func (c *mockConfig) ElectionTrigger() lh.ElectionTrigger {
+func (c *mockConfig) ElectionTrigger() leanhelix.ElectionTrigger {
 	return c.electionTrigger
 }

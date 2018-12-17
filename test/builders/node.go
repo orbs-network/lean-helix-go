@@ -2,29 +2,29 @@ package builders
 
 import (
 	"context"
-	lh "github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
 )
 
 type NodeState struct {
-	block           lh.Block
+	block           leanhelix.Block
 	validationCount int
 }
 
 type Node struct {
-	leanHelix        *lh.LeanHelix
+	leanHelix        *leanhelix.LeanHelix
 	blockChain       *InMemoryBlockChain
 	ElectionTrigger  *ElectionTriggerMock
 	BlockUtils       *MockBlockUtils
 	KeyManager       *MockKeyManager
-	Storage          lh.Storage
+	Storage          leanhelix.Storage
 	Gossip           *gossip.Gossip
 	PublicKey        primitives.MemberId
 	NodeStateChannel chan *NodeState
 }
 
-func (node *Node) GetLatestBlock() lh.Block {
+func (node *Node) GetLatestBlock() leanhelix.Block {
 	return node.blockChain.GetLastBlock()
 }
 
@@ -36,7 +36,7 @@ func (node *Node) TriggerElectionSync(ctx context.Context) {
 	node.ElectionTrigger.ManualTriggerSync(ctx)
 }
 
-func (node *Node) onCommittedBlock(block lh.Block) {
+func (node *Node) onCommittedBlock(block leanhelix.Block) {
 	node.blockChain.AppendBlockToChain(block)
 	node.NodeStateChannel <- &NodeState{
 		block:           block,
@@ -64,8 +64,8 @@ func (node *Node) StartConsensusSync() {
 	}
 }
 
-func (node *Node) BuildConfig(logger lh.Logger) *lh.Config {
-	return &lh.Config{
+func (node *Node) BuildConfig(logger leanhelix.Logger) *leanhelix.Config {
+	return &leanhelix.Config{
 		NetworkCommunication: node.Gossip,
 		ElectionTrigger:      node.ElectionTrigger,
 		BlockUtils:           node.BlockUtils,
@@ -81,19 +81,19 @@ func NewNode(
 	gossip *gossip.Gossip,
 	blockUtils *MockBlockUtils,
 	electionTrigger *ElectionTriggerMock,
-	logger lh.Logger) *Node {
+	logger leanhelix.Logger) *Node {
 	node := &Node{
 		blockChain:       NewInMemoryBlockChain(),
 		ElectionTrigger:  electionTrigger,
 		BlockUtils:       blockUtils,
 		KeyManager:       NewMockKeyManager(publicKey),
-		Storage:          lh.NewInMemoryStorage(),
+		Storage:          leanhelix.NewInMemoryStorage(),
 		Gossip:           gossip,
 		PublicKey:        publicKey,
 		NodeStateChannel: make(chan *NodeState),
 	}
 
-	leanHelix := lh.NewLeanHelix(node.BuildConfig(logger))
+	leanHelix := leanhelix.NewLeanHelix(node.BuildConfig(logger))
 	leanHelix.RegisterOnCommitted(node.onCommittedBlock)
 	gossip.RegisterOnMessage(leanHelix.GossipMessageReceived)
 

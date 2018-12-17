@@ -3,7 +3,7 @@ package builders
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go"
-	. "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
 )
 
@@ -12,7 +12,7 @@ type TestNetwork struct {
 	Discovery *gossip.Discovery
 }
 
-func (net *TestNetwork) GetNodeGossip(publicKey MemberId) *gossip.Gossip {
+func (net *TestNetwork) GetNodeGossip(publicKey primitives.MemberId) *gossip.Gossip {
 	return net.Discovery.GetGossipByPK(publicKey)
 }
 

@@ -2,7 +2,7 @@ package builders
 
 import (
 	"fmt"
-	lh "github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/gossip"
 )
@@ -11,10 +11,10 @@ type TestNetworkBuilder struct {
 	NodeCount            int
 	logToConsole         bool
 	customNodeBuilders   []*NodeBuilder
-	upcomingBlocks       []lh.Block
-	keyManager           lh.KeyManager
-	blockUtils           lh.BlockUtils
-	networkCommunication lh.NetworkCommunication
+	upcomingBlocks       []leanhelix.Block
+	keyManager           leanhelix.KeyManager
+	blockUtils           leanhelix.BlockUtils
+	networkCommunication leanhelix.NetworkCommunication
 }
 
 func (tb *TestNetworkBuilder) WithNodeCount(nodeCount int) *TestNetworkBuilder {
@@ -27,7 +27,7 @@ func (tb *TestNetworkBuilder) WithCustomNodeBuilder(nodeBuilder *NodeBuilder) *T
 	return tb
 }
 
-func (tb *TestNetworkBuilder) WithBlocks(upcomingBlocks []lh.Block) *TestNetworkBuilder {
+func (tb *TestNetworkBuilder) WithBlocks(upcomingBlocks []leanhelix.Block) *TestNetworkBuilder {
 	if tb.upcomingBlocks == nil {
 		tb.upcomingBlocks = upcomingBlocks
 	}
@@ -55,7 +55,7 @@ func (tb *TestNetworkBuilder) buildBlocksPool() *BlocksPool {
 		b3 := CreateBlock(b2)
 		b4 := CreateBlock(b3)
 
-		return NewBlocksPool([]lh.Block{b1, b2, b3, b4})
+		return NewBlocksPool([]leanhelix.Block{b1, b2, b3, b4})
 	} else {
 		return NewBlocksPool(tb.upcomingBlocks)
 	}
@@ -100,17 +100,17 @@ func (tb *TestNetworkBuilder) createNodes(discovery *gossip.Discovery, blocksPoo
 	return nodes
 }
 
-func (tb *TestNetworkBuilder) WithNetworkCommunication(comm lh.NetworkCommunication) *TestNetworkBuilder {
+func (tb *TestNetworkBuilder) WithNetworkCommunication(comm leanhelix.NetworkCommunication) *TestNetworkBuilder {
 	tb.networkCommunication = comm
 	return tb
 }
 
-func (tb *TestNetworkBuilder) WithBlockUtils(utils lh.BlockUtils) *TestNetworkBuilder {
+func (tb *TestNetworkBuilder) WithBlockUtils(utils leanhelix.BlockUtils) *TestNetworkBuilder {
 	tb.blockUtils = utils
 	return tb
 }
 
-func (tb *TestNetworkBuilder) WithKeyManager(mgr lh.KeyManager) *TestNetworkBuilder {
+func (tb *TestNetworkBuilder) WithKeyManager(mgr leanhelix.KeyManager) *TestNetworkBuilder {
 	tb.keyManager = mgr
 	return tb
 }
@@ -127,14 +127,14 @@ func ABasicTestNetwork() *TestNetwork {
 	return ATestNetwork(4)
 }
 
-func ATestNetwork(countOfNodes int, blocksPool ...lh.Block) *TestNetwork {
+func ATestNetwork(countOfNodes int, blocksPool ...leanhelix.Block) *TestNetwork {
 	return NewTestNetworkBuilder().WithNodeCount(countOfNodes).WithBlocks(blocksPool).Build()
 }
 
 func CreateTestNetworkForConsumerTests(
 	countOfNodes int,
-	spi *lh.LeanHelixSPI,
-	blocks []lh.Block,
+	spi *leanhelix.LeanHelixSPI,
+	blocks []leanhelix.Block,
 ) *TestNetwork {
 	testNetwork := NewTestNetworkBuilder()
 	return testNetwork.

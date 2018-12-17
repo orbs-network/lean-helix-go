@@ -1,7 +1,7 @@
 package gossip
 
 import (
-	. "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
 type Discovery struct {
@@ -14,7 +14,7 @@ func NewGossipDiscovery() *Discovery {
 	}
 }
 
-func (d *Discovery) GetGossipByPK(pk MemberId) *Gossip {
+func (d *Discovery) GetGossipByPK(pk primitives.MemberId) *Gossip {
 	return d.getGossipByPKStr(pk.KeyForMap())
 }
 
@@ -26,15 +26,15 @@ func (d *Discovery) getGossipByPKStr(pkStr string) *Gossip {
 	return result
 }
 
-func (d *Discovery) RegisterGossip(pk MemberId, gossip *Gossip) {
+func (d *Discovery) RegisterGossip(pk primitives.MemberId, gossip *Gossip) {
 	d.gossips[pk.KeyForMap()] = gossip
 }
 
-func (d *Discovery) UnregisterGossip(pk MemberId) {
+func (d *Discovery) UnregisterGossip(pk primitives.MemberId) {
 	delete(d.gossips, pk.KeyForMap())
 }
 
-func (d *Discovery) Gossips(pks []MemberId) []*Gossip {
+func (d *Discovery) Gossips(pks []primitives.MemberId) []*Gossip {
 
 	if pks == nil {
 		return d.getAllGossips()
@@ -52,7 +52,7 @@ func (d *Discovery) Gossips(pks []MemberId) []*Gossip {
 	return res
 }
 
-func indexOf(pkStr string, publicKeys []MemberId) bool {
+func indexOf(pkStr string, publicKeys []primitives.MemberId) bool {
 	for _, key := range publicKeys {
 		keyStr := key.KeyForMap()
 		if keyStr == pkStr {
@@ -62,10 +62,10 @@ func indexOf(pkStr string, publicKeys []MemberId) bool {
 	return false
 }
 
-func (d *Discovery) AllGossipsPublicKeys() []MemberId {
-	publicKeys := make([]MemberId, 0, len(d.gossips))
+func (d *Discovery) AllGossipsPublicKeys() []primitives.MemberId {
+	publicKeys := make([]primitives.MemberId, 0, len(d.gossips))
 	for publicKey := range d.gossips {
-		publicKeys = append(publicKeys, MemberId(publicKey))
+		publicKeys = append(publicKeys, primitives.MemberId(publicKey))
 	}
 	return publicKeys
 }
