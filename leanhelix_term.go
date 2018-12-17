@@ -100,7 +100,7 @@ func (term *LeanHelixTerm) StartTerm(ctx context.Context) {
 		ppm := term.messageFactory.CreatePreprepareMessage(term.height, term.view, block, blockHash)
 
 		term.Storage.StorePreprepare(ppm)
-		term.sendPreprepare(ctx, ppm)
+		term.sendConsensusMessage(ctx, ppm)
 	}
 }
 
@@ -143,8 +143,14 @@ func (term *LeanHelixTerm) moveToNextLeader(ctx context.Context, height BlockHei
 		term.Storage.StoreViewChange(vcm)
 		term.checkElected(ctx, term.height, term.view)
 	} else {
-		term.sendViewChange(ctx, vcm)
+		term.sendConsensusMessage(ctx, vcm)
 	}
+}
+
+func (term *LeanHelixTerm) sendConsensusMessage(ctx context.Context, message ConsensusMessage) {
+	term.logger.Debug("H=%d V=%d %s sendConsensusMessage() msgType=%v", term.height, term.view, term.myPublicKey.KeyForMap(), message.MessageType())
+	rawMessage := createConsensusRawMessage(message)
+	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
 }
 
 func (term *LeanHelixTerm) sendPreprepare(ctx context.Context, message *PreprepareMessage) {
@@ -196,7 +202,7 @@ func (term *LeanHelixTerm) processPreprepare(ctx context.Context, ppm *Preprepar
 	pm := term.messageFactory.CreatePrepareMessage(header.BlockHeight(), header.View(), header.BlockHash())
 	term.Storage.StorePreprepare(ppm)
 	term.Storage.StorePrepare(pm)
-	term.sendPrepare(ctx, pm)
+	term.sendConsensusMessage(ctx, pm)
 	term.checkPrepared(ctx, header.BlockHeight(), header.View(), header.BlockHash())
 }
 
@@ -337,7 +343,7 @@ func (term *LeanHelixTerm) onElected(ctx context.Context, view View, viewChangeM
 	confirmations := extractConfirmationsFromViewChangeMessages(viewChangeMessages)
 	nvm := term.messageFactory.CreateNewViewMessage(term.height, view, ppmContentBuilder, confirmations, block)
 	term.Storage.StorePreprepare(ppm)
-	term.sendNewView(ctx, nvm)
+	term.sendConsensusMessage(ctx, nvm)
 }
 
 func (term *LeanHelixTerm) checkPrepared(ctx context.Context, blockHeight BlockHeight, view View, blockHash BlockHash) {
@@ -355,7 +361,7 @@ func (term *LeanHelixTerm) onPrepared(ctx context.Context, blockHeight BlockHeig
 	term.preparedLocally = true
 	cm := term.messageFactory.CreateCommitMessage(blockHeight, view, blockHash)
 	term.Storage.StoreCommit(cm)
-	term.sendCommit(ctx, cm)
+	term.sendConsensusMessage(ctx, cm)
 	term.checkCommitted(ctx, blockHeight, view, blockHash)
 }
 

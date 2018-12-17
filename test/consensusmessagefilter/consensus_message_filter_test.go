@@ -41,6 +41,7 @@ func GenerateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.
 	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderPublicKey))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	return builders.ANewViewMessage(keyManager, blockHeight, view, nil, nil, block).ToConsensusRawMessage()
+
 }
 
 func TestGettingAMessage(t *testing.T) {

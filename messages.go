@@ -1,6 +1,7 @@
 package leanhelix
 
 import (
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
@@ -28,6 +29,56 @@ type ConsensusMessage interface {
 	SenderPublicKey() primitives.MemberId
 	BlockHeight() primitives.BlockHeight
 	View() primitives.View
+}
+
+func createConsensusRawMessage(message ConsensusMessage) *consensusRawMessage {
+	var content *protocol.LeanhelixContentBuilder
+	var block Block
+
+	switch message := message.(type) {
+
+	case *PreprepareMessage:
+		content = &protocol.LeanhelixContentBuilder{
+			Message:           protocol.LEANHELIX_CONTENT_MESSAGE_PREPREPARE_MESSAGE,
+			PreprepareMessage: protocol.PreprepareContentBuilderFromRaw(message.content.Raw()),
+		}
+		block = message.block
+
+	case *PrepareMessage:
+		content = &protocol.LeanhelixContentBuilder{
+			Message:        protocol.LEANHELIX_CONTENT_MESSAGE_PREPARE_MESSAGE,
+			PrepareMessage: protocol.PrepareContentBuilderFromRaw(message.content.Raw()),
+		}
+
+	case *CommitMessage:
+		content = &protocol.LeanhelixContentBuilder{
+			Message:       protocol.LEANHELIX_CONTENT_MESSAGE_COMMIT_MESSAGE,
+			CommitMessage: protocol.CommitContentBuilderFromRaw(message.content.Raw()),
+		}
+
+	case *ViewChangeMessage:
+		content = &protocol.LeanhelixContentBuilder{
+			Message:           protocol.LEANHELIX_CONTENT_MESSAGE_VIEW_CHANGE_MESSAGE,
+			ViewChangeMessage: protocol.ViewChangeMessageContentBuilderFromRaw(message.content.Raw()),
+		}
+		block = message.block
+
+	case *NewViewMessage:
+		content = &protocol.LeanhelixContentBuilder{
+			Message:        protocol.LEANHELIX_CONTENT_MESSAGE_NEW_VIEW_MESSAGE,
+			NewViewMessage: protocol.NewViewMessageContentBuilderFromRaw(message.content.Raw()),
+		}
+		block = message.block
+
+	default:
+		panic(fmt.Sprintf("unknown message type: %T", message))
+	}
+
+	rawMessage := &consensusRawMessage{
+		content: content.Build().Raw(),
+		block:   block,
+	}
+	return rawMessage
 }
 
 /***************************************************/
@@ -77,7 +128,7 @@ func (ppm *PreprepareMessage) View() primitives.View {
 }
 
 func (ppm *PreprepareMessage) ToConsensusRawMessage() ConsensusRawMessage {
-	return CreateConsensusRawMessage(ppm.content.Raw(), ppm.block)
+	return createConsensusRawMessage(ppm)
 }
 
 func NewPreprepareMessage(content *protocol.PreprepareContent, block Block) *PreprepareMessage {
@@ -122,7 +173,7 @@ func (pm *PrepareMessage) View() primitives.View {
 }
 
 func (pm *PrepareMessage) ToConsensusRawMessage() ConsensusRawMessage {
-	return CreateConsensusRawMessage(pm.content.Raw(), nil)
+	return createConsensusRawMessage(pm)
 }
 
 func NewPrepareMessage(content *protocol.PrepareContent) *PrepareMessage {
@@ -157,6 +208,8 @@ func (cm *CommitMessage) SenderPublicKey() primitives.MemberId {
 }
 
 func (cm *CommitMessage) BlockHeight() primitives.BlockHeight {
+	fmt.Println(" BlockHeight  : ", cm.content.SignedHeader().BlockHeight())
+
 	return cm.content.SignedHeader().BlockHeight()
 }
 func (cm *CommitMessage) View() primitives.View {
@@ -164,7 +217,7 @@ func (cm *CommitMessage) View() primitives.View {
 }
 
 func (cm *CommitMessage) ToConsensusRawMessage() ConsensusRawMessage {
-	return CreateConsensusRawMessage(cm.content.Raw(), nil)
+	return createConsensusRawMessage(cm)
 }
 
 func NewCommitMessage(content *protocol.CommitContent) *CommitMessage {
@@ -211,7 +264,7 @@ func (vcm *ViewChangeMessage) View() primitives.View {
 }
 
 func (vcm *ViewChangeMessage) ToConsensusRawMessage() ConsensusRawMessage {
-	return CreateConsensusRawMessage(vcm.content.Raw(), vcm.block)
+	return createConsensusRawMessage(vcm)
 }
 
 func NewViewChangeMessage(content *protocol.ViewChangeMessageContent, block Block) *ViewChangeMessage {
@@ -261,7 +314,7 @@ func (nvm *NewViewMessage) View() primitives.View {
 }
 
 func (nvm *NewViewMessage) ToConsensusRawMessage() ConsensusRawMessage {
-	return CreateConsensusRawMessage(nvm.content.Raw(), nvm.block)
+	return createConsensusRawMessage(nvm)
 }
 
 func NewNewViewMessage(content *protocol.NewViewMessageContent, block Block) *NewViewMessage {

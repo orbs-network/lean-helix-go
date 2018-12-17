@@ -26,52 +26,41 @@ func (c *consensusRawMessage) Block() Block {
 }
 
 func (c *consensusRawMessage) ToConsensusMessage() ConsensusMessage {
-	content := protocol.LeanhelixContentReader(c.Content())
+	var message ConsensusMessage
+	lhContentReader := protocol.LeanhelixContentReader(c.Content())
 
-	if content.IsMessagePreprepareMessage() {
-		content := protocol.PreprepareContentReader(c.Content())
-		return &PreprepareMessage{
-			content: content,
+	if lhContentReader.IsMessagePreprepareMessage() {
+		message = &PreprepareMessage{
+			content: lhContentReader.PreprepareMessage(),
 			block:   c.Block(),
 		}
 	}
 
-	if content.IsMessagePrepareMessage() {
-		content := protocol.PrepareContentReader(c.Content())
-		return &PrepareMessage{
-			content: content,
+	if lhContentReader.IsMessagePrepareMessage() {
+		message = &PrepareMessage{
+			content: lhContentReader.PrepareMessage(),
 		}
 	}
 
-	if content.IsMessagePrepareMessage() {
-		content := protocol.CommitContentReader(c.Content())
-		return &CommitMessage{
-			content: content,
+	if lhContentReader.IsMessageCommitMessage() {
+		message = &CommitMessage{
+			content: lhContentReader.CommitMessage(),
 		}
+		return message
 	}
 
-	if content.IsMessagePrepareMessage() {
-		content := protocol.ViewChangeMessageContentReader(c.Content())
-		return &ViewChangeMessage{
-			content: content,
+	if lhContentReader.IsMessageViewChangeMessage() {
+		message = &ViewChangeMessage{
+			content: lhContentReader.ViewChangeMessage(),
 			block:   c.Block(),
 		}
 	}
 
-	if content.IsMessagePrepareMessage() {
-		content := protocol.NewViewMessageContentReader(c.Content())
-		return &NewViewMessage{
-			content: content,
+	if lhContentReader.IsMessageNewViewMessage() {
+		message = &NewViewMessage{
+			content: lhContentReader.NewViewMessage(),
 			block:   c.Block(),
 		}
 	}
-
-	return nil // handle with error
-}
-
-func CreateConsensusRawMessage(content []byte, block Block) ConsensusRawMessage {
-	return &consensusRawMessage{
-		content: content,
-		block:   block,
-	}
+	return message // handle with error
 }
