@@ -7,14 +7,14 @@ import (
 )
 
 type BlockHashStr string
-type PublicKeyStr string
+type MemberIdStr string
 
 type InMemoryStorage struct {
 	mutext            sync.RWMutex
 	preprepareStorage map[primitives.BlockHeight]map[primitives.View]*PreprepareMessage
-	prepareStorage    map[primitives.BlockHeight]map[primitives.View]map[BlockHashStr]map[PublicKeyStr]*PrepareMessage
-	commitStorage     map[primitives.BlockHeight]map[primitives.View]map[BlockHashStr]map[PublicKeyStr]*CommitMessage
-	viewChangeStorage map[primitives.BlockHeight]map[primitives.View]map[PublicKeyStr]*ViewChangeMessage
+	prepareStorage    map[primitives.BlockHeight]map[primitives.View]map[BlockHashStr]map[MemberIdStr]*PrepareMessage
+	commitStorage     map[primitives.BlockHeight]map[primitives.View]map[BlockHashStr]map[MemberIdStr]*CommitMessage
+	viewChangeStorage map[primitives.BlockHeight]map[primitives.View]map[MemberIdStr]*ViewChangeMessage
 }
 
 // Preprepare
@@ -100,16 +100,16 @@ func (storage *InMemoryStorage) StorePrepare(pp *PrepareMessage) bool {
 
 	blockHashes, ok := views[view]
 	if !ok {
-		blockHashes = make(map[BlockHashStr]map[PublicKeyStr]*PrepareMessage)
+		blockHashes = make(map[BlockHashStr]map[MemberIdStr]*PrepareMessage)
 		views[view] = blockHashes
 	}
 	ppBlockHash := BlockHashStr(pp.Content().SignedHeader().BlockHash())
 	senders, ok := blockHashes[ppBlockHash]
 	if !ok {
-		senders = make(map[PublicKeyStr]*PrepareMessage)
+		senders = make(map[MemberIdStr]*PrepareMessage)
 		blockHashes[ppBlockHash] = senders
 	}
-	pk := PublicKeyStr(pp.Content().Sender().MemberId())
+	pk := MemberIdStr(pp.Content().Sender().MemberId())
 	_, ok = senders[pk]
 	if ok {
 		return false
@@ -119,7 +119,7 @@ func (storage *InMemoryStorage) StorePrepare(pp *PrepareMessage) bool {
 	return true
 }
 
-func (storage *InMemoryStorage) getPrepare(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) (map[PublicKeyStr]*PrepareMessage, bool) {
+func (storage *InMemoryStorage) getPrepare(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) (map[MemberIdStr]*PrepareMessage, bool) {
 	views, ok := storage.prepareStorage[blockHeight]
 	if !ok {
 		return nil, false
@@ -178,16 +178,16 @@ func (storage *InMemoryStorage) StoreCommit(cm *CommitMessage) bool {
 
 	blockHashes, ok := views[view]
 	if !ok {
-		blockHashes = make(map[BlockHashStr]map[PublicKeyStr]*CommitMessage)
+		blockHashes = make(map[BlockHashStr]map[MemberIdStr]*CommitMessage)
 		views[view] = blockHashes
 	}
 	cmBlockHash := BlockHashStr(cm.Content().SignedHeader().BlockHash())
 	senders, ok := blockHashes[cmBlockHash]
 	if !ok {
-		senders = make(map[PublicKeyStr]*CommitMessage)
+		senders = make(map[MemberIdStr]*CommitMessage)
 		blockHashes[cmBlockHash] = senders
 	}
-	pk := PublicKeyStr(cm.Content().Sender().MemberId())
+	pk := MemberIdStr(cm.Content().Sender().MemberId())
 	_, ok = senders[pk]
 	if ok {
 		return false
@@ -198,7 +198,7 @@ func (storage *InMemoryStorage) StoreCommit(cm *CommitMessage) bool {
 
 }
 
-func (storage *InMemoryStorage) getCommit(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) (map[PublicKeyStr]*CommitMessage, bool) {
+func (storage *InMemoryStorage) getCommit(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) (map[MemberIdStr]*CommitMessage, bool) {
 	views, ok := storage.commitStorage[blockHeight]
 	if !ok {
 		return nil, false
@@ -255,11 +255,11 @@ func (storage *InMemoryStorage) StoreViewChange(vcm *ViewChangeMessage) bool {
 	}
 	senders, ok := views[view]
 	if !ok {
-		senders = make(map[PublicKeyStr]*ViewChangeMessage)
+		senders = make(map[MemberIdStr]*ViewChangeMessage)
 		views[view] = senders
 	}
 
-	pk := PublicKeyStr(vcm.Content().Sender().MemberId())
+	pk := MemberIdStr(vcm.Content().Sender().MemberId())
 	_, ok = senders[pk]
 	if ok {
 		return false
@@ -308,19 +308,19 @@ func (storage *InMemoryStorage) resetPreprepareStorage(blockHeight primitives.Bl
 	return views
 }
 
-func (storage *InMemoryStorage) resetPrepareStorage(blockHeight primitives.BlockHeight) map[primitives.View]map[BlockHashStr]map[PublicKeyStr]*PrepareMessage {
-	views := make(map[primitives.View]map[BlockHashStr]map[PublicKeyStr]*PrepareMessage)
+func (storage *InMemoryStorage) resetPrepareStorage(blockHeight primitives.BlockHeight) map[primitives.View]map[BlockHashStr]map[MemberIdStr]*PrepareMessage {
+	views := make(map[primitives.View]map[BlockHashStr]map[MemberIdStr]*PrepareMessage)
 	storage.prepareStorage[blockHeight] = views
 	return views
 }
 
-func (storage *InMemoryStorage) resetCommitStorage(blockHeight primitives.BlockHeight) map[primitives.View]map[BlockHashStr]map[PublicKeyStr]*CommitMessage {
-	views := make(map[primitives.View]map[BlockHashStr]map[PublicKeyStr]*CommitMessage)
+func (storage *InMemoryStorage) resetCommitStorage(blockHeight primitives.BlockHeight) map[primitives.View]map[BlockHashStr]map[MemberIdStr]*CommitMessage {
+	views := make(map[primitives.View]map[BlockHashStr]map[MemberIdStr]*CommitMessage)
 	storage.commitStorage[blockHeight] = views
 	return views
 }
-func (storage *InMemoryStorage) resetViewChangeStorage(blockHeight primitives.BlockHeight) map[primitives.View]map[PublicKeyStr]*ViewChangeMessage {
-	views := make(map[primitives.View]map[PublicKeyStr]*ViewChangeMessage)
+func (storage *InMemoryStorage) resetViewChangeStorage(blockHeight primitives.BlockHeight) map[primitives.View]map[MemberIdStr]*ViewChangeMessage {
+	views := make(map[primitives.View]map[MemberIdStr]*ViewChangeMessage)
 	storage.viewChangeStorage[blockHeight] = views
 	return views
 }
@@ -328,8 +328,8 @@ func (storage *InMemoryStorage) resetViewChangeStorage(blockHeight primitives.Bl
 func NewInMemoryStorage() *InMemoryStorage {
 	return &InMemoryStorage{
 		preprepareStorage: make(map[primitives.BlockHeight]map[primitives.View]*PreprepareMessage),
-		prepareStorage:    make(map[primitives.BlockHeight]map[primitives.View]map[BlockHashStr]map[PublicKeyStr]*PrepareMessage),
-		commitStorage:     make(map[primitives.BlockHeight]map[primitives.View]map[BlockHashStr]map[PublicKeyStr]*CommitMessage),
-		viewChangeStorage: make(map[primitives.BlockHeight]map[primitives.View]map[PublicKeyStr]*ViewChangeMessage),
+		prepareStorage:    make(map[primitives.BlockHeight]map[primitives.View]map[BlockHashStr]map[MemberIdStr]*PrepareMessage),
+		commitStorage:     make(map[primitives.BlockHeight]map[primitives.View]map[BlockHashStr]map[MemberIdStr]*CommitMessage),
+		viewChangeStorage: make(map[primitives.BlockHeight]map[primitives.View]map[MemberIdStr]*ViewChangeMessage),
 	}
 }

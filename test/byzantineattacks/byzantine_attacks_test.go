@@ -59,7 +59,7 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 		node2 := net.Nodes[2]
 		//node3 := net.Nodes[3]
 
-		node0.Gossip.SetOutgoingWhitelist([]primitives.MemberId{node1.PublicKey, node2.PublicKey})
+		node0.Gossip.SetOutgoingWhitelist([]primitives.MemberId{node1.MemberId, node2.MemberId})
 
 		// the leader (node0) is suggesting block1 to node1 and node2 (not to node3)
 		net.StartConsensus(ctx)
@@ -92,10 +92,10 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 
 		// fake a preprepare message from node3 (byzantineNode) that points to a unrelated block (Should be ignored)
 		ppm := builders.APreprepareMessage(byzantineNode.KeyManager, 1, 1, fakeBlock)
-		byzantineNode.Gossip.SendMessage(ctx, []primitives.MemberId{node0.PublicKey, node1.PublicKey, node2.PublicKey}, ppm.ToConsensusRawMessage())
-		byzantineNode.Gossip.SendMessage(ctx, []primitives.MemberId{node0.PublicKey, node1.PublicKey, node2.PublicKey}, ppm.ToConsensusRawMessage())
-		byzantineNode.Gossip.SendMessage(ctx, []primitives.MemberId{node0.PublicKey, node1.PublicKey, node2.PublicKey}, ppm.ToConsensusRawMessage())
-		byzantineNode.Gossip.SendMessage(ctx, []primitives.MemberId{node0.PublicKey, node1.PublicKey, node2.PublicKey}, ppm.ToConsensusRawMessage())
+		byzantineNode.Gossip.SendMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
+		byzantineNode.Gossip.SendMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
+		byzantineNode.Gossip.SendMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
+		byzantineNode.Gossip.SendMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
 
 		net.ResumeNodeRequestNewBlock(node0)
 
@@ -118,8 +118,8 @@ func TestThatAByzantineLeaderCanNotCauseAFork(t *testing.T) {
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
 		node3 := net.Nodes[3]
-		node0.Gossip.SetOutgoingWhitelist([]primitives.MemberId{node1.PublicKey, node2.PublicKey})
-		node1.Gossip.SetOutgoingWhitelist([]primitives.MemberId{node2.PublicKey})
+		node0.Gossip.SetOutgoingWhitelist([]primitives.MemberId{node1.MemberId, node2.MemberId})
+		node1.Gossip.SetOutgoingWhitelist([]primitives.MemberId{node2.MemberId})
 		node2.Gossip.SetOutgoingWhitelist([]primitives.MemberId{})
 		node3.Gossip.SetOutgoingWhitelist([]primitives.MemberId{})
 

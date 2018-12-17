@@ -5,9 +5,9 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
-func isInMembers(membersPKs []primitives.MemberId, publicKey primitives.MemberId) bool {
+func isInMembers(membersPKs []primitives.MemberId, memberId primitives.MemberId) bool {
 	for _, memberPK := range membersPKs {
-		if memberPK.Equal(publicKey) {
+		if memberPK.Equal(memberId) {
 			return true
 		}
 	}
@@ -86,26 +86,26 @@ func ValidatePreparedProof(
 		return false
 	}
 
-	set := make(map[PublicKeyStr]bool)
+	set := make(map[MemberIdStr]bool)
 	for _, pSender := range pSenders {
-		pSenderPublicKey := pSender.MemberId()
+		pSenderMemberId := pSender.MemberId()
 		if keyManager.Verify(pBlockRef.Raw(), pSender) == false {
 			return false
 		}
 
-		if pSenderPublicKey.Equal(leaderFromPPMessage) {
+		if pSenderMemberId.Equal(leaderFromPPMessage) {
 			return false
 		}
 
-		if isInMembers(membersPKs, pSenderPublicKey) == false {
+		if isInMembers(membersPKs, pSenderMemberId) == false {
 			return false
 		}
 
-		if _, ok := set[PublicKeyStr(pSenderPublicKey)]; ok {
+		if _, ok := set[MemberIdStr(pSenderMemberId)]; ok {
 			return false
 		}
 
-		set[PublicKeyStr(pSenderPublicKey)] = true
+		set[MemberIdStr(pSenderMemberId)] = true
 	}
 
 	return true

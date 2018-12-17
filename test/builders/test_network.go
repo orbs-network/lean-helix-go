@@ -12,8 +12,8 @@ type TestNetwork struct {
 	Discovery *gossip.Discovery
 }
 
-func (net *TestNetwork) GetNodeGossip(publicKey primitives.MemberId) *gossip.Gossip {
-	return net.Discovery.GetGossipByPK(publicKey)
+func (net *TestNetwork) GetNodeGossip(memberId primitives.MemberId) *gossip.Gossip {
+	return net.Discovery.GetGossipByPK(memberId)
 }
 
 func (net *TestNetwork) TriggerElection() {

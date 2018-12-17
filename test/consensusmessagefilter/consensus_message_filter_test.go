@@ -14,31 +14,31 @@ func testLogger() leanhelix.Logger {
 	return leanhelix.NewSilentLogger()
 }
 
-func GeneratePreprepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderPublicKey string) leanhelix.ConsensusRawMessage {
-	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderPublicKey))
+func GeneratePreprepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberId string) leanhelix.ConsensusRawMessage {
+	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderMemberId))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	return builders.APreprepareMessage(keyManager, blockHeight, view, block).ToConsensusRawMessage()
 }
 
-func GeneratePrepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderPublicKey string) leanhelix.ConsensusRawMessage {
-	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderPublicKey))
+func GeneratePrepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberId string) leanhelix.ConsensusRawMessage {
+	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderMemberId))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	return builders.APrepareMessage(keyManager, blockHeight, view, block).ToConsensusRawMessage()
 }
 
-func GenerateCommitMessage(blockHeight primitives.BlockHeight, view primitives.View, senderPublicKey string) leanhelix.ConsensusRawMessage {
-	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderPublicKey))
+func GenerateCommitMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberId string) leanhelix.ConsensusRawMessage {
+	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderMemberId))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	return builders.ACommitMessage(keyManager, blockHeight, view, block).ToConsensusRawMessage()
 }
 
-func GenerateViewChangeMessage(blockHeight primitives.BlockHeight, view primitives.View, senderPublicKey string) leanhelix.ConsensusRawMessage {
-	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderPublicKey))
+func GenerateViewChangeMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberId string) leanhelix.ConsensusRawMessage {
+	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderMemberId))
 	return builders.AViewChangeMessage(keyManager, blockHeight, view, nil).ToConsensusRawMessage()
 }
 
-func GenerateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.View, senderPublicKey string) leanhelix.ConsensusRawMessage {
-	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderPublicKey))
+func GenerateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberId string) leanhelix.ConsensusRawMessage {
+	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderMemberId))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	return builders.ANewViewMessage(keyManager, blockHeight, view, nil, nil, block).ToConsensusRawMessage()
 
@@ -46,15 +46,15 @@ func GenerateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.
 
 func TestGettingAMessage(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := leanhelix.NewConsensusMessageFilter(primitives.MemberId("My PublicKey"), testLogger())
+		filter := leanhelix.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
 		termMessagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, termMessagesHandler)
 
-		ppm := GeneratePreprepareMessage(10, 20, "Sender PublicKey")
-		pm := GeneratePrepareMessage(10, 20, "Sender PublicKey")
-		cm := GenerateCommitMessage(10, 20, "Sender PublicKey")
-		vcm := GenerateViewChangeMessage(10, 20, "Sender PublicKey")
-		nvm := GenerateNewViewMessage(10, 20, "Sender PublicKey")
+		ppm := GeneratePreprepareMessage(10, 20, "Sender MemberId")
+		pm := GeneratePrepareMessage(10, 20, "Sender MemberId")
+		cm := GenerateCommitMessage(10, 20, "Sender MemberId")
+		vcm := GenerateViewChangeMessage(10, 20, "Sender MemberId")
+		nvm := GenerateNewViewMessage(10, 20, "Sender MemberId")
 
 		require.Equal(t, 0, len(termMessagesHandler.historyPP))
 		require.Equal(t, 0, len(termMessagesHandler.historyP))
@@ -78,12 +78,12 @@ func TestGettingAMessage(t *testing.T) {
 
 func TestFilterMessagesFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := leanhelix.NewConsensusMessageFilter(primitives.MemberId("My PublicKey"), testLogger())
+		filter := leanhelix.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
 		termMessagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, termMessagesHandler)
 
-		messageFromThePast := GeneratePreprepareMessage(9, 20, "Sender PublicKey")
-		messageFromThePresent := GeneratePreprepareMessage(10, 20, "Sender PublicKey")
+		messageFromThePast := GeneratePreprepareMessage(9, 20, "Sender MemberId")
+		messageFromThePresent := GeneratePreprepareMessage(10, 20, "Sender MemberId")
 
 		require.Equal(t, 0, len(termMessagesHandler.historyPP))
 
@@ -96,12 +96,12 @@ func TestFilterMessagesFromThePast(t *testing.T) {
 
 func TestCacheMessagesFromTheFuture(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := leanhelix.NewConsensusMessageFilter(primitives.MemberId("My PublicKey"), testLogger())
+		filter := leanhelix.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
 		termMessagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, termMessagesHandler)
 
-		messageFromTheFuture := GeneratePreprepareMessage(11, 20, "Sender PublicKey")
-		messageFromThePresent := GeneratePreprepareMessage(10, 20, "Sender PublicKey")
+		messageFromTheFuture := GeneratePreprepareMessage(11, 20, "Sender MemberId")
+		messageFromThePresent := GeneratePreprepareMessage(10, 20, "Sender MemberId")
 
 		require.Equal(t, 0, len(termMessagesHandler.historyPP))
 
@@ -112,14 +112,14 @@ func TestCacheMessagesFromTheFuture(t *testing.T) {
 	})
 }
 
-func TestFilterMessagesWithMyPublicKey(t *testing.T) {
+func TestFilterMessagesWithMyMemberId(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := leanhelix.NewConsensusMessageFilter(primitives.MemberId("My PublicKey"), testLogger())
+		filter := leanhelix.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
 		termMessagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, termMessagesHandler)
 
-		badMessage := GeneratePreprepareMessage(11, 20, "My PublicKey")
-		goodMessage := GeneratePreprepareMessage(10, 20, "Sender PublicKey")
+		badMessage := GeneratePreprepareMessage(11, 20, "My MemberId")
+		goodMessage := GeneratePreprepareMessage(10, 20, "Sender MemberId")
 
 		require.Equal(t, 0, len(termMessagesHandler.historyPP))
 

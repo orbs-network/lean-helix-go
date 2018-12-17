@@ -8,21 +8,21 @@ import (
 )
 
 type MockKeyManager struct {
-	myPublicKey             primitives.MemberId
-	rejectedPublicKeys      []primitives.MemberId
+	myMemberId              primitives.MemberId
+	rejectedMemberIds       []primitives.MemberId
 	FailFutureVerifications bool
 }
 
-func NewMockKeyManager(publicKey primitives.MemberId, rejectedPublicKeys ...primitives.MemberId) *MockKeyManager {
+func NewMockKeyManager(memberId primitives.MemberId, rejectedMemberIds ...primitives.MemberId) *MockKeyManager {
 	return &MockKeyManager{
-		myPublicKey:             publicKey,
-		rejectedPublicKeys:      rejectedPublicKeys,
+		myMemberId:              memberId,
+		rejectedMemberIds:       rejectedMemberIds,
 		FailFutureVerifications: false,
 	}
 }
 
 func (km *MockKeyManager) Sign(content []byte) []byte {
-	str := fmt.Sprintf("SIG|%s|%x", km.myPublicKey.KeyForMap(), content)
+	str := fmt.Sprintf("SIG|%s|%x", km.myMemberId.KeyForMap(), content)
 	return []byte(str)
 }
 
@@ -31,7 +31,7 @@ func (km *MockKeyManager) Verify(content []byte, sender *protocol.SenderSignatur
 		return false
 	}
 
-	for _, rejectedKey := range km.rejectedPublicKeys {
+	for _, rejectedKey := range km.rejectedMemberIds {
 		if rejectedKey.Equal(sender.MemberId()) {
 			return false
 		}
@@ -42,6 +42,6 @@ func (km *MockKeyManager) Verify(content []byte, sender *protocol.SenderSignatur
 	return bytes.Equal(expected, sender.Signature())
 }
 
-func (km *MockKeyManager) MyPublicKey() primitives.MemberId {
-	return km.myPublicKey
+func (km *MockKeyManager) MyMemberId() primitives.MemberId {
+	return km.myMemberId
 }

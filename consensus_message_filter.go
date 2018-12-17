@@ -9,14 +9,14 @@ import (
 type ConsensusMessageFilter struct {
 	blockHeight         primitives.BlockHeight
 	termMessagesHandler TermMessagesHandler
-	myPublicKey         primitives.MemberId
+	myMemberId          primitives.MemberId
 	messageCache        map[primitives.BlockHeight][]ConsensusMessage
 	logger              Logger
 }
 
-func NewConsensusMessageFilter(myPublicKey primitives.MemberId, logger Logger) *ConsensusMessageFilter {
+func NewConsensusMessageFilter(myMemberId primitives.MemberId, logger Logger) *ConsensusMessageFilter {
 	res := &ConsensusMessageFilter{
-		myPublicKey:  myPublicKey,
+		myMemberId:   myMemberId,
 		messageCache: make(map[primitives.BlockHeight][]ConsensusMessage),
 		logger:       logger,
 	}
@@ -43,7 +43,7 @@ func (f *ConsensusMessageFilter) GossipMessageReceived(ctx context.Context, rawM
 }
 
 func (f *ConsensusMessageFilter) isMyMessage(message ConsensusMessage) bool {
-	return f.myPublicKey.Equal(message.SenderPublicKey())
+	return f.myMemberId.Equal(message.SenderMemberId())
 }
 
 func (f *ConsensusMessageFilter) clearCacheHistory(height primitives.BlockHeight) {

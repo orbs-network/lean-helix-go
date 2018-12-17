@@ -52,8 +52,8 @@ func (d *Discovery) Gossips(pks []primitives.MemberId) []*Gossip {
 	return res
 }
 
-func indexOf(pkStr string, publicKeys []primitives.MemberId) bool {
-	for _, key := range publicKeys {
+func indexOf(pkStr string, memberId []primitives.MemberId) bool {
+	for _, key := range memberId {
 		keyStr := key.KeyForMap()
 		if keyStr == pkStr {
 			return true
@@ -62,12 +62,12 @@ func indexOf(pkStr string, publicKeys []primitives.MemberId) bool {
 	return false
 }
 
-func (d *Discovery) AllGossipsPublicKeys() []primitives.MemberId {
-	publicKeys := make([]primitives.MemberId, 0, len(d.gossips))
-	for publicKey := range d.gossips {
-		publicKeys = append(publicKeys, primitives.MemberId(publicKey))
+func (d *Discovery) AllGossipsMemberIds() []primitives.MemberId {
+	memberIds := make([]primitives.MemberId, 0, len(d.gossips))
+	for memberId := range d.gossips {
+		memberIds = append(memberIds, primitives.MemberId(memberId))
 	}
-	return publicKeys
+	return memberIds
 }
 
 func (d *Discovery) getAllGossips() []*Gossip {

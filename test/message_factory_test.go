@@ -34,7 +34,7 @@ func TestMessageFactory(t *testing.T) {
 		ppmcb := &protocol.PreprepareContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
-				MemberId:  keyManager.MyPublicKey(),
+				MemberId:  keyManager.MyMemberId(),
 				Signature: keyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
@@ -55,7 +55,7 @@ func TestMessageFactory(t *testing.T) {
 		prepareContentBuilder := &protocol.PrepareContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
-				MemberId:  keyManager.MyPublicKey(),
+				MemberId:  keyManager.MyMemberId(),
 				Signature: keyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
@@ -76,7 +76,7 @@ func TestMessageFactory(t *testing.T) {
 		cmcb := &protocol.CommitContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
-				MemberId:  keyManager.MyPublicKey(),
+				MemberId:  keyManager.MyMemberId(),
 				Signature: keyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
@@ -101,7 +101,7 @@ func TestMessageFactory(t *testing.T) {
 		vcmContentBuilder := &protocol.ViewChangeMessageContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
-				MemberId:  senderKeyManager.MyPublicKey(),
+				MemberId:  senderKeyManager.MyMemberId(),
 				Signature: senderKeyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
@@ -123,7 +123,7 @@ func TestMessageFactory(t *testing.T) {
 			BlockHash:   blockHash,
 		}
 		ppSender := &protocol.SenderSignatureBuilder{
-			MemberId:  keyManager.MyPublicKey(),
+			MemberId:  keyManager.MyMemberId(),
 			Signature: keyManager.Sign(ppBlockRefBuilder.Build().Raw()),
 		}
 		pBlockRefBuilder := &protocol.BlockRefBuilder{
@@ -134,11 +134,11 @@ func TestMessageFactory(t *testing.T) {
 		}
 		pSenders := []*protocol.SenderSignatureBuilder{
 			{
-				MemberId:  node1KeyManager.MyPublicKey(),
+				MemberId:  node1KeyManager.MyMemberId(),
 				Signature: node1KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
 			},
 			{
-				MemberId:  node2KeyManager.MyPublicKey(),
+				MemberId:  node2KeyManager.MyMemberId(),
 				Signature: node2KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
 			},
 		}
@@ -157,7 +157,7 @@ func TestMessageFactory(t *testing.T) {
 		vcmContentBuilder := &protocol.ViewChangeMessageContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
-				MemberId:  senderKeyManager.MyPublicKey(),
+				MemberId:  senderKeyManager.MyMemberId(),
 				Signature: senderKeyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
@@ -187,7 +187,7 @@ func TestMessageFactory(t *testing.T) {
 			BlockHash:   blockHash,
 		}
 		ppSender := &protocol.SenderSignatureBuilder{
-			MemberId:  keyManager.MyPublicKey(),
+			MemberId:  keyManager.MyMemberId(),
 			Signature: keyManager.Sign(ppBlockRefBuilder.Build().Raw()),
 		}
 		pBlockRefBuilder := &protocol.BlockRefBuilder{
@@ -198,11 +198,11 @@ func TestMessageFactory(t *testing.T) {
 		}
 		pSenders := []*protocol.SenderSignatureBuilder{
 			{
-				MemberId:  node1KeyManager.MyPublicKey(),
+				MemberId:  node1KeyManager.MyMemberId(),
 				Signature: node1KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
 			},
 			{
-				MemberId:  node2KeyManager.MyPublicKey(),
+				MemberId:  node2KeyManager.MyMemberId(),
 				Signature: node2KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
 			},
 		}
@@ -222,14 +222,14 @@ func TestMessageFactory(t *testing.T) {
 		node1Confirmation := &protocol.ViewChangeMessageContentBuilder{
 			SignedHeader: nodesVCHeader,
 			Sender: &protocol.SenderSignatureBuilder{
-				MemberId:  node1KeyManager.MyPublicKey(),
+				MemberId:  node1KeyManager.MyMemberId(),
 				Signature: node1KeyManager.Sign(nodesVCHeader.Build().Raw()),
 			},
 		}
 		node2Confirmation := &protocol.ViewChangeMessageContentBuilder{
 			SignedHeader: nodesVCHeader,
 			Sender: &protocol.SenderSignatureBuilder{
-				MemberId:  node2KeyManager.MyPublicKey(),
+				MemberId:  node2KeyManager.MyMemberId(),
 				Signature: node2KeyManager.Sign(nodesVCHeader.Build().Raw()),
 			},
 		}
@@ -242,7 +242,7 @@ func TestMessageFactory(t *testing.T) {
 			},
 		}
 		nvmSender := &protocol.SenderSignatureBuilder{
-			MemberId:  keyManager.MyPublicKey(),
+			MemberId:  keyManager.MyMemberId(),
 			Signature: keyManager.Sign(nvmHeader.Build().Raw()),
 		}
 		nvmContentBuilder := &protocol.NewViewMessageContentBuilder{

@@ -52,7 +52,7 @@ func (g *Gossip) messageSenderLoop(ctx context.Context, channel chan *outgoingMe
 }
 
 func (g *Gossip) RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, seed uint64, maxCommitteeSize uint32) []primitives.MemberId {
-	result := g.discovery.AllGossipsPublicKeys()
+	result := g.discovery.AllGossipsMemberIds()
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].KeyForMap() < result[j].KeyForMap()
 	})
@@ -95,8 +95,8 @@ func (g *Gossip) UnregisterOnMessage(subscriptionToken int) {
 func (g *Gossip) OnRemoteMessage(ctx context.Context, rawMessage leanhelix.ConsensusRawMessage) {
 	for _, s := range g.subscriptions {
 		if g.incomingWhiteListPKs != nil {
-			senderPublicKey := rawMessage.ToConsensusMessage().SenderPublicKey()
-			if !g.inIncomingWhitelist(senderPublicKey) {
+			senderMemberId := rawMessage.ToConsensusMessage().SenderMemberId()
+			if !g.inIncomingWhitelist(senderMemberId) {
 				continue
 			}
 		}
@@ -104,9 +104,9 @@ func (g *Gossip) OnRemoteMessage(ctx context.Context, rawMessage leanhelix.Conse
 	}
 }
 
-func (g *Gossip) inIncomingWhitelist(publicKey primitives.MemberId) bool {
+func (g *Gossip) inIncomingWhitelist(memberId primitives.MemberId) bool {
 	for _, currentPK := range g.incomingWhiteListPKs {
-		if currentPK.Equal(publicKey) {
+		if currentPK.Equal(memberId) {
 			return true
 		}
 	}
@@ -138,14 +138,14 @@ func (g *Gossip) ClearIncomingWhitelist() {
 	g.SetIncomingWhitelist(nil)
 }
 
-func (g *Gossip) SendToNode(ctx context.Context, targetPublicKey primitives.MemberId, consensusRawMessage leanhelix.ConsensusRawMessage) {
+func (g *Gossip) SendToNode(ctx context.Context, targetMemberId primitives.MemberId, consensusRawMessage leanhelix.ConsensusRawMessage) {
 	if g.outgoingWhitelist != nil {
-		if !g.inOutgoingWhitelist(targetPublicKey) {
+		if !g.inOutgoingWhitelist(targetMemberId) {
 			return
 		}
 	}
 
-	if targetGossip := g.discovery.GetGossipByPK(targetPublicKey); targetGossip != nil {
+	if targetGossip := g.discovery.GetGossipByPK(targetMemberId); targetGossip != nil {
 		targetGossip.OnRemoteMessage(ctx, consensusRawMessage)
 	}
 	return

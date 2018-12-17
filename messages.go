@@ -26,7 +26,7 @@ type ConsensusMessage interface {
 	Serializable
 	ConsensusRawMessageConverter
 	MessageType() protocol.MessageType
-	SenderPublicKey() primitives.MemberId
+	SenderMemberId() primitives.MemberId
 	BlockHeight() primitives.BlockHeight
 	View() primitives.View
 }
@@ -115,7 +115,7 @@ func (ppm *PreprepareMessage) Block() Block {
 	return ppm.block
 }
 
-func (ppm *PreprepareMessage) SenderPublicKey() primitives.MemberId {
+func (ppm *PreprepareMessage) SenderMemberId() primitives.MemberId {
 	return ppm.content.Sender().MemberId()
 }
 
@@ -161,7 +161,7 @@ func (pm *PrepareMessage) String() string {
 	return pm.content.String()
 }
 
-func (pm *PrepareMessage) SenderPublicKey() primitives.MemberId {
+func (pm *PrepareMessage) SenderMemberId() primitives.MemberId {
 	return pm.content.Sender().MemberId()
 }
 
@@ -203,7 +203,7 @@ func (cm *CommitMessage) String() string {
 	return cm.content.String()
 }
 
-func (cm *CommitMessage) SenderPublicKey() primitives.MemberId {
+func (cm *CommitMessage) SenderMemberId() primitives.MemberId {
 	return cm.content.Sender().MemberId()
 }
 
@@ -246,7 +246,7 @@ func (vcm *ViewChangeMessage) String() string {
 	return vcm.content.String()
 }
 
-func (vcm *ViewChangeMessage) SenderPublicKey() primitives.MemberId {
+func (vcm *ViewChangeMessage) SenderMemberId() primitives.MemberId {
 	return vcm.content.Sender().MemberId()
 }
 
@@ -296,7 +296,7 @@ func (nvm *NewViewMessage) String() string {
 	return nvm.content.String()
 }
 
-func (nvm *NewViewMessage) SenderPublicKey() primitives.MemberId {
+func (nvm *NewViewMessage) SenderMemberId() primitives.MemberId {
 	return nvm.content.Sender().MemberId()
 }
 

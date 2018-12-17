@@ -63,18 +63,18 @@ func (tb *TestNetworkBuilder) buildBlocksPool() *BlocksPool {
 
 func (tb *TestNetworkBuilder) buildNode(
 	nodeBuilder *NodeBuilder,
-	publicKey primitives.MemberId,
+	memberId primitives.MemberId,
 	discovery *gossip.Discovery,
 	blocksPool *BlocksPool,
 	logToConsole bool) *Node {
 
 	gossip := gossip.NewGossip(discovery)
-	discovery.RegisterGossip(publicKey, gossip)
+	discovery.RegisterGossip(memberId, gossip)
 
 	b := nodeBuilder.
 		ThatIsPartOf(gossip).
 		WithBlocksPool(blocksPool).
-		WithPublicKey(publicKey)
+		WithMemberId(memberId)
 
 	if logToConsole {
 		b.ThatLogsToConsole()
@@ -86,14 +86,14 @@ func (tb *TestNetworkBuilder) createNodes(discovery *gossip.Discovery, blocksPoo
 	var nodes []*Node
 	for i := 0; i < tb.NodeCount; i++ {
 		nodeBuilder := NewNodeBuilder()
-		publicKey := primitives.MemberId(fmt.Sprintf("Node %d", i))
-		node := tb.buildNode(nodeBuilder, publicKey, discovery, blocksPool, logToConsole)
+		memberId := primitives.MemberId(fmt.Sprintf("Node %d", i))
+		node := tb.buildNode(nodeBuilder, memberId, discovery, blocksPool, logToConsole)
 		nodes = append(nodes, node)
 	}
 
 	for i, customBuilder := range tb.customNodeBuilders {
-		publicKey := primitives.MemberId(fmt.Sprintf("Custom-Node %d", i))
-		node := tb.buildNode(customBuilder, publicKey, discovery, blocksPool, logToConsole)
+		memberId := primitives.MemberId(fmt.Sprintf("Custom-Node %d", i))
+		node := tb.buildNode(customBuilder, memberId, discovery, blocksPool, logToConsole)
 		nodes = append(nodes, node)
 	}
 

@@ -31,7 +31,7 @@ func CreatePreparedProof(
 		pSenders = make([]*protocol.SenderSignatureBuilder, len(pKeyManagers))
 		for i, mgr := range pKeyManagers {
 			pSenders[i] = &protocol.SenderSignatureBuilder{
-				MemberId:  mgr.MyPublicKey(),
+				MemberId:  mgr.MyMemberId(),
 				Signature: mgr.Sign(pBlockRef.Build().Raw()),
 			}
 		}
@@ -47,7 +47,7 @@ func CreatePreparedProof(
 			BlockHash:   blockHash,
 		}
 		ppSender = &protocol.SenderSignatureBuilder{
-			MemberId:  ppKeyManager.MyPublicKey(),
+			MemberId:  ppKeyManager.MyMemberId(),
 			Signature: ppKeyManager.Sign(ppBlockRef.Build().Raw()),
 		}
 	}

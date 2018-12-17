@@ -13,7 +13,7 @@ import (
 
 type harness struct {
 	t                 *testing.T
-	myPublicKey       primitives.MemberId
+	myMemberId        primitives.MemberId
 	keyManager        *builders.MockKeyManager
 	myNode            *builders.Node
 	net               *builders.TestNetwork
@@ -33,7 +33,7 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...leanhelix.Block
 
 	return &harness{
 		t:                 t,
-		myPublicKey:       keyManager.MyPublicKey(),
+		myMemberId:        keyManager.MyMemberId(),
 		myNode:            myNode,
 		net:               net,
 		keyManager:        myNode.KeyManager,
@@ -62,7 +62,7 @@ func (h *harness) getMyNodePk() primitives.MemberId {
 }
 
 func (h *harness) getMemberPk(nodeIdx int) primitives.MemberId {
-	return h.net.Nodes[nodeIdx].KeyManager.MyPublicKey()
+	return h.net.Nodes[nodeIdx].KeyManager.MyMemberId()
 }
 
 func (h *harness) getMyKeyManager() leanhelix.KeyManager {

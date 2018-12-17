@@ -24,7 +24,7 @@ func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
 
 	dataToSign := signedHeader.Build().Raw()
 	sender := &protocol.SenderSignatureBuilder{
-		MemberId:  f.KeyManager.MyPublicKey(),
+		MemberId:  f.KeyManager.MyMemberId(),
 		Signature: primitives.Signature(f.KeyManager.Sign(dataToSign)),
 	}
 
@@ -62,7 +62,7 @@ func (f *MessageFactory) CreatePrepareMessage(
 	}
 
 	sender := &protocol.SenderSignatureBuilder{
-		MemberId:  primitives.MemberId(f.KeyManager.MyPublicKey()),
+		MemberId:  primitives.MemberId(f.KeyManager.MyMemberId()),
 		Signature: primitives.Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
 	}
 
@@ -87,7 +87,7 @@ func (f *MessageFactory) CreateCommitMessage(
 	}
 
 	sender := &protocol.SenderSignatureBuilder{
-		MemberId:  primitives.MemberId(f.KeyManager.MyPublicKey()),
+		MemberId:  primitives.MemberId(f.KeyManager.MyMemberId()),
 		Signature: primitives.Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
 	}
 
@@ -168,7 +168,7 @@ func (f *MessageFactory) CreateViewChangeMessageContentBuilder(
 	}
 
 	sender := &protocol.SenderSignatureBuilder{
-		MemberId:  primitives.MemberId(f.KeyManager.MyPublicKey()),
+		MemberId:  primitives.MemberId(f.KeyManager.MyMemberId()),
 		Signature: primitives.Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
 	}
 
@@ -207,7 +207,7 @@ func (f *MessageFactory) CreateNewViewMessageContentBuilder(
 	}
 
 	sender := &protocol.SenderSignatureBuilder{
-		MemberId:  primitives.MemberId(f.KeyManager.MyPublicKey()),
+		MemberId:  primitives.MemberId(f.KeyManager.MyMemberId()),
 		Signature: primitives.Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
 	}
 

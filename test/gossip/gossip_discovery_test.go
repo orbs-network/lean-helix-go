@@ -12,7 +12,7 @@ import (
 )
 
 func TestGossipDiscovery(t *testing.T) {
-	genPublicKey := func() primitives.MemberId {
+	genMemberId := func() primitives.MemberId {
 		return primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000000))))
 	}
 
@@ -23,7 +23,7 @@ func TestGossipDiscovery(t *testing.T) {
 
 	t.Run("get Gossip instance by ID", func(t *testing.T) {
 		test.WithContext(func(ctx context.Context) {
-			id := genPublicKey()
+			id := genMemberId()
 			gd := NewGossipDiscovery()
 			expectedGossip := NewGossip(gd)
 			gd.RegisterGossip(id, expectedGossip)
@@ -34,9 +34,9 @@ func TestGossipDiscovery(t *testing.T) {
 
 	t.Run("get all Gossip IDs", func(t *testing.T) {
 		test.WithContext(func(ctx context.Context) {
-			id1 := genPublicKey()
-			id2 := genPublicKey()
-			id3 := genPublicKey()
+			id1 := genMemberId()
+			id2 := genMemberId()
+			id3 := genMemberId()
 			gd := NewGossipDiscovery()
 			g1 := NewGossip(gd)
 			g2 := NewGossip(gd)
@@ -44,19 +44,19 @@ func TestGossipDiscovery(t *testing.T) {
 			gd.RegisterGossip(id1, g1)
 			gd.RegisterGossip(id2, g2)
 			gd.RegisterGossip(id3, g3)
-			expectedPublicKeyStrings := []string{id1.String(), id2.String(), id3.String()}
-			actualPublicKeys := gd.AllGossipsPublicKeys()
-			actualPublicKeyStrings := make([]string, 0, len(actualPublicKeys))
-			for _, pk := range actualPublicKeys {
-				actualPublicKeyStrings = append(actualPublicKeyStrings, pk.String())
+			expectedMemberIdStrings := []string{id1.String(), id2.String(), id3.String()}
+			actualMemberIds := gd.AllGossipsMemberIds()
+			actualMemberIdStrings := make([]string, 0, len(actualMemberIds))
+			for _, pk := range actualMemberIds {
+				actualMemberIdStrings = append(actualMemberIdStrings, pk.String())
 			}
 
-			require.ElementsMatch(t, actualPublicKeyStrings, expectedPublicKeyStrings)
+			require.ElementsMatch(t, actualMemberIdStrings, expectedMemberIdStrings)
 		})
 	})
 
 	t.Run("return gossip=nil if given Id was not registered", func(t *testing.T) {
-		id := genPublicKey()
+		id := genMemberId()
 		gd := NewGossipDiscovery()
 		gossip := gd.GetGossipByPK(id)
 
@@ -66,8 +66,8 @@ func TestGossipDiscovery(t *testing.T) {
 	t.Run("return a list of all gossips", func(t *testing.T) {
 		test.WithContext(func(ctx context.Context) {
 			gd := NewGossipDiscovery()
-			id1 := genPublicKey()
-			id2 := genPublicKey()
+			id1 := genMemberId()
+			id2 := genMemberId()
 			g1 := NewGossip(gd)
 			g2 := NewGossip(gd)
 			gd.RegisterGossip(id1, g1)
@@ -81,9 +81,9 @@ func TestGossipDiscovery(t *testing.T) {
 	t.Run("return a list of requested gossips", func(t *testing.T) {
 		test.WithContext(func(ctx context.Context) {
 			gd := NewGossipDiscovery()
-			id1 := genPublicKey()
-			id2 := genPublicKey()
-			id3 := genPublicKey()
+			id1 := genMemberId()
+			id2 := genMemberId()
+			id3 := genMemberId()
 			g1 := NewGossip(gd)
 			g2 := NewGossip(gd)
 			g3 := NewGossip(gd)

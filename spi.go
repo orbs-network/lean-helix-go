@@ -26,7 +26,7 @@ type NetworkCommunication interface {
 type KeyManager interface {
 	Sign(content []byte) []byte
 	Verify(content []byte, sender *protocol.SenderSignature) bool
-	MyPublicKey() primitives.MemberId
+	MyMemberId() primitives.MemberId
 }
 
 type BlockUtils interface {

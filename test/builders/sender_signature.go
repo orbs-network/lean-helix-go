@@ -11,15 +11,15 @@ package builders
 //	lh.SenderSignature
 //}
 //
-//func NewMockSenderSignature(senderPublicKey primitives.MemberId, signature primitives.Ed25519Sig) lh.SenderSignature {
+//func NewMockSenderSignature(senderMemberId primitives.MemberId, signature primitives.Ed25519Sig) lh.SenderSignature {
 //	return &MockSenderSignature{
-//		senderPublicKey: senderPublicKey,
+//		senderMemberId: senderMemberId,
 //		signature:       signature,
 //	}
 //}
 //
-//func (s *MockSenderSignature) SenderPublicKey() primitives.MemberId {
-//	return s.senderPublicKey
+//func (s *MockSenderSignature) SenderMemberId() primitives.MemberId {
+//	return s.senderMemberId
 //}
 //
 //func (s *MockSenderSignature) Signature() primitives.Ed25519Sig {

@@ -152,7 +152,7 @@ type ViewChangeHeader interface {
 
 type SenderSignature interface {
 	Serializable
-	SenderPublicKey() PublicKey
+	SenderMemberId() MemberId
 	Signature() Signature
 }
 
@@ -195,7 +195,7 @@ type BlockProof interface {
   BlockHeight() BlockHeight
   View() View // this is only for display in a future block viewer - it is of no use to Orbs as it is lh-internal
   BlockHash() BlockHash
-  Signers() []PublicKey
+  Signers() []MemberId
   ConsensusSpecificData() []byte
 }
 ```
@@ -204,14 +204,14 @@ type BlockProof interface {
 
 ```
 type NetworkCommunication interface {
-	SendToMembers(publicKeys []PublicKey, messageType string, message []MessageTransporter)
-	RequestCommittee(seed uint64) []PublicKey
-	IsMember(pk PublicKey) bool
-	SendPreprepare(publicKeys []PublicKey, message PreprepareMessage)
-	SendPrepare(publicKeys []PublicKey, message PrepareMessage)
-	SendCommit(publicKeys []PublicKey, message CommitMessage)
-	SendViewChange(publicKey PublicKey, message ViewChangeMessage)
-	SendNewView(publicKeys []PublicKey, message NewViewMessage)
+	SendToMembers(publicKeys []MemberId, messageType string, message []MessageTransporter)
+	RequestCommittee(seed uint64) []MemberId
+	IsMember(pk MemberId) bool
+	SendPreprepare(publicKeys []MemberId, message PreprepareMessage)
+	SendPrepare(publicKeys []MemberId, message PrepareMessage)
+	SendCommit(publicKeys []MemberId, message CommitMessage)
+	SendViewChange(publicKey MemberId, message ViewChangeMessage)
+	SendNewView(publicKeys []MemberId, message NewViewMessage)
 
 ```
 
@@ -222,7 +222,7 @@ type NetworkCommunication interface {
 type KeyManager interface {
 	Sign(content []byte) []byte
 	Verify(content []byte, sender SenderSignature) bool
-	MyPublicKey() PublicKey
+	MyMemberId() MemberId
 }
 ```
 

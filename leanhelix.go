@@ -18,7 +18,7 @@ type LeanHelix struct {
 }
 
 func (lh *LeanHelix) notifyCommitted(block Block) {
-	lh.logger.Debug("%s LeanHelix.notifyCommitted(), %s", lh.config.KeyManager.MyPublicKey().KeyForMap(), block)
+	lh.logger.Debug("%s LeanHelix.notifyCommitted(), %s", lh.config.KeyManager.MyMemberId().KeyForMap(), block)
 	for _, subscription := range lh.commitSubscriptions {
 		subscription(block)
 	}
@@ -97,7 +97,7 @@ func NewLeanHelix(config *Config) *LeanHelix {
 	if config.Logger == nil {
 		config.Logger = NewSilentLogger()
 	}
-	filter := NewConsensusMessageFilter(config.KeyManager.MyPublicKey(), config.Logger)
+	filter := NewConsensusMessageFilter(config.KeyManager.MyMemberId(), config.Logger)
 	return &LeanHelix{
 		messagesChannel:         make(chan ConsensusRawMessage),
 		acknowledgeBlockChannel: make(chan Block),

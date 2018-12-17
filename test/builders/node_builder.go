@@ -11,7 +11,7 @@ type NodeBuilder struct {
 	gossip        *gossip.Gossip
 	blocksPool    *BlocksPool
 	logsToConsole bool
-	publicKey     primitives.MemberId
+	memberId      primitives.MemberId
 }
 
 func NewNodeBuilder() *NodeBuilder {
@@ -25,9 +25,9 @@ func (builder *NodeBuilder) ThatIsPartOf(gossip *gossip.Gossip) *NodeBuilder {
 	return builder
 }
 
-func (builder *NodeBuilder) WithPublicKey(publicKey primitives.MemberId) *NodeBuilder {
-	if builder.publicKey == nil {
-		builder.publicKey = publicKey
+func (builder *NodeBuilder) WithMemberId(memberId primitives.MemberId) *NodeBuilder {
+	if builder.memberId == nil {
+		builder.memberId = memberId
 	}
 	return builder
 }
@@ -45,16 +45,16 @@ func (builder *NodeBuilder) ThatLogsToConsole() *NodeBuilder {
 }
 
 func (builder *NodeBuilder) Build() *Node {
-	publicKey := builder.publicKey
-	if publicKey == nil {
-		publicKey = primitives.MemberId(fmt.Sprintf("Dummy PublicKey"))
+	memberId := builder.memberId
+	if memberId == nil {
+		memberId = primitives.MemberId(fmt.Sprintf("Dummy MemberId"))
 	}
 
 	blockUtils := NewMockBlockUtils(builder.blocksPool)
 	electionTrigger := NewMockElectionTrigger()
 	var logger leanhelix.Logger
 	if builder.logsToConsole {
-		logger = leanhelix.NewConsoleLogger(publicKey.KeyForMap())
+		logger = leanhelix.NewConsoleLogger(memberId.KeyForMap())
 	}
-	return NewNode(publicKey, builder.gossip, blockUtils, electionTrigger, logger)
+	return NewNode(memberId, builder.gossip, blockUtils, electionTrigger, logger)
 }

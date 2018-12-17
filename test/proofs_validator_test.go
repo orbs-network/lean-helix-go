@@ -10,7 +10,7 @@ import (
 )
 
 func TestProofsValidator(t *testing.T) {
-	myPK := primitives.MemberId("My PublicKey")
+	myPK := primitives.MemberId("My MemberId")
 	leaderPK := primitives.MemberId("Leader PK")
 	node1PK := primitives.MemberId("Node 1")
 	node2PK := primitives.MemberId("Node 2")

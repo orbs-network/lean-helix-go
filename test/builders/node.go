@@ -20,7 +20,7 @@ type Node struct {
 	KeyManager       *MockKeyManager
 	Storage          leanhelix.Storage
 	Gossip           *gossip.Gossip
-	PublicKey        primitives.MemberId
+	MemberId         primitives.MemberId
 	NodeStateChannel chan *NodeState
 }
 
@@ -77,7 +77,7 @@ func (node *Node) BuildConfig(logger leanhelix.Logger) *leanhelix.Config {
 }
 
 func NewNode(
-	publicKey primitives.MemberId,
+	memberId primitives.MemberId,
 	gossip *gossip.Gossip,
 	blockUtils *MockBlockUtils,
 	electionTrigger *ElectionTriggerMock,
@@ -86,10 +86,10 @@ func NewNode(
 		blockChain:       NewInMemoryBlockChain(),
 		ElectionTrigger:  electionTrigger,
 		BlockUtils:       blockUtils,
-		KeyManager:       NewMockKeyManager(publicKey),
+		KeyManager:       NewMockKeyManager(memberId),
 		Storage:          leanhelix.NewInMemoryStorage(),
 		Gossip:           gossip,
-		PublicKey:        publicKey,
+		MemberId:         memberId,
 		NodeStateChannel: make(chan *NodeState),
 	}
 

@@ -16,25 +16,25 @@ type LeanHelixTerm struct {
 	Storage
 	electionTrigger ElectionTrigger
 	BlockUtils
-	onCommit                        func(ctx context.Context, block Block)
-	messageFactory                  *MessageFactory
-	myPublicKey                     primitives.MemberId
-	committeeMembersPublicKeys      []primitives.MemberId
-	otherCommitteeMembersPublicKeys []primitives.MemberId
-	height                          primitives.BlockHeight
-	view                            primitives.View
-	preparedLocally                 bool
-	committedBlock                  Block
-	leaderPublicKey                 primitives.MemberId
-	newViewLocally                  primitives.View
-	logger                          Logger
-	prevBlock                       Block
+	onCommit                       func(ctx context.Context, block Block)
+	messageFactory                 *MessageFactory
+	myMemberId                     primitives.MemberId
+	committeeMembersMemberIds      []primitives.MemberId
+	otherCommitteeMembersMemberIds []primitives.MemberId
+	height                         primitives.BlockHeight
+	view                           primitives.View
+	preparedLocally                bool
+	committedBlock                 Block
+	leaderMemberId                 primitives.MemberId
+	newViewLocally                 primitives.View
+	logger                         Logger
+	prevBlock                      Block
 }
 
 func NewLeanHelixTerm(ctx context.Context, config *Config, onCommit func(ctx context.Context, block Block), prevBlock Block) *LeanHelixTerm {
 	keyManager := config.KeyManager
 	blockUtils := config.BlockUtils
-	myPK := keyManager.MyPublicKey()
+	myPK := keyManager.MyMemberId()
 	comm := config.NetworkCommunication
 	messageFactory := NewMessageFactory(keyManager)
 
@@ -62,22 +62,22 @@ func NewLeanHelixTerm(ctx context.Context, config *Config, onCommit func(ctx con
 	}
 
 	newTerm := &LeanHelixTerm{
-		onCommit:                        onCommit,
-		height:                          newBlockHeight,
-		prevBlock:                       prevBlock,
-		KeyManager:                      keyManager,
-		NetworkCommunication:            comm,
-		Storage:                         config.Storage,
-		electionTrigger:                 config.ElectionTrigger,
-		BlockUtils:                      blockUtils,
-		committeeMembersPublicKeys:      committeeMembers,
-		otherCommitteeMembersPublicKeys: otherCommitteeMembers,
-		messageFactory:                  messageFactory,
-		myPublicKey:                     myPK,
-		logger:                          config.Logger,
+		onCommit:                       onCommit,
+		height:                         newBlockHeight,
+		prevBlock:                      prevBlock,
+		KeyManager:                     keyManager,
+		NetworkCommunication:           comm,
+		Storage:                        config.Storage,
+		electionTrigger:                config.ElectionTrigger,
+		BlockUtils:                     blockUtils,
+		committeeMembersMemberIds:      committeeMembers,
+		otherCommitteeMembersMemberIds: otherCommitteeMembers,
+		messageFactory:                 messageFactory,
+		myMemberId:                     myPK,
+		logger:                         config.Logger,
 	}
 
-	newTerm.logger.Debug("H=%d V=0 %s NewLeanHelixTerm: committeeMembersCount=%d", newBlockHeight, keyManager.MyPublicKey().KeyForMap(), len(committeeMembers))
+	newTerm.logger.Debug("H=%d V=0 %s NewLeanHelixTerm: committeeMembersCount=%d", newBlockHeight, keyManager.MyMemberId().KeyForMap(), len(committeeMembers))
 	newTerm.initView(0)
 	return newTerm
 }
@@ -117,18 +117,18 @@ func (term *LeanHelixTerm) SetView(view primitives.View) {
 func (term *LeanHelixTerm) initView(view primitives.View) {
 	term.preparedLocally = false
 	term.view = view
-	term.leaderPublicKey = term.calcLeaderPublicKey(view)
+	term.leaderMemberId = term.calcLeaderMemberId(view)
 	term.electionTrigger.RegisterOnElection(term.height, term.view, term.moveToNextLeader)
-	term.logger.Debug("H=%d V=%d %s initView() set leader to %s", term.height, term.view, term.myPublicKey.KeyForMap(), term.leaderPublicKey.KeyForMap())
+	term.logger.Debug("H=%d V=%d %s initView() set leader to %s", term.height, term.view, term.myMemberId.KeyForMap(), term.leaderMemberId.KeyForMap())
 }
 
 func (term *LeanHelixTerm) Dispose() {
 	term.Storage.ClearBlockHeightLogs(term.height)
 }
 
-func (term *LeanHelixTerm) calcLeaderPublicKey(view primitives.View) primitives.MemberId {
-	index := int(view) % len(term.committeeMembersPublicKeys)
-	return term.committeeMembersPublicKeys[index]
+func (term *LeanHelixTerm) calcLeaderMemberId(view primitives.View) primitives.MemberId {
+	index := int(view) % len(term.committeeMembersMemberIds)
+	return term.committeeMembersMemberIds[index]
 }
 
 func (term *LeanHelixTerm) moveToNextLeader(ctx context.Context, height primitives.BlockHeight, view primitives.View) {
@@ -136,7 +136,7 @@ func (term *LeanHelixTerm) moveToNextLeader(ctx context.Context, height primitiv
 		return
 	}
 	term.SetView(term.view + 1)
-	term.logger.Debug("H=%d V=%d moveToNextLeader() newLeader=%s", term.height, term.view, term.leaderPublicKey[:3])
+	term.logger.Debug("H=%d V=%d moveToNextLeader() newLeader=%s", term.height, term.view, term.leaderMemberId[:3])
 	preparedMessages := ExtractPreparedMessages(term.height, term.Storage, term.QuorumSize())
 	vcm := term.messageFactory.CreateViewChangeMessage(term.height, term.view, preparedMessages)
 	if term.IsLeader() {
@@ -148,13 +148,13 @@ func (term *LeanHelixTerm) moveToNextLeader(ctx context.Context, height primitiv
 }
 
 func (term *LeanHelixTerm) sendConsensusMessage(ctx context.Context, message ConsensusMessage) {
-	term.logger.Debug("H=%d V=%d %s sendConsensusMessage() msgType=%v", term.height, term.view, term.myPublicKey.KeyForMap(), message.MessageType())
+	term.logger.Debug("H=%d V=%d %s sendConsensusMessage() msgType=%v", term.height, term.view, term.myMemberId.KeyForMap(), message.MessageType())
 	rawMessage := createConsensusRawMessage(message)
-	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersPublicKeys, rawMessage)
+	term.NetworkCommunication.SendMessage(ctx, term.otherCommitteeMembersMemberIds, rawMessage)
 }
 
 func (term *LeanHelixTerm) HandleLeanHelixPrePrepare(ctx context.Context, ppm *PreprepareMessage) {
-	term.logger.Debug("H=%s V=%s %s HandleLeanHelixPrePrepare()", term.height, term.view, term.myPublicKey.KeyForMap())
+	term.logger.Debug("H=%s V=%s %s HandleLeanHelixPrePrepare()", term.height, term.view, term.myMemberId.KeyForMap())
 	if err := term.validatePreprepare(ppm); err != nil {
 		term.logger.Debug("H=%s V=%s HandleLeanHelixPrePrepare() err=%v", err)
 	} else {
@@ -189,11 +189,11 @@ func (term *LeanHelixTerm) validatePreprepare(ppm *PreprepareMessage) error {
 		return fmt.Errorf("verification failed for sender %s signature on header", sender.MemberId()[:3])
 	}
 
-	leaderPublicKey := term.calcLeaderPublicKey(view)
-	senderPublicKey := sender.MemberId()
-	if !senderPublicKey.Equal(leaderPublicKey) {
+	leaderMemberId := term.calcLeaderMemberId(view)
+	senderMemberId := sender.MemberId()
+	if !senderMemberId.Equal(leaderMemberId) {
 		// Log
-		return fmt.Errorf("sender %s is not leader", senderPublicKey[:3])
+		return fmt.Errorf("sender %s is not leader", senderMemberId[:3])
 	}
 
 	givenBlockHash := term.BlockUtils.CalculateBlockHash(ppm.Block())
@@ -216,7 +216,7 @@ func (term *LeanHelixTerm) hasPreprepare(blockHeight primitives.BlockHeight, vie
 }
 
 func (term *LeanHelixTerm) HandleLeanHelixPrepare(ctx context.Context, pm *PrepareMessage) {
-	term.logger.Debug("H=%s V=%s %s HandleLeanHelixPrepare()", pm.BlockHeight(), pm.View(), term.myPublicKey.KeyForMap())
+	term.logger.Debug("H=%s V=%s %s HandleLeanHelixPrepare()", pm.BlockHeight(), pm.View(), term.myMemberId.KeyForMap())
 	header := pm.content.SignedHeader()
 	sender := pm.content.Sender()
 
@@ -228,7 +228,7 @@ func (term *LeanHelixTerm) HandleLeanHelixPrepare(ctx context.Context, pm *Prepa
 		term.logger.Info("prepare view %v is less than OneHeight's view %v", header.View(), term.view)
 		return
 	}
-	if term.leaderPublicKey.Equal(sender.MemberId()) {
+	if term.leaderMemberId.Equal(sender.MemberId()) {
 		term.logger.Info("prepare received from leader (only preprepare can be received from leader)")
 		return
 	}
@@ -240,7 +240,7 @@ func (term *LeanHelixTerm) HandleLeanHelixPrepare(ctx context.Context, pm *Prepa
 
 func (term *LeanHelixTerm) HandleLeanHelixViewChange(ctx context.Context, vcm *ViewChangeMessage) {
 	term.logger.Debug("H=%s V=%s HandleLeanHelixViewChange()", term.height, term.view)
-	if !term.isViewChangeValid(term.myPublicKey, term.view, vcm.content) {
+	if !term.isViewChangeValid(term.myMemberId, term.view, vcm.content) {
 		term.logger.Info("message ViewChange is not valid")
 		return
 	}
@@ -259,7 +259,7 @@ func (term *LeanHelixTerm) HandleLeanHelixViewChange(ctx context.Context, vcm *V
 	term.checkElected(ctx, header.BlockHeight(), header.View())
 }
 
-func (term *LeanHelixTerm) isViewChangeValid(targetLeaderPublicKey primitives.MemberId, view primitives.View, confirmation *protocol.ViewChangeMessageContent) bool {
+func (term *LeanHelixTerm) isViewChangeValid(targetLeaderMemberId primitives.MemberId, view primitives.View, confirmation *protocol.ViewChangeMessageContent) bool {
 	header := confirmation.SignedHeader()
 	sender := confirmation.Sender()
 	newView := header.View()
@@ -277,13 +277,13 @@ func (term *LeanHelixTerm) isViewChangeValid(targetLeaderPublicKey primitives.Me
 		return false
 	}
 
-	if !ValidatePreparedProof(term.height, newView, preparedProof, term.QuorumSize(), term.KeyManager, term.committeeMembersPublicKeys, func(view primitives.View) primitives.MemberId { return term.calcLeaderPublicKey(view) }) {
+	if !ValidatePreparedProof(term.height, newView, preparedProof, term.QuorumSize(), term.KeyManager, term.committeeMembersMemberIds, func(view primitives.View) primitives.MemberId { return term.calcLeaderMemberId(view) }) {
 		term.logger.Debug("isViewChangeValid(): failed ValidatePreparedProof()")
 		return false
 	}
 
-	futureLeaderPublicKey := term.calcLeaderPublicKey(newView)
-	if !targetLeaderPublicKey.Equal(futureLeaderPublicKey) {
+	futureLeaderMemberId := term.calcLeaderMemberId(newView)
+	if !targetLeaderMemberId.Equal(futureLeaderMemberId) {
 		return false
 	}
 
@@ -336,7 +336,7 @@ func (term *LeanHelixTerm) onPrepared(ctx context.Context, blockHeight primitive
 }
 
 func (term *LeanHelixTerm) HandleLeanHelixCommit(ctx context.Context, cm *CommitMessage) {
-	term.logger.Debug("H=%s V=%s %s HandleLeanHelixCommit()", term.height, term.view, term.myPublicKey.KeyForMap())
+	term.logger.Debug("H=%s V=%s %s HandleLeanHelixCommit()", term.height, term.view, term.myMemberId.KeyForMap())
 	header := cm.content.SignedHeader()
 	sender := cm.content.Sender()
 
@@ -349,7 +349,7 @@ func (term *LeanHelixTerm) HandleLeanHelixCommit(ctx context.Context, cm *Commit
 }
 
 func (term *LeanHelixTerm) checkCommitted(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) {
-	term.logger.Debug("H=%s V=%s %s checkCommitted() H=%s V=%s BlockHash %s ", term.height, term.view, term.myPublicKey.KeyForMap(), blockHeight, view, blockHash)
+	term.logger.Debug("H=%s V=%s %s checkCommitted() H=%s V=%s BlockHash %s ", term.height, term.view, term.myMemberId.KeyForMap(), blockHeight, view, blockHash)
 	if term.committedBlock != nil {
 		return
 	}
@@ -366,7 +366,7 @@ func (term *LeanHelixTerm) checkCommitted(ctx context.Context, blockHeight primi
 		term.logger.Info("H=%s V=%s checkCommitted() missing PPM")
 		return
 	}
-	term.logger.Info("H=%s V=%s %s checkCommitted() COMMITTED H=%s V=%s BlockHash %s ", term.height, term.view, term.myPublicKey.KeyForMap(), blockHeight, view, blockHash)
+	term.logger.Info("H=%s V=%s %s checkCommitted() COMMITTED H=%s V=%s BlockHash %s ", term.height, term.view, term.myMemberId.KeyForMap(), blockHeight, view, blockHash)
 	term.committedBlock = ppm.block
 	term.onCommit(ctx, ppm.block)
 }
@@ -380,17 +380,17 @@ func (term *LeanHelixTerm) validateViewChangeVotes(targetBlockHeight primitives.
 
 	// Verify that all _Block heights and views match, and all public keys are unique
 	for _, confirmation := range confirmations {
-		senderPublicKeyStr := string(confirmation.Sender().MemberId())
+		senderMemberIdStr := string(confirmation.Sender().MemberId())
 		if confirmation.SignedHeader().BlockHeight() != targetBlockHeight {
 			return false
 		}
 		if confirmation.SignedHeader().View() != targetView {
 			return false
 		}
-		if set[senderPublicKeyStr] {
+		if set[senderMemberIdStr] {
 			return false
 		}
-		set[senderPublicKeyStr] = true
+		set[senderMemberIdStr] = true
 	}
 
 	return true
@@ -417,7 +417,7 @@ func (term *LeanHelixTerm) latestViewChangeVote(confirmations []*protocol.ViewCh
 }
 
 func (term *LeanHelixTerm) HandleLeanHelixNewView(ctx context.Context, nvm *NewViewMessage) {
-	term.logger.Debug("H=%s V=%s %s HandleLeanHelixNewView()", term.height, term.view, term.myPublicKey.KeyForMap())
+	term.logger.Debug("H=%s V=%s %s HandleLeanHelixNewView()", term.height, term.view, term.myMemberId.KeyForMap())
 	header := nvm.Content().SignedHeader()
 	sender := nvm.Content().Sender()
 	ppMessageContent := nvm.Content().Message()
@@ -436,7 +436,7 @@ func (term *LeanHelixTerm) HandleLeanHelixNewView(ctx context.Context, nvm *NewV
 		return
 	}
 
-	futureLeaderId := term.calcLeaderPublicKey(header.View())
+	futureLeaderId := term.calcLeaderMemberId(header.View())
 	if !sender.MemberId().Equal(futureLeaderId) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderPk}", rejected because it match the new id (${view})` });
 		term.logger.Debug("HandleLeanHelixNewView(): no match for future leader")
@@ -501,13 +501,13 @@ func (term *LeanHelixTerm) HandleLeanHelixNewView(ctx context.Context, nvm *NewV
 }
 
 func (term *LeanHelixTerm) QuorumSize() int {
-	committeeMembersCount := len(term.committeeMembersPublicKeys)
+	committeeMembersCount := len(term.committeeMembersMemberIds)
 	f := int(math.Floor(float64(committeeMembersCount-1) / 3))
 	return committeeMembersCount - f
 }
 
 func (term *LeanHelixTerm) IsLeader() bool {
-	return term.myPublicKey.Equal(term.leaderPublicKey)
+	return term.myMemberId.Equal(term.leaderMemberId)
 }
 
 func (term *LeanHelixTerm) countPrepared(height primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) int {

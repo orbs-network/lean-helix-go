@@ -14,7 +14,7 @@ func TestNoViewChangeMessages(t *testing.T) {
 }
 
 func TestReturnNilWhenNoViewChangeMessages(t *testing.T) {
-	keyManager := builders.NewMockKeyManager(primitives.MemberId("PublicKey 1"))
+	keyManager := builders.NewMockKeyManager(primitives.MemberId("MemberId 1"))
 	VCMessage := builders.AViewChangeMessage(keyManager, 1, 2, nil)
 
 	actual := leanhelix.GetLatestBlockFromViewChangeMessages([]*leanhelix.ViewChangeMessage{VCMessage})
@@ -22,9 +22,9 @@ func TestReturnNilWhenNoViewChangeMessages(t *testing.T) {
 }
 
 func TestKeepOnlyMessagesWithBlock(t *testing.T) {
-	keyManager1 := builders.NewMockKeyManager(primitives.MemberId("PublicKey 1"))
-	keyManager2 := builders.NewMockKeyManager(primitives.MemberId("PublicKey 2"))
-	keyManager3 := builders.NewMockKeyManager(primitives.MemberId("PublicKey 3"))
+	keyManager1 := builders.NewMockKeyManager(primitives.MemberId("MemberId 1"))
+	keyManager2 := builders.NewMockKeyManager(primitives.MemberId("MemberId 2"))
+	keyManager3 := builders.NewMockKeyManager(primitives.MemberId("MemberId 3"))
 
 	block := builders.CreateBlock(builders.GenesisBlock)
 
