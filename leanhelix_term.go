@@ -150,7 +150,7 @@ func (term *LeanHelixTerm) moveToNextLeader(ctx context.Context, height primitiv
 
 func (term *LeanHelixTerm) sendConsensusMessage(ctx context.Context, message ConsensusMessage) {
 	term.logger.Debug("H=%d V=%d %s sendConsensusMessage() msgType=%v", term.height, term.view, term.myMemberId.KeyForMap(), message.MessageType())
-	rawMessage := createConsensusRawMessage(message)
+	rawMessage := CreateConsensusRawMessage(message)
 	term.Communication.SendConsensusMessage(ctx, term.otherCommitteeMembersMemberIds, rawMessage)
 }
 

@@ -114,9 +114,6 @@ func TestMessageFactory(t *testing.T) {
 	})
 
 	t.Run("create ViewChangeMessage with PreparedProof", func(t *testing.T) {
-		senderKeyManager := node1KeyManager
-		senderMessageFactory := node1Factory
-
 		ppBlockRefBuilder := &protocol.BlockRefBuilder{
 			MessageType: protocol.LEAN_HELIX_PREPREPARE,
 			BlockHeight: blockHeight,
@@ -159,7 +156,7 @@ func TestMessageFactory(t *testing.T) {
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
 				MemberId:  memberId1,
-				Signature: senderKeyManager.Sign(signedHeader.Build().Raw()),
+				Signature: node1KeyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
 
@@ -171,7 +168,7 @@ func TestMessageFactory(t *testing.T) {
 			},
 		}
 
-		actualVCM := senderMessageFactory.CreateViewChangeMessage(blockHeight, view, preparedMessages)
+		actualVCM := node1Factory.CreateViewChangeMessage(blockHeight, view, preparedMessages)
 		expectedVCM := leanhelix.NewViewChangeMessage(vcmContentBuilder.Build(), block)
 
 		require.True(t, bytes.Compare(expectedVCM.Raw(), actualVCM.Raw()) == 0, "compared bytes of VCM")

@@ -31,7 +31,7 @@ type ConsensusMessage interface {
 	View() primitives.View
 }
 
-func createConsensusRawMessage(message ConsensusMessage) *consensusRawMessage {
+func CreateConsensusRawMessage(message ConsensusMessage) *consensusRawMessage {
 	var content *protocol.LeanhelixContentBuilder
 	var block Block
 
@@ -128,7 +128,7 @@ func (ppm *PreprepareMessage) View() primitives.View {
 }
 
 func (ppm *PreprepareMessage) ToConsensusRawMessage() ConsensusRawMessage {
-	return createConsensusRawMessage(ppm)
+	return CreateConsensusRawMessage(ppm)
 }
 
 func NewPreprepareMessage(content *protocol.PreprepareContent, block Block) *PreprepareMessage {
@@ -173,7 +173,7 @@ func (pm *PrepareMessage) View() primitives.View {
 }
 
 func (pm *PrepareMessage) ToConsensusRawMessage() ConsensusRawMessage {
-	return createConsensusRawMessage(pm)
+	return CreateConsensusRawMessage(pm)
 }
 
 func NewPrepareMessage(content *protocol.PrepareContent) *PrepareMessage {
@@ -215,7 +215,7 @@ func (cm *CommitMessage) View() primitives.View {
 }
 
 func (cm *CommitMessage) ToConsensusRawMessage() ConsensusRawMessage {
-	return createConsensusRawMessage(cm)
+	return CreateConsensusRawMessage(cm)
 }
 
 func NewCommitMessage(content *protocol.CommitContent) *CommitMessage {
@@ -262,7 +262,7 @@ func (vcm *ViewChangeMessage) View() primitives.View {
 }
 
 func (vcm *ViewChangeMessage) ToConsensusRawMessage() ConsensusRawMessage {
-	return createConsensusRawMessage(vcm)
+	return CreateConsensusRawMessage(vcm)
 }
 
 func NewViewChangeMessage(content *protocol.ViewChangeMessageContent, block Block) *ViewChangeMessage {
@@ -312,7 +312,7 @@ func (nvm *NewViewMessage) View() primitives.View {
 }
 
 func (nvm *NewViewMessage) ToConsensusRawMessage() ConsensusRawMessage {
-	return createConsensusRawMessage(nvm)
+	return CreateConsensusRawMessage(nvm)
 }
 
 func NewNewViewMessage(content *protocol.NewViewMessageContent, block Block) *NewViewMessage {

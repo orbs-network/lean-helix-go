@@ -80,18 +80,16 @@ func TestNewViewIsSentWithTheHighestBlockFromTheViewChangeProofs(t *testing.T) {
 
 		blockOnView3 := builders.CreateBlock(builders.GenesisBlock)
 		preparedMessagesOnView3 := builders.CreatePreparedMessages(
-			h.getMemberKeyManager(3),
-			h.getNodeMemberId(3),
-			[]leanhelix.KeyManager{h.getMemberKeyManager(0), h.getMemberKeyManager(1), h.getMemberKeyManager(2)},
+			h.net.Nodes[3],
+			[]*builders.Node{h.net.Nodes[0], h.net.Nodes[1], h.net.Nodes[2]},
 			1,
 			3,
 			blockOnView3)
 
 		blockOnView4 := builders.CreateBlock(builders.GenesisBlock)
 		preparedMessagesOnView4 := builders.CreatePreparedMessages(
-			h.getMemberKeyManager(0),
-			h.getNodeMemberId(0),
-			[]leanhelix.KeyManager{h.getMemberKeyManager(1), h.getMemberKeyManager(2), h.getMemberKeyManager(3)},
+			h.net.Nodes[0],
+			[]*builders.Node{h.net.Nodes[1], h.net.Nodes[2], h.net.Nodes[3]},
 			1,
 			4,
 			blockOnView4)
@@ -127,18 +125,16 @@ func TestNewViewWithOlderBlockIsRejected(t *testing.T) {
 
 		blockOnView3 := builders.CreateBlock(builders.GenesisBlock)
 		preparedMessagesOnView3 := builders.CreatePreparedMessages(
-			h.getMemberKeyManager(3),
-			h.getNodeMemberId(3),
-			[]leanhelix.KeyManager{h.getMemberKeyManager(0), h.getMemberKeyManager(1), h.getMemberKeyManager(2)},
+			h.net.Nodes[3],
+			[]*builders.Node{h.net.Nodes[0], h.net.Nodes[1], h.net.Nodes[2]},
 			1,
 			3,
 			blockOnView3)
 
 		blockOnView4 := builders.CreateBlock(builders.GenesisBlock)
 		preparedMessagesOnView4 := builders.CreatePreparedMessages(
-			h.getMemberKeyManager(0),
-			h.getNodeMemberId(0),
-			[]leanhelix.KeyManager{h.getMemberKeyManager(1), h.getMemberKeyManager(2), h.getMemberKeyManager(3)},
+			h.net.Nodes[0],
+			[]*builders.Node{h.net.Nodes[1], h.net.Nodes[2], h.net.Nodes[3]},
 			1,
 			4,
 			blockOnView4)

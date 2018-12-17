@@ -6,18 +6,17 @@ import (
 )
 
 func CreatePreparedMessages(
-	leaderKeyManager leanhelix.KeyManager,
-	leaderMemberId primitives.MemberId,
-	membersKeyManagers []leanhelix.KeyManager,
+	leader *Node,
+	members []*Node,
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
 	block leanhelix.Block) *leanhelix.PreparedMessages {
 
-	PPMessage := APreprepareMessage(leaderKeyManager, leaderMemberId, blockHeight, view, block)
-	PMessages := make([]*leanhelix.PrepareMessage, len(membersKeyManagers))
+	PPMessage := APreprepareMessage(leader.KeyManager, leader.MemberId, blockHeight, view, block)
+	PMessages := make([]*leanhelix.PrepareMessage, len(members))
 
-	for i, member := range membersKeyManagers {
-		PMessages[i] = APrepareMessage(member, leaderMemberId, blockHeight, view, block)
+	for i, member := range members {
+		PMessages[i] = APrepareMessage(member.KeyManager, member.MemberId, blockHeight, view, block)
 	}
 
 	return &leanhelix.PreparedMessages{
