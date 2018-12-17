@@ -6,8 +6,8 @@ import (
 )
 
 func isInMembers(membersIds []primitives.MemberId, memberId primitives.MemberId) bool {
-	for _, memberId := range membersIds {
-		if memberId.Equal(memberId) {
+	for _, currentId := range membersIds {
+		if currentId.Equal(memberId) {
 			return true
 		}
 	}

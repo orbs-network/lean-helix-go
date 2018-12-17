@@ -102,7 +102,7 @@ func TestMessageFactory(t *testing.T) {
 		vcmContentBuilder := &protocol.ViewChangeMessageContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
-				MemberId:  memberId,
+				MemberId:  memberId1,
 				Signature: node1KeyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
