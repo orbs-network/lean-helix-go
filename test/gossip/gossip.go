@@ -70,7 +70,7 @@ func (g *Gossip) getOutgoingChannelByTarget(ctx context.Context, target primitiv
 	return channel
 }
 
-func (g *Gossip) SendMessage(ctx context.Context, targets []primitives.MemberId, message leanhelix.ConsensusRawMessage) {
+func (g *Gossip) SendConsensusMessage(ctx context.Context, targets []primitives.MemberId, message leanhelix.ConsensusRawMessage) {
 	g.statsSentMessages = append(g.statsSentMessages, message)
 	for _, target := range targets {
 		channel := g.getOutgoingChannelByTarget(ctx, target)

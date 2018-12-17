@@ -19,7 +19,7 @@ type LeanHelixSPI struct {
 // Communication layer for sending & receiving messages, and requesting committee and checking committee membership
 type NetworkCommunication interface {
 	RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, seed uint64, maxCommitteeSize uint32) []primitives.MemberId
-	SendMessage(ctx context.Context, targets []primitives.MemberId, message ConsensusRawMessage)
+	SendConsensusMessage(ctx context.Context, targets []primitives.MemberId, message ConsensusRawMessage)
 }
 
 type KeyManager interface {
