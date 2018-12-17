@@ -8,54 +8,54 @@ type Discovery struct {
 	gossips map[string]*Gossip
 }
 
-func NewGossipDiscovery() *Discovery {
+func NewDiscovery() *Discovery {
 	return &Discovery{
 		gossips: make(map[string]*Gossip),
 	}
 }
 
-func (d *Discovery) GetGossipByPK(pk primitives.MemberId) *Gossip {
-	return d.getGossipByPKStr(pk.KeyForMap())
+func (d *Discovery) GetGossipById(memberId primitives.MemberId) *Gossip {
+	return d.getGossipByMemberIdStr(memberId.KeyForMap())
 }
 
-func (d *Discovery) getGossipByPKStr(pkStr string) *Gossip {
-	result, ok := d.gossips[pkStr]
+func (d *Discovery) getGossipByMemberIdStr(memberIdStr string) *Gossip {
+	result, ok := d.gossips[memberIdStr]
 	if !ok {
 		return nil
 	}
 	return result
 }
 
-func (d *Discovery) RegisterGossip(pk primitives.MemberId, gossip *Gossip) {
-	d.gossips[pk.KeyForMap()] = gossip
+func (d *Discovery) RegisterGossip(memberId primitives.MemberId, gossip *Gossip) {
+	d.gossips[memberId.KeyForMap()] = gossip
 }
 
-func (d *Discovery) UnregisterGossip(pk primitives.MemberId) {
-	delete(d.gossips, pk.KeyForMap())
+func (d *Discovery) UnregisterGossip(memberId primitives.MemberId) {
+	delete(d.gossips, memberId.KeyForMap())
 }
 
-func (d *Discovery) Gossips(pks []primitives.MemberId) []*Gossip {
+func (d *Discovery) Gossips(memberIds []primitives.MemberId) []*Gossip {
 
-	if pks == nil {
+	if memberIds == nil {
 		return d.getAllGossips()
 	}
 
 	res := make([]*Gossip, 0, 1)
 	for key := range d.gossips {
-		if !indexOf(key, pks) {
+		if !indexOf(key, memberIds) {
 			continue
 		}
-		if gossip := d.getGossipByPKStr(key); gossip != nil {
+		if gossip := d.getGossipByMemberIdStr(key); gossip != nil {
 			res = append(res, gossip)
 		}
 	}
 	return res
 }
 
-func indexOf(pkStr string, memberId []primitives.MemberId) bool {
+func indexOf(memberIdStr string, memberId []primitives.MemberId) bool {
 	for _, key := range memberId {
 		keyStr := key.KeyForMap()
-		if keyStr == pkStr {
+		if keyStr == memberIdStr {
 			return true
 		}
 	}

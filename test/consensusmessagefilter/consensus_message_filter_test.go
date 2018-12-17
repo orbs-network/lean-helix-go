@@ -14,33 +14,38 @@ func testLogger() leanhelix.Logger {
 	return leanhelix.NewSilentLogger()
 }
 
-func GeneratePreprepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberId string) leanhelix.ConsensusRawMessage {
-	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderMemberId))
+func GeneratePreprepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) leanhelix.ConsensusRawMessage {
+	senderMemberId := primitives.MemberId(senderMemberIdStr)
+	keyManager := builders.NewMockKeyManager(senderMemberId)
 	block := builders.CreateBlock(builders.GenesisBlock)
-	return builders.APreprepareMessage(keyManager, blockHeight, view, block).ToConsensusRawMessage()
+	return builders.APreprepareMessage(keyManager, senderMemberId, blockHeight, view, block).ToConsensusRawMessage()
 }
 
-func GeneratePrepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberId string) leanhelix.ConsensusRawMessage {
-	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderMemberId))
+func GeneratePrepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) leanhelix.ConsensusRawMessage {
+	senderMemberId := primitives.MemberId(senderMemberIdStr)
+	keyManager := builders.NewMockKeyManager(senderMemberId)
 	block := builders.CreateBlock(builders.GenesisBlock)
-	return builders.APrepareMessage(keyManager, blockHeight, view, block).ToConsensusRawMessage()
+	return builders.APrepareMessage(keyManager, senderMemberId, blockHeight, view, block).ToConsensusRawMessage()
 }
 
-func GenerateCommitMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberId string) leanhelix.ConsensusRawMessage {
-	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderMemberId))
+func GenerateCommitMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) leanhelix.ConsensusRawMessage {
+	senderMemberId := primitives.MemberId(senderMemberIdStr)
+	keyManager := builders.NewMockKeyManager(senderMemberId)
 	block := builders.CreateBlock(builders.GenesisBlock)
-	return builders.ACommitMessage(keyManager, blockHeight, view, block).ToConsensusRawMessage()
+	return builders.ACommitMessage(keyManager, senderMemberId, blockHeight, view, block).ToConsensusRawMessage()
 }
 
-func GenerateViewChangeMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberId string) leanhelix.ConsensusRawMessage {
-	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderMemberId))
-	return builders.AViewChangeMessage(keyManager, blockHeight, view, nil).ToConsensusRawMessage()
+func GenerateViewChangeMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) leanhelix.ConsensusRawMessage {
+	senderMemberId := primitives.MemberId(senderMemberIdStr)
+	keyManager := builders.NewMockKeyManager(senderMemberId)
+	return builders.AViewChangeMessage(keyManager, senderMemberId, blockHeight, view, nil).ToConsensusRawMessage()
 }
 
-func GenerateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberId string) leanhelix.ConsensusRawMessage {
-	keyManager := builders.NewMockKeyManager(primitives.MemberId(senderMemberId))
+func GenerateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) leanhelix.ConsensusRawMessage {
+	senderMemberId := primitives.MemberId(senderMemberIdStr)
+	keyManager := builders.NewMockKeyManager(senderMemberId)
 	block := builders.CreateBlock(builders.GenesisBlock)
-	return builders.ANewViewMessage(keyManager, blockHeight, view, nil, nil, block).ToConsensusRawMessage()
+	return builders.ANewViewMessage(keyManager, senderMemberId, blockHeight, view, nil, nil, block).ToConsensusRawMessage()
 
 }
 

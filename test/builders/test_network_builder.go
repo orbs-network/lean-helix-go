@@ -8,13 +8,13 @@ import (
 )
 
 type TestNetworkBuilder struct {
-	NodeCount            int
-	logToConsole         bool
-	customNodeBuilders   []*NodeBuilder
-	upcomingBlocks       []leanhelix.Block
-	keyManager           leanhelix.KeyManager
-	blockUtils           leanhelix.BlockUtils
-	networkCommunication leanhelix.NetworkCommunication
+	NodeCount          int
+	logToConsole       bool
+	customNodeBuilders []*NodeBuilder
+	upcomingBlocks     []leanhelix.Block
+	keyManager         leanhelix.KeyManager
+	blockUtils         leanhelix.BlockUtils
+	communication      leanhelix.Communication
 }
 
 func (tb *TestNetworkBuilder) WithNodeCount(nodeCount int) *TestNetworkBuilder {
@@ -41,7 +41,7 @@ func (tb *TestNetworkBuilder) LogToConsole() *TestNetworkBuilder {
 
 func (tb *TestNetworkBuilder) Build() *TestNetwork {
 	blocksPool := tb.buildBlocksPool()
-	discovery := gossip.NewGossipDiscovery()
+	discovery := gossip.NewDiscovery()
 	nodes := tb.createNodes(discovery, blocksPool, tb.logToConsole)
 	testNetwork := NewTestNetwork(discovery)
 	testNetwork.RegisterNodes(nodes)
@@ -68,11 +68,13 @@ func (tb *TestNetworkBuilder) buildNode(
 	blocksPool *BlocksPool,
 	logToConsole bool) *Node {
 
-	gossip := gossip.NewGossip(discovery)
-	discovery.RegisterGossip(memberId, gossip)
+	gossipInstance := gossip.NewGossip(discovery)
+	discovery.RegisterGossip(memberId, gossipInstance)
+	membership := gossip.NewMockMembership(memberId, discovery)
 
 	b := nodeBuilder.
-		ThatIsPartOf(gossip).
+		CommunicatesVia(gossipInstance).
+		ThatIsPartOf(membership).
 		WithBlocksPool(blocksPool).
 		WithMemberId(memberId)
 
@@ -100,8 +102,8 @@ func (tb *TestNetworkBuilder) createNodes(discovery *gossip.Discovery, blocksPoo
 	return nodes
 }
 
-func (tb *TestNetworkBuilder) WithNetworkCommunication(comm leanhelix.NetworkCommunication) *TestNetworkBuilder {
-	tb.networkCommunication = comm
+func (tb *TestNetworkBuilder) WithCommunication(communication leanhelix.Communication) *TestNetworkBuilder {
+	tb.communication = communication
 	return tb
 }
 
@@ -140,7 +142,7 @@ func CreateTestNetworkForConsumerTests(
 	return testNetwork.
 		WithNodeCount(countOfNodes).
 		WithBlocks(blocks).
-		WithNetworkCommunication(spi.Comm).
+		WithCommunication(spi.Comm).
 		WithKeyManager(spi.Mgr).
 		WithBlockUtils(spi.Utils).
 		Build()

@@ -10,7 +10,8 @@ import (
 const LEAN_HELIX_HARD_MINIMUM_COMMITTEE_MEMBERS = 4
 
 type Config struct {
-	NetworkCommunication            NetworkCommunication
+	Communication                   Communication
+	Membership                      Membership
 	BlockUtils                      BlockUtils
 	KeyManager                      KeyManager
 	ElectionTrigger                 ElectionTrigger

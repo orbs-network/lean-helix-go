@@ -5,7 +5,6 @@ import (
 	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
-	"sort"
 )
 
 type SubscriptionValue struct {
@@ -18,24 +17,24 @@ type outgoingMessage struct {
 }
 
 type Gossip struct {
-	discovery            *Discovery
-	outgoingChannelsMap  map[string]chan *outgoingMessage
-	totalSubscriptions   int
-	subscriptions        map[int]*SubscriptionValue
-	outgoingWhitelist    []primitives.MemberId
-	incomingWhiteListPKs []primitives.MemberId
-	statsSentMessages    []leanhelix.ConsensusRawMessage
+	discovery                  *Discovery
+	outgoingChannelsMap        map[string]chan *outgoingMessage
+	totalSubscriptions         int
+	subscriptions              map[int]*SubscriptionValue
+	outgoingWhitelist          []primitives.MemberId
+	incomingWhiteListMemberIds []primitives.MemberId
+	statsSentMessages          []leanhelix.ConsensusRawMessage
 }
 
 func NewGossip(discovery *Discovery) *Gossip {
 	return &Gossip{
-		discovery:            discovery,
-		outgoingChannelsMap:  make(map[string]chan *outgoingMessage),
-		totalSubscriptions:   0,
-		subscriptions:        make(map[int]*SubscriptionValue),
-		outgoingWhitelist:    nil,
-		incomingWhiteListPKs: nil,
-		statsSentMessages:    []leanhelix.ConsensusRawMessage{},
+		discovery:                  discovery,
+		outgoingChannelsMap:        make(map[string]chan *outgoingMessage),
+		totalSubscriptions:         0,
+		subscriptions:              make(map[int]*SubscriptionValue),
+		outgoingWhitelist:          nil,
+		incomingWhiteListMemberIds: nil,
+		statsSentMessages:          []leanhelix.ConsensusRawMessage{},
 	}
 }
 
@@ -49,14 +48,6 @@ func (g *Gossip) messageSenderLoop(ctx context.Context, channel chan *outgoingMe
 		}
 
 	}
-}
-
-func (g *Gossip) RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, seed uint64, maxCommitteeSize uint32) []primitives.MemberId {
-	result := g.discovery.AllGossipsMemberIds()
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].KeyForMap() < result[j].KeyForMap()
-	})
-	return result
 }
 
 func (g *Gossip) getOutgoingChannelByTarget(ctx context.Context, target primitives.MemberId) chan *outgoingMessage {
@@ -90,7 +81,7 @@ func (g *Gossip) UnregisterOnMessage(subscriptionToken int) {
 
 func (g *Gossip) OnRemoteMessage(ctx context.Context, rawMessage leanhelix.ConsensusRawMessage) {
 	for _, s := range g.subscriptions {
-		if g.incomingWhiteListPKs != nil {
+		if g.incomingWhiteListMemberIds != nil {
 			senderMemberId := rawMessage.ToConsensusMessage().SenderMemberId()
 			if !g.inIncomingWhitelist(senderMemberId) {
 				continue
@@ -101,17 +92,17 @@ func (g *Gossip) OnRemoteMessage(ctx context.Context, rawMessage leanhelix.Conse
 }
 
 func (g *Gossip) inIncomingWhitelist(memberId primitives.MemberId) bool {
-	for _, currentPK := range g.incomingWhiteListPKs {
-		if currentPK.Equal(memberId) {
+	for _, currentId := range g.incomingWhiteListMemberIds {
+		if currentId.Equal(memberId) {
 			return true
 		}
 	}
 	return false
 }
 
-func (g *Gossip) inOutgoingWhitelist(pk primitives.MemberId) bool {
-	for _, currentPK := range g.outgoingWhitelist {
-		if currentPK.Equal(pk) {
+func (g *Gossip) inOutgoingWhitelist(memberId primitives.MemberId) bool {
+	for _, currentId := range g.outgoingWhitelist {
+		if currentId.Equal(memberId) {
 			return true
 		}
 	}
@@ -127,7 +118,7 @@ func (g *Gossip) ClearOutgoingWhitelist() {
 }
 
 func (g *Gossip) SetIncomingWhitelist(incomingWhitelist []primitives.MemberId) {
-	g.incomingWhiteListPKs = incomingWhitelist
+	g.incomingWhiteListMemberIds = incomingWhitelist
 }
 
 func (g *Gossip) ClearIncomingWhitelist() {
@@ -141,7 +132,7 @@ func (g *Gossip) SendToNode(ctx context.Context, targetMemberId primitives.Membe
 		}
 	}
 
-	if targetGossip := g.discovery.GetGossipByPK(targetMemberId); targetGossip != nil {
+	if targetGossip := g.discovery.GetGossipById(targetMemberId); targetGossip != nil {
 		targetGossip.OnRemoteMessage(ctx, consensusRawMessage)
 	}
 	return

@@ -7,6 +7,7 @@ import (
 
 type MessageFactory struct {
 	KeyManager
+	memberId primitives.MemberId
 }
 
 func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
@@ -24,7 +25,7 @@ func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
 
 	dataToSign := signedHeader.Build().Raw()
 	sender := &protocol.SenderSignatureBuilder{
-		MemberId:  f.KeyManager.MyMemberId(),
+		MemberId:  f.memberId,
 		Signature: primitives.Signature(f.KeyManager.Sign(dataToSign)),
 	}
 
@@ -62,7 +63,7 @@ func (f *MessageFactory) CreatePrepareMessage(
 	}
 
 	sender := &protocol.SenderSignatureBuilder{
-		MemberId:  primitives.MemberId(f.KeyManager.MyMemberId()),
+		MemberId:  f.memberId,
 		Signature: primitives.Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
 	}
 
@@ -87,7 +88,7 @@ func (f *MessageFactory) CreateCommitMessage(
 	}
 
 	sender := &protocol.SenderSignatureBuilder{
-		MemberId:  primitives.MemberId(f.KeyManager.MyMemberId()),
+		MemberId:  f.memberId,
 		Signature: primitives.Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
 	}
 
@@ -168,7 +169,7 @@ func (f *MessageFactory) CreateViewChangeMessageContentBuilder(
 	}
 
 	sender := &protocol.SenderSignatureBuilder{
-		MemberId:  primitives.MemberId(f.KeyManager.MyMemberId()),
+		MemberId:  f.memberId,
 		Signature: primitives.Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
 	}
 
@@ -207,7 +208,7 @@ func (f *MessageFactory) CreateNewViewMessageContentBuilder(
 	}
 
 	sender := &protocol.SenderSignatureBuilder{
-		MemberId:  primitives.MemberId(f.KeyManager.MyMemberId()),
+		MemberId:  f.memberId,
 		Signature: primitives.Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
 	}
 
@@ -229,8 +230,9 @@ func (f *MessageFactory) CreateNewViewMessage(
 	return NewNewViewMessage(contentBuilder.Build(), block)
 }
 
-func NewMessageFactory(keyManager KeyManager) *MessageFactory {
+func NewMessageFactory(keyManager KeyManager, memberId primitives.MemberId) *MessageFactory {
 	return &MessageFactory{
 		KeyManager: keyManager,
+		memberId:   memberId,
 	}
 }

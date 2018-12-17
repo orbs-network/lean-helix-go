@@ -12,20 +12,22 @@ import (
 
 type LeanHelixSPI struct {
 	Utils BlockUtils
-	Comm  NetworkCommunication
+	Comm  Communication
 	Mgr   KeyManager
 }
 
-// Communication layer for sending & receiving messages, and requesting committee and checking committee membership
-type NetworkCommunication interface {
+type Membership interface {
+	MyMemberId() primitives.MemberId
 	RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, seed uint64, maxCommitteeSize uint32) []primitives.MemberId
+}
+
+type Communication interface {
 	SendConsensusMessage(ctx context.Context, targets []primitives.MemberId, message ConsensusRawMessage)
 }
 
 type KeyManager interface {
 	Sign(content []byte) []byte
 	Verify(content []byte, sender *protocol.SenderSignature) bool
-	MyMemberId() primitives.MemberId
 }
 
 type BlockUtils interface {

@@ -13,7 +13,7 @@ type TestNetwork struct {
 }
 
 func (net *TestNetwork) GetNodeGossip(memberId primitives.MemberId) *gossip.Gossip {
-	return net.Discovery.GetGossipByPK(memberId)
+	return net.Discovery.GetGossipById(memberId)
 }
 
 func (net *TestNetwork) TriggerElection() {

@@ -20,6 +20,7 @@ type Node struct {
 	KeyManager       *MockKeyManager
 	Storage          leanhelix.Storage
 	Gossip           *gossip.Gossip
+	Membership       leanhelix.Membership
 	MemberId         primitives.MemberId
 	NodeStateChannel chan *NodeState
 }
@@ -66,22 +67,25 @@ func (node *Node) StartConsensusSync() {
 
 func (node *Node) BuildConfig(logger leanhelix.Logger) *leanhelix.Config {
 	return &leanhelix.Config{
-		NetworkCommunication: node.Gossip,
-		ElectionTrigger:      node.ElectionTrigger,
-		BlockUtils:           node.BlockUtils,
-		KeyManager:           node.KeyManager,
-		Storage:              node.Storage,
-		Logger:               logger,
+		Communication:   node.Gossip,
+		Membership:      node.Membership,
+		ElectionTrigger: node.ElectionTrigger,
+		BlockUtils:      node.BlockUtils,
+		KeyManager:      node.KeyManager,
+		Storage:         node.Storage,
+		Logger:          logger,
 	}
 
 }
 
 func NewNode(
-	memberId primitives.MemberId,
+	membership leanhelix.Membership,
 	gossip *gossip.Gossip,
 	blockUtils *MockBlockUtils,
 	electionTrigger *ElectionTriggerMock,
 	logger leanhelix.Logger) *Node {
+
+	memberId := membership.MyMemberId()
 	node := &Node{
 		blockChain:       NewInMemoryBlockChain(),
 		ElectionTrigger:  electionTrigger,
@@ -89,6 +93,7 @@ func NewNode(
 		KeyManager:       NewMockKeyManager(memberId),
 		Storage:          leanhelix.NewInMemoryStorage(),
 		Gossip:           gossip,
+		Membership:       membership,
 		MemberId:         memberId,
 		NodeStateChannel: make(chan *NodeState),
 	}

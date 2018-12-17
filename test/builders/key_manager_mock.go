@@ -41,7 +41,3 @@ func (km *MockKeyManager) Verify(content []byte, sender *protocol.SenderSignatur
 	expected := []byte(str)
 	return bytes.Equal(expected, sender.Signature())
 }
-
-func (km *MockKeyManager) MyMemberId() primitives.MemberId {
-	return km.myMemberId
-}

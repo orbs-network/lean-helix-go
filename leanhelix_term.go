@@ -12,7 +12,7 @@ import (
 type LeanHelixTerm struct {
 	ctx context.Context
 	KeyManager
-	NetworkCommunication
+	Communication
 	Storage
 	electionTrigger ElectionTrigger
 	BlockUtils
@@ -34,22 +34,23 @@ type LeanHelixTerm struct {
 func NewLeanHelixTerm(ctx context.Context, config *Config, onCommit func(ctx context.Context, block Block), prevBlock Block) *LeanHelixTerm {
 	keyManager := config.KeyManager
 	blockUtils := config.BlockUtils
-	myPK := keyManager.MyMemberId()
-	comm := config.NetworkCommunication
-	messageFactory := NewMessageFactory(keyManager)
+	membership := config.Membership
+	myMemberId := membership.MyMemberId()
+	comm := config.Communication
+	messageFactory := NewMessageFactory(keyManager, myMemberId)
 
 	// TODO Implement me!
 	randomSeed := uint64(12345)
 	// TODO Implement me!
 	maxCommitteeSize := uint32(4)
 	newBlockHeight := prevBlock.Height() + 1
-	committeeMembers := comm.RequestOrderedCommittee(ctx, newBlockHeight, randomSeed, maxCommitteeSize)
+	committeeMembers := membership.RequestOrderedCommittee(ctx, newBlockHeight, randomSeed, maxCommitteeSize)
 
 	panicOnLessThanMinimumCommitteeMembers(config.OverrideMinimumCommitteeMembers, committeeMembers)
 
 	otherCommitteeMembers := make([]primitives.MemberId, 0)
 	for _, member := range committeeMembers {
-		if !member.Equal(myPK) {
+		if !member.Equal(myMemberId) {
 			otherCommitteeMembers = append(otherCommitteeMembers, member)
 		}
 	}
@@ -66,18 +67,18 @@ func NewLeanHelixTerm(ctx context.Context, config *Config, onCommit func(ctx con
 		height:                         newBlockHeight,
 		prevBlock:                      prevBlock,
 		KeyManager:                     keyManager,
-		NetworkCommunication:           comm,
+		Communication:                  comm,
 		Storage:                        config.Storage,
 		electionTrigger:                config.ElectionTrigger,
 		BlockUtils:                     blockUtils,
 		committeeMembersMemberIds:      committeeMembers,
 		otherCommitteeMembersMemberIds: otherCommitteeMembers,
 		messageFactory:                 messageFactory,
-		myMemberId:                     myPK,
+		myMemberId:                     myMemberId,
 		logger:                         config.Logger,
 	}
 
-	newTerm.logger.Debug("H=%d V=0 %s NewLeanHelixTerm: committeeMembersCount=%d", newBlockHeight, keyManager.MyMemberId().KeyForMap(), len(committeeMembers))
+	newTerm.logger.Debug("H=%d V=0 %s NewLeanHelixTerm: committeeMembersCount=%d", newBlockHeight, myMemberId.KeyForMap(), len(committeeMembers))
 	newTerm.initView(0)
 	return newTerm
 }
@@ -150,7 +151,7 @@ func (term *LeanHelixTerm) moveToNextLeader(ctx context.Context, height primitiv
 func (term *LeanHelixTerm) sendConsensusMessage(ctx context.Context, message ConsensusMessage) {
 	term.logger.Debug("H=%d V=%d %s sendConsensusMessage() msgType=%v", term.height, term.view, term.myMemberId.KeyForMap(), message.MessageType())
 	rawMessage := createConsensusRawMessage(message)
-	term.NetworkCommunication.SendConsensusMessage(ctx, term.otherCommitteeMembersMemberIds, rawMessage)
+	term.Communication.SendConsensusMessage(ctx, term.otherCommitteeMembersMemberIds, rawMessage)
 }
 
 func (term *LeanHelixTerm) HandleLeanHelixPrePrepare(ctx context.Context, ppm *PreprepareMessage) {
@@ -356,7 +357,7 @@ func (term *LeanHelixTerm) checkCommitted(ctx context.Context, blockHeight primi
 	if !term.isPreprepared(blockHeight, view, blockHash) {
 		return
 	}
-	commits := term.Storage.GetCommitSendersPKs(blockHeight, view, blockHash)
+	commits := term.Storage.GetCommitSendersIds(blockHeight, view, blockHash)
 	if len(commits) < term.QuorumSize() {
 		return
 	}
@@ -431,38 +432,38 @@ func (term *LeanHelixTerm) HandleLeanHelixNewView(ctx context.Context, nvm *NewV
 	}
 
 	if !term.KeyManager.Verify(header.Raw(), sender) {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderPk}", ignored because the signature verification failed` });
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderId}", ignored because the signature verification failed` });
 		term.logger.Debug("HandleLeanHelixNewView(): verify failed")
 		return
 	}
 
 	futureLeaderId := term.calcLeaderMemberId(header.View())
 	if !sender.MemberId().Equal(futureLeaderId) {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderPk}", rejected because it match the new id (${view})` });
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderId}", rejected because it match the new id (${view})` });
 		term.logger.Debug("HandleLeanHelixNewView(): no match for future leader")
 		return
 	}
 
 	if !term.validateViewChangeVotes(header.BlockHeight(), header.View(), viewChangeConfirmations) {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderPk}", votes is invalid` });
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderId}", votes is invalid` });
 		term.logger.Debug("HandleLeanHelixNewView(): validateViewChangeVotes failed")
 		return
 	}
 
 	if term.view > header.View() {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderPk}", view is from the past` });
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderId}", view is from the past` });
 		term.logger.Debug("HandleLeanHelixNewView(): current view is higher than message view")
 		return
 	}
 
 	if !ppMessageContent.SignedHeader().View().Equal(header.View()) {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderPk}", view doesn't match PP.view` });
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderId}", view doesn't match PP.view` });
 		term.logger.Debug("HandleLeanHelixNewView(): NewView.view and NewView.Preprepare.view do not match")
 		return
 	}
 
 	if !ppMessageContent.SignedHeader().BlockHeight().Equal(header.BlockHeight()) {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderPk}", blockHeight doesn't match PP.blockHeight` });
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderId}", blockHeight doesn't match PP.blockHeight` });
 		term.logger.Debug("HandleLeanHelixNewView(): NewView.BlockHeight and NewView.Preprepare.BlockHeight do not match")
 		return
 	}
@@ -471,7 +472,7 @@ func (term *LeanHelixTerm) HandleLeanHelixNewView(ctx context.Context, nvm *NewV
 	if latestVote != nil {
 		viewChangeMessageValid := term.isViewChangeValid(futureLeaderId, header.View(), latestVote)
 		if !viewChangeMessageValid {
-			//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderPk}", view change votes are invalid` });
+			//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderId}", view change votes are invalid` });
 			term.logger.Debug("HandleLeanHelixNewView(): NewView.ViewChangeConfirmation (with latest view) is invalid")
 			return
 		}
@@ -481,7 +482,7 @@ func (term *LeanHelixTerm) HandleLeanHelixNewView(ctx context.Context, nvm *NewV
 		if latestVoteBlockHash != nil {
 			ppBlockHash := term.BlockUtils.CalculateBlockHash(nvm.Block())
 			if !latestVoteBlockHash.Equal(ppBlockHash) {
-				//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderPk}", the given _Block (PP._Block) doesn't match the best _Block from the VCProof` });
+				//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderId}", the given _Block (PP._Block) doesn't match the best _Block from the VCProof` });
 				term.logger.Debug("HandleLeanHelixNewView(): NewView.ViewChangeConfirmation (with latest view) is invalid")
 				return
 			}
@@ -511,7 +512,7 @@ func (term *LeanHelixTerm) IsLeader() bool {
 }
 
 func (term *LeanHelixTerm) countPrepared(height primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) int {
-	return len(term.Storage.GetPrepareSendersPKs(height, view, blockHash))
+	return len(term.Storage.GetPrepareSendersIds(height, view, blockHash))
 }
 
 func (term *LeanHelixTerm) isPreprepared(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) bool {

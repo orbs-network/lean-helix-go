@@ -109,12 +109,12 @@ func (storage *InMemoryStorage) StorePrepare(pp *PrepareMessage) bool {
 		senders = make(map[MemberIdStr]*PrepareMessage)
 		blockHashes[ppBlockHash] = senders
 	}
-	pk := MemberIdStr(pp.Content().Sender().MemberId())
-	_, ok = senders[pk]
+	id := MemberIdStr(pp.Content().Sender().MemberId())
+	_, ok = senders[id]
 	if ok {
 		return false
 	}
-	senders[pk] = pp
+	senders[id] = pp
 
 	return true
 }
@@ -146,7 +146,7 @@ func (storage *InMemoryStorage) GetPrepareMessages(blockHeight primitives.BlockH
 	return values, true
 }
 
-func (storage *InMemoryStorage) GetPrepareSendersPKs(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) []primitives.MemberId {
+func (storage *InMemoryStorage) GetPrepareSendersIds(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) []primitives.MemberId {
 	storage.mutext.Lock()
 	defer storage.mutext.Unlock()
 
@@ -187,12 +187,12 @@ func (storage *InMemoryStorage) StoreCommit(cm *CommitMessage) bool {
 		senders = make(map[MemberIdStr]*CommitMessage)
 		blockHashes[cmBlockHash] = senders
 	}
-	pk := MemberIdStr(cm.Content().Sender().MemberId())
-	_, ok = senders[pk]
+	id := MemberIdStr(cm.Content().Sender().MemberId())
+	_, ok = senders[id]
 	if ok {
 		return false
 	}
-	senders[pk] = cm
+	senders[id] = cm
 
 	return true
 
@@ -225,7 +225,7 @@ func (storage *InMemoryStorage) GetCommitMessages(blockHeight primitives.BlockHe
 	return values, true
 }
 
-func (storage *InMemoryStorage) GetCommitSendersPKs(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) []primitives.MemberId {
+func (storage *InMemoryStorage) GetCommitSendersIds(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) []primitives.MemberId {
 	storage.mutext.Lock()
 	defer storage.mutext.Unlock()
 
@@ -259,12 +259,12 @@ func (storage *InMemoryStorage) StoreViewChange(vcm *ViewChangeMessage) bool {
 		views[view] = senders
 	}
 
-	pk := MemberIdStr(vcm.Content().Sender().MemberId())
-	_, ok = senders[pk]
+	id := MemberIdStr(vcm.Content().Sender().MemberId())
+	_, ok = senders[id]
 	if ok {
 		return false
 	}
-	senders[pk] = vcm
+	senders[id] = vcm
 
 	return true
 

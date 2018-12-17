@@ -16,7 +16,7 @@ func TestMessageBuilderAndReader(t *testing.T) {
 	view := primitives.View(math.Floor(rand.Float64() * 1000000000))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	b1 := builders.CreateBlock(builders.GenesisBlock)
-	mockKeyManager := builders.NewMockKeyManager(primitives.MemberId("PK"), nil)
+	mockKeyManager := builders.NewMockKeyManager(primitives.MemberId("Member Id"), nil)
 	mf := &leanhelix.MessageFactory{
 		KeyManager: mockKeyManager,
 	}

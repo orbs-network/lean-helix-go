@@ -21,8 +21,8 @@ func TestStorePreprepare(t *testing.T) {
 	keyManager2 := builders.NewMockKeyManager(senderId2)
 	block := builders.CreateBlock(builders.GenesisBlock)
 
-	preprepareMessage1 := builders.APreprepareMessage(keyManager1, blockHeight, view, block)
-	preprepareMessage2 := builders.APreprepareMessage(keyManager2, blockHeight, view, block)
+	preprepareMessage1 := builders.APreprepareMessage(keyManager1, senderId1, blockHeight, view, block)
+	preprepareMessage2 := builders.APreprepareMessage(keyManager2, senderId2, blockHeight, view, block)
 
 	storage.StorePreprepare(preprepareMessage1)
 	storage.StorePreprepare(preprepareMessage2)
@@ -50,12 +50,12 @@ func TestStorePrepare(t *testing.T) {
 	block2 := builders.CreateBlock(builders.GenesisBlock)
 	block1Hash := builders.CalculateBlockHash(block1)
 
-	message1 := builders.APrepareMessage(keyManager1, blockHeight1, view1, block1)
-	message2 := builders.APrepareMessage(keyManager2, blockHeight1, view1, block1)
-	message3 := builders.APrepareMessage(keyManager3, blockHeight1, view1, block1)
-	message4 := builders.APrepareMessage(keyManager1, blockHeight2, view1, block1)
-	message5 := builders.APrepareMessage(keyManager1, blockHeight1, view2, block1)
-	message6 := builders.APrepareMessage(keyManager1, blockHeight1, view1, block2)
+	message1 := builders.APrepareMessage(keyManager1, senderId1, blockHeight1, view1, block1)
+	message2 := builders.APrepareMessage(keyManager2, senderId2, blockHeight1, view1, block1)
+	message3 := builders.APrepareMessage(keyManager3, senderId3, blockHeight1, view1, block1)
+	message4 := builders.APrepareMessage(keyManager1, senderId1, blockHeight2, view1, block1)
+	message5 := builders.APrepareMessage(keyManager1, senderId1, blockHeight1, view2, block1)
+	message6 := builders.APrepareMessage(keyManager1, senderId1, blockHeight1, view1, block2)
 
 	storage.StorePrepare(message1)
 	storage.StorePrepare(message2)
@@ -68,9 +68,9 @@ func TestStorePrepare(t *testing.T) {
 	expectedMessages := []*leanhelix.PrepareMessage{message1, message2, message3}
 	require.ElementsMatch(t, actualPrepareMessages, expectedMessages, "stored prepare messages should match the fetched prepare messages")
 
-	actualPrepareSendersPks := storage.GetPrepareSendersPKs(blockHeight1, view1, block1Hash)
-	expectedPks := []primitives.MemberId{senderId1, senderId2, senderId3}
-	require.ElementsMatch(t, actualPrepareSendersPks, expectedPks, "stored prepare messages senders should match the fetched prepare messages senders")
+	actualPrepareSendersIds := storage.GetPrepareSendersIds(blockHeight1, view1, block1Hash)
+	expectedIds := []primitives.MemberId{senderId1, senderId2, senderId3}
+	require.ElementsMatch(t, actualPrepareSendersIds, expectedIds, "stored prepare messages senders should match the fetched prepare messages senders")
 }
 
 func TestStoreCommit(t *testing.T) {
@@ -89,12 +89,12 @@ func TestStoreCommit(t *testing.T) {
 	block2 := builders.CreateBlock(builders.GenesisBlock)
 	block1Hash := builders.CalculateBlockHash(block1)
 
-	message1 := builders.ACommitMessage(keyManager1, blockHeight1, view1, block1)
-	message2 := builders.ACommitMessage(keyManager2, blockHeight1, view1, block1)
-	message3 := builders.ACommitMessage(keyManager3, blockHeight1, view1, block1)
-	message4 := builders.ACommitMessage(keyManager1, blockHeight2, view1, block1)
-	message5 := builders.ACommitMessage(keyManager1, blockHeight1, view2, block1)
-	message6 := builders.ACommitMessage(keyManager1, blockHeight1, view1, block2)
+	message1 := builders.ACommitMessage(keyManager1, senderId1, blockHeight1, view1, block1)
+	message2 := builders.ACommitMessage(keyManager2, senderId2, blockHeight1, view1, block1)
+	message3 := builders.ACommitMessage(keyManager3, senderId3, blockHeight1, view1, block1)
+	message4 := builders.ACommitMessage(keyManager1, senderId1, blockHeight2, view1, block1)
+	message5 := builders.ACommitMessage(keyManager1, senderId1, blockHeight1, view2, block1)
+	message6 := builders.ACommitMessage(keyManager1, senderId1, blockHeight1, view1, block2)
 
 	storage.StoreCommit(message1)
 	storage.StoreCommit(message2)
@@ -107,9 +107,9 @@ func TestStoreCommit(t *testing.T) {
 	expectedMessages := []*leanhelix.CommitMessage{message1, message2, message3}
 	require.ElementsMatch(t, actualCommitMessages, expectedMessages, "stored commit messages should match the fetched commit messages")
 
-	actualCommitSendersPks := storage.GetCommitSendersPKs(blockHeight1, view1, block1Hash)
-	expectedPks := []primitives.MemberId{senderId1, senderId2, senderId3}
-	require.ElementsMatch(t, actualCommitSendersPks, expectedPks, "stored commit messages senders should match the fetched commit messages senders")
+	actualCommitSendersIds := storage.GetCommitSendersIds(blockHeight1, view1, block1Hash)
+	expectedIds := []primitives.MemberId{senderId1, senderId2, senderId3}
+	require.ElementsMatch(t, actualCommitSendersIds, expectedIds, "stored commit messages senders should match the fetched commit messages senders")
 }
 
 func TestStoreViewChange(t *testing.T) {
@@ -125,11 +125,11 @@ func TestStoreViewChange(t *testing.T) {
 	keyManager2 := builders.NewMockKeyManager(senderId2)
 	keyManager3 := builders.NewMockKeyManager(senderId3)
 
-	message1 := builders.AViewChangeMessage(keyManager1, blockHeight1, view1, nil)
-	message2 := builders.AViewChangeMessage(keyManager2, blockHeight1, view1, nil)
-	message3 := builders.AViewChangeMessage(keyManager3, blockHeight1, view1, nil)
-	message4 := builders.AViewChangeMessage(keyManager1, blockHeight2, view1, nil)
-	message5 := builders.AViewChangeMessage(keyManager1, blockHeight1, view2, nil)
+	message1 := builders.AViewChangeMessage(keyManager1, senderId1, blockHeight1, view1, nil)
+	message2 := builders.AViewChangeMessage(keyManager2, senderId2, blockHeight1, view1, nil)
+	message3 := builders.AViewChangeMessage(keyManager3, senderId3, blockHeight1, view1, nil)
+	message4 := builders.AViewChangeMessage(keyManager1, senderId1, blockHeight2, view1, nil)
+	message5 := builders.AViewChangeMessage(keyManager1, senderId1, blockHeight1, view2, nil)
 
 	storage.StoreViewChange(message1)
 	storage.StoreViewChange(message2)
@@ -151,8 +151,8 @@ func TestLatestPreprepare(t *testing.T) {
 	keyManager2 := builders.NewMockKeyManager(senderId2)
 	block := builders.CreateBlock(builders.GenesisBlock)
 
-	preprepareMessageOnView3 := builders.APreprepareMessage(keyManager1, blockHeight, 3, block)
-	preprepareMessageOnView2 := builders.APreprepareMessage(keyManager2, blockHeight, 2, block)
+	preprepareMessageOnView3 := builders.APreprepareMessage(keyManager1, senderId1, blockHeight, 3, block)
+	preprepareMessageOnView2 := builders.APreprepareMessage(keyManager2, senderId2, blockHeight, 2, block)
 
 	storage.StorePreprepare(preprepareMessageOnView3)
 	storage.StorePreprepare(preprepareMessageOnView2)
@@ -165,8 +165,9 @@ func TestLatestPreprepare(t *testing.T) {
 func TestDuplicatePreprepare(t *testing.T) {
 	var storage leanhelix.Storage = leanhelix.NewInMemoryStorage()
 	block := builders.CreateBlock(builders.GenesisBlock)
-	keyManager := builders.NewMockKeyManager(primitives.MemberId("PK"))
-	ppm := builders.APreprepareMessage(keyManager, 1, 1, block)
+	memberId := primitives.MemberId("Member Id")
+	keyManager := builders.NewMockKeyManager(memberId)
+	ppm := builders.APreprepareMessage(keyManager, memberId, 1, 1, block)
 
 	firstTime := storage.StorePreprepare(ppm)
 	require.True(t, firstTime, "StorePreprepare() returns true if storing a new value ")
@@ -184,8 +185,8 @@ func TestDuplicatePrepare(t *testing.T) {
 	sender1KeyManager := builders.NewMockKeyManager(senderId1)
 	sender2KeyManager := builders.NewMockKeyManager(senderId2)
 	block := builders.CreateBlock(builders.GenesisBlock)
-	p1 := builders.APrepareMessage(sender1KeyManager, blockHeight, view, block)
-	p2 := builders.APrepareMessage(sender2KeyManager, blockHeight, view, block)
+	p1 := builders.APrepareMessage(sender1KeyManager, senderId1, blockHeight, view, block)
+	p2 := builders.APrepareMessage(sender2KeyManager, senderId2, blockHeight, view, block)
 
 	firstTime := storage.StorePrepare(p1)
 	require.True(t, firstTime, "StorePrepare() returns true if storing a new value (1 of 2)")
@@ -207,8 +208,8 @@ func TestDuplicateCommit(t *testing.T) {
 	sender2KeyManager := builders.NewMockKeyManager(senderId2)
 	block := builders.CreateBlock(builders.GenesisBlock)
 
-	c1 := builders.ACommitMessage(sender1KeyManager, blockHeight, view, block)
-	c2 := builders.ACommitMessage(sender2KeyManager, blockHeight, view, block)
+	c1 := builders.ACommitMessage(sender1KeyManager, senderId1, blockHeight, view, block)
+	c2 := builders.ACommitMessage(sender2KeyManager, senderId2, blockHeight, view, block)
 
 	firstTime := storage.StoreCommit(c1)
 	require.True(t, firstTime, "StoreCommit() returns true if storing a new value (1 of 2)")
@@ -229,8 +230,8 @@ func TestDuplicateViewChange(t *testing.T) {
 	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	sender1KeyManager := builders.NewMockKeyManager(senderId1)
 	sender2KeyManager := builders.NewMockKeyManager(senderId2)
-	vc1 := builders.AViewChangeMessage(sender1KeyManager, blockHeight, view, nil)
-	vc2 := builders.AViewChangeMessage(sender2KeyManager, blockHeight, view, nil)
+	vc1 := builders.AViewChangeMessage(sender1KeyManager, senderId1, blockHeight, view, nil)
+	vc2 := builders.AViewChangeMessage(sender2KeyManager, senderId2, blockHeight, view, nil)
 
 	firstTime := storage.StoreViewChange(vc1)
 	require.True(t, firstTime, "StoreViewChange() returns true if storing a new value (1 of 2)")
@@ -249,12 +250,13 @@ func TestClearBlockHeightLogs(t *testing.T) {
 	view := primitives.View(math.Floor(rand.Float64() * 1000000))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	blockHash := builders.CalculateBlockHash(block)
-	keyManager := builders.NewMockKeyManager(primitives.MemberId("PK"))
+	memberId := primitives.MemberId("Member Id")
+	keyManager := builders.NewMockKeyManager(memberId)
 
-	ppMsg := builders.APreprepareMessage(keyManager, blockHeight, view, block)
-	pMsg := builders.APrepareMessage(keyManager, blockHeight, view, block)
-	cMsg := builders.ACommitMessage(keyManager, blockHeight, view, block)
-	vcMsg := builders.AViewChangeMessage(keyManager, blockHeight, view, nil)
+	ppMsg := builders.APreprepareMessage(keyManager, memberId, blockHeight, view, block)
+	pMsg := builders.APrepareMessage(keyManager, memberId, blockHeight, view, block)
+	cMsg := builders.ACommitMessage(keyManager, memberId, blockHeight, view, block)
+	vcMsg := builders.AViewChangeMessage(keyManager, memberId, blockHeight, view, nil)
 
 	storage.StorePreprepare(ppMsg)
 	storage.StorePrepare(pMsg)
@@ -267,7 +269,7 @@ func TestClearBlockHeightLogs(t *testing.T) {
 	actualVC, _ := storage.GetViewChangeMessages(blockHeight, view)
 	require.Equal(t, actualPP, ppMsg, "stored preprepare message should match the fetched preprepare message")
 	require.Equal(t, 1, len(actualP), "Length of GetPrepareMessages() result array should be 1")
-	require.Equal(t, 1, len(actualC), "Length of GetCommitSendersPKs() result array should be 1")
+	require.Equal(t, 1, len(actualC), "Length of GetCommitSendersIds() result array should be 1")
 	require.Equal(t, 1, len(actualVC), "Length of GetViewChangeMessages() result array should be 1")
 
 	storage.ClearBlockHeightLogs(blockHeight)
@@ -279,6 +281,6 @@ func TestClearBlockHeightLogs(t *testing.T) {
 
 	require.Nil(t, actualPP, "GetPreprepareMessage() should return nil after ClearBlockHeightLogs()")
 	require.Equal(t, 0, len(actualP), "Length of GetPrepareMessages() result array should be 0")
-	require.Equal(t, 0, len(actualC), "Length of GetCommitSendersPKs() result array should be 0")
+	require.Equal(t, 0, len(actualC), "Length of GetCommitSendersIds() result array should be 0")
 	require.Equal(t, 0, len(actualVC), "Length of GetViewChangeMessages() result array should be 0")
 }

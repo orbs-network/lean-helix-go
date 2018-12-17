@@ -81,6 +81,7 @@ func TestNewViewIsSentWithTheHighestBlockFromTheViewChangeProofs(t *testing.T) {
 		blockOnView3 := builders.CreateBlock(builders.GenesisBlock)
 		preparedMessagesOnView3 := builders.CreatePreparedMessages(
 			h.getMemberKeyManager(3),
+			h.getNodeMemberId(3),
 			[]leanhelix.KeyManager{h.getMemberKeyManager(0), h.getMemberKeyManager(1), h.getMemberKeyManager(2)},
 			1,
 			3,
@@ -89,6 +90,7 @@ func TestNewViewIsSentWithTheHighestBlockFromTheViewChangeProofs(t *testing.T) {
 		blockOnView4 := builders.CreateBlock(builders.GenesisBlock)
 		preparedMessagesOnView4 := builders.CreatePreparedMessages(
 			h.getMemberKeyManager(0),
+			h.getNodeMemberId(0),
 			[]leanhelix.KeyManager{h.getMemberKeyManager(1), h.getMemberKeyManager(2), h.getMemberKeyManager(3)},
 			1,
 			4,
@@ -96,16 +98,16 @@ func TestNewViewIsSentWithTheHighestBlockFromTheViewChangeProofs(t *testing.T) {
 
 		// voting node1 as the new leader (view 5)
 		votes := builders.NewVotesBuilder().
-			WithVoter(h.getMemberKeyManager(0), 1, 5, preparedMessagesOnView3).
-			WithVoter(h.getMemberKeyManager(2), 1, 5, preparedMessagesOnView4).
-			WithVoter(h.getMemberKeyManager(3), 1, 5, nil).
+			WithVote(h.getMemberKeyManager(0), h.getNodeMemberId(0), 1, 5, preparedMessagesOnView3).
+			WithVote(h.getMemberKeyManager(2), h.getNodeMemberId(2), 1, 5, preparedMessagesOnView4).
+			WithVote(h.getMemberKeyManager(3), h.getNodeMemberId(3), 1, 5, nil).
 			Build()
 
 		h.checkView(0)
 
 		nvm := builders.
 			NewNewViewBuilder().
-			LeadBy(h.getMemberKeyManager(1)).
+			LeadBy(h.getMemberKeyManager(1), h.getNodeMemberId(1)).
 			WithViewChangeVotes(votes).
 			OnBlock(blockOnView4).
 			OnBlockHeight(1).
@@ -126,6 +128,7 @@ func TestNewViewWithOlderBlockIsRejected(t *testing.T) {
 		blockOnView3 := builders.CreateBlock(builders.GenesisBlock)
 		preparedMessagesOnView3 := builders.CreatePreparedMessages(
 			h.getMemberKeyManager(3),
+			h.getNodeMemberId(3),
 			[]leanhelix.KeyManager{h.getMemberKeyManager(0), h.getMemberKeyManager(1), h.getMemberKeyManager(2)},
 			1,
 			3,
@@ -134,6 +137,7 @@ func TestNewViewWithOlderBlockIsRejected(t *testing.T) {
 		blockOnView4 := builders.CreateBlock(builders.GenesisBlock)
 		preparedMessagesOnView4 := builders.CreatePreparedMessages(
 			h.getMemberKeyManager(0),
+			h.getNodeMemberId(0),
 			[]leanhelix.KeyManager{h.getMemberKeyManager(1), h.getMemberKeyManager(2), h.getMemberKeyManager(3)},
 			1,
 			4,
@@ -141,16 +145,16 @@ func TestNewViewWithOlderBlockIsRejected(t *testing.T) {
 
 		// voting node1 as the new leader (view 5)
 		votes := builders.NewVotesBuilder().
-			WithVoter(h.getMemberKeyManager(0), 1, 5, preparedMessagesOnView3).
-			WithVoter(h.getMemberKeyManager(2), 1, 5, preparedMessagesOnView4).
-			WithVoter(h.getMemberKeyManager(3), 1, 5, nil).
+			WithVote(h.getMemberKeyManager(0), h.getNodeMemberId(0), 1, 5, preparedMessagesOnView3).
+			WithVote(h.getMemberKeyManager(2), h.getNodeMemberId(2), 1, 5, preparedMessagesOnView4).
+			WithVote(h.getMemberKeyManager(3), h.getNodeMemberId(3), 1, 5, nil).
 			Build()
 
 		h.checkView(0)
 
 		nvm := builders.
 			NewNewViewBuilder().
-			LeadBy(h.getMemberKeyManager(1)).
+			LeadBy(h.getMemberKeyManager(1), h.getNodeMemberId(1)).
 			WithViewChangeVotes(votes).
 			OnBlock(blockOnView3).
 			OnBlockHeight(1).
@@ -202,16 +206,21 @@ func TestNewViewNotAcceptedWithWrongPPDetails(t *testing.T) {
 
 			h.checkView(0)
 
-			membersKeyManagers := []leanhelix.KeyManager{h.getMemberKeyManager(0), h.getMemberKeyManager(2), h.getMemberKeyManager(3)}
-			votes := builders.ASimpleViewChangeVotes(membersKeyManagers, blockHeight, view)
+			voters := []*builders.Voter{
+				{KeyManager: h.getMemberKeyManager(0), MemberId: h.getNodeMemberId(0)},
+				{KeyManager: h.getMemberKeyManager(2), MemberId: h.getNodeMemberId(2)},
+				{KeyManager: h.getMemberKeyManager(3), MemberId: h.getNodeMemberId(3)},
+			}
+			votes := builders.ASimpleViewChangeVotes(voters, blockHeight, view)
 
 			newLeaderKeyManager := h.getMemberKeyManager(1)
+			newLeaderId := h.getNodeMemberId(1)
 			nvm := builders.NewNewViewBuilder().
-				LeadBy(newLeaderKeyManager).
+				LeadBy(newLeaderKeyManager, newLeaderId).
 				OnBlock(block).
 				OnBlockHeight(blockHeight).
 				OnView(view).
-				WithCustomPreprepare(newLeaderKeyManager, preprepareBlockHeight, preprepareView, preprepareBlock).
+				WithCustomPreprepare(newLeaderKeyManager, newLeaderId, preprepareBlockHeight, preprepareView, preprepareBlock).
 				WithViewChangeVotes(votes).
 				Build()
 
@@ -250,14 +259,15 @@ func TestNewViewNotAcceptedWithWrongViewChangeDetails(t *testing.T) {
 			h.checkView(0)
 
 			votesBuilder := builders.NewVotesBuilder()
-			votesBuilder.WithVoter(h.getMemberKeyManager(0), vcsBlockHeight[0], vcsView[0], nil)
-			votesBuilder.WithVoter(h.getMemberKeyManager(2), vcsBlockHeight[1], vcsView[1], nil)
-			votesBuilder.WithVoter(h.getMemberKeyManager(3), vcsBlockHeight[2], vcsView[2], nil)
+			votesBuilder.WithVote(h.getMemberKeyManager(0), h.getNodeMemberId(0), vcsBlockHeight[0], vcsView[0], nil)
+			votesBuilder.WithVote(h.getMemberKeyManager(2), h.getNodeMemberId(2), vcsBlockHeight[1], vcsView[1], nil)
+			votesBuilder.WithVote(h.getMemberKeyManager(3), h.getNodeMemberId(3), vcsBlockHeight[2], vcsView[2], nil)
 			votes := votesBuilder.Build()
 
 			newLeaderKeyManager := h.getMemberKeyManager(1)
+			newLeaderMemberId := h.getNodeMemberId(1)
 			nvm := builders.NewNewViewBuilder().
-				LeadBy(newLeaderKeyManager).
+				LeadBy(newLeaderKeyManager, newLeaderMemberId).
 				OnBlock(block).
 				OnBlockHeight(blockHeight).
 				OnView(view).
@@ -297,15 +307,16 @@ func TestNewViewNotAcceptedWithBadVotes(t *testing.T) {
 			h.checkView(0)
 
 			leaderKeyManager := h.getMemberKeyManager(leaderNodeIdx)
+			leaderMemberId := h.getNodeMemberId(leaderNodeIdx)
 
 			votesBuilder := builders.NewVotesBuilder()
 			for _, memberIdx := range members {
-				votesBuilder.WithVoter(h.net.Nodes[memberIdx].KeyManager, 10, 1, nil)
+				votesBuilder.WithVote(h.net.Nodes[memberIdx].KeyManager, h.net.Nodes[memberIdx].MemberId, 10, 1, nil)
 			}
 
 			nvm := builders.
 				NewNewViewBuilder().
-				LeadBy(leaderKeyManager).
+				LeadBy(leaderKeyManager, leaderMemberId).
 				WithViewChangeVotes(votesBuilder.Build()).
 				OnBlock(block).
 				OnBlockHeight(10).
@@ -577,36 +588,36 @@ func TestAValidPreparedProofIsSentOnViewChange(t *testing.T) {
 
 		msg := h.getLastSentViewChangeMessage()
 		msgContent := msg.Content()
-		vcSenderPK := msgContent.Sender().MemberId()
+		vcSenderId := msgContent.Sender().MemberId()
 		vcHeader := msgContent.SignedHeader()
 		resultView := vcHeader.View()
 		resultHeight := vcHeader.BlockHeight()
 		preparedProof := vcHeader.PreparedProof()
-		ppSenderPK := preparedProof.PreprepareSender().MemberId()
+		ppSenderId := preparedProof.PreprepareSender().MemberId()
 		ppBlockRef := preparedProof.PreprepareBlockRef()
 		pBlockRef := preparedProof.PrepareBlockRef()
 
-		var pSendersPKs []primitives.MemberId
+		var pSendersIds []primitives.MemberId
 		pSendersIter := preparedProof.PrepareSendersIterator()
 		for {
 			if !pSendersIter.HasNext() {
 				break
 			}
-			pSendersPKs = append(pSendersPKs, pSendersIter.NextPrepareSenders().MemberId())
+			pSendersIds = append(pSendersIds, pSendersIter.NextPrepareSenders().MemberId())
 		}
 
-		member1PK := h.getMemberPk(1)
-		member2PK := h.getMemberPk(2)
-		pSendersEqual := (member1PK.Equal(pSendersPKs[0]) && member2PK.Equal(pSendersPKs[1])) ||
-			(member1PK.Equal(pSendersPKs[1]) && member2PK.Equal(pSendersPKs[0]))
+		member1Id := h.getNodeMemberId(1)
+		member2Id := h.getNodeMemberId(2)
+		pSendersEqual := (member1Id.Equal(pSendersIds[0]) && member2Id.Equal(pSendersIds[1])) ||
+			(member1Id.Equal(pSendersIds[1]) && member2Id.Equal(pSendersIds[0]))
 
 		require.True(t, pSendersEqual)
 		require.Equal(t, primitives.BlockHeight(1), pBlockRef.BlockHeight())
 		require.Equal(t, primitives.View(0), pBlockRef.View())
 		require.Equal(t, primitives.BlockHeight(1), ppBlockRef.BlockHeight())
 		require.Equal(t, primitives.View(0), ppBlockRef.View())
-		require.Equal(t, h.getMyNodePk(), vcSenderPK)
-		require.Equal(t, h.getMyNodePk(), ppSenderPK)
+		require.Equal(t, h.getMyNodeMemberId(), vcSenderId)
+		require.Equal(t, h.getMyNodeMemberId(), ppSenderId)
 		require.Equal(t, primitives.View(1), resultView)
 		require.Equal(t, primitives.BlockHeight(1), resultHeight)
 		require.Equal(t, block, msg.Block())
@@ -622,14 +633,14 @@ func TestAValidViewChangeMessageWithPreparedProof(t *testing.T) {
 		h.setNode1AsTheLeader(ctx, 10, 1, block1)
 
 		preparedMessages := &leanhelix.PreparedMessages{
-			PreprepareMessage: builders.APreprepareMessage(h.getMyKeyManager(), 1, 0, block2),
+			PreprepareMessage: builders.APreprepareMessage(h.getMyKeyManager(), h.myMemberId, 1, 0, block2),
 			PrepareMessages: []*leanhelix.PrepareMessage{
-				builders.APrepareMessage(h.getMemberKeyManager(1), 1, 0, block2),
-				builders.APrepareMessage(h.getMemberKeyManager(2), 1, 0, block2),
+				builders.APrepareMessage(h.getMemberKeyManager(1), h.getNodeMemberId(1), 1, 0, block2),
+				builders.APrepareMessage(h.getMemberKeyManager(2), h.getNodeMemberId(2), 1, 0, block2),
 			},
 		}
 
-		msg := builders.AViewChangeMessage(h.getMyKeyManager(), 10, 4, preparedMessages)
+		msg := builders.AViewChangeMessage(h.getMyKeyManager(), h.myMemberId, 10, 4, preparedMessages)
 		h.receiveViewChangeMessage(ctx, msg)
 
 		require.Exactly(t, 1, h.countViewChange(10, 4))
@@ -646,13 +657,13 @@ func TestViewChangeMessageWithoutQuorumInThePreparedProof(t *testing.T) {
 		h.setNode1AsTheLeader(ctx, 10, 1, block1)
 
 		preparedMessages := &leanhelix.PreparedMessages{
-			PreprepareMessage: builders.APreprepareMessage(h.getMyKeyManager(), 1, 0, block2),
+			PreprepareMessage: builders.APreprepareMessage(h.getMyKeyManager(), h.myMemberId, 1, 0, block2),
 			PrepareMessages: []*leanhelix.PrepareMessage{
-				builders.APrepareMessage(h.getMemberKeyManager(1), 1, 0, block2),
+				builders.APrepareMessage(h.getMemberKeyManager(1), h.getNodeMemberId(1), 1, 0, block2),
 			}, // <- not enough
 		}
 
-		msg := builders.AViewChangeMessage(h.getMyKeyManager(), 10, 4, preparedMessages)
+		msg := builders.AViewChangeMessage(h.getMyKeyManager(), h.myMemberId, 10, 4, preparedMessages)
 		h.receiveViewChangeMessage(ctx, msg)
 
 		require.Exactly(t, 0, h.countViewChange(10, 4))
@@ -669,11 +680,11 @@ func TestViewChangeMessageWithAnInvalidPreparedProof(t *testing.T) {
 		h.setNode1AsTheLeader(ctx, 10, 1, block1)
 
 		preparedMessages := &leanhelix.PreparedMessages{
-			PreprepareMessage: builders.APreprepareMessage(h.getMyKeyManager(), 1, 0, block2),
+			PreprepareMessage: builders.APreprepareMessage(h.getMyKeyManager(), h.myMemberId, 1, 0, block2),
 			PrepareMessages:   nil, // <- BAD
 		}
 
-		msg := builders.AViewChangeMessage(h.getMyKeyManager(), 10, 4, preparedMessages)
+		msg := builders.AViewChangeMessage(h.getMyKeyManager(), h.myMemberId, 10, 4, preparedMessages)
 		h.receiveViewChangeMessage(ctx, msg)
 
 		require.Exactly(t, 0, h.countViewChange(10, 4))

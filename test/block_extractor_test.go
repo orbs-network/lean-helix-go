@@ -14,29 +14,33 @@ func TestNoViewChangeMessages(t *testing.T) {
 }
 
 func TestReturnNilWhenNoViewChangeMessages(t *testing.T) {
-	keyManager := builders.NewMockKeyManager(primitives.MemberId("MemberId 1"))
-	VCMessage := builders.AViewChangeMessage(keyManager, 1, 2, nil)
+	memberId := primitives.MemberId("MemberId 1")
+	keyManager := builders.NewMockKeyManager(memberId)
+	VCMessage := builders.AViewChangeMessage(keyManager, memberId, 1, 2, nil)
 
 	actual := leanhelix.GetLatestBlockFromViewChangeMessages([]*leanhelix.ViewChangeMessage{VCMessage})
 	require.Nil(t, actual, "Should have returned Nil for ViewChange Messages without prepared messages")
 }
 
 func TestKeepOnlyMessagesWithBlock(t *testing.T) {
-	keyManager1 := builders.NewMockKeyManager(primitives.MemberId("MemberId 1"))
-	keyManager2 := builders.NewMockKeyManager(primitives.MemberId("MemberId 2"))
-	keyManager3 := builders.NewMockKeyManager(primitives.MemberId("MemberId 3"))
+	memberId1 := primitives.MemberId("MemberId 1")
+	memberId2 := primitives.MemberId("MemberId 2")
+	memberId3 := primitives.MemberId("MemberId 3")
+	keyManager1 := builders.NewMockKeyManager(memberId1)
+	keyManager2 := builders.NewMockKeyManager(memberId2)
+	keyManager3 := builders.NewMockKeyManager(memberId3)
 
 	block := builders.CreateBlock(builders.GenesisBlock)
 
 	preparedMessages := &leanhelix.PreparedMessages{
 		PreprepareMessage: nil,
 		PrepareMessages: []*leanhelix.PrepareMessage{
-			builders.APrepareMessage(keyManager1, 1, 2, block),
-			builders.APrepareMessage(keyManager2, 1, 2, block),
+			builders.APrepareMessage(keyManager1, memberId1, 1, 2, block),
+			builders.APrepareMessage(keyManager2, memberId2, 1, 2, block),
 		},
 	}
 
-	VCMessage := builders.AViewChangeMessage(keyManager3, 1, 2, preparedMessages)
+	VCMessage := builders.AViewChangeMessage(keyManager3, memberId3, 1, 2, preparedMessages)
 
 	actual := leanhelix.GetLatestBlockFromViewChangeMessages([]*leanhelix.ViewChangeMessage{VCMessage})
 	require.Nil(t, actual, "A block returned from View Change messages without block")
@@ -51,19 +55,19 @@ func TestReturnBlockFromPPMWithHighestView(t *testing.T) {
 
 	// view on view 3
 	blockOnView3 := builders.CreateBlock(builders.GenesisBlock)
-	preparedOnView3 := builders.CreatePreparedMessages(node3.KeyManager, []leanhelix.KeyManager{node1.KeyManager, node2.KeyManager}, 1, 3, blockOnView3)
+	preparedOnView3 := builders.CreatePreparedMessages(node3.KeyManager, node3.MemberId, []leanhelix.KeyManager{node1.KeyManager, node2.KeyManager}, 1, 3, blockOnView3)
 
-	VCMessageOnView3 := builders.AViewChangeMessage(node0.KeyManager, 1, 5, preparedOnView3)
+	VCMessageOnView3 := builders.AViewChangeMessage(node0.KeyManager, node0.MemberId, 1, 5, preparedOnView3)
 
 	// view on view 8
 	blockOnView8 := builders.CreateBlock(builders.GenesisBlock)
-	preparedOnView8 := builders.CreatePreparedMessages(node0.KeyManager, []leanhelix.KeyManager{node1.KeyManager, node2.KeyManager}, 1, 8, blockOnView8)
-	VCMessageOnView8 := builders.AViewChangeMessage(node2.KeyManager, 1, 5, preparedOnView8)
+	preparedOnView8 := builders.CreatePreparedMessages(node0.KeyManager, node0.MemberId, []leanhelix.KeyManager{node1.KeyManager, node2.KeyManager}, 1, 8, blockOnView8)
+	VCMessageOnView8 := builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 5, preparedOnView8)
 
 	// view on view 4
 	blockOnView4 := builders.CreateBlock(builders.GenesisBlock)
-	preparedOnView4 := builders.CreatePreparedMessages(node0.KeyManager, []leanhelix.KeyManager{node1.KeyManager, node2.KeyManager}, 1, 4, blockOnView4)
-	VCMessageOnView4 := builders.AViewChangeMessage(node2.KeyManager, 1, 5, preparedOnView4)
+	preparedOnView4 := builders.CreatePreparedMessages(node0.KeyManager, node0.MemberId, []leanhelix.KeyManager{node1.KeyManager, node2.KeyManager}, 1, 4, blockOnView4)
+	VCMessageOnView4 := builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 5, preparedOnView4)
 
 	actual := leanhelix.GetLatestBlockFromViewChangeMessages([]*leanhelix.ViewChangeMessage{VCMessageOnView3, VCMessageOnView8, VCMessageOnView4})
 	require.Equal(t, blockOnView8, actual, "Returned block is not from the latest view")

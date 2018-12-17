@@ -6,9 +6,14 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
+type MessageSigner struct {
+	KeyManager KeyManager
+	MemberId   primitives.MemberId
+}
+
 func CreatePreparedProof(
-	ppKeyManager KeyManager,
-	pKeyManagers []KeyManager,
+	ppSigner *MessageSigner,
+	pSigners []*MessageSigner,
 	height primitives.BlockHeight,
 	view primitives.View,
 	blockHash primitives.BlockHash) *protocol.PreparedProof {
@@ -18,7 +23,7 @@ func CreatePreparedProof(
 	var ppSender *protocol.SenderSignatureBuilder
 	var pSenders []*protocol.SenderSignatureBuilder
 
-	if len(pKeyManagers) == 0 {
+	if len(pSigners) == 0 {
 		pBlockRef = nil
 		pSenders = nil
 	} else {
@@ -28,15 +33,15 @@ func CreatePreparedProof(
 			View:        view,
 			BlockHash:   blockHash,
 		}
-		pSenders = make([]*protocol.SenderSignatureBuilder, len(pKeyManagers))
-		for i, mgr := range pKeyManagers {
+		pSenders = make([]*protocol.SenderSignatureBuilder, len(pSigners))
+		for i, mgr := range pSigners {
 			pSenders[i] = &protocol.SenderSignatureBuilder{
-				MemberId:  mgr.MyMemberId(),
-				Signature: mgr.Sign(pBlockRef.Build().Raw()),
+				MemberId:  mgr.MemberId,
+				Signature: mgr.KeyManager.Sign(pBlockRef.Build().Raw()),
 			}
 		}
 	}
-	if ppKeyManager == nil {
+	if ppSigner == nil {
 		ppBlockRef = nil
 		ppSender = nil
 	} else {
@@ -47,8 +52,8 @@ func CreatePreparedProof(
 			BlockHash:   blockHash,
 		}
 		ppSender = &protocol.SenderSignatureBuilder{
-			MemberId:  ppKeyManager.MyMemberId(),
-			Signature: ppKeyManager.Sign(ppBlockRef.Build().Raw()),
+			MemberId:  ppSigner.MemberId,
+			Signature: ppSigner.KeyManager.Sign(ppBlockRef.Build().Raw()),
 		}
 	}
 	preparedProof := &protocol.PreparedProofBuilder{

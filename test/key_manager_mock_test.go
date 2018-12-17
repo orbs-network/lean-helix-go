@@ -9,18 +9,18 @@ import (
 )
 
 func TestKeyManagerVerify(t *testing.T) {
-	signerPk := primitives.MemberId("SignerPK")
-	verifierPk := primitives.MemberId("VerifierPK")
+	signerId := primitives.MemberId("SignerId")
+	verifierId := primitives.MemberId("VerifierId")
 
-	signerKeyManager := builders.NewMockKeyManager(signerPk)
-	verifierKeyManager := builders.NewMockKeyManager(verifierPk)
+	signerKeyManager := builders.NewMockKeyManager(signerId)
+	verifierKeyManager := builders.NewMockKeyManager(verifierId)
 
 	content := []byte{1, 2, 3}
 
 	signature := signerKeyManager.Sign(content)
 
 	senderSignature := &protocol.SenderSignatureBuilder{
-		MemberId:  signerPk,
+		MemberId:  signerId,
 		Signature: signature,
 	}
 

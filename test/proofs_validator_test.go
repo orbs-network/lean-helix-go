@@ -10,18 +10,18 @@ import (
 )
 
 func TestProofsValidator(t *testing.T) {
-	myPK := primitives.MemberId("My MemberId")
-	leaderPK := primitives.MemberId("Leader PK")
-	node1PK := primitives.MemberId("Node 1")
-	node2PK := primitives.MemberId("Node 2")
-	node3PK := primitives.MemberId("Node 3")
-	myKeyManager := builders.NewMockKeyManager(myPK)
-	leaderKeyManager := builders.NewMockKeyManager(leaderPK)
-	node1KeyManager := builders.NewMockKeyManager(node1PK)
-	node2KeyManager := builders.NewMockKeyManager(node2PK)
-	node3KeyManager := builders.NewMockKeyManager(node3PK)
+	myMemberId := primitives.MemberId("My MemberId")
+	leaderId := primitives.MemberId("Leader ID")
+	node1Id := primitives.MemberId("Node 1")
+	node2Id := primitives.MemberId("Node 2")
+	node3Id := primitives.MemberId("Node 3")
+	myKeyManager := builders.NewMockKeyManager(myMemberId)
+	leaderKeyManager := builders.NewMockKeyManager(leaderId)
+	node1KeyManager := builders.NewMockKeyManager(node1Id)
+	node2KeyManager := builders.NewMockKeyManager(node2Id)
+	node3KeyManager := builders.NewMockKeyManager(node3Id)
 
-	membersPKs := []primitives.MemberId{leaderPK, node1PK, node2PK, node3PK}
+	membersIds := []primitives.MemberId{leaderId, node1Id, node2Id, node3Id}
 
 	nodeCount := 4
 	f := int(math.Floor(float64(nodeCount) / 3))
@@ -32,85 +32,113 @@ func TestProofsValidator(t *testing.T) {
 	const targetView = view + 1
 	block := builders.CreateBlock(builders.GenesisBlock)
 	blockHash := builders.CalculateBlockHash(block)
-	goodPrepareProof := builders.CreatePreparedProof(leaderKeyManager, []leanhelix.KeyManager{node1KeyManager, node2KeyManager, node3KeyManager}, blockHeight, view, blockHash)
 
-	calcLeaderPk := func(view primitives.View) primitives.MemberId {
-		return membersPKs[view]
+	leaderMessageSigner := &builders.MessageSigner{KeyManager: leaderKeyManager, MemberId: leaderId}
+	nodesMessageSigners := []*builders.MessageSigner{
+		{KeyManager: node1KeyManager, MemberId: node1Id},
+		{KeyManager: node2KeyManager, MemberId: node2Id},
+		{KeyManager: node3KeyManager, MemberId: node3Id},
+	}
+	goodPrepareProof := builders.CreatePreparedProof(leaderMessageSigner, nodesMessageSigners, blockHeight, view, blockHash)
+
+	calcLeaderId := func(view primitives.View) primitives.MemberId {
+		return membersIds[view]
 	}
 
 	t.Run("TestProofsValidatorHappyPath", func(t *testing.T) {
-		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, q, myKeyManager, membersPKs, calcLeaderPk)
+		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, q, myKeyManager, membersIds, calcLeaderId)
 		require.True(t, result, "Did not approve a well-formed proof")
 	})
 
 	t.Run("TestProofsValidatorWithNoPrePrepare", func(t *testing.T) {
-		preparedProofWithoutPP := builders.CreatePreparedProof(nil, []leanhelix.KeyManager{node1KeyManager, node2KeyManager, node3KeyManager}, blockHeight, view, blockHash)
-		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithoutPP, q, myKeyManager, membersPKs, calcLeaderPk)
+		pSigners := []*builders.MessageSigner{
+			{KeyManager: node1KeyManager, MemberId: node1Id},
+			{KeyManager: node2KeyManager, MemberId: node2Id},
+			{KeyManager: node3KeyManager, MemberId: node3Id},
+		}
+		preparedProofWithoutPP := builders.CreatePreparedProof(nil, pSigners, blockHeight, view, blockHash)
+		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithoutPP, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof that did not have a preprepare message")
 	})
 
 	t.Run("TestProofsValidatorWithNoPrepares", func(t *testing.T) {
-		preparedProofWithoutP := builders.CreatePreparedProof(leaderKeyManager, nil, blockHeight, view, blockHash)
-		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithoutP, q, myKeyManager, membersPKs, calcLeaderPk)
+		preparedProofWithoutP := builders.CreatePreparedProof(leaderMessageSigner, nil, blockHeight, view, blockHash)
+		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithoutP, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof that did not have prepare messages")
 	})
 
 	t.Run("TestProofsValidatorWithNoProof", func(t *testing.T) {
-		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, nil, q, myKeyManager, membersPKs, calcLeaderPk)
+		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, nil, q, myKeyManager, membersIds, calcLeaderId)
 		require.True(t, result, "Did not approve a nil proof")
 	})
 
 	t.Run("TestProofsValidatorWithNotEnoughPrepareMessages", func(t *testing.T) {
-		preparedProofWithNotEnoughP := builders.CreatePreparedProof(leaderKeyManager, []leanhelix.KeyManager{node1KeyManager}, blockHeight, view, blockHash)
-		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithNotEnoughP, q, myKeyManager, membersPKs, calcLeaderPk)
+		pSigners := []*builders.MessageSigner{
+			{KeyManager: node1KeyManager, MemberId: node1Id},
+		}
+		preparedProofWithNotEnoughP := builders.CreatePreparedProof(leaderMessageSigner, pSigners, blockHeight, view, blockHash)
+		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithNotEnoughP, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with not enough prepares")
 	})
 
 	t.Run("TestProofsValidatorWithBadPreprepareSignature", func(t *testing.T) {
-		rejectingKeyManager := builders.NewMockKeyManager(myPK, leaderPK)
-		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, q, rejectingKeyManager, membersPKs, calcLeaderPk)
+		rejectingKeyManager := builders.NewMockKeyManager(myMemberId, leaderId)
+		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, q, rejectingKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof that did not pass preprepare signature validation")
 	})
 
 	t.Run("TestProofsValidatorWithBadPrepareSignature", func(t *testing.T) {
-		rejectingKeyManager := builders.NewMockKeyManager(myPK, node2PK)
-		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, q, rejectingKeyManager, membersPKs, calcLeaderPk)
+		rejectingKeyManager := builders.NewMockKeyManager(myMemberId, node2Id)
+		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, q, rejectingKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof that did not pass prepare signature validation")
 	})
 
 	t.Run("TestProofsValidatorWithMismatchedHeight", func(t *testing.T) {
-		result := leanhelix.ValidatePreparedProof(666, targetView, goodPrepareProof, q, myKeyManager, membersPKs, calcLeaderPk)
+		result := leanhelix.ValidatePreparedProof(666, targetView, goodPrepareProof, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with mismatching blockHeight")
 	})
 
 	t.Run("TestProofsValidatorWithTheSameView", func(t *testing.T) {
-		result := leanhelix.ValidatePreparedProof(targetBlockHeight, view, goodPrepareProof, q, myKeyManager, membersPKs, calcLeaderPk)
+		result := leanhelix.ValidatePreparedProof(targetBlockHeight, view, goodPrepareProof, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with equal targetView")
 	})
 
 	t.Run("TestProofsValidatorWithTheSmallerView", func(t *testing.T) {
-		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView-1, goodPrepareProof, q, myKeyManager, membersPKs, calcLeaderPk)
+		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView-1, goodPrepareProof, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with smaller targetView")
 	})
 
 	t.Run("TestProofsValidatorWithANonMember", func(t *testing.T) {
-		nonMemberKeyManager := builders.NewMockKeyManager(primitives.MemberId("Not in members PK"))
-		preparedProof := builders.CreatePreparedProof(leaderKeyManager, []leanhelix.KeyManager{node1KeyManager, node2KeyManager, nonMemberKeyManager}, blockHeight, view, blockHash)
-		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, preparedProof, q, myKeyManager, membersPKs, calcLeaderPk)
+		nonMemberId := primitives.MemberId("Not in members Ids")
+		nonMemberKeyManager := builders.NewMockKeyManager(nonMemberId)
+		pSigners := []*builders.MessageSigner{
+			{KeyManager: node1KeyManager, MemberId: node1Id},
+			{KeyManager: node2KeyManager, MemberId: node2Id},
+			{KeyManager: nonMemberKeyManager, MemberId: nonMemberId},
+		}
+		preparedProof := builders.CreatePreparedProof(leaderMessageSigner, pSigners, blockHeight, view, blockHash)
+		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, preparedProof, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with a none member")
 	})
 
 	t.Run("TestProofsValidatorWithPrepareFromTheLeader", func(t *testing.T) {
-		preparedProofWithPFromLeader := builders.CreatePreparedProof(node1KeyManager, []leanhelix.KeyManager{leaderKeyManager, node1KeyManager, node2KeyManager}, blockHeight, view, blockHash)
-		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithPFromLeader, q, myKeyManager, membersPKs, calcLeaderPk)
+		pSigners := []*builders.MessageSigner{
+			{KeyManager: leaderKeyManager, MemberId: leaderId},
+			{KeyManager: node1KeyManager, MemberId: node1Id},
+			{KeyManager: node2KeyManager, MemberId: node2Id},
+		}
+		ppSigner := &builders.MessageSigner{KeyManager: node1KeyManager, MemberId: node1Id}
+
+		preparedProofWithPFromLeader := builders.CreatePreparedProof(ppSigner, pSigners, blockHeight, view, blockHash)
+		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithPFromLeader, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with a prepare from the leader")
 	})
 
 	t.Run("TestProofsValidatorWithMismatchingViewToLeader", func(t *testing.T) {
-		calcLeaderPk := func(view primitives.View) primitives.MemberId {
-			return primitives.MemberId("Some other node PK")
+		calcLeaderId := func(view primitives.View) primitives.MemberId {
+			return primitives.MemberId("Some other node Id")
 		}
-		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, q, myKeyManager, membersPKs, calcLeaderPk)
+		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with a mismatching view to leader")
 
 	})
@@ -123,57 +151,62 @@ func TestProofsValidator(t *testing.T) {
 		const targetView = view + 1
 
 		goodPrepareProof := builders.APreparedProofByMessages(
-			builders.APreprepareMessage(leaderKeyManager, blockHeight, view, block),
+			builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, view, block),
 			[]*leanhelix.PrepareMessage{
-				builders.APrepareMessage(node1KeyManager, blockHeight, view, block),
-				builders.APrepareMessage(node2KeyManager, blockHeight, view, block),
-				builders.APrepareMessage(node3KeyManager, blockHeight, view, block),
+				builders.APrepareMessage(node1KeyManager, node1Id, blockHeight, view, block),
+				builders.APrepareMessage(node2KeyManager, node2Id, blockHeight, view, block),
+				builders.APrepareMessage(node3KeyManager, node3Id, blockHeight, view, block),
 			})
 
-		actualGood := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, q, myKeyManager, membersPKs, calcLeaderPk)
+		actualGood := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, q, myKeyManager, membersIds, calcLeaderId)
 		require.True(t, actualGood, "Did not approve a valid proof")
 
 		// Mismatching blockHeight //
 		badHeightProof := builders.APreparedProofByMessages(
-			builders.APreprepareMessage(leaderKeyManager, blockHeight, view, block),
+			builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, view, block),
 			[]*leanhelix.PrepareMessage{
-				builders.APrepareMessage(node1KeyManager, blockHeight, view, block),
-				builders.APrepareMessage(node2KeyManager, 666, view, block),
-				builders.APrepareMessage(node3KeyManager, blockHeight, view, block),
+				builders.APrepareMessage(node1KeyManager, node1Id, blockHeight, view, block),
+				builders.APrepareMessage(node2KeyManager, node2Id, 666, view, block),
+				builders.APrepareMessage(node3KeyManager, node3Id, blockHeight, view, block),
 			})
 
-		actualBadHeight := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, badHeightProof, q, myKeyManager, membersPKs, calcLeaderPk)
+		actualBadHeight := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, badHeightProof, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, actualBadHeight, "Did not reject mismatching blockHeight")
 
 		// Mismatching view //
 		badViewProof := builders.APreparedProofByMessages(
-			builders.APreprepareMessage(leaderKeyManager, blockHeight, view, block),
+			builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, view, block),
 			[]*leanhelix.PrepareMessage{
-				builders.APrepareMessage(node1KeyManager, blockHeight, view, block),
-				builders.APrepareMessage(node2KeyManager, blockHeight, 666, block),
-				builders.APrepareMessage(node3KeyManager, blockHeight, view, block),
+				builders.APrepareMessage(node1KeyManager, node1Id, blockHeight, view, block),
+				builders.APrepareMessage(node2KeyManager, node2Id, blockHeight, 666, block),
+				builders.APrepareMessage(node3KeyManager, node3Id, blockHeight, view, block),
 			})
 
-		actualBadView := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, badViewProof, q, myKeyManager, membersPKs, calcLeaderPk)
+		actualBadView := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, badViewProof, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, actualBadView, "Did not reject mismatching view")
 
 		// Mismatching blockHash //
 		otherBlock := builders.CreateBlock(builders.GenesisBlock)
 		badBlockHashProof := builders.APreparedProofByMessages(
-			builders.APreprepareMessage(leaderKeyManager, blockHeight, view, block),
+			builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, view, block),
 			[]*leanhelix.PrepareMessage{
-				builders.APrepareMessage(node1KeyManager, blockHeight, view, block),
-				builders.APrepareMessage(node2KeyManager, blockHeight, view, otherBlock),
-				builders.APrepareMessage(node3KeyManager, blockHeight, view, block),
+				builders.APrepareMessage(node1KeyManager, node1Id, blockHeight, view, block),
+				builders.APrepareMessage(node2KeyManager, node2Id, blockHeight, view, otherBlock),
+				builders.APrepareMessage(node3KeyManager, node3Id, blockHeight, view, block),
 			})
 
-		actualBadBlockHash := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, badBlockHashProof, q, myKeyManager, membersPKs, calcLeaderPk)
+		actualBadBlockHash := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, badBlockHashProof, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, actualBadBlockHash, "Did not reject mismatching block hash")
 	})
 
-	t.Run("TestProofsValidatorWithDuplicate prepare sender PK", func(t *testing.T) {
-		preparedProofWithDuplicatePSenderPK := builders.CreatePreparedProof(leaderKeyManager, []leanhelix.KeyManager{node1KeyManager, node1KeyManager, node2KeyManager}, blockHeight, view, blockHash)
-		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithDuplicatePSenderPK, q, myKeyManager, membersPKs, calcLeaderPk)
-		require.False(t, result, "Did not reject a proof with duplicate sender PK")
+	t.Run("TestProofsValidatorWithDuplicate prepare sender Id", func(t *testing.T) {
+		pSigners := []*builders.MessageSigner{
+			{KeyManager: node1KeyManager, MemberId: node1Id},
+			{KeyManager: node2KeyManager, MemberId: node2Id},
+			{KeyManager: node1KeyManager, MemberId: node1Id},
+		}
+		preparedProofWithDuplicatePSenderId := builders.CreatePreparedProof(leaderMessageSigner, pSigners, blockHeight, view, blockHash)
+		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithDuplicatePSenderId, q, myKeyManager, membersIds, calcLeaderId)
+		require.False(t, result, "Did not reject a proof with duplicate sender Id")
 	})
 }

@@ -24,9 +24,9 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	sender2KeyManager := builders.NewMockKeyManager(primitives.MemberId(senderId2))
 
 	t.Run("should return the prepare proof", func(t *testing.T) {
-		ppm := builders.APreprepareMessage(leaderKeyManager, blockHeight, view, block)
-		pm1 := builders.APrepareMessage(sender1KeyManager, blockHeight, view, block)
-		pm2 := builders.APrepareMessage(sender2KeyManager, blockHeight, view, block)
+		ppm := builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, view, block)
+		pm1 := builders.APrepareMessage(sender1KeyManager, senderId1, blockHeight, view, block)
+		pm2 := builders.APrepareMessage(sender2KeyManager, senderId2, blockHeight, view, block)
 		storage := leanhelix.NewInMemoryStorage()
 		storage.StorePreprepare(ppm)
 		storage.StorePrepare(pm1)
@@ -55,17 +55,17 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 
 	t.Run("should return the latest (highest view) Prepare Proof", func(t *testing.T) {
 		storage := leanhelix.NewInMemoryStorage()
-		ppm10 := builders.APreprepareMessage(leaderKeyManager, blockHeight, 10, block)
-		pm10a := builders.APrepareMessage(sender1KeyManager, blockHeight, 10, block)
-		pm10b := builders.APrepareMessage(sender2KeyManager, blockHeight, 10, block)
+		ppm10 := builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, 10, block)
+		pm10a := builders.APrepareMessage(sender1KeyManager, senderId1, blockHeight, 10, block)
+		pm10b := builders.APrepareMessage(sender2KeyManager, senderId2, blockHeight, 10, block)
 
-		ppm20 := builders.APreprepareMessage(leaderKeyManager, blockHeight, 20, block)
-		pm20a := builders.APrepareMessage(sender1KeyManager, blockHeight, 20, block)
-		pm20b := builders.APrepareMessage(sender2KeyManager, blockHeight, 20, block)
+		ppm20 := builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, 20, block)
+		pm20a := builders.APrepareMessage(sender1KeyManager, senderId1, blockHeight, 20, block)
+		pm20b := builders.APrepareMessage(sender2KeyManager, senderId2, blockHeight, 20, block)
 
-		ppm30 := builders.APreprepareMessage(leaderKeyManager, blockHeight, 30, block)
-		pm30a := builders.APrepareMessage(sender1KeyManager, blockHeight, 30, block)
-		pm30b := builders.APrepareMessage(sender2KeyManager, blockHeight, 30, block)
+		ppm30 := builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, 30, block)
+		pm30a := builders.APrepareMessage(sender1KeyManager, senderId1, blockHeight, 30, block)
+		pm30b := builders.APrepareMessage(sender2KeyManager, senderId2, blockHeight, 30, block)
 
 		storage.StorePreprepare(ppm10)
 		storage.StorePrepare(pm10a)
@@ -100,8 +100,8 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	})
 
 	t.Run("TestReturnNothingIfNoPrePrepare", func(t *testing.T) {
-		pm1 := builders.APrepareMessage(sender1KeyManager, blockHeight, view, block)
-		pm2 := builders.APrepareMessage(sender2KeyManager, blockHeight, view, block)
+		pm1 := builders.APrepareMessage(sender1KeyManager, senderId1, blockHeight, view, block)
+		pm2 := builders.APrepareMessage(sender2KeyManager, senderId2, blockHeight, view, block)
 		storage := leanhelix.NewInMemoryStorage()
 		storage.StorePrepare(pm1)
 		storage.StorePrepare(pm2)
@@ -111,7 +111,7 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	})
 
 	t.Run("TestReturnNothingIfNoPrepares", func(t *testing.T) {
-		ppm := builders.APreprepareMessage(leaderKeyManager, blockHeight, view, block)
+		ppm := builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, view, block)
 		storage := leanhelix.NewInMemoryStorage()
 		storage.StorePreprepare(ppm)
 		q := 3
@@ -120,8 +120,8 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	})
 
 	t.Run("TestReturnNothingIfNotEnoughPrepares", func(t *testing.T) {
-		ppm := builders.APreprepareMessage(leaderKeyManager, blockHeight, view, block)
-		pm1 := builders.APrepareMessage(sender1KeyManager, blockHeight, view, block)
+		ppm := builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, view, block)
+		pm1 := builders.APrepareMessage(sender1KeyManager, senderId1, blockHeight, view, block)
 		storage := leanhelix.NewInMemoryStorage()
 		storage.StorePreprepare(ppm)
 		storage.StorePrepare(pm1)

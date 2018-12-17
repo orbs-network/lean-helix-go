@@ -5,9 +5,9 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
-func isInMembers(membersPKs []primitives.MemberId, memberId primitives.MemberId) bool {
-	for _, memberPK := range membersPKs {
-		if memberPK.Equal(memberId) {
+func isInMembers(membersIds []primitives.MemberId, memberId primitives.MemberId) bool {
+	for _, memberId := range membersIds {
+		if memberId.Equal(memberId) {
 			return true
 		}
 	}
@@ -18,7 +18,7 @@ func verifyBlockRefMessage(blockRef *protocol.BlockRef, sender *protocol.SenderS
 	return keyManager.Verify(blockRef.Raw(), sender)
 }
 
-type CalcLeaderPk = func(view primitives.View) primitives.MemberId
+type CalcLeaderId = func(view primitives.View) primitives.MemberId
 
 func ValidatePreparedProof(
 	targetHeight primitives.BlockHeight,
@@ -26,8 +26,8 @@ func ValidatePreparedProof(
 	preparedProof *protocol.PreparedProof,
 	q int,
 	keyManager KeyManager,
-	membersPKs []primitives.MemberId,
-	calcLeaderPk CalcLeaderPk) bool {
+	membersIds []primitives.MemberId,
+	calcLeaderId CalcLeaderId) bool {
 	if preparedProof == nil || len(preparedProof.Raw()) == 0 {
 		return true
 	}
@@ -69,7 +69,7 @@ func ValidatePreparedProof(
 	}
 
 	leaderFromPPMessage := ppSender.MemberId()
-	leaderFromView := calcLeaderPk(ppView)
+	leaderFromView := calcLeaderId(ppView)
 	if !leaderFromView.Equal(leaderFromPPMessage) {
 		return false
 	}
@@ -97,7 +97,7 @@ func ValidatePreparedProof(
 			return false
 		}
 
-		if isInMembers(membersPKs, pSenderMemberId) == false {
+		if isInMembers(membersIds, pSenderMemberId) == false {
 			return false
 		}
 

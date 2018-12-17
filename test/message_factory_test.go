@@ -13,16 +13,20 @@ import (
 )
 
 func TestMessageFactory(t *testing.T) {
-	keyManager := builders.NewMockKeyManager(primitives.MemberId("PK0"))
+	memberId := primitives.MemberId("Member Id0")
+	memberId1 := primitives.MemberId("Member Id1")
+	memberId2 := primitives.MemberId("Member Id2")
+
+	keyManager := builders.NewMockKeyManager(memberId)
 	blockHeight := primitives.BlockHeight(math.Floor(rand.Float64() * 1000000000))
 	view := primitives.View(math.Floor(rand.Float64() * 1000000000))
 	block := builders.CreateBlock(builders.GenesisBlock)
 	blockHash := builders.CalculateBlockHash(block)
-	node1KeyManager := builders.NewMockKeyManager(primitives.MemberId("PK1"))
-	node2KeyManager := builders.NewMockKeyManager(primitives.MemberId("PK2"))
-	leaderFac := leanhelix.NewMessageFactory(keyManager)
-	node1Fac := leanhelix.NewMessageFactory(node1KeyManager)
-	node2Fac := leanhelix.NewMessageFactory(node2KeyManager)
+	node1KeyManager := builders.NewMockKeyManager(memberId1)
+	node2KeyManager := builders.NewMockKeyManager(memberId2)
+	leaderFac := leanhelix.NewMessageFactory(keyManager, memberId)
+	node1Factory := leanhelix.NewMessageFactory(node1KeyManager, memberId1)
+	node2Fac := leanhelix.NewMessageFactory(node2KeyManager, memberId2)
 
 	t.Run("create PreprepareMessage", func(t *testing.T) {
 		signedHeader := &protocol.BlockRefBuilder{
@@ -34,7 +38,7 @@ func TestMessageFactory(t *testing.T) {
 		ppmcb := &protocol.PreprepareContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
-				MemberId:  keyManager.MyMemberId(),
+				MemberId:  memberId,
 				Signature: keyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
@@ -55,7 +59,7 @@ func TestMessageFactory(t *testing.T) {
 		prepareContentBuilder := &protocol.PrepareContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
-				MemberId:  keyManager.MyMemberId(),
+				MemberId:  memberId,
 				Signature: keyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
@@ -76,7 +80,7 @@ func TestMessageFactory(t *testing.T) {
 		cmcb := &protocol.CommitContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
-				MemberId:  keyManager.MyMemberId(),
+				MemberId:  memberId,
 				Signature: keyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
@@ -89,9 +93,6 @@ func TestMessageFactory(t *testing.T) {
 	})
 
 	t.Run("create ViewChangeMessage without PreparedProof", func(t *testing.T) {
-		senderKeyManager := node1KeyManager
-		senderMessageFactory := node1Fac
-
 		signedHeader := &protocol.ViewChangeHeaderBuilder{
 			MessageType:   protocol.LEAN_HELIX_VIEW_CHANGE,
 			BlockHeight:   blockHeight,
@@ -101,12 +102,12 @@ func TestMessageFactory(t *testing.T) {
 		vcmContentBuilder := &protocol.ViewChangeMessageContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
-				MemberId:  senderKeyManager.MyMemberId(),
-				Signature: senderKeyManager.Sign(signedHeader.Build().Raw()),
+				MemberId:  memberId,
+				Signature: node1KeyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
 
-		actualVCM := senderMessageFactory.CreateViewChangeMessage(blockHeight, view, nil)
+		actualVCM := node1Factory.CreateViewChangeMessage(blockHeight, view, nil)
 		expectedVCM := leanhelix.NewViewChangeMessage(vcmContentBuilder.Build(), nil)
 
 		require.True(t, bytes.Compare(expectedVCM.Raw(), actualVCM.Raw()) == 0, "compared bytes of VCM")
@@ -114,7 +115,7 @@ func TestMessageFactory(t *testing.T) {
 
 	t.Run("create ViewChangeMessage with PreparedProof", func(t *testing.T) {
 		senderKeyManager := node1KeyManager
-		senderMessageFactory := node1Fac
+		senderMessageFactory := node1Factory
 
 		ppBlockRefBuilder := &protocol.BlockRefBuilder{
 			MessageType: protocol.LEAN_HELIX_PREPREPARE,
@@ -123,7 +124,7 @@ func TestMessageFactory(t *testing.T) {
 			BlockHash:   blockHash,
 		}
 		ppSender := &protocol.SenderSignatureBuilder{
-			MemberId:  keyManager.MyMemberId(),
+			MemberId:  memberId,
 			Signature: keyManager.Sign(ppBlockRefBuilder.Build().Raw()),
 		}
 		pBlockRefBuilder := &protocol.BlockRefBuilder{
@@ -134,11 +135,11 @@ func TestMessageFactory(t *testing.T) {
 		}
 		pSenders := []*protocol.SenderSignatureBuilder{
 			{
-				MemberId:  node1KeyManager.MyMemberId(),
+				MemberId:  memberId1,
 				Signature: node1KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
 			},
 			{
-				MemberId:  node2KeyManager.MyMemberId(),
+				MemberId:  memberId2,
 				Signature: node2KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
 			},
 		}
@@ -157,7 +158,7 @@ func TestMessageFactory(t *testing.T) {
 		vcmContentBuilder := &protocol.ViewChangeMessageContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
-				MemberId:  senderKeyManager.MyMemberId(),
+				MemberId:  memberId1,
 				Signature: senderKeyManager.Sign(signedHeader.Build().Raw()),
 			},
 		}
@@ -165,7 +166,7 @@ func TestMessageFactory(t *testing.T) {
 		preparedMessages := &leanhelix.PreparedMessages{
 			PreprepareMessage: leaderFac.CreatePreprepareMessage(blockHeight, view, block, blockHash),
 			PrepareMessages: []*leanhelix.PrepareMessage{
-				node1Fac.CreatePrepareMessage(blockHeight, view, blockHash),
+				node1Factory.CreatePrepareMessage(blockHeight, view, blockHash),
 				node2Fac.CreatePrepareMessage(blockHeight, view, blockHash),
 			},
 		}
@@ -187,7 +188,7 @@ func TestMessageFactory(t *testing.T) {
 			BlockHash:   blockHash,
 		}
 		ppSender := &protocol.SenderSignatureBuilder{
-			MemberId:  keyManager.MyMemberId(),
+			MemberId:  memberId,
 			Signature: keyManager.Sign(ppBlockRefBuilder.Build().Raw()),
 		}
 		pBlockRefBuilder := &protocol.BlockRefBuilder{
@@ -198,11 +199,11 @@ func TestMessageFactory(t *testing.T) {
 		}
 		pSenders := []*protocol.SenderSignatureBuilder{
 			{
-				MemberId:  node1KeyManager.MyMemberId(),
+				MemberId:  memberId1,
 				Signature: node1KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
 			},
 			{
-				MemberId:  node2KeyManager.MyMemberId(),
+				MemberId:  memberId2,
 				Signature: node2KeyManager.Sign(pBlockRefBuilder.Build().Raw()),
 			},
 		}
@@ -222,14 +223,14 @@ func TestMessageFactory(t *testing.T) {
 		node1Confirmation := &protocol.ViewChangeMessageContentBuilder{
 			SignedHeader: nodesVCHeader,
 			Sender: &protocol.SenderSignatureBuilder{
-				MemberId:  node1KeyManager.MyMemberId(),
+				MemberId:  memberId1,
 				Signature: node1KeyManager.Sign(nodesVCHeader.Build().Raw()),
 			},
 		}
 		node2Confirmation := &protocol.ViewChangeMessageContentBuilder{
 			SignedHeader: nodesVCHeader,
 			Sender: &protocol.SenderSignatureBuilder{
-				MemberId:  node2KeyManager.MyMemberId(),
+				MemberId:  memberId2,
 				Signature: node2KeyManager.Sign(nodesVCHeader.Build().Raw()),
 			},
 		}
@@ -242,7 +243,7 @@ func TestMessageFactory(t *testing.T) {
 			},
 		}
 		nvmSender := &protocol.SenderSignatureBuilder{
-			MemberId:  keyManager.MyMemberId(),
+			MemberId:  memberId,
 			Signature: keyManager.Sign(nvmHeader.Build().Raw()),
 		}
 		nvmContentBuilder := &protocol.NewViewMessageContentBuilder{
@@ -259,12 +260,12 @@ func TestMessageFactory(t *testing.T) {
 		preparedMessages := &leanhelix.PreparedMessages{
 			PreprepareMessage: ppm,
 			PrepareMessages: []*leanhelix.PrepareMessage{
-				node1Fac.CreatePrepareMessage(blockHeight, view, blockHash),
+				node1Factory.CreatePrepareMessage(blockHeight, view, blockHash),
 				node2Fac.CreatePrepareMessage(blockHeight, view, blockHash),
 			},
 		}
 		confirmations := []*protocol.ViewChangeMessageContentBuilder{
-			node1Fac.CreateViewChangeMessageContentBuilder(blockHeight, view, preparedMessages),
+			node1Factory.CreateViewChangeMessageContentBuilder(blockHeight, view, preparedMessages),
 			node2Fac.CreateViewChangeMessageContentBuilder(blockHeight, view, preparedMessages),
 		}
 

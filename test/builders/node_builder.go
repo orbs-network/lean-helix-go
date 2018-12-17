@@ -9,6 +9,7 @@ import (
 
 type NodeBuilder struct {
 	gossip        *gossip.Gossip
+	membership    leanhelix.Membership
 	blocksPool    *BlocksPool
 	logsToConsole bool
 	memberId      primitives.MemberId
@@ -18,9 +19,16 @@ func NewNodeBuilder() *NodeBuilder {
 	return &NodeBuilder{}
 }
 
-func (builder *NodeBuilder) ThatIsPartOf(gossip *gossip.Gossip) *NodeBuilder {
+func (builder *NodeBuilder) CommunicatesVia(gossip *gossip.Gossip) *NodeBuilder {
 	if builder.gossip == nil {
 		builder.gossip = gossip
+	}
+	return builder
+}
+
+func (builder *NodeBuilder) ThatIsPartOf(membership leanhelix.Membership) *NodeBuilder {
+	if builder.membership == nil {
+		builder.membership = membership
 	}
 	return builder
 }
@@ -56,5 +64,5 @@ func (builder *NodeBuilder) Build() *Node {
 	if builder.logsToConsole {
 		logger = leanhelix.NewConsoleLogger(memberId.KeyForMap())
 	}
-	return NewNode(memberId, builder.gossip, blockUtils, electionTrigger, logger)
+	return NewNode(builder.membership, builder.gossip, blockUtils, electionTrigger, logger)
 }
