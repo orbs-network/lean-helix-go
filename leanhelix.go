@@ -14,22 +14,11 @@ type LeanHelix struct {
 	logger                  Logger
 	filter                  *ConsensusMessageFilter
 	leanHelixTerm           *LeanHelixTerm
-	commitSubscriptions     []func(block Block)
-}
-
-func (lh *LeanHelix) notifyCommitted(block Block) {
-	lh.logger.Debug("%s LeanHelix.notifyCommitted(), %s", lh.config.Membership.MyMemberId().KeyForMap(), block)
-	for _, subscription := range lh.commitSubscriptions {
-		subscription(block)
-	}
+	onCommitCallback        OnCommitCallback
 }
 
 func (lh *LeanHelix) IsLeader() bool {
 	return lh.leanHelixTerm != nil && lh.leanHelixTerm.IsLeader()
-}
-
-func (lh *LeanHelix) RegisterOnCommitted(cb func(block Block)) {
-	lh.commitSubscriptions = append(lh.commitSubscriptions, cb)
 }
 
 func (lh *LeanHelix) GossipMessageReceived(ctx context.Context, msg ConsensusRawMessage) {
@@ -82,7 +71,7 @@ func (lh *LeanHelix) getElectionChannel() chan func(ctx context.Context) {
 }
 
 func (lh *LeanHelix) onCommit(ctx context.Context, block Block) {
-	lh.notifyCommitted(block)
+	lh.onCommitCallback(block)
 	lh.onNewConsensusRound(ctx, block)
 }
 
@@ -93,7 +82,9 @@ func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, prevBlock Block) {
 	lh.leanHelixTerm.StartTerm(ctx)
 }
 
-func NewLeanHelix(config *Config) *LeanHelix {
+type OnCommitCallback func(block Block)
+
+func NewLeanHelix(config *Config, onCommitCallback OnCommitCallback) *LeanHelix {
 	if config.Logger == nil {
 		config.Logger = NewSilentLogger()
 	}
@@ -105,5 +96,6 @@ func NewLeanHelix(config *Config) *LeanHelix {
 		config:                  config,
 		logger:                  config.Logger,
 		filter:                  filter,
+		onCommitCallback:        onCommitCallback,
 	}
 }

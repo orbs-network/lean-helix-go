@@ -98,8 +98,7 @@ func NewNode(
 		NodeStateChannel: make(chan *NodeState),
 	}
 
-	leanHelix := leanhelix.NewLeanHelix(node.BuildConfig(logger))
-	leanHelix.RegisterOnCommitted(node.onCommittedBlock)
+	leanHelix := leanhelix.NewLeanHelix(node.BuildConfig(logger), node.onCommittedBlock)
 	gossip.RegisterOnMessage(leanHelix.GossipMessageReceived)
 
 	node.leanHelix = leanHelix
