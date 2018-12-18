@@ -3,6 +3,7 @@ package builders
 import (
 	"bytes"
 	"fmt"
+	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
@@ -39,4 +40,16 @@ func (km *MockKeyManager) VerifyConsensusMessage(content []byte, signature primi
 	str := fmt.Sprintf("SIG|%s|%x", memberId.KeyForMap(), content)
 	expected := []byte(str)
 	return bytes.Equal(expected, signature)
+}
+
+func (km *MockKeyManager) SignRandomSeed(content []byte) []byte {
+	return nil
+}
+
+func (km *MockKeyManager) VerifyRandomSeed(content []byte, signature primitives.Signature, memberId primitives.MemberId) bool {
+	return false
+}
+
+func (km *MockKeyManager) AggregateRandomSeed(randomSeedShares []*leanhelix.RandomSeedShare) primitives.Signature {
+	return nil
 }

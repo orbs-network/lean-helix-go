@@ -29,9 +29,17 @@ type Communication interface {
 	SendConsensusMessage(ctx context.Context, targets []primitives.MemberId, message *ConsensusRawMessage)
 }
 
+type RandomSeedShare struct {
+	signature primitives.Signature
+	memberId  primitives.MemberId
+}
+
 type KeyManager interface {
 	SignConsensusMessage(content []byte) []byte
 	VerifyConsensusMessage(content []byte, signature primitives.Signature, memberId primitives.MemberId) bool
+	SignRandomSeed(content []byte) []byte
+	VerifyRandomSeed(content []byte, signature primitives.Signature, memberId primitives.MemberId) bool
+	AggregateRandomSeed(randomSeedShares []*RandomSeedShare) primitives.Signature
 }
 
 type BlockUtils interface {
