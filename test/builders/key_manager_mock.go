@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
-	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
 type MockKeyManager struct {
@@ -26,18 +25,18 @@ func (km *MockKeyManager) SignConsensusMessage(content []byte) []byte {
 	return []byte(str)
 }
 
-func (km *MockKeyManager) VerifyConsensusMessage(content []byte, sender *protocol.SenderSignature) bool {
+func (km *MockKeyManager) VerifyConsensusMessage(content []byte, signature primitives.Signature, memberId primitives.MemberId) bool {
 	if km.FailFutureVerifications {
 		return false
 	}
 
 	for _, rejectedKey := range km.rejectedMemberIds {
-		if rejectedKey.Equal(sender.MemberId()) {
+		if rejectedKey.Equal(memberId) {
 			return false
 		}
 	}
 
-	str := fmt.Sprintf("SIG|%s|%x", sender.MemberId().KeyForMap(), content)
+	str := fmt.Sprintf("SIG|%s|%x", memberId.KeyForMap(), content)
 	expected := []byte(str)
-	return bytes.Equal(expected, sender.Signature())
+	return bytes.Equal(expected, signature)
 }

@@ -2,7 +2,6 @@ package test
 
 import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
-	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -19,12 +18,7 @@ func TestKeyManagerVerify(t *testing.T) {
 
 	signature := signerKeyManager.SignConsensusMessage(content)
 
-	senderSignature := &protocol.SenderSignatureBuilder{
-		MemberId:  signerId,
-		Signature: signature,
-	}
-
-	actual := verifierKeyManager.VerifyConsensusMessage(content, senderSignature.Build())
+	actual := verifierKeyManager.VerifyConsensusMessage(content, signature, signerId)
 	require.True(t, actual)
 
 }

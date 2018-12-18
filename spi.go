@@ -3,7 +3,6 @@ package leanhelix
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
-	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
 // This file contains SPI interfaces
@@ -32,7 +31,7 @@ type Communication interface {
 
 type KeyManager interface {
 	SignConsensusMessage(content []byte) []byte
-	VerifyConsensusMessage(content []byte, sender *protocol.SenderSignature) bool
+	VerifyConsensusMessage(content []byte, signature primitives.Signature, memberId primitives.MemberId) bool
 }
 
 type BlockUtils interface {
