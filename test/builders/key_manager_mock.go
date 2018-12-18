@@ -21,12 +21,12 @@ func NewMockKeyManager(memberId primitives.MemberId, rejectedMemberIds ...primit
 	}
 }
 
-func (km *MockKeyManager) Sign(content []byte) []byte {
+func (km *MockKeyManager) SignConsensusMessage(content []byte) []byte {
 	str := fmt.Sprintf("SIG|%s|%x", km.myMemberId.KeyForMap(), content)
 	return []byte(str)
 }
 
-func (km *MockKeyManager) Verify(content []byte, sender *protocol.SenderSignature) bool {
+func (km *MockKeyManager) VerifyConsensusMessage(content []byte, sender *protocol.SenderSignature) bool {
 	if km.FailFutureVerifications {
 		return false
 	}

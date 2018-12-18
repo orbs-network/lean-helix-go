@@ -17,14 +17,14 @@ func TestKeyManagerVerify(t *testing.T) {
 
 	content := []byte{1, 2, 3}
 
-	signature := signerKeyManager.Sign(content)
+	signature := signerKeyManager.SignConsensusMessage(content)
 
 	senderSignature := &protocol.SenderSignatureBuilder{
 		MemberId:  signerId,
 		Signature: signature,
 	}
 
-	actual := verifierKeyManager.Verify(content, senderSignature.Build())
+	actual := verifierKeyManager.VerifyConsensusMessage(content, senderSignature.Build())
 	require.True(t, actual)
 
 }

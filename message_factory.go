@@ -6,8 +6,8 @@ import (
 )
 
 type MessageFactory struct {
-	KeyManager
-	memberId primitives.MemberId
+	keyManager KeyManager
+	memberId   primitives.MemberId
 }
 
 func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
@@ -26,7 +26,7 @@ func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
 	dataToSign := signedHeader.Build().Raw()
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.KeyManager.Sign(dataToSign)),
+		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(dataToSign)),
 	}
 
 	return &protocol.PreprepareContentBuilder{
@@ -64,7 +64,7 @@ func (f *MessageFactory) CreatePrepareMessage(
 
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
+		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(signedHeader.Build().Raw())),
 	}
 
 	contentBuilder := protocol.PrepareContentBuilder{
@@ -89,7 +89,7 @@ func (f *MessageFactory) CreateCommitMessage(
 
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
+		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(signedHeader.Build().Raw())),
 	}
 
 	contentBuilder := protocol.CommitContentBuilder{
@@ -170,7 +170,7 @@ func (f *MessageFactory) CreateViewChangeMessageContentBuilder(
 
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
+		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(signedHeader.Build().Raw())),
 	}
 
 	return &protocol.ViewChangeMessageContentBuilder{
@@ -209,7 +209,7 @@ func (f *MessageFactory) CreateNewViewMessageContentBuilder(
 
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.KeyManager.Sign(signedHeader.Build().Raw())),
+		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(signedHeader.Build().Raw())),
 	}
 
 	return &protocol.NewViewMessageContentBuilder{
@@ -232,7 +232,7 @@ func (f *MessageFactory) CreateNewViewMessage(
 
 func NewMessageFactory(keyManager KeyManager, memberId primitives.MemberId) *MessageFactory {
 	return &MessageFactory{
-		KeyManager: keyManager,
+		keyManager: keyManager,
 		memberId:   memberId,
 	}
 }

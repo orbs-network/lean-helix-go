@@ -15,7 +15,7 @@ func isInMembers(membersIds []primitives.MemberId, memberId primitives.MemberId)
 }
 
 func verifyBlockRefMessage(blockRef *protocol.BlockRef, sender *protocol.SenderSignature, keyManager KeyManager) bool {
-	return keyManager.Verify(blockRef.Raw(), sender)
+	return keyManager.VerifyConsensusMessage(blockRef.Raw(), sender)
 }
 
 type CalcLeaderId = func(view primitives.View) primitives.MemberId
@@ -89,7 +89,7 @@ func ValidatePreparedProof(
 	set := make(map[MemberIdStr]bool)
 	for _, pSender := range pSenders {
 		pSenderMemberId := pSender.MemberId()
-		if keyManager.Verify(pBlockRef.Raw(), pSender) == false {
+		if keyManager.VerifyConsensusMessage(pBlockRef.Raw(), pSender) == false {
 			return false
 		}
 

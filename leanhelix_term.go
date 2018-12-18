@@ -185,7 +185,7 @@ func (term *LeanHelixTerm) validatePreprepare(ppm *PreprepareMessage) error {
 
 	header := ppm.Content().SignedHeader()
 	sender := ppm.Content().Sender()
-	if !term.keyManager.Verify(header.Raw(), sender) {
+	if !term.keyManager.VerifyConsensusMessage(header.Raw(), sender) {
 		return fmt.Errorf("verification failed for sender %s signature on header", sender.MemberId()[:3])
 	}
 
@@ -220,7 +220,7 @@ func (term *LeanHelixTerm) HandleLeanHelixPrepare(ctx context.Context, pm *Prepa
 	header := pm.content.SignedHeader()
 	sender := pm.content.Sender()
 
-	if !term.keyManager.Verify(header.Raw(), sender) {
+	if !term.keyManager.VerifyConsensusMessage(header.Raw(), sender) {
 		term.logger.Info("verification failed for Prepare blockHeight=%v view=%v blockHash=%v", header.BlockHeight(), header.View(), header.BlockHash())
 		return
 	}
@@ -265,9 +265,9 @@ func (term *LeanHelixTerm) isViewChangeValid(targetLeaderMemberId primitives.Mem
 	newView := header.View()
 	preparedProof := header.PreparedProof()
 
-	if !term.keyManager.Verify(header.Raw(), sender) {
-		term.logger.Debug("isViewChangeValid(): Verify() failed")
-		isVerified := term.keyManager.Verify(header.Raw(), sender)
+	if !term.keyManager.VerifyConsensusMessage(header.Raw(), sender) {
+		term.logger.Debug("isViewChangeValid(): VerifyConsensusMessage() failed")
+		isVerified := term.keyManager.VerifyConsensusMessage(header.Raw(), sender)
 		term.logger.Debug("isViewChangeValid(): isVerified %t", isVerified)
 		return false
 	}
@@ -340,7 +340,7 @@ func (term *LeanHelixTerm) HandleLeanHelixCommit(ctx context.Context, cm *Commit
 	header := cm.content.SignedHeader()
 	sender := cm.content.Sender()
 
-	if !term.keyManager.Verify(header.Raw(), sender) {
+	if !term.keyManager.VerifyConsensusMessage(header.Raw(), sender) {
 		term.logger.Debug("verification failed for Commit blockHeight=%v view=%v blockHash=%v", header.BlockHeight(), header.View(), header.BlockHash())
 		return
 	}
@@ -378,7 +378,7 @@ func (term *LeanHelixTerm) validateViewChangeVotes(targetBlockHeight primitives.
 
 	set := make(map[string]bool)
 
-	// Verify that all _Block heights and views match, and all public keys are unique
+	// VerifyConsensusMessage that all _Block heights and views match, and all public keys are unique
 	for _, confirmation := range confirmations {
 		senderMemberIdStr := string(confirmation.Sender().MemberId())
 		if confirmation.SignedHeader().BlockHeight() != targetBlockHeight {
@@ -430,7 +430,7 @@ func (term *LeanHelixTerm) HandleLeanHelixNewView(ctx context.Context, nvm *NewV
 		viewChangeConfirmations = append(viewChangeConfirmations, viewChangeConfirmationsIter.NextViewChangeConfirmations())
 	}
 
-	if !term.keyManager.Verify(header.Raw(), sender) {
+	if !term.keyManager.VerifyConsensusMessage(header.Raw(), sender) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderId}", ignored because the signature verification failed` });
 		term.logger.Debug("HandleLeanHelixNewView(): verify failed")
 		return

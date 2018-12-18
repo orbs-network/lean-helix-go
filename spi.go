@@ -31,8 +31,8 @@ type Communication interface {
 }
 
 type KeyManager interface {
-	Sign(content []byte) []byte
-	Verify(content []byte, sender *protocol.SenderSignature) bool
+	SignConsensusMessage(content []byte) []byte
+	VerifyConsensusMessage(content []byte, sender *protocol.SenderSignature) bool
 }
 
 type BlockUtils interface {
