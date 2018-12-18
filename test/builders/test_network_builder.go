@@ -8,13 +8,14 @@ import (
 )
 
 type TestNetworkBuilder struct {
-	NodeCount          int
-	logToConsole       bool
-	customNodeBuilders []*NodeBuilder
-	upcomingBlocks     []leanhelix.Block
-	keyManager         leanhelix.KeyManager
-	blockUtils         leanhelix.BlockUtils
-	communication      leanhelix.Communication
+	NodeCount              int
+	logToConsole           bool
+	customNodeBuilders     []*NodeBuilder
+	upcomingBlocks         []leanhelix.Block
+	keyManager             leanhelix.KeyManager
+	blockUtils             leanhelix.BlockUtils
+	communication          leanhelix.Communication
+	orderCommitteeByHeight bool
 }
 
 func (tb *TestNetworkBuilder) WithNodeCount(nodeCount int) *TestNetworkBuilder {
@@ -36,6 +37,11 @@ func (tb *TestNetworkBuilder) WithBlocks(upcomingBlocks []leanhelix.Block) *Test
 
 func (tb *TestNetworkBuilder) LogToConsole() *TestNetworkBuilder {
 	tb.logToConsole = true
+	return tb
+}
+
+func (tb *TestNetworkBuilder) OrderCommitteeByHeight() *TestNetworkBuilder {
+	tb.orderCommitteeByHeight = true
 	return tb
 }
 
@@ -70,7 +76,7 @@ func (tb *TestNetworkBuilder) buildNode(
 
 	gossipInstance := gossip.NewGossip(discovery)
 	discovery.RegisterGossip(memberId, gossipInstance)
-	membership := gossip.NewMockMembership(memberId, discovery)
+	membership := gossip.NewMockMembership(memberId, discovery, tb.orderCommitteeByHeight)
 
 	b := nodeBuilder.
 		CommunicatesVia(gossipInstance).

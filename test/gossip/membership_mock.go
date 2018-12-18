@@ -7,14 +7,16 @@ import (
 )
 
 type MockMembership struct {
-	myMemberId primitives.MemberId
-	discovery  *Discovery
+	myMemberId             primitives.MemberId
+	discovery              *Discovery
+	orderCommitteeByHeight bool
 }
 
-func NewMockMembership(myMemberId primitives.MemberId, discovery *Discovery) *MockMembership {
+func NewMockMembership(myMemberId primitives.MemberId, discovery *Discovery, orderCommitteeByHeight bool) *MockMembership {
 	return &MockMembership{
-		myMemberId: myMemberId,
-		discovery:  discovery,
+		myMemberId:             myMemberId,
+		discovery:              discovery,
+		orderCommitteeByHeight: orderCommitteeByHeight,
 	}
 }
 
@@ -27,5 +29,14 @@ func (m *MockMembership) RequestOrderedCommittee(ctx context.Context, blockHeigh
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].KeyForMap() < result[j].KeyForMap()
 	})
+
+	// we want to replace the leader every height,
+	// we just shift all the ordered nodes according to the given height
+	if m.orderCommitteeByHeight {
+		for i := 0; i < int(blockHeight); i++ {
+			result = append(result[1:], result[0]) // shift left (circular)
+		}
+	}
+
 	return result
 }
