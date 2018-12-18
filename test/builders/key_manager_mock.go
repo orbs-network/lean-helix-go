@@ -42,14 +42,14 @@ func (km *MockKeyManager) VerifyConsensusMessage(content []byte, signature primi
 	return bytes.Equal(expected, signature)
 }
 
-func (km *MockKeyManager) SignRandomSeed(content []byte) []byte {
+func (km *MockKeyManager) SignRandomSeed(blockHeight primitives.BlockHeight, content []byte) []byte {
 	return nil
 }
 
-func (km *MockKeyManager) VerifyRandomSeed(content []byte, signature primitives.Signature, memberId primitives.MemberId) bool {
+func (km *MockKeyManager) VerifyRandomSeed(blockHeight primitives.BlockHeight, content []byte, signature primitives.Signature, memberId primitives.MemberId) bool {
 	return false
 }
 
-func (km *MockKeyManager) AggregateRandomSeed(randomSeedShares []*leanhelix.RandomSeedShare) primitives.Signature {
+func (km *MockKeyManager) AggregateRandomSeed(blockHeight primitives.BlockHeight, randomSeedShares []*leanhelix.RandomSeedShare) primitives.Signature {
 	return nil
 }
