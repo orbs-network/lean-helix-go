@@ -4,8 +4,8 @@ import (
 	"context"
 	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
-	"github.com/orbs-network/orbs-network-go/test"
 	"testing"
 	"time"
 )

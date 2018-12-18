@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
-	"github.com/orbs-network/orbs-network-go/test"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -15,7 +14,7 @@ func TestElectionTriggerMockInitialization(t *testing.T) {
 }
 
 func TestCallingCallback(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
+	WithContext(func(ctx context.Context) {
 		et := builders.NewMockElectionTrigger()
 		var actualView primitives.View = 666
 		var actualHeight primitives.BlockHeight = 666
@@ -37,7 +36,7 @@ func TestCallingCallback(t *testing.T) {
 }
 
 func TestIgnoreEmptyCallback(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
+	WithContext(func(ctx context.Context) {
 		et := builders.NewMockElectionTrigger()
 
 		go et.ManualTrigger()

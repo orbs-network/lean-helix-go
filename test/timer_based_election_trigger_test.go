@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
-	"github.com/orbs-network/orbs-network-go/test"
 	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
@@ -23,7 +22,7 @@ func buildElectionTrigger(ctx context.Context, timeout time.Duration) *leanhelix
 }
 
 func TestCallbackTrigger(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
+	WithContext(func(ctx context.Context) {
 		et := buildElectionTrigger(ctx, 10*time.Millisecond)
 
 		wasCalled := false
@@ -37,7 +36,7 @@ func TestCallbackTrigger(t *testing.T) {
 }
 
 func TestCallbackTriggerOnce(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
+	WithContext(func(ctx context.Context) {
 		et := buildElectionTrigger(ctx, 10*time.Millisecond)
 
 		callCount := 0
@@ -51,7 +50,7 @@ func TestCallbackTriggerOnce(t *testing.T) {
 }
 
 func TestIgnoreSameViewOrHeight(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
+	WithContext(func(ctx context.Context) {
 		et := buildElectionTrigger(ctx, 30*time.Millisecond)
 
 		callCount := 0
@@ -70,7 +69,7 @@ func TestIgnoreSameViewOrHeight(t *testing.T) {
 }
 
 func TestNotTriggerIfSameViewButDifferentHeight(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
+	WithContext(func(ctx context.Context) {
 		et := buildElectionTrigger(ctx, 30*time.Millisecond)
 
 		callCount := 0
@@ -93,7 +92,7 @@ func TestNotTriggerIfSameViewButDifferentHeight(t *testing.T) {
 }
 
 func TestNotTriggerIfSameHeightButDifferentView(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
+	WithContext(func(ctx context.Context) {
 		et := buildElectionTrigger(ctx, 30*time.Millisecond)
 
 		callCount := 0
@@ -116,7 +115,7 @@ func TestNotTriggerIfSameHeightButDifferentView(t *testing.T) {
 }
 
 func TestViewChanges(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
+	WithContext(func(ctx context.Context) {
 		et := buildElectionTrigger(ctx, 20*time.Millisecond)
 
 		wasCalled := false
@@ -138,7 +137,7 @@ func TestViewChanges(t *testing.T) {
 }
 
 func TestViewPowTimeout(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
+	WithContext(func(ctx context.Context) {
 		et := buildElectionTrigger(ctx, 10*time.Millisecond)
 
 		wasCalled := false
