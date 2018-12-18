@@ -37,7 +37,7 @@ func CreatePreparedProof(
 		for i, mgr := range pSigners {
 			pSenders[i] = &protocol.SenderSignatureBuilder{
 				MemberId:  mgr.MemberId,
-				Signature: mgr.KeyManager.SignConsensusMessage(pBlockRef.Build().Raw()),
+				Signature: mgr.KeyManager.SignConsensusMessage(pBlockRef.BlockHeight, pBlockRef.Build().Raw()),
 			}
 		}
 	}
@@ -53,7 +53,7 @@ func CreatePreparedProof(
 		}
 		ppSender = &protocol.SenderSignatureBuilder{
 			MemberId:  ppSigner.MemberId,
-			Signature: ppSigner.KeyManager.SignConsensusMessage(ppBlockRef.Build().Raw()),
+			Signature: ppSigner.KeyManager.SignConsensusMessage(ppBlockRef.BlockHeight, ppBlockRef.Build().Raw()),
 		}
 	}
 	preparedProof := &protocol.PreparedProofBuilder{

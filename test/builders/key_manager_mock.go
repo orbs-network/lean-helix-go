@@ -21,12 +21,12 @@ func NewMockKeyManager(memberId primitives.MemberId, rejectedMemberIds ...primit
 	}
 }
 
-func (km *MockKeyManager) SignConsensusMessage(content []byte) []byte {
-	str := fmt.Sprintf("SIG|%s|%x", km.myMemberId.KeyForMap(), content)
+func (km *MockKeyManager) SignConsensusMessage(blockHeight primitives.BlockHeight, content []byte) []byte {
+	str := fmt.Sprintf("SIG|%s|%s|%x", blockHeight, km.myMemberId.KeyForMap(), content)
 	return []byte(str)
 }
 
-func (km *MockKeyManager) VerifyConsensusMessage(content []byte, signature primitives.Signature, memberId primitives.MemberId) bool {
+func (km *MockKeyManager) VerifyConsensusMessage(blockHeight primitives.BlockHeight, content []byte, signature primitives.Signature, memberId primitives.MemberId) bool {
 	if km.FailFutureVerifications {
 		return false
 	}
@@ -37,7 +37,7 @@ func (km *MockKeyManager) VerifyConsensusMessage(content []byte, signature primi
 		}
 	}
 
-	str := fmt.Sprintf("SIG|%s|%x", memberId.KeyForMap(), content)
+	str := fmt.Sprintf("SIG|%s|%s|%x", blockHeight, memberId.KeyForMap(), content)
 	expected := []byte(str)
 	return bytes.Equal(expected, signature)
 }

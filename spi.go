@@ -35,8 +35,8 @@ type RandomSeedShare struct {
 }
 
 type KeyManager interface {
-	SignConsensusMessage(content []byte) []byte
-	VerifyConsensusMessage(content []byte, signature primitives.Signature, memberId primitives.MemberId) bool
+	SignConsensusMessage(blockHeight primitives.BlockHeight, content []byte) []byte
+	VerifyConsensusMessage(blockHeight primitives.BlockHeight, content []byte, signature primitives.Signature, memberId primitives.MemberId) bool
 	SignRandomSeed(blockHeight primitives.BlockHeight, content []byte) []byte
 	VerifyRandomSeed(blockHeight primitives.BlockHeight, content []byte, signature primitives.Signature, memberId primitives.MemberId) bool
 	AggregateRandomSeed(blockHeight primitives.BlockHeight, randomSeedShares []*RandomSeedShare) primitives.Signature

@@ -26,7 +26,7 @@ func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
 	dataToSign := signedHeader.Build().Raw()
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(dataToSign)),
+		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(blockHeight, dataToSign)),
 	}
 
 	return &protocol.PreprepareContentBuilder{
@@ -64,7 +64,7 @@ func (f *MessageFactory) CreatePrepareMessage(
 
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(signedHeader.Build().Raw())),
+		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw())),
 	}
 
 	contentBuilder := protocol.PrepareContentBuilder{
@@ -89,7 +89,7 @@ func (f *MessageFactory) CreateCommitMessage(
 
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(signedHeader.Build().Raw())),
+		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw())),
 	}
 
 	contentBuilder := protocol.CommitContentBuilder{
@@ -170,7 +170,7 @@ func (f *MessageFactory) CreateViewChangeMessageContentBuilder(
 
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(signedHeader.Build().Raw())),
+		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw())),
 	}
 
 	return &protocol.ViewChangeMessageContentBuilder{
@@ -209,7 +209,7 @@ func (f *MessageFactory) CreateNewViewMessageContentBuilder(
 
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(signedHeader.Build().Raw())),
+		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw())),
 	}
 
 	return &protocol.NewViewMessageContentBuilder{

@@ -16,9 +16,9 @@ func TestKeyManagerVerify(t *testing.T) {
 
 	content := []byte{1, 2, 3}
 
-	signature := signerKeyManager.SignConsensusMessage(content)
+	signature := signerKeyManager.SignConsensusMessage(1, content)
 
-	actual := verifierKeyManager.VerifyConsensusMessage(content, signature, signerId)
+	actual := verifierKeyManager.VerifyConsensusMessage(1, content, signature, signerId)
 	require.True(t, actual)
 
 }
