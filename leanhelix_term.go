@@ -184,7 +184,7 @@ func (term *LeanHelixTerm) validatePreprepare(ctx context.Context, ppm *Preprepa
 
 	header := ppm.Content().SignedHeader()
 	sender := ppm.Content().Sender()
-	if !term.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender.Signature(), sender.MemberId()) {
+	if !term.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender) {
 		return fmt.Errorf("verification failed for sender %s signature on header", sender.MemberId()[:3])
 	}
 
@@ -214,7 +214,7 @@ func (term *LeanHelixTerm) HandleLeanHelixPrepare(ctx context.Context, pm *Prepa
 	header := pm.content.SignedHeader()
 	sender := pm.content.Sender()
 
-	if !term.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender.Signature(), sender.MemberId()) {
+	if !term.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender) {
 		term.logger.Info("verification failed for Prepare blockHeight=%v view=%v blockHash=%v", header.BlockHeight(), header.View(), header.BlockHash())
 		return
 	}
@@ -241,7 +241,7 @@ func (term *LeanHelixTerm) HandleLeanHelixViewChange(ctx context.Context, vcm *V
 
 	header := vcm.content.SignedHeader()
 	if vcm.block != nil && header.PreparedProof() != nil {
-		isValidDigest := term.blockUtils.ValidateBlockHash(vcm.BlockHeight(), vcm.block, header.PreparedProof().PreprepareBlockRef().BlockHash())
+		isValidDigest := term.blockUtils.ValidateBlockCommitment(vcm.BlockHeight(), vcm.block, header.PreparedProof().PreprepareBlockRef().BlockHash())
 		if !isValidDigest {
 			term.logger.Info("different block hashes for block provided with message, and the block provided by the PPM in the PreparedProof of the message")
 			return
@@ -258,9 +258,9 @@ func (term *LeanHelixTerm) isViewChangeValid(targetLeaderMemberId primitives.Mem
 	newView := header.View()
 	preparedProof := header.PreparedProof()
 
-	if !term.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender.Signature(), sender.MemberId()) {
+	if !term.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender) {
 		term.logger.Debug("isViewChangeValid(): VerifyConsensusMessage() failed")
-		isVerified := term.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender.Signature(), sender.MemberId())
+		isVerified := term.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender)
 		term.logger.Debug("isViewChangeValid(): isVerified %t", isVerified)
 		return false
 	}
@@ -334,7 +334,7 @@ func (term *LeanHelixTerm) HandleLeanHelixCommit(ctx context.Context, cm *Commit
 	header := cm.content.SignedHeader()
 	sender := cm.content.Sender()
 
-	if !term.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender.Signature(), sender.MemberId()) {
+	if !term.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender) {
 		term.logger.Debug("verification failed for Commit blockHeight=%v view=%v blockHash=%v", header.BlockHeight(), header.View(), header.BlockHash())
 		return
 	}
@@ -424,7 +424,7 @@ func (term *LeanHelixTerm) HandleLeanHelixNewView(ctx context.Context, nvm *NewV
 		viewChangeConfirmations = append(viewChangeConfirmations, viewChangeConfirmationsIter.NextViewChangeConfirmations())
 	}
 
-	if !term.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender.Signature(), sender.MemberId()) {
+	if !term.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderId}", ignored because the signature verification failed` });
 		term.logger.Debug("HandleLeanHelixNewView(): verify failed")
 		return
@@ -473,7 +473,7 @@ func (term *LeanHelixTerm) HandleLeanHelixNewView(ctx context.Context, nvm *NewV
 		// rewrite this mess
 		latestVoteBlockHash := latestVote.SignedHeader().PreparedProof().PreprepareBlockRef().BlockHash()
 		if latestVoteBlockHash != nil {
-			isValidDigest := term.blockUtils.ValidateBlockHash(header.BlockHeight(), nvm.Block(), latestVoteBlockHash)
+			isValidDigest := term.blockUtils.ValidateBlockCommitment(header.BlockHeight(), nvm.Block(), latestVoteBlockHash)
 			if !isValidDigest {
 				//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderId}", the given _Block (PP._Block) doesn't match the best _Block from the VCProof` });
 				term.logger.Debug("HandleLeanHelixNewView(): NewView.ViewChangeConfirmation (with latest view) is invalid")

@@ -55,7 +55,7 @@ func (b *MockBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeigh
 	return block, blockHash
 }
 
-func (b *MockBlockUtils) ValidateBlockHash(blockHeight primitives.BlockHeight, block leanhelix.Block, blockHash primitives.BlockHash) bool {
+func (b *MockBlockUtils) ValidateBlockCommitment(blockHeight primitives.BlockHeight, block leanhelix.Block, blockHash primitives.BlockHash) bool {
 	return CalculateBlockHash(block).Equal(blockHash)
 }
 
