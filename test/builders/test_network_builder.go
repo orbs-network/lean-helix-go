@@ -138,18 +138,3 @@ func ABasicTestNetwork() *TestNetwork {
 func ATestNetwork(countOfNodes int, blocksPool ...leanhelix.Block) *TestNetwork {
 	return NewTestNetworkBuilder().WithNodeCount(countOfNodes).WithBlocks(blocksPool).Build()
 }
-
-func CreateTestNetworkForConsumerTests(
-	countOfNodes int,
-	spi *leanhelix.LeanHelixSPI,
-	blocks []leanhelix.Block,
-) *TestNetwork {
-	testNetwork := NewTestNetworkBuilder()
-	return testNetwork.
-		WithNodeCount(countOfNodes).
-		WithBlocks(blocks).
-		WithCommunication(spi.Comm).
-		WithKeyManager(spi.Mgr).
-		WithBlockUtils(spi.Utils).
-		Build()
-}
