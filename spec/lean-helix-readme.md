@@ -32,32 +32,59 @@ Initiates lean-helix library infinite listening loop.
 * `UpdateState(block, blockProof)`
   Called upon node sync.  Assumes the matching pair _(block,blockProof)_ are validated!\
   Conditional update: If given block->height is at least as on-going round, terminate participation in an on-going round and initiate participation in the subsequent consensus round.
-* `ValidateBlockConsensus(block, blockProof, prevBlockProof): is_valid`
+* `ValidateBlockConsensus(block, blockProof, prevBlockProof): isValid`
   Validates given block against its BlockProof and its parent BlockProof _(prevBlockProof)_. Called as part of the **block sync** flow upon receiving a new block.
 * `HandleConsensusMessage(message)` - called upon reception of a consensus message.
 
+#### Config
+The `Config` struct hold all the SPIs that LeanHelix requires to operate. In order to initialize LeanHelix you must provide an instance of the struct with all the SPIs implemented. 
+
 ### LeanHelix SPI
-> The interfaces used by the Lean Helix library are provided in a `Configuration interface` on creation and provides the necessary functionalities to operate.\
-> Described below in a suggested separated modules. 
+The interfaces used by the Lean Helix library are provided in a `Configuration interface` on creation and provides the necessary functionalities to operate. Described below in a suggested separated modules. 
 
 #### BlockUtils
 > Provide block funcionalities including its creation, validation and hashing scheme. 
-* `RequestNewBlockProposal(ctx, blockHeight, prevBlock) : block, block_hash` - Returns a block interface with a block proposal along with its digest commitment. The block _(block_hash)_ will then go through consensus. 
-* `ValidateBlockProposal(ctx, blockHeight, block, block_hash, prevBlock) : is_valid` - Validate block proposal against prevBlock and digest commitment - full validation - content and structure _(Note: this includes validating against previous block _(e.g. pointer _(prevBlockHash)_ and timestamp - whithin acceptable range of local clock)_.)_
-* `ValidateBlockCommitment(blockHeight, block, block_hash) : is_valid` - Validate block proposal against digest commitment (shallow structure validation for composite commitment). 
+* `RequestNewBlockProposal(ctx, blockHeight, prevBlock) : block, blockHash`
+    - **Description:** Returns a block interface with a block proposal along with its digest commitment. The block _(blockHash)_ will then go through consensus.
+    - **Parameters:**
+        - `ctx` [context.Context](https://golang.org/pkg/context/) - The Go context, canceling this context will halt the current round, and will (Eventually) go to the next round.
+        - `blockHeight` uint64 -  
+        - `prevBlock` Block -
+    - **Return Values:**
+        - `block` Block - 
+        - `blockHash` []byte -  
+        
+* `ValidateBlockProposal(ctx, blockHeight, block, blockHash, prevBlock) : isValid`
+    - **Description** Validate block proposal against prevBlock and digest commitment - full validation - content and structure _(Note: this includes validating against previous block _(e.g. pointer _(prevBlockHash)_ and timestamp - whithin acceptable range of local clock)_.)_
+    - **Parameters:**
+        - `ctx` [context.Context](https://golang.org/pkg/context/)
+        - `blockHeight` uint64 -  
+        - `block` Block -
+        - `blockHash` []byte -  
+        - `prevBlock` Block -
+    - **Return Values:**
+        - `isValid` bool - 
+    
+* `ValidateBlockCommitment(blockHeight, block, blockHash) : isValid` 
+    - **Description** Validate block proposal against digest commitment (shallow structure validation for composite commitment). 
+    - **Parameters:**
+        - `blockHeight` uint64 -  
+        - `block` Block -
+    - **Return Values:**
+        - `isValid` bool - 
 
 #### Membership
 > Hold information about federation members at a given height (this could include their reputation).
 * `MyMemberId() : memberID` - obtain unique identifier for the node, used in consensus process.
-* `RequestOrderedCommittee(ctx, blockHeight, randomSeed, committeeSize) : memberID_list` -  called at the setup stage of each consensus round (random_seed for round r is determined from the random_seed at round r-1). Assumes membership holds the federation members of the given height.
+* `RequestOrderedCommittee(ctx, blockHeight, randomSeed, committeeSize) : memberIList` -  called at the setup stage of each consensus round (randomSeed for round r is determined from the randomSeed at round r-1). Assumes membership holds the federation members of the given height.
 
 #### KeyManager
 > Provide signature schemes consumed by LeanHelix. \
 > Hold a mapping of height, memberID to publicKey (for consensusMessages and RandomSeed)
 * `KeyManager.SignConsensusMessage(blockHeight, content) : signature` - sign consensus statements using the node's private key. 
-* `KeyManager.VerifyConsensusMessage(blockHeight, content, signature, memberId) : is_valid` - verify the validity of a signature.
+* `KeyManager.VerifyConsensusMessage(blockHeight, content, signature, memberId) : isValid` - verify the validity of a signature.
 * `KeyManager.SignRandomSeed(blockHeight, content) : signature` - sign RandomSeed using the node's private key (note: the randomseed and consesnsus keys are independent). 
-* `KeyManager.VerifyRandomSeed(blockHeight, content, signature, memberId) : is_valid` - verify the validity of a signature _(also group aggregated against MasterPublicKey)_.
+* `KeyManager.VerifyRandomSeed(blockHeight, content, signature, memberId) : isValid` - verify the validity of a signature _(also group aggregated against MasterPublicKey)_.
 * `KeyManager.AggregateRandomSeed(blockHeight, randomSeedShares) : signature` - aggregate the RandomSeed signatures.
 
 #### Communication
