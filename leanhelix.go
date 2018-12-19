@@ -22,17 +22,21 @@ func (lh *LeanHelix) IsLeader() bool {
 }
 
 func (lh *LeanHelix) GossipMessageReceived(ctx context.Context, msg *ConsensusRawMessage) {
+	lh.logger.Debug("GossipMessageReceived()")
 	lh.messagesChannel <- msg
 }
 
 func (lh *LeanHelix) ValidateBlockConsensus(block Block, blockProof *protocol.BlockProof, prevBlockProof *protocol.BlockProof) bool {
+	lh.logger.Debug("ValidateBlockConsensus()")
 	// TODO: implement after 16-DEC-2018 - spec on lh-outline is incomplete!
 	return true
 }
 
 func (lh *LeanHelix) Run(ctx context.Context) {
+	lh.logger.Info("Run() starting infinite loop")
 	for {
 		if !lh.Tick(ctx) {
+			lh.logger.Info("Run() stopped infinite loop")
 			return
 		}
 	}
@@ -60,6 +64,7 @@ func (lh *LeanHelix) Tick(ctx context.Context) bool {
 }
 
 func (lh *LeanHelix) UpdateConsensusRound(prevBlock Block) {
+	lh.logger.Debug("UpdateConsensusRound()")
 	lh.acknowledgeBlockChannel <- prevBlock
 }
 
@@ -70,8 +75,9 @@ func (lh *LeanHelix) getElectionChannel() chan func(ctx context.Context) {
 	return lh.leanHelixTerm.electionTrigger.ElectionChannel()
 }
 
-func (lh *LeanHelix) onCommit(ctx context.Context, block Block) {
-	lh.onCommitCallback(block)
+func (lh *LeanHelix) onCommit(ctx context.Context, block Block, blockProof []byte) {
+	lh.logger.Debug("onCommit()")
+	lh.onCommitCallback(ctx, block, nil)
 	lh.onNewConsensusRound(ctx, block)
 }
 
@@ -82,12 +88,13 @@ func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, prevBlock Block) {
 	lh.leanHelixTerm.StartTerm(ctx)
 }
 
-type OnCommitCallback func(block Block)
+type OnCommitCallback func(ctx context.Context, block Block, blockProof []byte)
 
 func NewLeanHelix(config *Config, onCommitCallback OnCommitCallback) *LeanHelix {
 	if config.Logger == nil {
 		config.Logger = NewSilentLogger()
 	}
+	config.Logger.Debug("NewLeanHelix()")
 	filter := NewConsensusMessageFilter(config.Membership.MyMemberId(), config.Logger)
 	return &LeanHelix{
 		messagesChannel:         make(chan *ConsensusRawMessage),
