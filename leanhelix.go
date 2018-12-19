@@ -70,8 +70,8 @@ func (lh *LeanHelix) getElectionChannel() chan func(ctx context.Context) {
 	return lh.leanHelixTerm.electionTrigger.ElectionChannel()
 }
 
-func (lh *LeanHelix) onCommit(ctx context.Context, block Block) {
-	lh.onCommitCallback(block)
+func (lh *LeanHelix) onCommit(ctx context.Context, block Block, blockProof []byte) {
+	lh.onCommitCallback(ctx, block, nil)
 	lh.onNewConsensusRound(ctx, block)
 }
 
@@ -82,7 +82,7 @@ func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, prevBlock Block) {
 	lh.leanHelixTerm.StartTerm(ctx)
 }
 
-type OnCommitCallback func(block Block)
+type OnCommitCallback func(ctx context.Context, block Block, blockProof []byte)
 
 func NewLeanHelix(config *Config, onCommitCallback OnCommitCallback) *LeanHelix {
 	if config.Logger == nil {

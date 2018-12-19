@@ -15,7 +15,7 @@ type LeanHelixTerm struct {
 	storage                        Storage
 	electionTrigger                ElectionTrigger
 	blockUtils                     BlockUtils
-	onCommit                       func(ctx context.Context, block Block)
+	onCommit                       OnCommitCallback
 	messageFactory                 *MessageFactory
 	myMemberId                     primitives.MemberId
 	committeeMembersMemberIds      []primitives.MemberId
@@ -30,7 +30,7 @@ type LeanHelixTerm struct {
 	prevBlock                      Block
 }
 
-func NewLeanHelixTerm(ctx context.Context, config *Config, onCommit func(ctx context.Context, block Block), prevBlock Block) *LeanHelixTerm {
+func NewLeanHelixTerm(ctx context.Context, config *Config, onCommit OnCommitCallback, prevBlock Block) *LeanHelixTerm {
 	keyManager := config.KeyManager
 	blockUtils := config.BlockUtils
 	membership := config.Membership
@@ -368,7 +368,7 @@ func (term *LeanHelixTerm) checkCommitted(ctx context.Context, blockHeight primi
 	}
 	term.logger.Info("H=%s V=%s %s checkCommitted() COMMITTED H=%s V=%s BlockHash %s ", term.height, term.view, term.myMemberId.KeyForMap(), blockHeight, view, blockHash)
 	term.committedBlock = ppm.block
-	term.onCommit(ctx, ppm.block)
+	term.onCommit(ctx, ppm.block, nil)
 }
 
 func (term *LeanHelixTerm) validateViewChangeVotes(targetBlockHeight primitives.BlockHeight, targetView primitives.View, confirmations []*protocol.ViewChangeMessageContent) bool {
