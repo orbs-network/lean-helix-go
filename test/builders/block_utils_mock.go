@@ -45,22 +45,25 @@ func NewMockBlockUtils(blocksPool *BlocksPool) *MockBlockUtils {
 	}
 }
 
-func (b *MockBlockUtils) CalculateBlockHash(block leanhelix.Block) primitives.BlockHash {
-	return CalculateBlockHash(block)
-}
-
-func (b *MockBlockUtils) RequestNewBlock(ctx context.Context, prevBlock leanhelix.Block) leanhelix.Block {
+func (b *MockBlockUtils) RequestNewBlockProposal(ctx context.Context, prevBlock leanhelix.Block) (leanhelix.Block, primitives.BlockHash) {
 	if b.PauseOnRequestNewBlock {
 		b.RequestNewBlockSns.SignalAndStop()
 	}
-	return b.blocksPool.PopBlock()
+
+	block := b.blocksPool.PopBlock()
+	blockHash := CalculateBlockHash(block)
+	return block, blockHash
+}
+
+func (b *MockBlockUtils) ValidateBlockHash(blockHeight primitives.BlockHeight, block leanhelix.Block, blockHash primitives.BlockHash) bool {
+	return CalculateBlockHash(block).Equal(blockHash)
 }
 
 func (b *MockBlockUtils) CounterOfValidation() int {
 	return b.validationCounter
 }
 
-func (b *MockBlockUtils) ValidateBlock(block leanhelix.Block) bool {
+func (b *MockBlockUtils) ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, block leanhelix.Block, blockHash primitives.BlockHash, prevBlock leanhelix.Block) bool {
 	b.validationCounter++
 	if b.PauseOnValidation {
 		b.ValidationSns.SignalAndStop()

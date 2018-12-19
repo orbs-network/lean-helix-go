@@ -43,7 +43,7 @@ type KeyManager interface {
 }
 
 type BlockUtils interface {
-	CalculateBlockHash(block Block) primitives.BlockHash
-	RequestNewBlock(ctx context.Context, prevBlock Block) Block
-	ValidateBlock(block Block) bool
+	RequestNewBlockProposal(ctx context.Context, prevBlock Block) (Block, primitives.BlockHash)
+	ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, block Block, blockHash primitives.BlockHash, prevBlock Block) bool
+	ValidateBlockHash(blockHeight primitives.BlockHeight, block Block, blockHash primitives.BlockHash) bool
 }

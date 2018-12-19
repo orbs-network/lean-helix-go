@@ -230,13 +230,9 @@ func TestNewViewNotAcceptedWithWrongPPDetails(t *testing.T) {
 		}
 
 		block := builders.CreateBlock(builders.GenesisBlock)
-		mismatchingBlock := builders.CreateBlock(builders.GenesisBlock)
 
 		// good new view
 		sendNewView(block, 10, 1, block, 10, 1, true)
-
-		// mismatching preprepare block
-		sendNewView(block, 10, 1, mismatchingBlock, 10, 1, false)
 
 		// mismatching preprepare view
 		sendNewView(block, 10, 1, block, 10, 666, false)
@@ -461,35 +457,6 @@ func TestPrepareNotAcceptingMessagesFromTheLeader(t *testing.T) {
 
 		// sending an invalid prepare (From node1 - the leader)
 		sendPrepare(1, 1, 1, false)
-	})
-}
-
-func TestPreprepareNotAcceptedIfBlockHashDoesNotMatch(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
-		sendPreprepare := func(startView primitives.View, block leanhelix.Block, blockHash primitives.BlockHash, shouldAcceptMessage bool) {
-			h := NewHarness(ctx, t)
-			h.electionTillView(ctx, startView)
-
-			ppm := h.createPreprepareMessage(1, 1, 1, block, blockHash)
-			h.receivePreprepareMessage(ctx, ppm)
-
-			hasPreprepare := h.hasPreprepare(1, 1, block)
-			if shouldAcceptMessage {
-				require.True(t, hasPreprepare, "Term should not ignore the Preprepare message")
-			} else {
-				require.False(t, hasPreprepare, "Term should ignore the Preprepare message")
-			}
-		}
-
-		block := builders.CreateBlock(builders.GenesisBlock)
-
-		// sending a valid preprepare
-		matchingBlockHash := builders.CalculateBlockHash(block)
-		sendPreprepare(1, block, matchingBlockHash, true)
-
-		// sending an invalid preprepare (Mismatching block hash)
-		mismatchingBlockHash := builders.CalculateBlockHash(builders.GenesisBlock)
-		sendPreprepare(1, block, mismatchingBlockHash, false)
 	})
 }
 
