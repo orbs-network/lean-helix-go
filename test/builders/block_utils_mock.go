@@ -45,7 +45,7 @@ func NewMockBlockUtils(blocksPool *BlocksPool) *MockBlockUtils {
 	}
 }
 
-func (b *MockBlockUtils) RequestNewBlockProposal(ctx context.Context, prevBlock leanhelix.Block) (leanhelix.Block, primitives.BlockHash) {
+func (b *MockBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock leanhelix.Block) (leanhelix.Block, primitives.BlockHash) {
 	if b.PauseOnRequestNewBlock {
 		b.RequestNewBlockSns.SignalAndStop()
 	}

@@ -95,7 +95,7 @@ func panicOnLessThanMinimumCommitteeMembers(minimum int, committeeMembers []prim
 
 func (term *LeanHelixTerm) StartTerm(ctx context.Context) {
 	if term.IsLeader() {
-		block, blockHash := term.blockUtils.RequestNewBlockProposal(ctx, term.prevBlock)
+		block, blockHash := term.blockUtils.RequestNewBlockProposal(ctx, term.height, term.prevBlock)
 		ppm := term.messageFactory.CreatePreprepareMessage(term.height, term.view, block, blockHash)
 
 		term.storage.StorePreprepare(ppm)
@@ -300,7 +300,7 @@ func (term *LeanHelixTerm) onElected(ctx context.Context, view primitives.View, 
 	block := GetLatestBlockFromViewChangeMessages(viewChangeMessages)
 	var blockHash primitives.BlockHash
 	if block == nil {
-		block, blockHash = term.blockUtils.RequestNewBlockProposal(ctx, term.prevBlock)
+		block, blockHash = term.blockUtils.RequestNewBlockProposal(ctx, term.height, term.prevBlock)
 	}
 	ppmContentBuilder := term.messageFactory.CreatePreprepareMessageContentBuilder(term.height, view, block, blockHash)
 	ppm := term.messageFactory.CreatePreprepareMessageFromContentBuilder(ppmContentBuilder, block)
