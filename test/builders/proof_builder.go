@@ -1,13 +1,13 @@
 package builders
 
 import (
-	. "github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
 type MessageSigner struct {
-	KeyManager KeyManager
+	KeyManager leanhelix.KeyManager
 	MemberId   primitives.MemberId
 }
 
@@ -66,11 +66,11 @@ func CreatePreparedProof(
 	return preparedProof.Build()
 }
 
-func APreparedProofByMessages(PPMessage *PreprepareMessage, PMessages []*PrepareMessage) *protocol.PreparedProof {
-	preparedMessages := &PreparedMessages{
+func APreparedProofByMessages(PPMessage *leanhelix.PreprepareMessage, PMessages []*leanhelix.PrepareMessage) *protocol.PreparedProof {
+	preparedMessages := &leanhelix.PreparedMessages{
 		PreprepareMessage: PPMessage,
 		PrepareMessages:   PMessages,
 	}
 
-	return CreatePreparedProofBuilderFromPreparedMessages(preparedMessages).Build()
+	return leanhelix.CreatePreparedProofBuilderFromPreparedMessages(preparedMessages).Build()
 }

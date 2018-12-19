@@ -14,8 +14,8 @@ import (
 func TestMessageBuilderAndReader(t *testing.T) {
 	height := primitives.BlockHeight(math.Floor(rand.Float64() * 1000000000))
 	view := primitives.View(math.Floor(rand.Float64() * 1000000000))
-	block := builders.CreateBlock(builders.GenesisBlock)
-	b1 := builders.CreateBlock(builders.GenesisBlock)
+	block := builders.CreateBlock(leanhelix.GenesisBlock)
+	b1 := builders.CreateBlock(leanhelix.GenesisBlock)
 	memberId := primitives.MemberId("Member Id")
 	mockKeyManager := builders.NewMockKeyManager(memberId, nil)
 	mf := leanhelix.NewMessageFactory(mockKeyManager, memberId)

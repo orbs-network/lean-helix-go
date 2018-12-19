@@ -12,7 +12,7 @@ import (
 
 func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block := builders.CreateBlock(builders.GenesisBlock)
+		block := builders.CreateBlock(leanhelix.GenesisBlock)
 		net := builders.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
@@ -29,7 +29,7 @@ func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
 
 func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block := builders.CreateBlock(builders.GenesisBlock)
+		block := builders.CreateBlock(leanhelix.GenesisBlock)
 		net := builders.
 			NewTestNetworkBuilder().
 			WithNodeCount(7).
@@ -47,7 +47,7 @@ func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 
 func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := builders.CreateBlock(builders.GenesisBlock)
+		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
 		net := builders.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
@@ -73,8 +73,8 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 
 func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		goodBlock := builders.CreateBlock(builders.GenesisBlock)
-		fakeBlock := builders.CreateBlock(builders.GenesisBlock)
+		goodBlock := builders.CreateBlock(leanhelix.GenesisBlock)
+		fakeBlock := builders.CreateBlock(leanhelix.GenesisBlock)
 		net := builders.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
@@ -105,8 +105,8 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 
 func TestThatAByzantineLeaderCanNotCauseAFork(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := builders.CreateBlock(builders.GenesisBlock)
-		block2 := builders.CreateBlock(builders.GenesisBlock)
+		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
+		block2 := builders.CreateBlock(leanhelix.GenesisBlock)
 
 		net := builders.
 			NewTestNetworkBuilder().

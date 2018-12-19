@@ -27,7 +27,7 @@ func TestNewViewNotAcceptedIfDidNotPassValidation(t *testing.T) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, startView)
 
-			block := builders.CreateBlock(builders.GenesisBlock)
+			block := builders.CreateBlock(leanhelix.GenesisBlock)
 
 			h.checkView(startView)
 			if failValidations {
@@ -55,7 +55,7 @@ func TestNewViewNotAcceptViewsFromThePast(t *testing.T) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, startView)
 
-			block := builders.CreateBlock(builders.GenesisBlock)
+			block := builders.CreateBlock(leanhelix.GenesisBlock)
 
 			h.receiveNewView(ctx, 2, 1, view, block)
 
@@ -78,7 +78,7 @@ func TestNewViewIsSentWithTheHighestBlockFromTheViewChangeProofs(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
 
-		blockOnView3 := builders.CreateBlock(builders.GenesisBlock)
+		blockOnView3 := builders.CreateBlock(leanhelix.GenesisBlock)
 		preparedMessagesOnView3 := builders.CreatePreparedMessages(
 			h.net.Nodes[3],
 			[]*builders.Node{h.net.Nodes[0], h.net.Nodes[1], h.net.Nodes[2]},
@@ -86,7 +86,7 @@ func TestNewViewIsSentWithTheHighestBlockFromTheViewChangeProofs(t *testing.T) {
 			3,
 			blockOnView3)
 
-		blockOnView4 := builders.CreateBlock(builders.GenesisBlock)
+		blockOnView4 := builders.CreateBlock(leanhelix.GenesisBlock)
 		preparedMessagesOnView4 := builders.CreatePreparedMessages(
 			h.net.Nodes[0],
 			[]*builders.Node{h.net.Nodes[1], h.net.Nodes[2], h.net.Nodes[3]},
@@ -123,7 +123,7 @@ func TestNewViewWithOlderBlockIsRejected(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
 
-		blockOnView3 := builders.CreateBlock(builders.GenesisBlock)
+		blockOnView3 := builders.CreateBlock(leanhelix.GenesisBlock)
 		preparedMessagesOnView3 := builders.CreatePreparedMessages(
 			h.net.Nodes[3],
 			[]*builders.Node{h.net.Nodes[0], h.net.Nodes[1], h.net.Nodes[2]},
@@ -131,7 +131,7 @@ func TestNewViewWithOlderBlockIsRejected(t *testing.T) {
 			3,
 			blockOnView3)
 
-		blockOnView4 := builders.CreateBlock(builders.GenesisBlock)
+		blockOnView4 := builders.CreateBlock(leanhelix.GenesisBlock)
 		preparedMessagesOnView4 := builders.CreatePreparedMessages(
 			h.net.Nodes[0],
 			[]*builders.Node{h.net.Nodes[1], h.net.Nodes[2], h.net.Nodes[3]},
@@ -169,7 +169,7 @@ func TestNewViewNotAcceptMessageIfNotFromTheLeader(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		sendNewView := func(fromNodeIdx int, shouldAcceptMessage bool) {
 			h := NewHarness(ctx, t)
-			block := builders.CreateBlock(builders.GenesisBlock)
+			block := builders.CreateBlock(leanhelix.GenesisBlock)
 
 			h.receiveNewView(ctx, fromNodeIdx, 1, 1, block)
 			if shouldAcceptMessage {
@@ -229,7 +229,7 @@ func TestNewViewNotAcceptedWithWrongPPDetails(t *testing.T) {
 			}
 		}
 
-		block := builders.CreateBlock(builders.GenesisBlock)
+		block := builders.CreateBlock(leanhelix.GenesisBlock)
 
 		// good new view
 		sendNewView(block, 10, 1, block, 10, 1, true)
@@ -246,7 +246,7 @@ func TestNewViewNotAcceptedWithWrongViewChangeDetails(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		sendNewView := func(blockHeight primitives.BlockHeight, view primitives.View, vcsBlockHeight [3]primitives.BlockHeight, vcsView [3]primitives.View, shouldAcceptMessage bool) {
 			h := NewHarness(ctx, t)
-			block := builders.CreateBlock(builders.GenesisBlock)
+			block := builders.CreateBlock(leanhelix.GenesisBlock)
 
 			h.checkView(0)
 
@@ -294,7 +294,7 @@ func TestNewViewNotAcceptedWithBadVotes(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		sendNewView := func(leaderNodeIdx int, members []int, shouldAcceptMessage bool) {
 			h := NewHarness(ctx, t)
-			block := builders.CreateBlock(builders.GenesisBlock)
+			block := builders.CreateBlock(leanhelix.GenesisBlock)
 
 			h.checkView(0)
 
@@ -343,7 +343,7 @@ func TestViewChangeNotAcceptViewsFromThePast(t *testing.T) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, startView)
 
-			block := builders.CreateBlock(builders.GenesisBlock)
+			block := builders.CreateBlock(leanhelix.GenesisBlock)
 
 			viewChangeCountBefore := h.countViewChange(1, view)
 			h.receiveViewChange(ctx, 3, 1, view, block)
@@ -374,7 +374,7 @@ func TestViewChangeIsRejectedIfTargetIsNotTheNewLeader(t *testing.T) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, view)
 
-			block1 := builders.CreateBlock(builders.GenesisBlock)
+			block1 := builders.CreateBlock(leanhelix.GenesisBlock)
 			block2 := builders.CreateBlock(block1)
 
 			viewChangeCountBefore := h.countViewChange(1, view)
@@ -403,7 +403,7 @@ func TestPrepareNotAcceptViewsFromThePast(t *testing.T) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, startView)
 
-			block := builders.CreateBlock(builders.GenesisBlock)
+			block := builders.CreateBlock(leanhelix.GenesisBlock)
 
 			prepareCountBefore := h.countPrepare(1, view, block)
 			h.receivePrepare(ctx, 1, 1, view, block)
@@ -434,7 +434,7 @@ func TestPrepareNotAcceptingMessagesFromTheLeader(t *testing.T) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, 1)
 
-			block := builders.CreateBlock(builders.GenesisBlock)
+			block := builders.CreateBlock(leanhelix.GenesisBlock)
 
 			prepareCountBefore := h.countPrepare(1, view, block)
 			h.receivePrepare(ctx, fromNode, 1, view, block)
@@ -466,7 +466,7 @@ func TestPreprepareAcceptOnlyMatchingViews(t *testing.T) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, startView)
 
-			block := builders.CreateBlock(builders.GenesisBlock)
+			block := builders.CreateBlock(leanhelix.GenesisBlock)
 
 			hasPreprepare := h.hasPreprepare(1, startView, block)
 			require.False(t, hasPreprepare, "No preprepare should exist in the storage")
@@ -494,7 +494,7 @@ func TestPreprepareAcceptOnlyMatchingViews(t *testing.T) {
 
 func TestPrepare2fPlus1ForACommit(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block := builders.CreateBlock(builders.GenesisBlock)
+		block := builders.CreateBlock(leanhelix.GenesisBlock)
 
 		h := NewHarness(ctx, t, block)
 		h.setNode1AsTheLeader(ctx, 1, 1, block)
@@ -514,7 +514,7 @@ func TestPrepare2fPlus1ForACommit(t *testing.T) {
 
 func TestDisposingALeanHelixTermClearTheStorage(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block := builders.CreateBlock(builders.GenesisBlock)
+		block := builders.CreateBlock(leanhelix.GenesisBlock)
 
 		h := NewHarness(ctx, t, block)
 
@@ -539,7 +539,7 @@ func TestDisposingALeanHelixTermClearTheStorage(t *testing.T) {
 
 func TestAValidPreparedProofIsSentOnViewChange(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block := builders.CreateBlock(builders.GenesisBlock)
+		block := builders.CreateBlock(leanhelix.GenesisBlock)
 
 		h := NewHarness(ctx, t, block)
 
@@ -589,7 +589,7 @@ func TestAValidPreparedProofIsSentOnViewChange(t *testing.T) {
 
 func TestAValidViewChangeMessageWithPreparedProof(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := builders.CreateBlock(builders.GenesisBlock)
+		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
 		block2 := builders.CreateBlock(block1)
 
 		h := NewHarness(ctx, t)
@@ -612,7 +612,7 @@ func TestAValidViewChangeMessageWithPreparedProof(t *testing.T) {
 
 func TestViewChangeMessageWithoutQuorumInThePreparedProof(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := builders.CreateBlock(builders.GenesisBlock)
+		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
 		block2 := builders.CreateBlock(block1)
 
 		// an invalid prepare messages
@@ -635,7 +635,7 @@ func TestViewChangeMessageWithoutQuorumInThePreparedProof(t *testing.T) {
 
 func TestViewChangeMessageWithAnInvalidPreparedProof(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := builders.CreateBlock(builders.GenesisBlock)
+		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
 		block2 := builders.CreateBlock(block1)
 
 		// an invalid prepare messages

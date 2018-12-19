@@ -15,7 +15,7 @@ import (
 func TestPreparedMessagesExtractor(t *testing.T) {
 	blockHeight := primitives.BlockHeight(math.Floor(rand.Float64() * 1000000))
 	view := primitives.View(math.Floor(rand.Float64() * 1000000))
-	block := builders.CreateBlock(builders.GenesisBlock)
+	block := builders.CreateBlock(leanhelix.GenesisBlock)
 	leaderId := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	senderId1 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))

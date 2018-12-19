@@ -6,8 +6,6 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
-var GenesisBlock = CreateBlock(nil)
-
 // MockBlock
 type MockBlock struct {
 	height primitives.BlockHeight
@@ -23,14 +21,17 @@ func (b *MockBlock) Body() string {
 }
 
 func CreateBlock(previousBlock leanhelix.Block) leanhelix.Block {
-	var height primitives.BlockHeight = 0
-	if previousBlock != nil {
-		height = previousBlock.Height() + 1
+	var prevBlockHeight primitives.BlockHeight
+	if previousBlock == leanhelix.GenesisBlock {
+		prevBlockHeight = 0
+	} else {
+		prevBlockHeight = previousBlock.Height()
 	}
 
+	newBlockHeight := prevBlockHeight + 1
 	block := &MockBlock{
-		height: height,
-		body:   genBody(height),
+		height: newBlockHeight,
+		body:   genBody(newBlockHeight),
 	}
 	return block
 }

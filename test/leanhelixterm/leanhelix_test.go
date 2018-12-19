@@ -2,6 +2,7 @@ package leanhelixterm
 
 import (
 	"context"
+	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
@@ -78,7 +79,7 @@ func TestConsensusFor8Blocks(t *testing.T) {
 
 func TestHangingNode(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := builders.CreateBlock(builders.GenesisBlock)
+		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
 		block2 := builders.CreateBlock(block1)
 
 		net := builders.ATestNetwork(4, block1, block2)
@@ -95,7 +96,7 @@ func TestHangingNode(t *testing.T) {
 		require.True(t, builders.BlocksAreEqual(node0.GetLatestBlock(), block1))
 		require.True(t, builders.BlocksAreEqual(node1.GetLatestBlock(), block1))
 		require.True(t, builders.BlocksAreEqual(node2.GetLatestBlock(), block1))
-		require.True(t, builders.BlocksAreEqual(node3.GetLatestBlock(), builders.GenesisBlock))
+		require.True(t, node3.GetLatestBlock() == leanhelix.GenesisBlock)
 
 		net.WaitForNodesToValidate(node1, node2)
 		net.ResumeNodesValidation(node1, node2)
@@ -103,7 +104,7 @@ func TestHangingNode(t *testing.T) {
 		require.True(t, builders.BlocksAreEqual(node0.GetLatestBlock(), block2))
 		require.True(t, builders.BlocksAreEqual(node1.GetLatestBlock(), block2))
 		require.True(t, builders.BlocksAreEqual(node2.GetLatestBlock(), block2))
-		require.True(t, builders.BlocksAreEqual(node3.GetLatestBlock(), builders.GenesisBlock))
+		require.True(t, node3.GetLatestBlock() == leanhelix.GenesisBlock)
 
 		net.ResumeNodesValidation(node3)
 		net.WaitForNodesToCommitABlock(node3)

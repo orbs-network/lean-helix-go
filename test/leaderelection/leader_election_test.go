@@ -2,6 +2,7 @@ package leaderelection
 
 import (
 	"context"
+	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test"
@@ -12,7 +13,7 @@ import (
 
 func Test2fPlus1ViewChangeToBeElected(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := builders.CreateBlock(builders.GenesisBlock)
+		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
 		block2 := builders.CreateBlock(block1)
 
 		h := NewHarness(ctx, t, block1, block2)
@@ -48,7 +49,7 @@ func Test2fPlus1ViewChangeToBeElected(t *testing.T) {
 
 func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := builders.CreateBlock(builders.GenesisBlock)
+		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
 		block2 := builders.CreateBlock(block1)
 		block3 := builders.CreateBlock(block1)
 
@@ -116,7 +117,7 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 
 func TestNotCountingViewChangeFromTheSameNode(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := builders.CreateBlock(builders.GenesisBlock)
+		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
 		block2 := builders.CreateBlock(block1)
 
 		h := NewHarness(ctx, t, block1, block2)
@@ -140,7 +141,7 @@ func TestNotCountingViewChangeFromTheSameNode(t *testing.T) {
 
 func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := builders.CreateBlock(builders.GenesisBlock)
+		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
 		block2 := builders.CreateBlock(block1)
 
 		h := NewHarness(ctx, t, block1, block2)

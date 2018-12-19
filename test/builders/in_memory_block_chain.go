@@ -10,7 +10,7 @@ type InMemoryBlockChain struct {
 
 func NewInMemoryBlockChain() *InMemoryBlockChain {
 	return &InMemoryBlockChain{
-		blockChain: []leanhelix.Block{GenesisBlock},
+		blockChain: []leanhelix.Block{leanhelix.GenesisBlock},
 	}
 }
 

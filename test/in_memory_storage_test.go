@@ -19,7 +19,7 @@ func TestStorePreprepare(t *testing.T) {
 	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	keyManager1 := builders.NewMockKeyManager(senderId1)
 	keyManager2 := builders.NewMockKeyManager(senderId2)
-	block := builders.CreateBlock(builders.GenesisBlock)
+	block := builders.CreateBlock(leanhelix.GenesisBlock)
 
 	preprepareMessage1 := builders.APreprepareMessage(keyManager1, senderId1, blockHeight, view, block)
 	preprepareMessage2 := builders.APreprepareMessage(keyManager2, senderId2, blockHeight, view, block)
@@ -46,8 +46,8 @@ func TestStorePrepare(t *testing.T) {
 	keyManager1 := builders.NewMockKeyManager(senderId1)
 	keyManager2 := builders.NewMockKeyManager(senderId2)
 	keyManager3 := builders.NewMockKeyManager(senderId3)
-	block1 := builders.CreateBlock(builders.GenesisBlock)
-	block2 := builders.CreateBlock(builders.GenesisBlock)
+	block1 := builders.CreateBlock(leanhelix.GenesisBlock)
+	block2 := builders.CreateBlock(leanhelix.GenesisBlock)
 	block1Hash := builders.CalculateBlockHash(block1)
 
 	message1 := builders.APrepareMessage(keyManager1, senderId1, blockHeight1, view1, block1)
@@ -85,8 +85,8 @@ func TestStoreCommit(t *testing.T) {
 	keyManager1 := builders.NewMockKeyManager(senderId1)
 	keyManager2 := builders.NewMockKeyManager(senderId2)
 	keyManager3 := builders.NewMockKeyManager(senderId3)
-	block1 := builders.CreateBlock(builders.GenesisBlock)
-	block2 := builders.CreateBlock(builders.GenesisBlock)
+	block1 := builders.CreateBlock(leanhelix.GenesisBlock)
+	block2 := builders.CreateBlock(leanhelix.GenesisBlock)
 	block1Hash := builders.CalculateBlockHash(block1)
 
 	message1 := builders.ACommitMessage(keyManager1, senderId1, blockHeight1, view1, block1)
@@ -149,7 +149,7 @@ func TestLatestPreprepare(t *testing.T) {
 	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	keyManager1 := builders.NewMockKeyManager(senderId1)
 	keyManager2 := builders.NewMockKeyManager(senderId2)
-	block := builders.CreateBlock(builders.GenesisBlock)
+	block := builders.CreateBlock(leanhelix.GenesisBlock)
 
 	preprepareMessageOnView3 := builders.APreprepareMessage(keyManager1, senderId1, blockHeight, 3, block)
 	preprepareMessageOnView2 := builders.APreprepareMessage(keyManager2, senderId2, blockHeight, 2, block)
@@ -164,7 +164,7 @@ func TestLatestPreprepare(t *testing.T) {
 
 func TestDuplicatePreprepare(t *testing.T) {
 	var storage leanhelix.Storage = leanhelix.NewInMemoryStorage()
-	block := builders.CreateBlock(builders.GenesisBlock)
+	block := builders.CreateBlock(leanhelix.GenesisBlock)
 	memberId := primitives.MemberId("Member Id")
 	keyManager := builders.NewMockKeyManager(memberId)
 	ppm := builders.APreprepareMessage(keyManager, memberId, 1, 1, block)
@@ -184,7 +184,7 @@ func TestDuplicatePrepare(t *testing.T) {
 	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	sender1KeyManager := builders.NewMockKeyManager(senderId1)
 	sender2KeyManager := builders.NewMockKeyManager(senderId2)
-	block := builders.CreateBlock(builders.GenesisBlock)
+	block := builders.CreateBlock(leanhelix.GenesisBlock)
 	p1 := builders.APrepareMessage(sender1KeyManager, senderId1, blockHeight, view, block)
 	p2 := builders.APrepareMessage(sender2KeyManager, senderId2, blockHeight, view, block)
 
@@ -206,7 +206,7 @@ func TestDuplicateCommit(t *testing.T) {
 	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	sender1KeyManager := builders.NewMockKeyManager(senderId1)
 	sender2KeyManager := builders.NewMockKeyManager(senderId2)
-	block := builders.CreateBlock(builders.GenesisBlock)
+	block := builders.CreateBlock(leanhelix.GenesisBlock)
 
 	c1 := builders.ACommitMessage(sender1KeyManager, senderId1, blockHeight, view, block)
 	c2 := builders.ACommitMessage(sender2KeyManager, senderId2, blockHeight, view, block)
@@ -248,7 +248,7 @@ func TestClearBlockHeightLogs(t *testing.T) {
 	var storage leanhelix.Storage = leanhelix.NewInMemoryStorage()
 	blockHeight := primitives.BlockHeight(math.Floor(rand.Float64() * 1000000))
 	view := primitives.View(math.Floor(rand.Float64() * 1000000))
-	block := builders.CreateBlock(builders.GenesisBlock)
+	block := builders.CreateBlock(leanhelix.GenesisBlock)
 	blockHash := builders.CalculateBlockHash(block)
 	memberId := primitives.MemberId("Member Id")
 	keyManager := builders.NewMockKeyManager(memberId)

@@ -17,6 +17,8 @@ type LeanHelix struct {
 	onCommitCallback        OnCommitCallback
 }
 
+var GenesisBlock Block = nil
+
 type OnCommitCallback func(ctx context.Context, block Block, blockProof []byte)
 
 // ***********************************
@@ -78,7 +80,7 @@ func (lh *LeanHelix) Tick(ctx context.Context) bool {
 		trigger(ctx)
 
 	case prevBlock := <-lh.acknowledgeBlockChannel:
-		if prevBlock.Height() >= lh.currentHeight {
+		if prevBlock == GenesisBlock || prevBlock.Height() >= lh.currentHeight {
 			lh.onNewConsensusRound(ctx, prevBlock)
 		}
 	}
@@ -106,7 +108,11 @@ func (lh *LeanHelix) onCommit(ctx context.Context, block Block, blockProof []byt
 }
 
 func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, prevBlock Block) {
-	lh.currentHeight = prevBlock.Height() + 1
+	if prevBlock == GenesisBlock {
+		lh.currentHeight = 1
+	} else {
+		lh.currentHeight = prevBlock.Height() + 1
+	}
 	lh.leanHelixTerm = NewLeanHelixTerm(ctx, lh.config, lh.onCommit, prevBlock)
 	lh.filter.SetBlockHeight(ctx, lh.currentHeight, lh.leanHelixTerm)
 	lh.leanHelixTerm.StartTerm(ctx)

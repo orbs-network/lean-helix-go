@@ -23,7 +23,7 @@ func (bp *BlocksPool) PopBlock() leanhelix.Block {
 
 func NewBlocksPool(upcomingBlocks []leanhelix.Block) *BlocksPool {
 	return &BlocksPool{
-		latestBlock:    GenesisBlock,
+		latestBlock:    leanhelix.GenesisBlock,
 		upcomingBlocks: upcomingBlocks,
 	}
 }

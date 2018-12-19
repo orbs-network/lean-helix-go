@@ -56,7 +56,7 @@ func (tb *TestNetworkBuilder) Build() *TestNetwork {
 
 func (tb *TestNetworkBuilder) buildBlocksPool() *BlocksPool {
 	if tb.upcomingBlocks == nil {
-		b1 := CreateBlock(GenesisBlock)
+		b1 := CreateBlock(leanhelix.GenesisBlock)
 		b2 := CreateBlock(b1)
 		b3 := CreateBlock(b2)
 		b4 := CreateBlock(b3)

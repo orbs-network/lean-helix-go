@@ -13,6 +13,9 @@ func BlocksAreEqual(block1 leanhelix.Block, block2 leanhelix.Block) bool {
 }
 
 func CalculateBlockHash(block leanhelix.Block) primitives.BlockHash {
+	if block == leanhelix.GenesisBlock {
+		fmt.Printf("Genesis")
+	}
 	mockBlock := block.(*MockBlock)
 	str := fmt.Sprintf("%d_%s", mockBlock.Height(), mockBlock.Body())
 	hash := sha256.Sum256([]byte(str))
