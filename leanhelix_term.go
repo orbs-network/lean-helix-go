@@ -9,6 +9,11 @@ import (
 	"sort"
 )
 
+// The algorithm cannot function with less committee members
+// because it cannot calculate the f number (where committee members are 3f+1)
+// The only reason to set this manually in config below this limit is for internal tests
+const LEAN_HELIX_HARD_MINIMUM_COMMITTEE_MEMBERS = 4
+
 type LeanHelixTerm struct {
 	keyManager                     KeyManager
 	communication                  Communication

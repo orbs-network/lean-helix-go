@@ -80,7 +80,7 @@ func (lh *LeanHelix) Tick(ctx context.Context) bool {
 		trigger(ctx)
 
 	case prevBlock := <-lh.acknowledgeBlockChannel:
-		if prevBlock == GenesisBlock || prevBlock.Height() >= lh.currentHeight {
+		if prevBlock == GenesisBlock || primitives.BlockHeight(prevBlock.Height()) >= lh.currentHeight {
 			lh.onNewConsensusRound(ctx, prevBlock)
 		}
 	}
@@ -111,7 +111,7 @@ func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, prevBlock Block) {
 	if prevBlock == GenesisBlock {
 		lh.currentHeight = 1
 	} else {
-		lh.currentHeight = prevBlock.Height() + 1
+		lh.currentHeight = primitives.BlockHeight(prevBlock.Height()) + 1
 	}
 	lh.leanHelixTerm = NewLeanHelixTerm(ctx, lh.config, lh.onCommit, prevBlock)
 	lh.filter.SetBlockHeight(ctx, lh.currentHeight, lh.leanHelixTerm)

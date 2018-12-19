@@ -1,13 +1,10 @@
 package leanhelix
 
 import (
+	"context"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
-
-// The algorithm cannot function with less committee members
-// because it cannot calculate the f number (where committee members are 3f+1)
-// The only reason to set this manually in config below this limit is for internal tests
-const LEAN_HELIX_HARD_MINIMUM_COMMITTEE_MEMBERS = 4
 
 type Config struct {
 	Communication                   Communication
@@ -20,9 +17,34 @@ type Config struct {
 	OverrideMinimumCommitteeMembers int
 }
 
-// Interfaces that must be implemented by the external service using this library
-
-// A block instance for which library tries to reach consensus
 type Block interface {
 	Height() primitives.BlockHeight
+}
+
+type ConsensusRawMessage struct {
+	Content []byte
+	Block   Block
+}
+
+type BlockUtils interface {
+	RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock Block) (Block, primitives.BlockHash)
+	ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, block Block, blockHash primitives.BlockHash, prevBlock Block) bool
+	ValidateBlockCommitment(blockHeight primitives.BlockHeight, block Block, blockHash primitives.BlockHash) bool
+}
+
+type Membership interface {
+	MyMemberId() primitives.MemberId
+	RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64, committeeSize uint32) []primitives.MemberId
+}
+
+type KeyManager interface {
+	SignConsensusMessage(blockHeight primitives.BlockHeight, content []byte) primitives.Signature
+	VerifyConsensusMessage(blockHeight primitives.BlockHeight, content []byte, sender *protocol.SenderSignature) bool
+	SignRandomSeed(blockHeight primitives.BlockHeight, content []byte) primitives.RandomSeedSignature
+	VerifyRandomSeed(blockHeight primitives.BlockHeight, content []byte, sender *protocol.SenderSignature) bool
+	AggregateRandomSeed(blockHeight primitives.BlockHeight, randomSeedShares []*protocol.SenderSignature) primitives.RandomSeedSignature
+}
+
+type Communication interface {
+	SendConsensusMessage(ctx context.Context, recipients []primitives.MemberId, message *ConsensusRawMessage)
 }
