@@ -48,7 +48,7 @@ func (node *Node) onCommittedBlock(ctx context.Context, block leanhelix.Block, b
 func (node *Node) StartConsensus(ctx context.Context) {
 	if node.leanHelix != nil {
 		go node.leanHelix.Run(ctx)
-		node.leanHelix.UpdateConsensusRound(node.GetLatestBlock())
+		node.leanHelix.UpdateState(node.GetLatestBlock())
 	}
 }
 
@@ -61,7 +61,7 @@ func (node *Node) Tick(ctx context.Context) {
 }
 func (node *Node) StartConsensusSync() {
 	if node.leanHelix != nil {
-		go node.leanHelix.UpdateConsensusRound(node.GetLatestBlock())
+		go node.leanHelix.UpdateState(node.GetLatestBlock())
 	}
 }
 
@@ -99,7 +99,7 @@ func NewNode(
 	}
 
 	leanHelix := leanhelix.NewLeanHelix(node.BuildConfig(logger), node.onCommittedBlock)
-	gossip.RegisterOnMessage(leanHelix.GossipMessageReceived)
+	gossip.RegisterOnMessage(leanHelix.HandleConsensusMessage)
 
 	node.leanHelix = leanHelix
 	return node

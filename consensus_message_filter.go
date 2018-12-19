@@ -24,7 +24,7 @@ func NewConsensusMessageFilter(myMemberId primitives.MemberId, logger Logger) *C
 	return res
 }
 
-func (f *ConsensusMessageFilter) GossipMessageReceived(ctx context.Context, rawMessage *ConsensusRawMessage) {
+func (f *ConsensusMessageFilter) HandleConsensusMessage(ctx context.Context, rawMessage *ConsensusRawMessage) {
 	message := ToConsensusMessage(rawMessage)
 	if f.isMyMessage(message) {
 		return

@@ -10,18 +10,15 @@ import (
 // SPI is Service Programming Interface, these are the interfaces the consumer of this library
 // must implement in order to use the library.
 
+type BlockUtils interface {
+	RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock Block) (Block, primitives.BlockHash)
+	ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, block Block, blockHash primitives.BlockHash, prevBlock Block) bool
+	ValidateBlockCommitment(blockHeight primitives.BlockHeight, block Block, blockHash primitives.BlockHash) bool
+}
+
 type Membership interface {
 	MyMemberId() primitives.MemberId
-	RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, seed uint64, maxCommitteeSize uint32) []primitives.MemberId
-}
-
-type ConsensusRawMessage struct {
-	Content []byte
-	Block   Block
-}
-
-type Communication interface {
-	SendConsensusMessage(ctx context.Context, targets []primitives.MemberId, message *ConsensusRawMessage)
+	RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64, committeeSize uint32) []primitives.MemberId
 }
 
 type KeyManager interface {
@@ -32,8 +29,11 @@ type KeyManager interface {
 	AggregateRandomSeed(blockHeight primitives.BlockHeight, randomSeedShares []*protocol.SenderSignature) primitives.RandomSeedSignature
 }
 
-type BlockUtils interface {
-	RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock Block) (Block, primitives.BlockHash)
-	ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, block Block, blockHash primitives.BlockHash, prevBlock Block) bool
-	ValidateBlockCommitment(blockHeight primitives.BlockHeight, block Block, blockHash primitives.BlockHash) bool
+type ConsensusRawMessage struct {
+	Content []byte
+	Block   Block
+}
+
+type Communication interface {
+	SendConsensusMessage(ctx context.Context, recipients []primitives.MemberId, message *ConsensusRawMessage)
 }

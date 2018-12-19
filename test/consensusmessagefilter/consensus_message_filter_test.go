@@ -67,11 +67,11 @@ func TestGettingAMessage(t *testing.T) {
 		require.Equal(t, 0, len(termMessagesHandler.historyNV))
 		require.Equal(t, 0, len(termMessagesHandler.historyVC))
 
-		filter.GossipMessageReceived(ctx, ppm)
-		filter.GossipMessageReceived(ctx, pm)
-		filter.GossipMessageReceived(ctx, cm)
-		filter.GossipMessageReceived(ctx, vcm)
-		filter.GossipMessageReceived(ctx, nvm)
+		filter.HandleConsensusMessage(ctx, ppm)
+		filter.HandleConsensusMessage(ctx, pm)
+		filter.HandleConsensusMessage(ctx, cm)
+		filter.HandleConsensusMessage(ctx, vcm)
+		filter.HandleConsensusMessage(ctx, nvm)
 
 		require.Equal(t, 1, len(termMessagesHandler.historyPP))
 		require.Equal(t, 1, len(termMessagesHandler.historyP))
@@ -92,8 +92,8 @@ func TestFilterMessagesFromThePast(t *testing.T) {
 
 		require.Equal(t, 0, len(termMessagesHandler.historyPP))
 
-		filter.GossipMessageReceived(ctx, messageFromThePast)
-		filter.GossipMessageReceived(ctx, messageFromThePresent)
+		filter.HandleConsensusMessage(ctx, messageFromThePast)
+		filter.HandleConsensusMessage(ctx, messageFromThePresent)
 
 		require.Equal(t, 1, len(termMessagesHandler.historyPP))
 	})
@@ -110,8 +110,8 @@ func TestCacheMessagesFromTheFuture(t *testing.T) {
 
 		require.Equal(t, 0, len(termMessagesHandler.historyPP))
 
-		filter.GossipMessageReceived(ctx, messageFromTheFuture)
-		filter.GossipMessageReceived(ctx, messageFromThePresent)
+		filter.HandleConsensusMessage(ctx, messageFromTheFuture)
+		filter.HandleConsensusMessage(ctx, messageFromThePresent)
 
 		require.Equal(t, 1, len(termMessagesHandler.historyPP))
 	})
@@ -128,8 +128,8 @@ func TestFilterMessagesWithMyMemberId(t *testing.T) {
 
 		require.Equal(t, 0, len(termMessagesHandler.historyPP))
 
-		filter.GossipMessageReceived(ctx, badMessage)
-		filter.GossipMessageReceived(ctx, goodMessage)
+		filter.HandleConsensusMessage(ctx, badMessage)
+		filter.HandleConsensusMessage(ctx, goodMessage)
 
 		require.Equal(t, 1, len(termMessagesHandler.historyPP))
 	})
