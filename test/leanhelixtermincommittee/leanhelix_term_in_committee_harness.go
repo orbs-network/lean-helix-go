@@ -1,4 +1,4 @@
-package leanhelixterm
+package leanhelixtermincommittee
 
 import (
 	"context"
@@ -17,7 +17,7 @@ type harness struct {
 	keyManager        *builders.MockKeyManager
 	myNode            *builders.Node
 	net               *builders.TestNetwork
-	term              *leanhelix.LeanHelixTerm
+	termInCommittee   *leanhelix.TermInCommittee
 	storage           leanhelix.Storage
 	electionTrigger   *builders.ElectionTriggerMock
 	failVerifications bool
@@ -27,8 +27,8 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...leanhelix.Block
 	net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).Build()
 	myNode := net.Nodes[0]
 	termConfig := myNode.BuildConfig(nil)
-	term := leanhelix.NewLeanHelixTerm(ctx, termConfig, nil, myNode.GetLatestBlock())
-	term.StartTerm(ctx)
+	termInCommittee := leanhelix.NewTermInCommittee(ctx, termConfig, nil, myNode.GetLatestBlock())
+	termInCommittee.StartTerm(ctx)
 
 	return &harness{
 		t:                 t,
@@ -36,7 +36,7 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...leanhelix.Block
 		myNode:            myNode,
 		net:               net,
 		keyManager:        myNode.KeyManager,
-		term:              term,
+		termInCommittee:   termInCommittee,
 		storage:           termConfig.Storage,
 		electionTrigger:   myNode.ElectionTrigger,
 		failVerifications: false,
@@ -48,8 +48,8 @@ func (h *harness) failValidations() {
 }
 
 func (h *harness) checkView(expectedView primitives.View) {
-	view := h.term.GetView()
-	require.Equal(h.t, expectedView, view, fmt.Sprintf("Term should have view=%d, but got %d", expectedView, view))
+	view := h.termInCommittee.GetView()
+	require.Equal(h.t, expectedView, view, fmt.Sprintf("TermInCommittee should have view=%d, but got %d", expectedView, view))
 }
 
 func (h *harness) triggerElection(ctx context.Context) {
@@ -87,7 +87,7 @@ func (h *harness) builderMessageSenders(nodesIds ...int) []*builders.MessageSign
 
 func (h *harness) electionTillView(ctx context.Context, view primitives.View) {
 	for {
-		if h.term.GetView() == view {
+		if h.termInCommittee.GetView() == view {
 			break
 		}
 		h.triggerElection(ctx)
@@ -105,27 +105,27 @@ func (h *harness) setMeAsTheLeader(ctx context.Context, blockHeight primitives.B
 func (h *harness) receiveViewChange(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
 	sender := h.net.Nodes[fromNodeIdx]
 	vc := builders.AViewChangeMessage(sender.KeyManager, sender.MemberId, blockHeight, view, nil)
-	h.term.HandleLeanHelixViewChange(ctx, vc)
+	h.termInCommittee.HandleLeanHelixViewChange(ctx, vc)
 }
 
 func (h *harness) receiveViewChangeMessage(ctx context.Context, msg *leanhelix.ViewChangeMessage) {
-	h.term.HandleLeanHelixViewChange(ctx, msg)
+	h.termInCommittee.HandleLeanHelixViewChange(ctx, msg)
 }
 
 func (h *harness) receivePreprepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
 	leader := h.net.Nodes[fromNode]
 	ppm := builders.APreprepareMessage(leader.KeyManager, leader.MemberId, blockHeight, view, block)
-	h.term.HandleLeanHelixPrePrepare(ctx, ppm)
+	h.termInCommittee.HandleLeanHelixPrePrepare(ctx, ppm)
 }
 
 func (h *harness) receivePreprepareMessage(ctx context.Context, ppm *leanhelix.PreprepareMessage) {
-	h.term.HandleLeanHelixPrePrepare(ctx, ppm)
+	h.termInCommittee.HandleLeanHelixPrePrepare(ctx, ppm)
 }
 
 func (h *harness) receivePrepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
 	sender := h.net.Nodes[fromNode]
 	pm := builders.APrepareMessage(sender.KeyManager, sender.MemberId, blockHeight, view, block)
-	h.term.HandleLeanHelixPrepare(ctx, pm)
+	h.termInCommittee.HandleLeanHelixPrepare(ctx, pm)
 }
 
 func (h *harness) createPreprepareMessage(fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block, blockHash primitives.BlockHash) *leanhelix.PreprepareMessage {
@@ -135,7 +135,7 @@ func (h *harness) createPreprepareMessage(fromNode int, blockHeight primitives.B
 }
 
 func (h *harness) HandleLeanHelixNewView(ctx context.Context, nvm *leanhelix.NewViewMessage) {
-	h.term.HandleLeanHelixNewView(ctx, nvm)
+	h.termInCommittee.HandleLeanHelixNewView(ctx, nvm)
 }
 
 func (h *harness) receiveNewView(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
@@ -158,7 +158,7 @@ func (h *harness) receiveNewView(ctx context.Context, fromNodeIdx int, blockHeig
 		OnBlockHeight(blockHeight).
 		OnView(view).
 		Build()
-	h.term.HandleLeanHelixNewView(ctx, nvm)
+	h.termInCommittee.HandleLeanHelixNewView(ctx, nvm)
 }
 
 func (h *harness) getLastSentViewChangeMessage() *leanhelix.ViewChangeMessage {
@@ -197,5 +197,5 @@ func (h *harness) failFutureVerifications() {
 }
 
 func (h *harness) disposeTerm() {
-	h.term.Dispose()
+	h.termInCommittee.Dispose()
 }

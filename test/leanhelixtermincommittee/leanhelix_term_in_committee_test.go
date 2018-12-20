@@ -1,4 +1,4 @@
-package leanhelixterm
+package leanhelixtermincommittee
 
 import (
 	"context"
@@ -449,7 +449,7 @@ func TestPrepareNotAcceptingMessagesFromTheLeader(t *testing.T) {
 
 			h.receivePrepare(ctx, 2, 2, 1, block)
 			prepareCount := h.countPrepare(2, 1, block)
-			require.Equal(t, 1, prepareCount, "Term should not ignore Prepare message from node2")
+			require.Equal(t, 1, prepareCount, "TermInCommittee should not ignore Prepare message from node2")
 		}
 
 		// sending a valid prepare (From node2)
@@ -475,9 +475,9 @@ func TestPreprepareAcceptOnlyMatchingViews(t *testing.T) {
 			h.receivePreprepare(ctx, 1, 1, view, block)
 			hasPreprepare = h.hasPreprepare(1, view, block)
 			if shouldAcceptMessage {
-				require.True(t, hasPreprepare, "Term should not ignore the Preprepare message")
+				require.True(t, hasPreprepare, "TermInCommittee should not ignore the Preprepare message")
 			} else {
-				require.False(t, hasPreprepare, "Term should ignore the Preprepare message")
+				require.False(t, hasPreprepare, "TermInCommittee should ignore the Preprepare message")
 			}
 		}
 
@@ -512,7 +512,7 @@ func TestPrepare2fPlus1ForACommit(t *testing.T) {
 	})
 }
 
-func TestDisposingALeanHelixTermClearTheStorage(t *testing.T) {
+func TestDisposingATermInCommitteeClearTheStorage(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block := builders.CreateBlock(leanhelix.GenesisBlock)
 
@@ -527,7 +527,7 @@ func TestDisposingALeanHelixTermClearTheStorage(t *testing.T) {
 		require.Equal(t, 2, h.countPrepare(1, 0, block), "There should be 3 prepares in the storage")
 		require.Equal(t, 1, h.countCommits(1, 0, block), "There should be 1 commit in the storage")
 
-		// dispose the term
+		// dispose the termInCommittee
 		h.disposeTerm()
 
 		// make sure that all the messages are cleared from the storage

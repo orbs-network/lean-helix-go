@@ -13,7 +13,7 @@ type LeanHelix struct {
 	config                  *Config
 	logger                  Logger
 	filter                  *ConsensusMessageFilter
-	leanHelixTerm           *LeanHelixTerm
+	termInCommittee         *TermInCommittee
 	onCommitCallback        OnCommitCallback
 }
 
@@ -91,14 +91,14 @@ func (lh *LeanHelix) Tick(ctx context.Context) bool {
 // ************************ Internal ***************************************
 
 func (lh *LeanHelix) IsLeader() bool {
-	return lh.leanHelixTerm != nil && lh.leanHelixTerm.IsLeader()
+	return lh.termInCommittee != nil && lh.termInCommittee.IsLeader()
 }
 
 func (lh *LeanHelix) getElectionChannel() chan func(ctx context.Context) {
-	if lh.leanHelixTerm == nil {
+	if lh.termInCommittee == nil {
 		return nil
 	}
-	return lh.leanHelixTerm.electionTrigger.ElectionChannel()
+	return lh.termInCommittee.electionTrigger.ElectionChannel()
 }
 
 func (lh *LeanHelix) onCommit(ctx context.Context, block Block, blockProof []byte) {
@@ -113,7 +113,7 @@ func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, prevBlock Block) {
 	} else {
 		lh.currentHeight = primitives.BlockHeight(prevBlock.Height()) + 1
 	}
-	lh.leanHelixTerm = NewLeanHelixTerm(ctx, lh.config, lh.onCommit, prevBlock)
-	lh.filter.SetBlockHeight(ctx, lh.currentHeight, lh.leanHelixTerm)
-	lh.leanHelixTerm.StartTerm(ctx)
+	lh.termInCommittee = NewTermInCommittee(ctx, lh.config, lh.onCommit, prevBlock)
+	lh.filter.SetBlockHeight(ctx, lh.currentHeight, lh.termInCommittee)
+	lh.termInCommittee.StartTerm(ctx)
 }

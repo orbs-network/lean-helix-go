@@ -1,4 +1,4 @@
-package leanhelixterm
+package leanhelixtermincommittee
 
 import (
 	"context"
