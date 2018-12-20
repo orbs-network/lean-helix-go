@@ -1,4 +1,4 @@
-package leanhelixtermincommittee
+package termincommittee
 
 import (
 	"context"
