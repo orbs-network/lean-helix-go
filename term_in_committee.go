@@ -106,7 +106,7 @@ func panicOnLessThanMinimumCommitteeMembers(minimum int, committeeMembers []prim
 }
 
 func (tic *TermInCommittee) StartTerm(ctx context.Context) {
-	if tic.IsLeader() {
+	if tic.isLeader() {
 		block, blockHash := tic.blockUtils.RequestNewBlockProposal(ctx, tic.height, tic.prevBlock)
 		ppm := tic.messageFactory.CreatePreprepareMessage(tic.height, tic.view, block, blockHash)
 
@@ -150,7 +150,7 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 	tic.logger.Debug("H=%d V=%d moveToNextLeader() newLeader=%s", tic.height, tic.view, tic.leaderMemberId[:3])
 	preparedMessages := ExtractPreparedMessages(tic.height, tic.storage, tic.QuorumSize())
 	vcm := tic.messageFactory.CreateViewChangeMessage(tic.height, tic.view, preparedMessages)
-	if tic.IsLeader() {
+	if tic.isLeader() {
 		tic.storage.StoreViewChange(vcm)
 		tic.checkElected(ctx, tic.height, tic.view)
 	} else {
@@ -512,7 +512,7 @@ func (tic *TermInCommittee) QuorumSize() int {
 	return committeeMembersCount - f
 }
 
-func (tic *TermInCommittee) IsLeader() bool {
+func (tic *TermInCommittee) isLeader() bool {
 	return tic.myMemberId.Equal(tic.leaderMemberId)
 }
 

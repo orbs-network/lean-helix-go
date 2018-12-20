@@ -2,13 +2,12 @@ package leanhelix
 
 import (
 	"context"
-	"fmt"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
 type ConsensusMessageFilter struct {
 	blockHeight              primitives.BlockHeight
-	consensusMessagesHandler TermInCommitteeMessagesHandler
+	consensusMessagesHandler ConsensusMessagesHandler
 	myMemberId               primitives.MemberId
 	messageCache             map[primitives.BlockHeight][]ConsensusMessage
 	logger                   Logger
@@ -24,7 +23,7 @@ func NewConsensusMessageFilter(myMemberId primitives.MemberId, logger Logger) *C
 	return res
 }
 
-func (f *ConsensusMessageFilter) HandleConsensusMessage(ctx context.Context, rawMessage *ConsensusRawMessage) {
+func (f *ConsensusMessageFilter) HandleConsensusRawMessage(ctx context.Context, rawMessage *ConsensusRawMessage) {
 	message := ToConsensusMessage(rawMessage)
 	if f.isMyMessage(message) {
 		return
@@ -67,20 +66,7 @@ func (f *ConsensusMessageFilter) processGossipMessage(ctx context.Context, messa
 		return
 	}
 
-	switch message := message.(type) {
-	case *PreprepareMessage:
-		f.consensusMessagesHandler.HandleLeanHelixPrePrepare(ctx, message)
-	case *PrepareMessage:
-		f.consensusMessagesHandler.HandleLeanHelixPrepare(ctx, message)
-	case *CommitMessage:
-		f.consensusMessagesHandler.HandleLeanHelixCommit(ctx, message)
-	case *ViewChangeMessage:
-		f.consensusMessagesHandler.HandleLeanHelixViewChange(ctx, message)
-	case *NewViewMessage:
-		f.consensusMessagesHandler.HandleLeanHelixNewView(ctx, message)
-	default:
-		panic(fmt.Sprintf("unknown message type: %T", message))
-	}
+	f.consensusMessagesHandler.HandleConsensusMessage(ctx, message)
 }
 
 func (f *ConsensusMessageFilter) consumeCacheMessages(ctx context.Context, blockHeight primitives.BlockHeight) {
@@ -93,7 +79,7 @@ func (f *ConsensusMessageFilter) consumeCacheMessages(ctx context.Context, block
 	delete(f.messageCache, blockHeight)
 }
 
-func (f *ConsensusMessageFilter) SetBlockHeight(ctx context.Context, blockHeight primitives.BlockHeight, consensusMessagesHandler TermInCommitteeMessagesHandler) {
+func (f *ConsensusMessageFilter) SetBlockHeight(ctx context.Context, blockHeight primitives.BlockHeight, consensusMessagesHandler ConsensusMessagesHandler) {
 	f.consensusMessagesHandler = consensusMessagesHandler
 	f.blockHeight = blockHeight
 	f.consumeCacheMessages(ctx, blockHeight)

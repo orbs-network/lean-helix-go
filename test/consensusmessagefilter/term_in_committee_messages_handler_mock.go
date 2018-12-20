@@ -6,11 +6,11 @@ import (
 )
 
 type termInCommitteeMessagesHandlerMock struct {
-	historyPP []*leanhelix.PreprepareMessage
-	historyP  []*leanhelix.PrepareMessage
-	historyC  []*leanhelix.CommitMessage
-	historyVC []*leanhelix.ViewChangeMessage
-	historyNV []*leanhelix.NewViewMessage
+	HistoryPP []*leanhelix.PreprepareMessage
+	HistoryP  []*leanhelix.PrepareMessage
+	HistoryC  []*leanhelix.CommitMessage
+	HistoryVC []*leanhelix.ViewChangeMessage
+	HistoryNV []*leanhelix.NewViewMessage
 }
 
 func NewTermInCommitteeMessagesHandlerMock() *termInCommitteeMessagesHandlerMock {
@@ -18,21 +18,21 @@ func NewTermInCommitteeMessagesHandlerMock() *termInCommitteeMessagesHandlerMock
 }
 
 func (t *termInCommitteeMessagesHandlerMock) HandleLeanHelixPrePrepare(ctx context.Context, ppm *leanhelix.PreprepareMessage) {
-	t.historyPP = append(t.historyPP, ppm)
+	t.HistoryPP = append(t.HistoryPP, ppm)
 }
 
 func (t *termInCommitteeMessagesHandlerMock) HandleLeanHelixPrepare(ctx context.Context, pm *leanhelix.PrepareMessage) {
-	t.historyP = append(t.historyP, pm)
+	t.HistoryP = append(t.HistoryP, pm)
 }
 
 func (t *termInCommitteeMessagesHandlerMock) HandleLeanHelixCommit(ctx context.Context, cm *leanhelix.CommitMessage) {
-	t.historyC = append(t.historyC, cm)
+	t.HistoryC = append(t.HistoryC, cm)
 }
 
 func (t *termInCommitteeMessagesHandlerMock) HandleLeanHelixViewChange(ctx context.Context, vcm *leanhelix.ViewChangeMessage) {
-	t.historyVC = append(t.historyVC, vcm)
+	t.HistoryVC = append(t.HistoryVC, vcm)
 }
 
 func (t *termInCommitteeMessagesHandlerMock) HandleLeanHelixNewView(ctx context.Context, nvm *leanhelix.NewViewMessage) {
-	t.historyNV = append(t.historyNV, nvm)
+	t.HistoryNV = append(t.HistoryNV, nvm)
 }

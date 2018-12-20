@@ -52,10 +52,6 @@ func (node *Node) StartConsensus(ctx context.Context) {
 	}
 }
 
-func (node *Node) IsLeader() bool {
-	return node.leanHelix != nil && node.leanHelix.IsLeader()
-}
-
 func (node *Node) Tick(ctx context.Context) {
 	node.leanHelix.Tick(ctx)
 }

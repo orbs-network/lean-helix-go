@@ -13,7 +13,7 @@ type LeanHelix struct {
 	config                  *Config
 	logger                  Logger
 	filter                  *ConsensusMessageFilter
-	termInCommittee         *TermInCommittee
+	leanHelixTerm           *LeanHelixTerm
 	onCommitCallback        OnCommitCallback
 }
 
@@ -63,7 +63,7 @@ func (lh *LeanHelix) ValidateBlockConsensus(block Block, blockProof *protocol.Bl
 }
 
 func (lh *LeanHelix) HandleConsensusMessage(ctx context.Context, message *ConsensusRawMessage) {
-	lh.logger.Debug("HandleConsensusMessage()")
+	lh.logger.Debug("HandleConsensusRawMessage()")
 	lh.messagesChannel <- message
 }
 
@@ -73,10 +73,9 @@ func (lh *LeanHelix) Tick(ctx context.Context) bool {
 		return false
 
 	case message := <-lh.messagesChannel:
-		lh.filter.HandleConsensusMessage(ctx, message)
+		lh.filter.HandleConsensusRawMessage(ctx, message)
 
-	case trigger := <-lh.getElectionChannel():
-		lh.logger.Info("Tick() election")
+	case trigger := <-lh.config.ElectionTrigger.ElectionChannel():
 		trigger(ctx)
 
 	case prevBlock := <-lh.acknowledgeBlockChannel:
@@ -90,17 +89,6 @@ func (lh *LeanHelix) Tick(ctx context.Context) bool {
 
 // ************************ Internal ***************************************
 
-func (lh *LeanHelix) IsLeader() bool {
-	return lh.termInCommittee != nil && lh.termInCommittee.IsLeader()
-}
-
-func (lh *LeanHelix) getElectionChannel() chan func(ctx context.Context) {
-	if lh.termInCommittee == nil {
-		return nil
-	}
-	return lh.termInCommittee.electionTrigger.ElectionChannel()
-}
-
 func (lh *LeanHelix) onCommit(ctx context.Context, block Block, blockProof []byte) {
 	lh.logger.Debug("onCommit()")
 	lh.onCommitCallback(ctx, block, nil)
@@ -113,7 +101,6 @@ func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, prevBlock Block) {
 	} else {
 		lh.currentHeight = primitives.BlockHeight(prevBlock.Height()) + 1
 	}
-	lh.termInCommittee = NewTermInCommittee(ctx, lh.config, lh.onCommit, prevBlock)
-	lh.filter.SetBlockHeight(ctx, lh.currentHeight, lh.termInCommittee)
-	lh.termInCommittee.StartTerm(ctx)
+	lh.leanHelixTerm = NewLeanHelixTerm(ctx, lh.config, lh.onCommit, prevBlock)
+	lh.filter.SetBlockHeight(ctx, lh.currentHeight, lh.leanHelixTerm)
 }

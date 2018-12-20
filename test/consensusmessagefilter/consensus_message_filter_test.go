@@ -52,7 +52,7 @@ func GenerateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.
 func TestGettingAMessage(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		filter := leanhelix.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
-		messagesHandler := NewTermInCommitteeMessagesHandlerMock()
+		messagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, messagesHandler)
 
 		ppm := GeneratePreprepareMessage(10, 20, "Sender MemberId")
@@ -61,76 +61,68 @@ func TestGettingAMessage(t *testing.T) {
 		vcm := GenerateViewChangeMessage(10, 20, "Sender MemberId")
 		nvm := GenerateNewViewMessage(10, 20, "Sender MemberId")
 
-		require.Equal(t, 0, len(messagesHandler.historyPP))
-		require.Equal(t, 0, len(messagesHandler.historyP))
-		require.Equal(t, 0, len(messagesHandler.historyC))
-		require.Equal(t, 0, len(messagesHandler.historyNV))
-		require.Equal(t, 0, len(messagesHandler.historyVC))
+		require.Equal(t, 0, len(messagesHandler.history))
 
-		filter.HandleConsensusMessage(ctx, ppm)
-		filter.HandleConsensusMessage(ctx, pm)
-		filter.HandleConsensusMessage(ctx, cm)
-		filter.HandleConsensusMessage(ctx, vcm)
-		filter.HandleConsensusMessage(ctx, nvm)
+		filter.HandleConsensusRawMessage(ctx, ppm)
+		filter.HandleConsensusRawMessage(ctx, pm)
+		filter.HandleConsensusRawMessage(ctx, cm)
+		filter.HandleConsensusRawMessage(ctx, vcm)
+		filter.HandleConsensusRawMessage(ctx, nvm)
 
-		require.Equal(t, 1, len(messagesHandler.historyPP))
-		require.Equal(t, 1, len(messagesHandler.historyP))
-		require.Equal(t, 1, len(messagesHandler.historyC))
-		require.Equal(t, 1, len(messagesHandler.historyNV))
-		require.Equal(t, 1, len(messagesHandler.historyVC))
+		require.Equal(t, 5, len(messagesHandler.history))
 	})
 }
 
 func TestFilterMessagesFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		filter := leanhelix.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
-		messagesHandler := NewTermInCommitteeMessagesHandlerMock()
+		messagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, messagesHandler)
 
 		messageFromThePast := GeneratePreprepareMessage(9, 20, "Sender MemberId")
 		messageFromThePresent := GeneratePreprepareMessage(10, 20, "Sender MemberId")
 
-		require.Equal(t, 0, len(messagesHandler.historyPP))
+		require.Equal(t, 0, len(messagesHandler.history))
 
-		filter.HandleConsensusMessage(ctx, messageFromThePast)
-		filter.HandleConsensusMessage(ctx, messageFromThePresent)
+		filter.HandleConsensusRawMessage(ctx, messageFromThePast)
+		filter.HandleConsensusRawMessage(ctx, messageFromThePresent)
 
-		require.Equal(t, 1, len(messagesHandler.historyPP))
+		require.Equal(t, 1, len(messagesHandler.history))
 	})
 }
 
 func TestCacheMessagesFromTheFuture(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		filter := leanhelix.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
-		messagesHandler := NewTermInCommitteeMessagesHandlerMock()
+		messagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, messagesHandler)
 
 		messageFromTheFuture := GeneratePreprepareMessage(11, 20, "Sender MemberId")
 		messageFromThePresent := GeneratePreprepareMessage(10, 20, "Sender MemberId")
 
-		require.Equal(t, 0, len(messagesHandler.historyPP))
+		require.Equal(t, 0, len(messagesHandler.history))
 
-		filter.HandleConsensusMessage(ctx, messageFromTheFuture)
-		filter.HandleConsensusMessage(ctx, messageFromThePresent)
+		filter.HandleConsensusRawMessage(ctx, messageFromTheFuture)
+		filter.HandleConsensusRawMessage(ctx, messageFromThePresent)
 
-		require.Equal(t, 1, len(messagesHandler.historyPP))
+		require.Equal(t, 1, len(messagesHandler.history))
 	})
 }
 
 func TestFilterMessagesWithMyMemberId(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		filter := leanhelix.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
-		messagesHandler := NewTermInCommitteeMessagesHandlerMock()
+		messagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, messagesHandler)
 
 		badMessage := GeneratePreprepareMessage(11, 20, "My MemberId")
 		goodMessage := GeneratePreprepareMessage(10, 20, "Sender MemberId")
 
-		require.Equal(t, 0, len(messagesHandler.historyPP))
+		require.Equal(t, 0, len(messagesHandler.history))
 
-		filter.HandleConsensusMessage(ctx, badMessage)
-		filter.HandleConsensusMessage(ctx, goodMessage)
+		filter.HandleConsensusRawMessage(ctx, badMessage)
+		filter.HandleConsensusRawMessage(ctx, goodMessage)
 
-		require.Equal(t, 1, len(messagesHandler.historyPP))
+		require.Equal(t, 1, len(messagesHandler.history))
 	})
 }

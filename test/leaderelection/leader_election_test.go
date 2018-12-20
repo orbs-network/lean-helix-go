@@ -76,7 +76,6 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 
 		h.net.WaitForNodeToRequestNewBlock(node1)
 		h.net.ResumeNodeRequestNewBlock(node0)
-		require.True(h.t, node1.IsLeader())
 
 		// processing block 3
 		h.net.ResumeNodeRequestNewBlock(node1)
@@ -182,9 +181,6 @@ func TestLeaderCircularOrdering(t *testing.T) {
 
 		h.net.WaitForNodeToRequestNewBlock(h.net.Nodes[0])
 
-		// Making sure that node 0 is the leader
-		h.verifyNodeIsLeader(0)
-
 		// selecting node 1 as the leader
 		h.net.Nodes[0].TriggerElection()
 		h.net.Nodes[2].TriggerElection()
@@ -192,8 +188,6 @@ func TestLeaderCircularOrdering(t *testing.T) {
 
 		h.net.ResumeNodeRequestNewBlock(h.net.Nodes[0])
 		h.net.WaitForNodeToRequestNewBlock(h.net.Nodes[1])
-
-		h.verifyNodeIsLeader(1)
 
 		// selecting node 2 as the leader
 		h.net.Nodes[0].TriggerElection()
@@ -203,8 +197,6 @@ func TestLeaderCircularOrdering(t *testing.T) {
 		h.net.ResumeNodeRequestNewBlock(h.net.Nodes[1])
 		h.net.WaitForNodeToRequestNewBlock(h.net.Nodes[2])
 
-		h.verifyNodeIsLeader(2)
-
 		// selecting node 3 as the leader
 		h.net.Nodes[0].TriggerElection()
 		h.net.Nodes[1].TriggerElection()
@@ -213,8 +205,6 @@ func TestLeaderCircularOrdering(t *testing.T) {
 		h.net.ResumeNodeRequestNewBlock(h.net.Nodes[2])
 		h.net.WaitForNodeToRequestNewBlock(h.net.Nodes[3])
 
-		h.verifyNodeIsLeader(3)
-
 		// back to node 0 as the leader
 		h.net.Nodes[1].TriggerElection()
 		h.net.Nodes[2].TriggerElection()
@@ -222,7 +212,5 @@ func TestLeaderCircularOrdering(t *testing.T) {
 
 		h.net.ResumeNodeRequestNewBlock(h.net.Nodes[3])
 		h.net.WaitForNodeToRequestNewBlock(h.net.Nodes[0])
-
-		h.verifyNodeIsLeader(0)
 	})
 }
