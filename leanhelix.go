@@ -3,6 +3,7 @@ package leanhelix
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
 type LeanHelix struct {
@@ -56,9 +57,14 @@ func (lh *LeanHelix) UpdateState(prevBlock Block) {
 	lh.acknowledgeBlockChannel <- prevBlock
 }
 
-func (lh *LeanHelix) ValidateBlockConsensus(block Block, blockProof []byte) bool {
+func (lh *LeanHelix) ValidateBlockConsensus(block Block, blockProofBytes []byte) bool {
 	lh.logger.Debug("%s ValidateBlockConsensus()", lh.config.Membership.MyMemberId().KeyForMap())
-	return blockProof != nil && len(blockProof) > 0
+	if blockProofBytes == nil || len(blockProofBytes) == 0 || block == nil {
+		return false
+	}
+
+	blockProof := protocol.BlockProofReader(blockProofBytes)
+	return block.Height() == blockProof.BlockRef().BlockHeight()
 }
 
 func (lh *LeanHelix) HandleConsensusMessage(ctx context.Context, message *ConsensusRawMessage) {
