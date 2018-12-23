@@ -38,7 +38,7 @@ func (node *Node) TriggerElectionSync(ctx context.Context) {
 }
 
 func (node *Node) onCommittedBlock(ctx context.Context, block leanhelix.Block, blockProof []byte) {
-	node.blockChain.AppendBlockToChain(block)
+	node.blockChain.AppendBlockToChain(block, blockProof)
 	node.NodeStateChannel <- &NodeState{
 		block:           block,
 		validationCount: node.BlockUtils.validationCounter,
