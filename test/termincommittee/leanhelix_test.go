@@ -175,5 +175,6 @@ func TestThatWeDoNotAcceptNilBlockProof(t *testing.T) {
 		block2 := builders.CreateBlock(block1)
 		block3 := builders.CreateBlock(block2)
 		require.False(t, net.Nodes[0].ValidateBlockConsensus(block3, nil))
+		require.False(t, net.Nodes[0].ValidateBlockConsensus(block3, []byte{}))
 	})
 }

@@ -58,7 +58,7 @@ func (lh *LeanHelix) UpdateState(prevBlock Block) {
 
 func (lh *LeanHelix) ValidateBlockConsensus(block Block, blockProof []byte) bool {
 	lh.logger.Debug("%s ValidateBlockConsensus()", lh.config.Membership.MyMemberId().KeyForMap())
-	return blockProof != nil
+	return blockProof != nil && len(blockProof) > 0
 }
 
 func (lh *LeanHelix) HandleConsensusMessage(ctx context.Context, message *ConsensusRawMessage) {
