@@ -52,6 +52,12 @@ func (node *Node) StartConsensus(ctx context.Context) {
 	}
 }
 
+func (node *Node) Sync(prevBlock leanhelix.Block) {
+	if node.leanHelix != nil {
+		go node.leanHelix.UpdateState(prevBlock)
+	}
+}
+
 func (node *Node) Tick(ctx context.Context) {
 	node.leanHelix.Tick(ctx)
 }
