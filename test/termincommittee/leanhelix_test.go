@@ -154,11 +154,26 @@ func TestNodeSync(t *testing.T) {
 		node3.Gossip.ClearIncomingWhitelist()
 
 		// syncing node3
-		node3.Sync(block2)
+		latestBlock := node0.GetLatestBlock()
+		//lastestBlockProof := node0.GetLatestBlockProof()
+		node3.Sync(latestBlock, []byte{1, 2, 3}) // TODO: create a real block proof
 
 		net.ResumeNodeRequestNewBlock(node0)
 
 		// now that node3 is synced, they all should progress to block3
 		net.WaitForNodesToCommitASpecificBlock(block3, node0, node1, node2, node3)
+	})
+}
+
+func TestThatWeDoNotAcceptNilBlockProof(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		net := builders.ABasicTestNetwork()
+
+		net.StartConsensus(ctx)
+
+		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
+		block2 := builders.CreateBlock(block1)
+		block3 := builders.CreateBlock(block2)
+		require.False(t, net.Nodes[0].ValidateBlockConsensus(block3, nil))
 	})
 }

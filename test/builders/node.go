@@ -29,6 +29,10 @@ func (node *Node) GetLatestBlock() leanhelix.Block {
 	return node.blockChain.GetLastBlock()
 }
 
+func (node *Node) GetLatestBlockProof() []byte {
+	return node.blockChain.GetLastBlockProof()
+}
+
 func (node *Node) TriggerElection() {
 	node.ElectionTrigger.ManualTrigger()
 }
@@ -52,9 +56,15 @@ func (node *Node) StartConsensus(ctx context.Context) {
 	}
 }
 
-func (node *Node) Sync(prevBlock leanhelix.Block) {
+func (node *Node) ValidateBlockConsensus(block leanhelix.Block, blockProof []byte) bool {
+	return node.leanHelix.ValidateBlockConsensus(block, blockProof)
+}
+
+func (node *Node) Sync(prevBlock leanhelix.Block, blockProof []byte) {
 	if node.leanHelix != nil {
-		go node.leanHelix.UpdateState(prevBlock)
+		if node.leanHelix.ValidateBlockConsensus(prevBlock, blockProof) {
+			go node.leanHelix.UpdateState(prevBlock)
+		}
 	}
 }
 
