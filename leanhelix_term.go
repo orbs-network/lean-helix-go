@@ -7,14 +7,22 @@ import (
 
 type LeanHelixTerm struct {
 	termInCommittee *TermInCommittee
+	onCommit        OnCommitCallback
 }
 
 func NewLeanHelixTerm(ctx context.Context, config *Config, onCommit OnCommitCallback, prevBlock Block) *LeanHelixTerm {
-	termInCommittee := NewTermInCommittee(ctx, config, onCommit, prevBlock)
+	result := &LeanHelixTerm{}
+	termInCommittee := NewTermInCommittee(ctx, config, result.onInCommitteeCommit, prevBlock)
 	termInCommittee.StartTerm(ctx)
-	return &LeanHelixTerm{
-		termInCommittee,
-	}
+
+	result.termInCommittee = termInCommittee
+	result.onCommit = onCommit
+
+	return result
+}
+
+func (lht *LeanHelixTerm) onInCommitteeCommit(ctx context.Context, block Block, commitMessages []*CommitMessage) {
+	lht.onCommit(ctx, block, nil)
 }
 
 func (lht *LeanHelixTerm) HandleConsensusMessage(ctx context.Context, message ConsensusMessage) {

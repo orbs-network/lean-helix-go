@@ -14,13 +14,15 @@ import (
 // The only reason to set this manually in config below this limit is for internal tests
 const LEAN_HELIX_HARD_MINIMUM_COMMITTEE_MEMBERS = 4
 
+type OnInCommitteeCommitCallback func(ctx context.Context, block Block, commitMessages []*CommitMessage)
+
 type TermInCommittee struct {
 	keyManager                     KeyManager
 	communication                  Communication
 	storage                        Storage
 	electionTrigger                ElectionTrigger
 	blockUtils                     BlockUtils
-	onCommit                       OnCommitCallback
+	onCommit                       OnInCommitteeCommitCallback
 	messageFactory                 *MessageFactory
 	myMemberId                     primitives.MemberId
 	committeeMembersMemberIds      []primitives.MemberId
@@ -35,7 +37,7 @@ type TermInCommittee struct {
 	prevBlock                      Block
 }
 
-func NewTermInCommittee(ctx context.Context, config *Config, onCommit OnCommitCallback, prevBlock Block) *TermInCommittee {
+func NewTermInCommittee(ctx context.Context, config *Config, onCommit OnInCommitteeCommitCallback, prevBlock Block) *TermInCommittee {
 	keyManager := config.KeyManager
 	blockUtils := config.BlockUtils
 	membership := config.Membership
