@@ -28,7 +28,8 @@ func NewLeanHelix(config *Config, onCommitCallback OnCommitCallback) *LeanHelix 
 	if config.Logger == nil {
 		config.Logger = NewSilentLogger()
 	}
-	config.Logger.Debug("NewLeanHelix()")
+
+	config.Logger.Debug("%s NewLeanHelix()", config.Membership.MyMemberId().KeyForMap())
 	filter := NewConsensusMessageFilter(config.Membership.MyMemberId(), config.Logger)
 	return &LeanHelix{
 		messagesChannel:         make(chan *ConsensusRawMessage),
@@ -52,18 +53,18 @@ func (lh *LeanHelix) Run(ctx context.Context) {
 }
 
 func (lh *LeanHelix) UpdateState(prevBlock Block) {
-	lh.logger.Debug("UpdateState()")
+	lh.logger.Debug("%s UpdateState()", lh.config.Membership.MyMemberId().KeyForMap())
 	lh.acknowledgeBlockChannel <- prevBlock
 }
 
 func (lh *LeanHelix) ValidateBlockConsensus(block Block, blockProof *protocol.BlockProof, prevBlockProof *protocol.BlockProof) bool {
-	lh.logger.Debug("ValidateBlockConsensus()")
+	lh.logger.Debug("%s ValidateBlockConsensus()", lh.config.Membership.MyMemberId().KeyForMap())
 	// TODO: implement after 16-DEC-2018 - spec on lh-outline is incomplete!
 	return true
 }
 
 func (lh *LeanHelix) HandleConsensusMessage(ctx context.Context, message *ConsensusRawMessage) {
-	lh.logger.Debug("HandleConsensusRawMessage()")
+	lh.logger.Debug("%s HandleConsensusRawMessage()", lh.config.Membership.MyMemberId().KeyForMap())
 	lh.messagesChannel <- message
 }
 
@@ -79,6 +80,7 @@ func (lh *LeanHelix) Tick(ctx context.Context) bool {
 		trigger(ctx)
 
 	case prevBlock := <-lh.acknowledgeBlockChannel:
+		// TODO: a byzantine node can send the genesis block in sync can cause a mess
 		if prevBlock == GenesisBlock || primitives.BlockHeight(prevBlock.Height()) >= lh.currentHeight {
 			lh.onNewConsensusRound(ctx, prevBlock)
 		}
