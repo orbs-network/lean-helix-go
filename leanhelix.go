@@ -91,7 +91,7 @@ func (lh *LeanHelix) Tick(ctx context.Context) bool {
 
 func (lh *LeanHelix) onCommit(ctx context.Context, block Block, blockProof []byte) {
 	lh.logger.Debug("onCommit()")
-	lh.onCommitCallback(ctx, block, nil)
+	lh.onCommitCallback(ctx, block, blockProof)
 	lh.onNewConsensusRound(ctx, block)
 }
 

@@ -22,7 +22,7 @@ func NewLeanHelixTerm(ctx context.Context, config *Config, onCommit OnCommitCall
 }
 
 func (lht *LeanHelixTerm) onInCommitteeCommit(ctx context.Context, block Block, commitMessages []*CommitMessage) {
-	lht.onCommit(ctx, block, nil)
+	lht.onCommit(ctx, block, []byte{1, 2, 3}) // TODO: generate a real block proof
 }
 
 func (lht *LeanHelixTerm) HandleConsensusMessage(ctx context.Context, message ConsensusMessage) {

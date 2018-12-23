@@ -155,8 +155,8 @@ func TestNodeSync(t *testing.T) {
 
 		// syncing node3
 		latestBlock := node0.GetLatestBlock()
-		//lastestBlockProof := node0.GetLatestBlockProof()
-		node3.Sync(latestBlock, []byte{1, 2, 3}) // TODO: create a real block proof
+		latestBlockProof := node0.GetLatestBlockProof()
+		node3.Sync(latestBlock, latestBlockProof)
 
 		net.ResumeNodeRequestNewBlock(node0)
 
