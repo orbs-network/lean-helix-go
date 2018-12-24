@@ -3,6 +3,7 @@
     <module name="lean-helix-go" />
     <working_directory value="$PROJECT_DIR$/" />
     <go_parameters value="-i" />
+    <parameters value="-test.count 1 -failfast" />
     <framework value="gotest" />
     <kind value="DIRECTORY" />
     <package value="github.com/orbs-network/lean-helix-go" />
