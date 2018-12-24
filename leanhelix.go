@@ -28,7 +28,7 @@ func NewLeanHelix(config *Config, onCommitCallback OnCommitCallback) *LeanHelix 
 		config.Logger = NewSilentLogger()
 	}
 
-	config.Logger.Debug("%s NewLeanHelix()", config.Membership.MyMemberId().KeyForMap())
+	config.Logger.Debug("NewLeanHelix() ID=%s", Str(config.Membership.MyMemberId()))
 	filter := NewConsensusMessageFilter(config.Membership.MyMemberId(), config.Logger)
 	return &LeanHelix{
 		messagesChannel:         make(chan *ConsensusRawMessage),
@@ -58,17 +58,17 @@ func (lh *LeanHelix) UpdateState(prevBlock Block) {
 	} else {
 		height = prevBlock.Height()
 	}
-	lh.logger.Debug("UpdateState() prevBlockHeight=%d memberId=%v", height, lh.config.Membership.MyMemberId().KeyForMap())
+	lh.logger.Debug("UpdateState() ID=%s prevBlockHeight=%d", Str(lh.config.Membership.MyMemberId()), height)
 	lh.acknowledgeBlockChannel <- prevBlock
 }
 
 func (lh *LeanHelix) ValidateBlockConsensus(block Block, blockProof []byte) bool {
-	lh.logger.Debug("%s ValidateBlockConsensus()", lh.config.Membership.MyMemberId().KeyForMap())
+	lh.logger.Debug("ValidateBlockConsensus() ID=%s", Str(lh.config.Membership.MyMemberId()))
 	return blockProof != nil
 }
 
 func (lh *LeanHelix) HandleConsensusMessage(ctx context.Context, message *ConsensusRawMessage) {
-	lh.logger.Debug("%s HandleConsensusRawMessage()", lh.config.Membership.MyMemberId().KeyForMap())
+	lh.logger.Debug("HandleConsensusRawMessage() ID=%s", Str(lh.config.Membership.MyMemberId()))
 	lh.messagesChannel <- message
 }
 
@@ -115,4 +115,8 @@ func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, prevBlock Block) {
 	}
 	lh.leanHelixTerm = NewLeanHelixTerm(ctx, lh.config, lh.onCommit, prevBlock)
 	lh.filter.SetBlockHeight(ctx, lh.currentHeight, lh.leanHelixTerm)
+}
+
+func Str(memberId primitives.MemberId) string {
+	return memberId.String()[:6]
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"math"
+	"runtime"
 	"sort"
 )
 
@@ -91,7 +92,7 @@ func NewTermInCommittee(ctx context.Context, config *Config, onCommit OnInCommit
 		logger:                         config.Logger,
 	}
 
-	newTerm.logger.Debug("H=%d V=0 %s NewTermInCommittee: committeeMembersCount=%d", newBlockHeight, myMemberId.KeyForMap(), len(committeeMembers))
+	newTerm.logger.Debug("H=%d V=0 ID=%s NewTermInCommittee: committeeMembersCount=%d", newBlockHeight, Str(myMemberId), len(committeeMembers))
 	newTerm.initView(0)
 	return newTerm
 }
@@ -132,7 +133,7 @@ func (tic *TermInCommittee) initView(view primitives.View) {
 	tic.view = view
 	tic.leaderMemberId = tic.calcLeaderMemberId(view)
 	tic.electionTrigger.RegisterOnElection(tic.height, tic.view, tic.moveToNextLeader)
-	tic.logger.Debug("H=%d V=%d %s initView() set leader to %s", tic.height, tic.view, tic.myMemberId.KeyForMap(), tic.leaderMemberId.KeyForMap())
+	tic.logger.Debug("H=%d V=%d initView() set leader to %s goroutines#=%d", tic.height, tic.view, tic.myMemberId.String(), runtime.NumGoroutine())
 }
 
 func (tic *TermInCommittee) Dispose() {
@@ -161,13 +162,13 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 }
 
 func (tic *TermInCommittee) sendConsensusMessage(ctx context.Context, message ConsensusMessage) {
-	tic.logger.Debug("H=%d V=%d %s sendConsensusMessage() msgType=%v", tic.height, tic.view, tic.myMemberId.KeyForMap(), message.MessageType())
+	tic.logger.Debug("H=%d V=%d ID=%s sendConsensusMessage() msgType=%v", tic.height, tic.view, Str(tic.myMemberId), message.MessageType())
 	rawMessage := CreateConsensusRawMessage(message)
 	tic.communication.SendConsensusMessage(ctx, tic.otherCommitteeMembersMemberIds, rawMessage)
 }
 
 func (tic *TermInCommittee) HandleLeanHelixPrePrepare(ctx context.Context, ppm *PreprepareMessage) {
-	tic.logger.Debug("H=%s V=%s %s HandleLeanHelixPrePrepare()", tic.height, tic.view, tic.myMemberId.KeyForMap())
+	tic.logger.Debug("H=%s V=%s ID=%s HandleLeanHelixPrePrepare()", tic.height, tic.view, Str(tic.myMemberId))
 	if err := tic.validatePreprepare(ctx, ppm); err != nil {
 		tic.logger.Debug("H=%s V=%s HandleLeanHelixPrePrepare() err=%v", err)
 	} else {
@@ -224,7 +225,7 @@ func (tic *TermInCommittee) hasPreprepare(blockHeight primitives.BlockHeight, vi
 }
 
 func (tic *TermInCommittee) HandleLeanHelixPrepare(ctx context.Context, pm *PrepareMessage) {
-	tic.logger.Debug("H=%s V=%s %s HandleLeanHelixPrepare()", pm.BlockHeight(), pm.View(), tic.myMemberId.KeyForMap())
+	tic.logger.Debug("H=%s V=%s ID=%s HandleLeanHelixPrepare()", pm.BlockHeight(), pm.View(), Str(tic.myMemberId))
 	header := pm.content.SignedHeader()
 	sender := pm.content.Sender()
 
@@ -344,7 +345,7 @@ func (tic *TermInCommittee) onPrepared(ctx context.Context, blockHeight primitiv
 }
 
 func (tic *TermInCommittee) HandleLeanHelixCommit(ctx context.Context, cm *CommitMessage) {
-	tic.logger.Debug("H=%s V=%s %s HandleLeanHelixCommit()", tic.height, tic.view, tic.myMemberId.KeyForMap())
+	tic.logger.Debug("H=%s V=%s ID=%s HandleLeanHelixCommit()", tic.height, tic.view, Str(tic.myMemberId))
 	header := cm.content.SignedHeader()
 	sender := cm.content.Sender()
 
@@ -357,7 +358,7 @@ func (tic *TermInCommittee) HandleLeanHelixCommit(ctx context.Context, cm *Commi
 }
 
 func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) {
-	tic.logger.Debug("H=%s V=%s %s checkCommitted() H=%s V=%s BlockHash %s ", tic.height, tic.view, tic.myMemberId.KeyForMap(), blockHeight, view, blockHash)
+	tic.logger.Debug("H=%s V=%s ID=%s checkCommitted() H=%s V=%s BlockHash %s ", tic.height, tic.view, Str(tic.myMemberId), blockHeight, view, blockHash)
 	if tic.committedBlock != nil {
 		return
 	}
@@ -374,7 +375,7 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 		tic.logger.Info("H=%s V=%s checkCommitted() missing PPM")
 		return
 	}
-	tic.logger.Info("H=%s V=%s %s checkCommitted() COMMITTED H=%s V=%s BlockHash %s ", tic.height, tic.view, tic.myMemberId.KeyForMap(), blockHeight, view, blockHash)
+	tic.logger.Info("H=%s V=%s ID=%s checkCommitted() COMMITTED H=%s V=%s BlockHash=%s ", tic.height, tic.view, Str(tic.myMemberId), blockHeight, view, blockHash)
 	tic.committedBlock = ppm.block
 	tic.onCommit(ctx, ppm.block, nil)
 }
@@ -425,7 +426,7 @@ func (tic *TermInCommittee) latestViewChangeVote(confirmations []*protocol.ViewC
 }
 
 func (tic *TermInCommittee) HandleLeanHelixNewView(ctx context.Context, nvm *NewViewMessage) {
-	tic.logger.Debug("H=%s V=%s %s HandleLeanHelixNewView()", tic.height, tic.view, tic.myMemberId.KeyForMap())
+	tic.logger.Debug("H=%s V=%s ID=%s HandleLeanHelixNewView()", tic.height, tic.view, Str(tic.myMemberId))
 	header := nvm.Content().SignedHeader()
 	sender := nvm.Content().Sender()
 	ppMessageContent := nvm.Content().Message()
