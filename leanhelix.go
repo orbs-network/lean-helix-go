@@ -53,7 +53,13 @@ func (lh *LeanHelix) Run(ctx context.Context) {
 }
 
 func (lh *LeanHelix) UpdateState(prevBlock Block) {
-	lh.logger.Debug("%s UpdateState()", lh.config.Membership.MyMemberId().KeyForMap())
+	var height primitives.BlockHeight
+	if prevBlock == nil {
+		height = 0
+	} else {
+		height = prevBlock.Height()
+	}
+	lh.logger.Debug("UpdateState() prevBlockHeight=%d memberId=%v", height, lh.config.Membership.MyMemberId().KeyForMap())
 	lh.acknowledgeBlockChannel <- prevBlock
 }
 
@@ -85,7 +91,13 @@ func (lh *LeanHelix) Tick(ctx context.Context) bool {
 
 	case prevBlock := <-lh.acknowledgeBlockChannel:
 		// TODO: a byzantine node can send the genesis block in sync can cause a mess
-		if prevBlock == GenesisBlock || primitives.BlockHeight(prevBlock.Height()) >= lh.currentHeight {
+		var prevHeight primitives.BlockHeight
+		if prevBlock == GenesisBlock {
+			prevHeight = 0
+		} else {
+			prevHeight = prevBlock.Height()
+		}
+		if prevHeight >= lh.currentHeight {
 			lh.onNewConsensusRound(ctx, prevBlock)
 		}
 	}
