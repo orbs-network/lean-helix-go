@@ -28,6 +28,11 @@ func GetBlockHeight(prevBlock Block) primitives.BlockHeight {
 	}
 }
 
+func CalcQuorumSize(committeeMembersCount int) int {
+	f := int(math.Floor(float64(committeeMembersCount-1) / 3))
+	return committeeMembersCount - f
+}
+
 type OnCommitCallback func(ctx context.Context, block Block, blockProof []byte)
 
 // ***********************************
@@ -70,11 +75,6 @@ func (lh *LeanHelix) UpdateState(prevBlock Block) {
 	}
 	lh.logger.Debug("UpdateState() ID=%s prevBlockHeight=%d", Str(lh.config.Membership.MyMemberId()), height)
 	lh.acknowledgeBlockChannel <- prevBlock
-}
-
-func CalcQuorumSize(committeeMembersCount int) int {
-	f := int(math.Floor(float64(committeeMembersCount-1) / 3))
-	return committeeMembersCount - f
 }
 
 func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block Block, blockProofBytes []byte) bool {

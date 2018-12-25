@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
-	"math"
 	"runtime"
 	"sort"
 )
@@ -36,6 +35,7 @@ type TermInCommittee struct {
 	newViewLocally                 primitives.View
 	logger                         Logger
 	prevBlock                      Block
+	QuorumSize                     int
 }
 
 func NewTermInCommittee(ctx context.Context, config *Config, committeeMembers []primitives.MemberId, onCommit OnInCommitteeCommitCallback, blockHeight primitives.BlockHeight, prevBlock Block) *TermInCommittee {
@@ -76,6 +76,7 @@ func NewTermInCommittee(ctx context.Context, config *Config, committeeMembers []
 		messageFactory:                 messageFactory,
 		myMemberId:                     myMemberId,
 		logger:                         config.Logger,
+		QuorumSize:                     CalcQuorumSize(len(committeeMembers)),
 	}
 
 	newTerm.logger.Debug("H=%d V=0 ID=%s NewTermInCommittee: committeeMembersCount=%d", blockHeight, Str(myMemberId), len(committeeMembers))
@@ -132,7 +133,7 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 	}
 	tic.SetView(ctx, tic.view+1)
 	tic.logger.Debug("H=%d V=%d moveToNextLeader() newLeader=%s", tic.height, tic.view, tic.leaderMemberId[:3])
-	preparedMessages := ExtractPreparedMessages(tic.height, tic.storage, tic.QuorumSize())
+	preparedMessages := ExtractPreparedMessages(tic.height, tic.storage, tic.QuorumSize)
 	vcm := tic.messageFactory.CreateViewChangeMessage(tic.height, tic.view, preparedMessages)
 	if tic.isLeader() {
 		tic.storage.StoreViewChange(vcm)
@@ -266,7 +267,7 @@ func (tic *TermInCommittee) isViewChangeValid(targetLeaderMemberId primitives.Me
 		return false
 	}
 
-	if !ValidatePreparedProof(tic.height, newView, preparedProof, tic.QuorumSize(), tic.keyManager, tic.committeeMembersMemberIds, func(view primitives.View) primitives.MemberId { return tic.calcLeaderMemberId(view) }) {
+	if !ValidatePreparedProof(tic.height, newView, preparedProof, tic.QuorumSize, tic.keyManager, tic.committeeMembersMemberIds, func(view primitives.View) primitives.MemberId { return tic.calcLeaderMemberId(view) }) {
 		tic.logger.Debug("isViewChangeValid(): failed ValidatePreparedProof()")
 		return false
 	}
@@ -283,7 +284,7 @@ func (tic *TermInCommittee) isViewChangeValid(targetLeaderMemberId primitives.Me
 func (tic *TermInCommittee) checkElected(ctx context.Context, height primitives.BlockHeight, view primitives.View) {
 	if tic.newViewLocally < view {
 		vcms, ok := tic.storage.GetViewChangeMessages(height, view)
-		minimumNodes := tic.QuorumSize()
+		minimumNodes := tic.QuorumSize
 		if ok && len(vcms) >= minimumNodes {
 			tic.onElected(ctx, view, vcms[:minimumNodes])
 		}
@@ -310,7 +311,7 @@ func (tic *TermInCommittee) checkPrepared(ctx context.Context, blockHeight primi
 	if tic.preparedLocally == false {
 		if tic.isPreprepared(blockHeight, view, blockHash) {
 			countPrepared := tic.countPrepared(blockHeight, view, blockHash)
-			if countPrepared >= tic.QuorumSize()-1 {
+			if countPrepared >= tic.QuorumSize-1 {
 				tic.onPrepared(ctx, blockHeight, view, blockHash)
 			}
 		}
@@ -347,7 +348,7 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 		return
 	}
 	commits, ok := tic.storage.GetCommitMessages(blockHeight, view, blockHash)
-	if !ok || len(commits) < tic.QuorumSize() {
+	if !ok || len(commits) < tic.QuorumSize {
 		return
 	}
 	ppm, ok := tic.storage.GetPreprepareMessage(blockHeight, view)
@@ -362,7 +363,7 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 }
 
 func (tic *TermInCommittee) validateViewChangeVotes(targetBlockHeight primitives.BlockHeight, targetView primitives.View, confirmations []*protocol.ViewChangeMessageContent) bool {
-	if len(confirmations) < tic.QuorumSize() {
+	if len(confirmations) < tic.QuorumSize {
 		return false
 	}
 
@@ -488,12 +489,6 @@ func (tic *TermInCommittee) HandleLeanHelixNewView(ctx context.Context, nvm *New
 		tic.SetView(ctx, header.View())
 		tic.processPreprepare(ctx, ppm)
 	}
-}
-
-func (tic *TermInCommittee) QuorumSize() int {
-	committeeMembersCount := len(tic.committeeMembersMemberIds)
-	f := int(math.Floor(float64(committeeMembersCount-1) / 3))
-	return committeeMembersCount - f
 }
 
 func (tic *TermInCommittee) isLeader() bool {
