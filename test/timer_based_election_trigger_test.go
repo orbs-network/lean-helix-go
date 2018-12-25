@@ -23,13 +23,13 @@ func buildElectionTrigger(ctx context.Context, timeout time.Duration) *leanhelix
 
 func TestCallbackTrigger(t *testing.T) {
 	WithContext(func(ctx context.Context) {
-		et := buildElectionTrigger(ctx, 10*time.Millisecond)
+		et := buildElectionTrigger(ctx, 20*time.Millisecond)
 
 		wasCalled := false
 		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View) { wasCalled = true }
-		et.RegisterOnElection(ctx, 10, 0, cb)
+		et.RegisterOnElection(ctx, 20, 0, cb)
 
-		time.Sleep(time.Duration(15) * time.Millisecond)
+		time.Sleep(time.Duration(30) * time.Millisecond)
 
 		require.True(t, wasCalled, "Did not call the timer callback")
 	})
