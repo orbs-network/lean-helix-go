@@ -190,6 +190,7 @@ func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
+		outOfNetworkNode := builders.ADummyNode()
 
 		net.StartConsensus(ctx)
 
@@ -218,15 +219,22 @@ func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 			Nodes:    generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1),
 		}
 
-		//proof with duplicate nodes
+		// proof with duplicate nodes
 		duplicateNodesProof := &protocol.BlockProofBuilder{
 			BlockRef: goodBlockRef,
 			Nodes:    generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node1),
+		}
+
+		// proof with a node that's not part of the network
+		unknownNodeProof := &protocol.BlockProofBuilder{
+			BlockRef: goodBlockRef,
+			Nodes:    generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, outOfNetworkNode),
 		}
 
 		require.True(t, node0.ValidateBlockConsensus(ctx, block3, goodProof.Build().Raw()))
 		require.False(t, node0.ValidateBlockConsensus(ctx, block3, noQuorumProof.Build().Raw()))
 		require.False(t, node0.ValidateBlockConsensus(ctx, block3, badBlockRefBlockHeightProof.Build().Raw()))
 		require.False(t, node0.ValidateBlockConsensus(ctx, block3, duplicateNodesProof.Build().Raw()))
+		require.False(t, node0.ValidateBlockConsensus(ctx, block3, unknownNodeProof.Build().Raw()))
 	})
 }

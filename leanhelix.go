@@ -98,6 +98,8 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block Block, bl
 		return false
 	}
 
+	committeeMembers := lh.config.Membership.RequestOrderedCommittee(ctx, blockHeight, 0)
+
 	sendersIterator := blockProof.NodesIterator()
 	set := make(map[MemberIdStr]bool)
 	var sendersCounter = 0
@@ -116,11 +118,14 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block Block, bl
 			return false
 		}
 
+		if !isInMembers(committeeMembers, memberId) {
+			return false
+		}
+
 		set[MemberIdStr(memberId)] = true
 		sendersCounter++
 	}
 
-	committeeMembers := lh.config.Membership.RequestOrderedCommittee(ctx, blockHeight, 0)
 	if sendersCounter < CalcQuorumSize(len(committeeMembers)) {
 		return false
 	}
