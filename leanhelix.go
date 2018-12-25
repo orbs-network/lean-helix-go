@@ -66,7 +66,7 @@ func (lh *LeanHelix) Run(ctx context.Context) {
 	}
 }
 
-func (lh *LeanHelix) UpdateState(prevBlock Block) {
+func (lh *LeanHelix) UpdateState(prevBlock Block, blockProofBytes []byte) {
 	var height primitives.BlockHeight
 	if prevBlock == nil {
 		height = 0
