@@ -79,6 +79,7 @@ func TestAValidBlockProof(t *testing.T) {
 		commitMessages := []*leanhelix.CommitMessage{cm0, cm1, cm2}
 
 		blockProof := leanhelix.GenerateLeanHelixBlockProof(commitMessages).Raw()
+		require.False(t, node0.ValidateBlockConsensus(nil, blockProof))
 		require.True(t, node0.ValidateBlockConsensus(block3, blockProof))
 	})
 }
@@ -97,21 +98,63 @@ func TestThatWeDoNotAcceptNilBlockProof(t *testing.T) {
 	})
 }
 
-func TestThatABlockProofMatchTheGivenBlockHeight(t *testing.T) {
+func TestThatBlockRefInsideProofValidation(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := builders.ABasicTestNetwork()
+		testProof := func(block leanhelix.Block, proof *protocol.BlockProof, shouldPass bool) {
+			net := builders.ABasicTestNetwork()
+			net.StartConsensus(ctx)
 
-		net.StartConsensus(ctx)
+			if shouldPass {
+				require.True(t, net.Nodes[0].ValidateBlockConsensus(block, proof.Raw()))
+			} else {
+				require.False(t, net.Nodes[0].ValidateBlockConsensus(block, proof.Raw()))
+			}
+		}
 
 		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
 		block2 := builders.CreateBlock(block1)
 		block3 := builders.CreateBlock(block2)
 
-		blockRef := protocol.BlockRefBuilder{BlockHeight: 666}
-		proof := (&protocol.BlockProofBuilder{
-			BlockRef: &blockRef,
-		}).Build().Raw()
-		require.False(t, net.Nodes[0].ValidateBlockConsensus(block3, proof))
-		require.False(t, net.Nodes[0].ValidateBlockConsensus(nil, proof))
+		nilBlockRefProof := (&protocol.BlockProofBuilder{
+			BlockRef: nil,
+		}).Build()
+
+		badBlockHeightProof := (&protocol.BlockProofBuilder{
+			BlockRef: &protocol.BlockRefBuilder{
+				MessageType: protocol.LEAN_HELIX_COMMIT,
+				BlockHeight: 666,
+				BlockHash:   builders.CalculateBlockHash(block3),
+			},
+		}).Build()
+
+		badMessageTypeProof := (&protocol.BlockProofBuilder{
+			BlockRef: &protocol.BlockRefBuilder{
+				MessageType: protocol.LEAN_HELIX_NEW_VIEW,
+				BlockHeight: block3.Height(),
+				BlockHash:   builders.CalculateBlockHash(block3),
+			},
+		}).Build()
+
+		badBlockHash := (&protocol.BlockProofBuilder{
+			BlockRef: &protocol.BlockRefBuilder{
+				MessageType: protocol.LEAN_HELIX_COMMIT,
+				BlockHeight: block3.Height(),
+				BlockHash:   builders.CalculateBlockHash(block1),
+			},
+		}).Build()
+
+		goodProof := (&protocol.BlockProofBuilder{
+			BlockRef: &protocol.BlockRefBuilder{
+				MessageType: protocol.LEAN_HELIX_COMMIT,
+				BlockHeight: block3.Height(),
+				BlockHash:   builders.CalculateBlockHash(block3),
+			},
+		}).Build()
+
+		testProof(block3, goodProof, true)
+		testProof(block3, nilBlockRefProof, false)
+		testProof(block3, badBlockHeightProof, false)
+		testProof(block3, badMessageTypeProof, false)
+		testProof(block3, badBlockHash, false)
 	})
 }

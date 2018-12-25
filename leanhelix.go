@@ -70,7 +70,21 @@ func (lh *LeanHelix) ValidateBlockConsensus(block Block, blockProofBytes []byte)
 	}
 
 	blockProof := protocol.BlockProofReader(blockProofBytes)
-	return block.Height() == blockProof.BlockRef().BlockHeight()
+	blockRef := blockProof.BlockRef()
+	if blockRef.MessageType() != protocol.LEAN_HELIX_COMMIT {
+		return false
+	}
+
+	blockHeight := block.Height()
+	if blockHeight != blockRef.BlockHeight() {
+		return false
+	}
+
+	if !lh.config.BlockUtils.ValidateBlockCommitment(blockHeight, block, blockRef.BlockHash()) {
+		return false
+	}
+
+	return true
 }
 
 func (lh *LeanHelix) HandleConsensusMessage(ctx context.Context, message *ConsensusRawMessage) {
