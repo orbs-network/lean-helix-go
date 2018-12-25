@@ -56,11 +56,9 @@ func NewTermInCommittee(ctx context.Context, config *Config, onCommit OnInCommit
 
 	// TODO Implement me!
 	randomSeed := uint64(12345)
-	// TODO Implement me!
-	committeeSize := uint32(4)
-	committeeMembers := membership.RequestOrderedCommittee(ctx, newBlockHeight, randomSeed, committeeSize)
+	committeeMembers := membership.RequestOrderedCommittee(ctx, newBlockHeight, randomSeed)
 
-	panicOnLessThanMinimumCommitteeMembers(config.OverrideMinimumCommitteeMembers, committeeMembers)
+	panicOnLessThanMinimumCommitteeMembers(committeeMembers)
 
 	otherCommitteeMembers := make([]primitives.MemberId, 0)
 	for _, member := range committeeMembers {
@@ -97,13 +95,8 @@ func NewTermInCommittee(ctx context.Context, config *Config, onCommit OnInCommit
 	return newTerm
 }
 
-func panicOnLessThanMinimumCommitteeMembers(minimum int, committeeMembers []primitives.MemberId) {
-
-	if minimum == 0 {
-		minimum = LEAN_HELIX_HARD_MINIMUM_COMMITTEE_MEMBERS
-	}
-
-	if len(committeeMembers) < minimum {
+func panicOnLessThanMinimumCommitteeMembers(committeeMembers []primitives.MemberId) {
+	if len(committeeMembers) < LEAN_HELIX_HARD_MINIMUM_COMMITTEE_MEMBERS {
 		panic(fmt.Sprintf("LH Received only %d committee members, but the hard minimum is %d", len(committeeMembers), LEAN_HELIX_HARD_MINIMUM_COMMITTEE_MEMBERS))
 	}
 }

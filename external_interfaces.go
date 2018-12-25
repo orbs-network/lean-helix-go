@@ -7,14 +7,13 @@ import (
 )
 
 type Config struct {
-	Communication                   Communication
-	Membership                      Membership
-	BlockUtils                      BlockUtils
-	KeyManager                      KeyManager
-	ElectionTrigger                 ElectionTrigger
-	Storage                         Storage
-	Logger                          Logger
-	OverrideMinimumCommitteeMembers int
+	Communication   Communication
+	Membership      Membership
+	BlockUtils      BlockUtils
+	KeyManager      KeyManager
+	ElectionTrigger ElectionTrigger
+	Storage         Storage
+	Logger          Logger
 }
 
 type Block interface {
@@ -34,7 +33,7 @@ type BlockUtils interface {
 
 type Membership interface {
 	MyMemberId() primitives.MemberId
-	RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64, committeeSize uint32) []primitives.MemberId
+	RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64) []primitives.MemberId
 }
 
 type KeyManager interface {

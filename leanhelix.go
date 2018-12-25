@@ -102,7 +102,7 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block Block, bl
 		sendersCounter++
 	}
 
-	committeeMembers := lh.config.Membership.RequestOrderedCommittee(ctx, blockHeight, 0, 9999)
+	committeeMembers := lh.config.Membership.RequestOrderedCommittee(ctx, blockHeight, 0)
 	if sendersCounter < CalcQuorumSize(len(committeeMembers)) {
 		return false
 	}
