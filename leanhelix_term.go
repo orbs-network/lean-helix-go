@@ -3,7 +3,6 @@ package leanhelix
 import (
 	"context"
 	"fmt"
-	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
 type LeanHelixTerm struct {
@@ -23,11 +22,7 @@ func NewLeanHelixTerm(ctx context.Context, config *Config, onCommit OnCommitCall
 }
 
 func (lht *LeanHelixTerm) onInCommitteeCommit(ctx context.Context, block Block, commitMessages []*CommitMessage) {
-	blockRef := protocol.BlockRefBuilder{BlockHeight: block.Height()}
-	proof := (&protocol.BlockProofBuilder{
-		BlockRef: &blockRef,
-	}).Build().Raw()
-	lht.onCommit(ctx, block, proof) // TODO: generate a real block proof
+	lht.onCommit(ctx, block, GenerateLeanHelixBlockProof(commitMessages).Raw())
 }
 
 func (lht *LeanHelixTerm) HandleConsensusMessage(ctx context.Context, message ConsensusMessage) {

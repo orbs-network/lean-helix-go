@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
+	"math"
 )
 
 type LeanHelix struct {
@@ -63,7 +64,12 @@ func (lh *LeanHelix) UpdateState(prevBlock Block) {
 	lh.acknowledgeBlockChannel <- prevBlock
 }
 
-func (lh *LeanHelix) ValidateBlockConsensus(block Block, blockProofBytes []byte) bool {
+func CalcQuorumSize(committeeMembersCount int) int {
+	f := int(math.Floor(float64(committeeMembersCount-1) / 3))
+	return committeeMembersCount - f
+}
+
+func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block Block, blockProofBytes []byte) bool {
 	lh.logger.Debug("ValidateBlockConsensus() ID=%s", Str(lh.config.Membership.MyMemberId()))
 	if blockProofBytes == nil || len(blockProofBytes) == 0 || block == nil {
 		return false
@@ -81,6 +87,23 @@ func (lh *LeanHelix) ValidateBlockConsensus(block Block, blockProofBytes []byte)
 	}
 
 	if !lh.config.BlockUtils.ValidateBlockCommitment(blockHeight, block, blockRef.BlockHash()) {
+		return false
+	}
+
+	cSendersIterator := blockProof.NodesIterator()
+	var sendersCounter = 0
+	for {
+		if !cSendersIterator.HasNext() {
+			break
+		}
+		if !verifyBlockRefMessage(blockRef, cSendersIterator.NextNodes(), lh.config.KeyManager) {
+			return false
+		}
+		sendersCounter++
+	}
+
+	committeeMembers := lh.config.Membership.RequestOrderedCommittee(ctx, blockHeight, 0, 9999)
+	if sendersCounter < CalcQuorumSize(len(committeeMembers)) {
 		return false
 	}
 

@@ -49,7 +49,7 @@ func TestNodeSync(t *testing.T) {
 		// syncing node3
 		latestBlock := node0.GetLatestBlock()
 		latestBlockProof := node0.GetLatestBlockProof()
-		node3.Sync(latestBlock, latestBlockProof)
+		node3.Sync(ctx, latestBlock, latestBlockProof)
 
 		net.ResumeNodeRequestNewBlock(node0)
 
@@ -79,8 +79,8 @@ func TestAValidBlockProof(t *testing.T) {
 		commitMessages := []*leanhelix.CommitMessage{cm0, cm1, cm2}
 
 		blockProof := leanhelix.GenerateLeanHelixBlockProof(commitMessages).Raw()
-		require.False(t, node0.ValidateBlockConsensus(nil, blockProof))
-		require.True(t, node0.ValidateBlockConsensus(block3, blockProof))
+		require.False(t, node0.ValidateBlockConsensus(ctx, nil, blockProof))
+		require.True(t, node0.ValidateBlockConsensus(ctx, block3, blockProof))
 	})
 }
 
@@ -93,30 +93,31 @@ func TestThatWeDoNotAcceptNilBlockProof(t *testing.T) {
 		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
 		block2 := builders.CreateBlock(block1)
 		block3 := builders.CreateBlock(block2)
-		require.False(t, net.Nodes[0].ValidateBlockConsensus(block3, nil))
-		require.False(t, net.Nodes[0].ValidateBlockConsensus(block3, []byte{}))
+		require.False(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, nil))
+		require.False(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, []byte{}))
 	})
 }
 
 func TestThatBlockRefInsideProofValidation(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		testProof := func(block leanhelix.Block, proof *protocol.BlockProof, shouldPass bool) {
-			net := builders.ABasicTestNetwork()
-			net.StartConsensus(ctx)
+		net := builders.ABasicTestNetwork()
+		net.StartConsensus(ctx)
 
-			if shouldPass {
-				require.True(t, net.Nodes[0].ValidateBlockConsensus(block, proof.Raw()))
-			} else {
-				require.False(t, net.Nodes[0].ValidateBlockConsensus(block, proof.Raw()))
-			}
-		}
+		node0 := net.Nodes[0]
+		node1 := net.Nodes[1]
+		node2 := net.Nodes[2]
 
 		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
 		block2 := builders.CreateBlock(block1)
 		block3 := builders.CreateBlock(block2)
+		blockHeight := block3.Height()
+
+		goodBlockRef := generateACommitBlockRefBuilder(blockHeight, block3)
+		signatures := generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node2)
 
 		nilBlockRefProof := (&protocol.BlockProofBuilder{
 			BlockRef: nil,
+			Nodes:    signatures,
 		}).Build()
 
 		badBlockHeightProof := (&protocol.BlockProofBuilder{
@@ -125,36 +126,101 @@ func TestThatBlockRefInsideProofValidation(t *testing.T) {
 				BlockHeight: 666,
 				BlockHash:   builders.CalculateBlockHash(block3),
 			},
+			Nodes: signatures,
 		}).Build()
 
 		badMessageTypeProof := (&protocol.BlockProofBuilder{
 			BlockRef: &protocol.BlockRefBuilder{
 				MessageType: protocol.LEAN_HELIX_NEW_VIEW,
-				BlockHeight: block3.Height(),
+				BlockHeight: blockHeight,
 				BlockHash:   builders.CalculateBlockHash(block3),
 			},
+			Nodes: signatures,
 		}).Build()
 
 		badBlockHash := (&protocol.BlockProofBuilder{
 			BlockRef: &protocol.BlockRefBuilder{
 				MessageType: protocol.LEAN_HELIX_COMMIT,
-				BlockHeight: block3.Height(),
+				BlockHeight: blockHeight,
 				BlockHash:   builders.CalculateBlockHash(block1),
 			},
+			Nodes: signatures,
 		}).Build()
 
 		goodProof := (&protocol.BlockProofBuilder{
 			BlockRef: &protocol.BlockRefBuilder{
 				MessageType: protocol.LEAN_HELIX_COMMIT,
-				BlockHeight: block3.Height(),
+				BlockHeight: blockHeight,
 				BlockHash:   builders.CalculateBlockHash(block3),
 			},
+			Nodes: signatures,
 		}).Build()
 
-		testProof(block3, goodProof, true)
-		testProof(block3, nilBlockRefProof, false)
-		testProof(block3, badBlockHeightProof, false)
-		testProof(block3, badMessageTypeProof, false)
-		testProof(block3, badBlockHash, false)
+		require.True(t, node0.ValidateBlockConsensus(ctx, block3, goodProof.Raw()))
+		require.False(t, node0.ValidateBlockConsensus(ctx, block3, nilBlockRefProof.Raw()))
+		require.False(t, node0.ValidateBlockConsensus(ctx, block3, badBlockHeightProof.Raw()))
+		require.False(t, node0.ValidateBlockConsensus(ctx, block3, badMessageTypeProof.Raw()))
+		require.False(t, node0.ValidateBlockConsensus(ctx, block3, badBlockHash.Raw()))
+	})
+}
+
+func generateACommitBlockRefBuilder(blockHeight primitives.BlockHeight, block leanhelix.Block) *protocol.BlockRefBuilder {
+	return &protocol.BlockRefBuilder{
+		MessageType: protocol.LEAN_HELIX_COMMIT,
+		BlockHeight: blockHeight,
+		BlockHash:   builders.CalculateBlockHash(block),
+	}
+}
+
+func generateSignatures(blockHeight primitives.BlockHeight, blockRef *protocol.BlockRef, nodes ...*builders.Node) []*protocol.SenderSignatureBuilder {
+	var result []*protocol.SenderSignatureBuilder
+	for _, node := range nodes {
+		result = append(result, &protocol.SenderSignatureBuilder{
+			MemberId:  node.MemberId,
+			Signature: node.KeyManager.SignConsensusMessage(blockHeight, blockRef.Raw()),
+		})
+	}
+
+	return result
+}
+
+func generateProofBuilder(
+	blockRefHeight primitives.BlockHeight,
+	signaturesHeight primitives.BlockHeight,
+	block leanhelix.Block,
+	nodes ...*builders.Node,
+) *protocol.BlockProofBuilder {
+
+	signedBlockRef := generateACommitBlockRefBuilder(blockRefHeight, block)
+	proofBlockRef := generateACommitBlockRefBuilder(signaturesHeight, block)
+	signatures := generateSignatures(signaturesHeight, signedBlockRef.Build(), nodes...)
+	return &protocol.BlockProofBuilder{
+		BlockRef: proofBlockRef,
+		Nodes:    signatures,
+	}
+}
+
+func TestCommitsWhenValidatingBlockProof(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		net := builders.ABasicTestNetwork()
+		node0 := net.Nodes[0]
+		node1 := net.Nodes[1]
+		node2 := net.Nodes[2]
+
+		net.StartConsensus(ctx)
+
+		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
+		block2 := builders.CreateBlock(block1)
+		block3 := builders.CreateBlock(block2)
+
+		blockHeight := block3.Height()
+
+		goodProof := generateProofBuilder(blockHeight, blockHeight, block3, node0, node1, node2)
+		badBlockRefBlockHeightProof := generateProofBuilder(666, blockHeight, block3, node0, node1, node2)
+		noQuorumProof := generateProofBuilder(blockHeight, blockHeight, block3, node0, node1)
+
+		require.True(t, node0.ValidateBlockConsensus(ctx, block3, goodProof.Build().Raw()))
+		require.False(t, node0.ValidateBlockConsensus(ctx, block3, noQuorumProof.Build().Raw()))
+		require.False(t, node0.ValidateBlockConsensus(ctx, block3, badBlockRefBlockHeightProof.Build().Raw()))
 	})
 }

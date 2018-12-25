@@ -365,8 +365,8 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 	if !tic.isPreprepared(blockHeight, view, blockHash) {
 		return
 	}
-	commits := tic.storage.GetCommitSendersIds(blockHeight, view, blockHash)
-	if len(commits) < tic.QuorumSize() {
+	commits, ok := tic.storage.GetCommitMessages(blockHeight, view, blockHash)
+	if !ok || len(commits) < tic.QuorumSize() {
 		return
 	}
 	ppm, ok := tic.storage.GetPreprepareMessage(blockHeight, view)
@@ -377,7 +377,7 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 	}
 	tic.logger.Info("H=%s V=%s ID=%s checkCommitted() COMMITTED H=%s V=%s BlockHash=%s ", tic.height, tic.view, Str(tic.myMemberId), blockHeight, view, blockHash)
 	tic.committedBlock = ppm.block
-	tic.onCommit(ctx, ppm.block, nil)
+	tic.onCommit(ctx, ppm.block, commits)
 }
 
 func (tic *TermInCommittee) validateViewChangeVotes(targetBlockHeight primitives.BlockHeight, targetView primitives.View, confirmations []*protocol.ViewChangeMessageContent) bool {
