@@ -184,22 +184,6 @@ func generateSignatures(blockHeight primitives.BlockHeight, blockRef *protocol.B
 	return result
 }
 
-func generateProofBuilder(
-	blockRefHeight primitives.BlockHeight,
-	signaturesHeight primitives.BlockHeight,
-	block leanhelix.Block,
-	nodes ...*builders.Node,
-) *protocol.BlockProofBuilder {
-
-	signedBlockRef := generateACommitBlockRefBuilder(blockRefHeight, block)
-	proofBlockRef := generateACommitBlockRefBuilder(signaturesHeight, block)
-	signatures := generateSignatures(signaturesHeight, signedBlockRef.Build(), nodes...)
-	return &protocol.BlockProofBuilder{
-		BlockRef: proofBlockRef,
-		Nodes:    signatures,
-	}
-}
-
 func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		net := builders.ABasicTestNetwork()
@@ -214,10 +198,25 @@ func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 		block3 := builders.CreateBlock(block2)
 
 		blockHeight := block3.Height()
+		goodBlockRef := generateACommitBlockRefBuilder(blockHeight, block3)
 
-		goodProof := generateProofBuilder(blockHeight, blockHeight, block3, node0, node1, node2)
-		badBlockRefBlockHeightProof := generateProofBuilder(666, blockHeight, block3, node0, node1, node2)
-		noQuorumProof := generateProofBuilder(blockHeight, blockHeight, block3, node0, node1)
+		// good proof
+		goodProof := &protocol.BlockProofBuilder{
+			BlockRef: goodBlockRef,
+			Nodes:    generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node2),
+		}
+
+		// proof with bad block height
+		badBlockRefBlockHeightProof := &protocol.BlockProofBuilder{
+			BlockRef: generateACommitBlockRefBuilder(666, block3),
+			Nodes:    generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node2),
+		}
+
+		// proof with not enough nodes
+		noQuorumProof := &protocol.BlockProofBuilder{
+			BlockRef: goodBlockRef,
+			Nodes:    generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1),
+		}
 
 		require.True(t, node0.ValidateBlockConsensus(ctx, block3, goodProof.Build().Raw()))
 		require.False(t, node0.ValidateBlockConsensus(ctx, block3, noQuorumProof.Build().Raw()))

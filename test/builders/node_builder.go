@@ -66,3 +66,11 @@ func (builder *NodeBuilder) Build() *Node {
 	}
 	return NewNode(builder.membership, builder.gossip, blockUtils, electionTrigger, logger)
 }
+
+func ADummyNode(memberId primitives.MemberId) *Node {
+	return NewNodeBuilder().
+		WithMemberId(memberId).
+		ThatIsPartOf(gossip.NewMockMembership(memberId, nil, false)).
+		CommunicatesVia(gossip.NewGossip(nil)).
+		Build()
+}

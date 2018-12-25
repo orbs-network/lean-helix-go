@@ -98,13 +98,13 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block Block, bl
 		return false
 	}
 
-	cSendersIterator := blockProof.NodesIterator()
+	sendersIterator := blockProof.NodesIterator()
 	var sendersCounter = 0
 	for {
-		if !cSendersIterator.HasNext() {
+		if !sendersIterator.HasNext() {
 			break
 		}
-		if !verifyBlockRefMessage(blockRef, cSendersIterator.NextNodes(), lh.config.KeyManager) {
+		if !verifyBlockRefMessage(blockRef, sendersIterator.NextNodes(), lh.config.KeyManager) {
 			return false
 		}
 		sendersCounter++
