@@ -75,7 +75,12 @@ func (lh *LeanHelix) ValidateBlockConsensus(block Block, blockProofBytes []byte)
 
 func (lh *LeanHelix) HandleConsensusMessage(ctx context.Context, message *ConsensusRawMessage) {
 	lh.logger.Debug("%s HandleConsensusRawMessage()", lh.config.Membership.MyMemberId().KeyForMap())
-	lh.messagesChannel <- message
+	select {
+	case <-ctx.Done():
+		return
+
+	case lh.messagesChannel <- message:
+	}
 }
 
 func (lh *LeanHelix) Tick(ctx context.Context) bool {
