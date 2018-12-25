@@ -99,14 +99,24 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block Block, bl
 	}
 
 	sendersIterator := blockProof.NodesIterator()
+	set := make(map[MemberIdStr]bool)
 	var sendersCounter = 0
 	for {
 		if !sendersIterator.HasNext() {
 			break
 		}
-		if !verifyBlockRefMessage(blockRef, sendersIterator.NextNodes(), lh.config.KeyManager) {
+
+		sender := sendersIterator.NextNodes()
+		if !verifyBlockRefMessage(blockRef, sender, lh.config.KeyManager) {
 			return false
 		}
+
+		memberId := sender.MemberId()
+		if _, ok := set[MemberIdStr(memberId)]; ok {
+			return false
+		}
+
+		set[MemberIdStr(memberId)] = true
 		sendersCounter++
 	}
 

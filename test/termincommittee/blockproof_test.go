@@ -218,8 +218,15 @@ func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 			Nodes:    generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1),
 		}
 
+		//proof with duplicate nodes
+		duplicateNodesProof := &protocol.BlockProofBuilder{
+			BlockRef: goodBlockRef,
+			Nodes:    generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node1),
+		}
+
 		require.True(t, node0.ValidateBlockConsensus(ctx, block3, goodProof.Build().Raw()))
 		require.False(t, node0.ValidateBlockConsensus(ctx, block3, noQuorumProof.Build().Raw()))
 		require.False(t, node0.ValidateBlockConsensus(ctx, block3, badBlockRefBlockHeightProof.Build().Raw()))
+		require.False(t, node0.ValidateBlockConsensus(ctx, block3, duplicateNodesProof.Build().Raw()))
 	})
 }

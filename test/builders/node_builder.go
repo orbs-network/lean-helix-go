@@ -67,7 +67,8 @@ func (builder *NodeBuilder) Build() *Node {
 	return NewNode(builder.membership, builder.gossip, blockUtils, electionTrigger, logger)
 }
 
-func ADummyNode(memberId primitives.MemberId) *Node {
+func ADummyNode() *Node {
+	memberId := primitives.MemberId("Dummy")
 	return NewNodeBuilder().
 		WithMemberId(memberId).
 		ThatIsPartOf(gossip.NewMockMembership(memberId, nil, false)).
