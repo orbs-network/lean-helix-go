@@ -12,7 +12,12 @@ type LeanHelixTerm struct {
 
 func NewLeanHelixTerm(ctx context.Context, config *Config, onCommit OnCommitCallback, prevBlock Block) *LeanHelixTerm {
 	result := &LeanHelixTerm{}
-	termInCommittee := NewTermInCommittee(ctx, config, result.onInCommitteeCommit, prevBlock)
+
+	blockHeight := GetBlockHeight(prevBlock) + 1
+
+	// TODO: Implement the random seed
+	committeeMembers := config.Membership.RequestOrderedCommittee(ctx, blockHeight, uint64(12345))
+	termInCommittee := NewTermInCommittee(ctx, config, committeeMembers, result.onInCommitteeCommit, blockHeight, prevBlock)
 	termInCommittee.StartTerm(ctx)
 
 	result.termInCommittee = termInCommittee

@@ -38,25 +38,13 @@ type TermInCommittee struct {
 	prevBlock                      Block
 }
 
-func NewTermInCommittee(ctx context.Context, config *Config, onCommit OnInCommitteeCommitCallback, prevBlock Block) *TermInCommittee {
+func NewTermInCommittee(ctx context.Context, config *Config, committeeMembers []primitives.MemberId, onCommit OnInCommitteeCommitCallback, blockHeight primitives.BlockHeight, prevBlock Block) *TermInCommittee {
 	keyManager := config.KeyManager
 	blockUtils := config.BlockUtils
 	membership := config.Membership
 	myMemberId := membership.MyMemberId()
 	comm := config.Communication
 	messageFactory := NewMessageFactory(keyManager, myMemberId)
-
-	var prevBlockHeight primitives.BlockHeight
-	if prevBlock == GenesisBlock {
-		prevBlockHeight = 0
-	} else {
-		prevBlockHeight = prevBlock.Height()
-	}
-	newBlockHeight := prevBlockHeight + 1
-
-	// TODO Implement me!
-	randomSeed := uint64(12345)
-	committeeMembers := membership.RequestOrderedCommittee(ctx, newBlockHeight, randomSeed)
 
 	panicOnLessThanMinimumCommitteeMembers(committeeMembers)
 
@@ -76,7 +64,7 @@ func NewTermInCommittee(ctx context.Context, config *Config, onCommit OnInCommit
 
 	newTerm := &TermInCommittee{
 		onCommit:                       onCommit,
-		height:                         newBlockHeight,
+		height:                         blockHeight,
 		prevBlock:                      prevBlock,
 		keyManager:                     keyManager,
 		communication:                  comm,
@@ -90,7 +78,7 @@ func NewTermInCommittee(ctx context.Context, config *Config, onCommit OnInCommit
 		logger:                         config.Logger,
 	}
 
-	newTerm.logger.Debug("H=%d V=0 ID=%s NewTermInCommittee: committeeMembersCount=%d", newBlockHeight, Str(myMemberId), len(committeeMembers))
+	newTerm.logger.Debug("H=%d V=0 ID=%s NewTermInCommittee: committeeMembersCount=%d", blockHeight, Str(myMemberId), len(committeeMembers))
 	newTerm.initView(ctx, 0)
 	return newTerm
 }

@@ -20,6 +20,14 @@ type LeanHelix struct {
 
 var GenesisBlock Block = nil
 
+func GetBlockHeight(prevBlock Block) primitives.BlockHeight {
+	if prevBlock == GenesisBlock {
+		return 0
+	} else {
+		return prevBlock.Height()
+	}
+}
+
 type OnCommitCallback func(ctx context.Context, block Block, blockProof []byte)
 
 // ***********************************
@@ -133,12 +141,7 @@ func (lh *LeanHelix) Tick(ctx context.Context) bool {
 
 	case prevBlock := <-lh.acknowledgeBlockChannel:
 		// TODO: a byzantine node can send the genesis block in sync can cause a mess
-		var prevHeight primitives.BlockHeight
-		if prevBlock == GenesisBlock {
-			prevHeight = 0
-		} else {
-			prevHeight = prevBlock.Height()
-		}
+		prevHeight := GetBlockHeight(prevBlock)
 		if prevHeight >= lh.currentHeight {
 			lh.onNewConsensusRound(ctx, prevBlock)
 		}
@@ -156,11 +159,7 @@ func (lh *LeanHelix) onCommit(ctx context.Context, block Block, blockProof []byt
 }
 
 func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, prevBlock Block) {
-	if prevBlock == GenesisBlock {
-		lh.currentHeight = 1
-	} else {
-		lh.currentHeight = primitives.BlockHeight(prevBlock.Height()) + 1
-	}
+	lh.currentHeight = GetBlockHeight(prevBlock) + 1
 	lh.leanHelixTerm = NewLeanHelixTerm(ctx, lh.config, lh.onCommit, prevBlock)
 	lh.filter.SetBlockHeight(ctx, lh.currentHeight, lh.leanHelixTerm)
 }

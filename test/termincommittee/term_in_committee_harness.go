@@ -27,7 +27,11 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...leanhelix.Block
 	net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).Build()
 	myNode := net.Nodes[0]
 	termConfig := myNode.BuildConfig(nil)
-	termInCommittee := leanhelix.NewTermInCommittee(ctx, termConfig, nil, myNode.GetLatestBlock())
+
+	prevBlock := myNode.GetLatestBlock()
+	blockHeight := leanhelix.GetBlockHeight(prevBlock) + 1
+	committeeMembers := termConfig.Membership.RequestOrderedCommittee(ctx, blockHeight, uint64(12345))
+	termInCommittee := leanhelix.NewTermInCommittee(ctx, termConfig, committeeMembers, nil, blockHeight, prevBlock)
 	termInCommittee.StartTerm(ctx)
 
 	return &harness{
