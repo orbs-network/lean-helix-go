@@ -7,15 +7,18 @@ import (
 	"time"
 )
 
-func setTimeout(cb func(), timeout time.Duration) chan bool {
+func setTimeout(ctx context.Context, cb func(), timeout time.Duration) chan bool {
 	timer := time.NewTimer(timeout)
 	clear := make(chan bool)
 
 	go func() {
 		for {
 			select {
+			case <-ctx.Done():
+				return
 			case <-timer.C:
 				cb()
+				return
 			case <-clear:
 				timer.Stop()
 				return
@@ -45,14 +48,14 @@ func NewTimerBasedElectionTrigger(minTimeout time.Duration) *TimerBasedElectionT
 	}
 }
 
-func (t *TimerBasedElectionTrigger) RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, cb func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View)) {
+func (t *TimerBasedElectionTrigger) RegisterOnElection(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, cb func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View)) {
 	t.cb = cb
 	if t.firstTime || t.view != view || t.blockHeight != blockHeight {
 		t.firstTime = false
 		t.view = view
 		t.blockHeight = blockHeight
 		t.stop()
-		t.clearTimer = setTimeout(t.onTimeout, t.calcTimeout(view))
+		t.clearTimer = setTimeout(ctx, t.onTimeout, t.calcTimeout(view))
 	}
 }
 

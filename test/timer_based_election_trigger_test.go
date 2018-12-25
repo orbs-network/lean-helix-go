@@ -27,7 +27,7 @@ func TestCallbackTrigger(t *testing.T) {
 
 		wasCalled := false
 		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View) { wasCalled = true }
-		et.RegisterOnElection(10, 0, cb)
+		et.RegisterOnElection(ctx, 10, 0, cb)
 
 		time.Sleep(time.Duration(15) * time.Millisecond)
 
@@ -41,7 +41,7 @@ func TestCallbackTriggerOnce(t *testing.T) {
 
 		callCount := 0
 		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View) { callCount++ }
-		et.RegisterOnElection(10, 0, cb)
+		et.RegisterOnElection(ctx, 10, 0, cb)
 
 		time.Sleep(time.Duration(25) * time.Millisecond)
 
@@ -56,13 +56,13 @@ func TestIgnoreSameViewOrHeight(t *testing.T) {
 		callCount := 0
 		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View) { callCount++ }
 
-		et.RegisterOnElection(10, 0, cb)
+		et.RegisterOnElection(ctx, 10, 0, cb)
 		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(10, 0, cb)
+		et.RegisterOnElection(ctx, 10, 0, cb)
 		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(10, 0, cb)
+		et.RegisterOnElection(ctx, 10, 0, cb)
 		time.Sleep(time.Duration(20) * time.Millisecond)
-		et.RegisterOnElection(10, 0, cb)
+		et.RegisterOnElection(ctx, 10, 0, cb)
 
 		require.Exactly(t, 1, callCount, "Trigger callback called more than once")
 	})
@@ -75,17 +75,17 @@ func TestNotTriggerIfSameViewButDifferentHeight(t *testing.T) {
 		callCount := 0
 		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View) { callCount++ }
 
-		et.RegisterOnElection(10, 0, cb)
+		et.RegisterOnElection(ctx, 10, 0, cb)
 		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(11, 0, cb)
+		et.RegisterOnElection(ctx, 11, 0, cb)
 		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(12, 0, cb)
+		et.RegisterOnElection(ctx, 12, 0, cb)
 		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(13, 0, cb)
+		et.RegisterOnElection(ctx, 13, 0, cb)
 		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(14, 0, cb)
+		et.RegisterOnElection(ctx, 14, 0, cb)
 		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(15, 0, cb)
+		et.RegisterOnElection(ctx, 15, 0, cb)
 
 		require.Exactly(t, 0, callCount, "Trigger callback called")
 	})
@@ -98,17 +98,17 @@ func TestNotTriggerIfSameHeightButDifferentView(t *testing.T) {
 		callCount := 0
 		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View) { callCount++ }
 
-		et.RegisterOnElection(10, 0, cb)
+		et.RegisterOnElection(ctx, 10, 0, cb)
 		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(10, 1, cb)
+		et.RegisterOnElection(ctx, 10, 1, cb)
 		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(10, 2, cb)
+		et.RegisterOnElection(ctx, 10, 2, cb)
 		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(10, 3, cb)
+		et.RegisterOnElection(ctx, 10, 3, cb)
 		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(10, 4, cb)
+		et.RegisterOnElection(ctx, 10, 4, cb)
 		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(10, 5, cb)
+		et.RegisterOnElection(ctx, 10, 5, cb)
 
 		require.Exactly(t, 0, callCount, "Trigger callback called")
 	})
@@ -121,16 +121,16 @@ func TestViewChanges(t *testing.T) {
 		wasCalled := false
 		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View) { wasCalled = true }
 
-		et.RegisterOnElection(10, 0, cb) // 2 ** 0 * 20 = 20
+		et.RegisterOnElection(ctx, 10, 0, cb) // 2 ** 0 * 20 = 20
 		time.Sleep(time.Duration(10) * time.Millisecond)
 
-		et.RegisterOnElection(10, 1, cb) // 2 ** 1 * 20 = 40
+		et.RegisterOnElection(ctx, 10, 1, cb) // 2 ** 1 * 20 = 40
 		time.Sleep(time.Duration(30) * time.Millisecond)
 
-		et.RegisterOnElection(10, 2, cb) // 2 ** 2 * 20 = 80
+		et.RegisterOnElection(ctx, 10, 2, cb) // 2 ** 2 * 20 = 80
 		time.Sleep(time.Duration(70) * time.Millisecond)
 
-		et.RegisterOnElection(10, 3, cb) // 2 ** 3 * 20 = 160
+		et.RegisterOnElection(ctx, 10, 3, cb) // 2 ** 3 * 20 = 160
 
 		require.False(t, wasCalled, "Trigger the callback even if a new Register was called with a new view")
 	})
@@ -143,7 +143,7 @@ func TestViewPowTimeout(t *testing.T) {
 		wasCalled := false
 		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View) { wasCalled = true }
 
-		et.RegisterOnElection(10, 2, cb) // 2 ** 2 * 10 = 40
+		et.RegisterOnElection(ctx, 10, 2, cb) // 2 ** 2 * 10 = 40
 		time.Sleep(time.Duration(30) * time.Millisecond)
 		require.False(t, wasCalled, "Triggered the callback too early")
 		time.Sleep(time.Duration(30) * time.Millisecond)

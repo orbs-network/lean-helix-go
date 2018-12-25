@@ -92,7 +92,7 @@ func NewTermInCommittee(ctx context.Context, config *Config, onCommit OnInCommit
 	}
 
 	newTerm.logger.Debug("H=%d V=0 %s NewTermInCommittee: committeeMembersCount=%d", newBlockHeight, myMemberId.KeyForMap(), len(committeeMembers))
-	newTerm.initView(0)
+	newTerm.initView(ctx, 0)
 	return newTerm
 }
 
@@ -121,17 +121,17 @@ func (tic *TermInCommittee) GetView() primitives.View {
 	return tic.view
 }
 
-func (tic *TermInCommittee) SetView(view primitives.View) {
+func (tic *TermInCommittee) SetView(ctx context.Context, view primitives.View) {
 	if tic.view != view {
-		tic.initView(view)
+		tic.initView(ctx, view)
 	}
 }
 
-func (tic *TermInCommittee) initView(view primitives.View) {
+func (tic *TermInCommittee) initView(ctx context.Context, view primitives.View) {
 	tic.preparedLocally = false
 	tic.view = view
 	tic.leaderMemberId = tic.calcLeaderMemberId(view)
-	tic.electionTrigger.RegisterOnElection(tic.height, tic.view, tic.moveToNextLeader)
+	tic.electionTrigger.RegisterOnElection(ctx, tic.height, tic.view, tic.moveToNextLeader)
 	tic.logger.Debug("H=%d V=%d %s initView() set leader to %s", tic.height, tic.view, tic.myMemberId.KeyForMap(), tic.leaderMemberId.KeyForMap())
 }
 
@@ -148,7 +148,7 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 	if view != tic.view || height != tic.height {
 		return
 	}
-	tic.SetView(tic.view + 1)
+	tic.SetView(ctx, tic.view+1)
 	tic.logger.Debug("H=%d V=%d moveToNextLeader() newLeader=%s", tic.height, tic.view, tic.leaderMemberId[:3])
 	preparedMessages := ExtractPreparedMessages(tic.height, tic.storage, tic.QuorumSize())
 	vcm := tic.messageFactory.CreateViewChangeMessage(tic.height, tic.view, preparedMessages)
@@ -310,7 +310,7 @@ func (tic *TermInCommittee) checkElected(ctx context.Context, height primitives.
 
 func (tic *TermInCommittee) onElected(ctx context.Context, view primitives.View, viewChangeMessages []*ViewChangeMessage) {
 	tic.newViewLocally = view
-	tic.SetView(view)
+	tic.SetView(ctx, view)
 	block := GetLatestBlockFromViewChangeMessages(viewChangeMessages)
 	var blockHash primitives.BlockHash
 	if block == nil {
@@ -503,7 +503,7 @@ func (tic *TermInCommittee) HandleLeanHelixNewView(ctx context.Context, nvm *New
 
 	if err := tic.validatePreprepare(ctx, ppm); err == nil {
 		tic.newViewLocally = header.View()
-		tic.SetView(header.View())
+		tic.SetView(ctx, header.View())
 		tic.processPreprepare(ctx, ppm)
 	}
 }
