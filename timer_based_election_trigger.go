@@ -77,6 +77,7 @@ func (t *TimerBasedElectionTrigger) trigger(ctx context.Context) {
 }
 
 func (t *TimerBasedElectionTrigger) onTimeout() {
+	t.clearTimer = nil
 	t.electionChannel <- t.trigger
 }
 

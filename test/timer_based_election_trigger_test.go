@@ -49,6 +49,23 @@ func TestCallbackTriggerOnce(t *testing.T) {
 	})
 }
 
+func TestCallbackTriggerTwiceInARow(t *testing.T) {
+	WithContext(func(ctx context.Context) {
+		et := buildElectionTrigger(ctx, 10*time.Millisecond)
+
+		callCount := 0
+		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View) { callCount++ }
+		et.RegisterOnElection(ctx, 10, 0, cb)
+
+		time.Sleep(time.Duration(25) * time.Millisecond)
+
+		et.RegisterOnElection(ctx, 11, 0, cb)
+		time.Sleep(time.Duration(25) * time.Millisecond)
+
+		require.Exactly(t, 2, callCount, "Trigger callback twice without getting stuck")
+	})
+}
+
 func TestIgnoreSameViewOrHeight(t *testing.T) {
 	WithContext(func(ctx context.Context) {
 		et := buildElectionTrigger(ctx, 30*time.Millisecond)
