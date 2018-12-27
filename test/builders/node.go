@@ -52,7 +52,7 @@ func (node *Node) onCommittedBlock(ctx context.Context, block leanhelix.Block, b
 func (node *Node) StartConsensus(ctx context.Context) {
 	if node.leanHelix != nil {
 		go node.leanHelix.Run(ctx)
-		node.leanHelix.UpdateState(node.GetLatestBlock(), nil)
+		node.leanHelix.UpdateState(ctx, node.GetLatestBlock(), nil)
 	}
 }
 
@@ -63,7 +63,7 @@ func (node *Node) ValidateBlockConsensus(ctx context.Context, block leanhelix.Bl
 func (node *Node) Sync(ctx context.Context, prevBlock leanhelix.Block, blockProof []byte) {
 	if node.leanHelix != nil {
 		if node.leanHelix.ValidateBlockConsensus(ctx, prevBlock, blockProof) {
-			go node.leanHelix.UpdateState(prevBlock, nil)
+			go node.leanHelix.UpdateState(ctx, prevBlock, nil)
 		}
 	}
 }
@@ -71,9 +71,9 @@ func (node *Node) Sync(ctx context.Context, prevBlock leanhelix.Block, blockProo
 func (node *Node) Tick(ctx context.Context) {
 	node.leanHelix.Tick(ctx)
 }
-func (node *Node) StartConsensusSync() {
+func (node *Node) StartConsensusSync(ctx context.Context) {
 	if node.leanHelix != nil {
-		go node.leanHelix.UpdateState(node.GetLatestBlock(), nil)
+		go node.leanHelix.UpdateState(ctx, node.GetLatestBlock(), nil)
 	}
 }
 
