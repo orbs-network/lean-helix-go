@@ -7,6 +7,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test/builders"
+	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -14,12 +15,12 @@ import (
 type harness struct {
 	t                 *testing.T
 	myMemberId        primitives.MemberId
-	keyManager        *builders.MockKeyManager
+	keyManager        *mocks.MockKeyManager
 	myNode            *builders.Node
 	net               *builders.TestNetwork
 	termInCommittee   *leanhelix.TermInCommittee
 	storage           leanhelix.Storage
-	electionTrigger   *builders.ElectionTriggerMock
+	electionTrigger   *mocks.ElectionTriggerMock
 	failVerifications bool
 }
 

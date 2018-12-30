@@ -6,6 +6,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test/builders"
+	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/stretchr/testify/require"
 	"math"
 	"math/rand"
@@ -17,13 +18,13 @@ func TestMessageFactory(t *testing.T) {
 	memberId1 := primitives.MemberId("Member Id1")
 	memberId2 := primitives.MemberId("Member Id2")
 
-	keyManager := builders.NewMockKeyManager(memberId)
+	keyManager := mocks.NewMockKeyManager(memberId)
 	blockHeight := primitives.BlockHeight(math.Floor(rand.Float64() * 1000000000))
 	view := primitives.View(math.Floor(rand.Float64() * 1000000000))
 	block := builders.CreateBlock(leanhelix.GenesisBlock)
 	blockHash := builders.CalculateBlockHash(block)
-	node1KeyManager := builders.NewMockKeyManager(memberId1)
-	node2KeyManager := builders.NewMockKeyManager(memberId2)
+	node1KeyManager := mocks.NewMockKeyManager(memberId1)
+	node2KeyManager := mocks.NewMockKeyManager(memberId2)
 	leaderFac := leanhelix.NewMessageFactory(keyManager, memberId)
 	node1Factory := leanhelix.NewMessageFactory(node1KeyManager, memberId1)
 	node2Fac := leanhelix.NewMessageFactory(node2KeyManager, memberId2)

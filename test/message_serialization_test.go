@@ -5,6 +5,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test/builders"
+	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/stretchr/testify/require"
 	"math"
 	"math/rand"
@@ -17,7 +18,7 @@ func TestMessageBuilderAndReader(t *testing.T) {
 	block := builders.CreateBlock(leanhelix.GenesisBlock)
 	b1 := builders.CreateBlock(leanhelix.GenesisBlock)
 	memberId := primitives.MemberId("Member Id")
-	mockKeyManager := builders.NewMockKeyManager(memberId, nil)
+	mockKeyManager := mocks.NewMockKeyManager(memberId, nil)
 	mf := leanhelix.NewMessageFactory(mockKeyManager, memberId)
 
 	t.Run("build and read PreprepareMessage", func(t *testing.T) {

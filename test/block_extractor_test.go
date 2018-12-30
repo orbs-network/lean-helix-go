@@ -4,6 +4,7 @@ import (
 	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
+	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -15,7 +16,7 @@ func TestNoViewChangeMessages(t *testing.T) {
 
 func TestReturnNilWhenNoViewChangeMessages(t *testing.T) {
 	memberId := primitives.MemberId("MemberId 1")
-	keyManager := builders.NewMockKeyManager(memberId)
+	keyManager := mocks.NewMockKeyManager(memberId)
 	VCMessage := builders.AViewChangeMessage(keyManager, memberId, 1, 2, nil)
 
 	actual := leanhelix.GetLatestBlockFromViewChangeMessages([]*leanhelix.ViewChangeMessage{VCMessage})
@@ -26,9 +27,9 @@ func TestKeepOnlyMessagesWithBlock(t *testing.T) {
 	memberId1 := primitives.MemberId("MemberId 1")
 	memberId2 := primitives.MemberId("MemberId 2")
 	memberId3 := primitives.MemberId("MemberId 3")
-	keyManager1 := builders.NewMockKeyManager(memberId1)
-	keyManager2 := builders.NewMockKeyManager(memberId2)
-	keyManager3 := builders.NewMockKeyManager(memberId3)
+	keyManager1 := mocks.NewMockKeyManager(memberId1)
+	keyManager2 := mocks.NewMockKeyManager(memberId2)
+	keyManager3 := mocks.NewMockKeyManager(memberId3)
 
 	block := builders.CreateBlock(leanhelix.GenesisBlock)
 

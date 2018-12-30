@@ -4,15 +4,15 @@ import (
 	"context"
 	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
-	"github.com/orbs-network/lean-helix-go/test/gossip"
+	"github.com/orbs-network/lean-helix-go/test/mocks"
 )
 
 type TestNetwork struct {
 	Nodes     []*Node
-	Discovery *gossip.Discovery
+	Discovery *mocks.Discovery
 }
 
-func (net *TestNetwork) GetNodeGossip(memberId primitives.MemberId) *gossip.Gossip {
+func (net *TestNetwork) GetNodeGossip(memberId primitives.MemberId) *mocks.Gossip {
 	return net.Discovery.GetGossipById(memberId)
 }
 
@@ -173,7 +173,7 @@ func (net *TestNetwork) AllNodesValidatedNoMoreThanOnceBeforeCommit() bool {
 	return true
 }
 
-func NewTestNetwork(discovery *gossip.Discovery) *TestNetwork {
+func NewTestNetwork(discovery *mocks.Discovery) *TestNetwork {
 	return &TestNetwork{
 		Nodes:     []*Node{},
 		Discovery: discovery,

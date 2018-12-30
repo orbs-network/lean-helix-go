@@ -11,9 +11,9 @@ type Config struct {
 	Membership      Membership
 	BlockUtils      BlockUtils
 	KeyManager      KeyManager
-	ElectionTrigger ElectionTrigger
-	Storage         Storage
-	Logger          Logger
+	ElectionTrigger ElectionTrigger // TimerBasedElectionTrigger can be used
+	Storage         Storage         // optional
+	Logger          Logger          // optional
 }
 
 type Block interface {
@@ -25,15 +25,19 @@ type ConsensusRawMessage struct {
 	Block   Block
 }
 
-type BlockUtils interface {
-	RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock Block) (Block, primitives.BlockHash)
-	ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, block Block, blockHash primitives.BlockHash, prevBlock Block) bool
-	ValidateBlockCommitment(blockHeight primitives.BlockHeight, block Block, blockHash primitives.BlockHash) bool
+type Communication interface {
+	SendConsensusMessage(ctx context.Context, recipients []primitives.MemberId, message *ConsensusRawMessage)
 }
 
 type Membership interface {
 	MyMemberId() primitives.MemberId
 	RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64) []primitives.MemberId
+}
+
+type BlockUtils interface {
+	RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock Block) (Block, primitives.BlockHash)
+	ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, block Block, blockHash primitives.BlockHash, prevBlock Block) bool
+	ValidateBlockCommitment(blockHeight primitives.BlockHeight, block Block, blockHash primitives.BlockHash) bool
 }
 
 type KeyManager interface {
@@ -44,6 +48,32 @@ type KeyManager interface {
 	AggregateRandomSeed(blockHeight primitives.BlockHeight, randomSeedShares []*protocol.SenderSignature) primitives.RandomSeedSignature
 }
 
-type Communication interface {
-	SendConsensusMessage(ctx context.Context, recipients []primitives.MemberId, message *ConsensusRawMessage)
+type ElectionTrigger interface {
+	RegisterOnElection(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, cb func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View))
+	ElectionChannel() chan func(ctx context.Context)
+}
+
+type Storage interface {
+	StorePreprepare(ppm *PreprepareMessage) bool
+	GetPreprepareMessage(blockHeight primitives.BlockHeight, view primitives.View) (*PreprepareMessage, bool)
+	GetPreprepareBlock(blockHeight primitives.BlockHeight, view primitives.View) (Block, bool)
+	GetLatestPreprepare(blockHeight primitives.BlockHeight) (*PreprepareMessage, bool)
+
+	StorePrepare(pp *PrepareMessage) bool
+	GetPrepareMessages(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) ([]*PrepareMessage, bool)
+	GetPrepareSendersIds(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) []primitives.MemberId
+
+	StoreCommit(cm *CommitMessage) bool
+	GetCommitMessages(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) ([]*CommitMessage, bool)
+
+	StoreViewChange(vcm *ViewChangeMessage) bool
+	GetViewChangeMessages(blockHeight primitives.BlockHeight, view primitives.View) ([]*ViewChangeMessage, bool)
+
+	ClearBlockHeightLogs(blockHeight primitives.BlockHeight)
+}
+
+type Logger interface {
+	Debug(format string, args ...interface{})
+	Info(format string, args ...interface{})
+	Error(format string, args ...interface{})
 }

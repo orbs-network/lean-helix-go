@@ -1,4 +1,4 @@
-package gossip
+package mocks
 
 import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"

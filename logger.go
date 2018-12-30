@@ -8,12 +8,6 @@ const LEVEL_DEBUG LogLevel = 0
 const LEVEL_INFO LogLevel = 1
 const LEVEL_ERROR LogLevel = 2
 
-type Logger interface {
-	Debug(format string, args ...interface{})
-	Info(format string, args ...interface{})
-	Error(format string, args ...interface{})
-}
-
 type ConsoleLogger struct {
 	id    string
 	level LogLevel

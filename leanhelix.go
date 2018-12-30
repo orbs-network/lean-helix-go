@@ -84,6 +84,84 @@ func (lh *LeanHelix) UpdateState(ctx context.Context, prevBlock Block, blockProo
 
 }
 
+//func (lh *LeanHelix) ValidateBlockConsensusGad(ctx context.Context, block Block, blockProofBytes []byte, prevBlockProofBytes []byte) bool {
+//	blockProof := protocol.BlockProofReader(blockProofBytes)
+//	prevBlockProof := protocol.BlockProofReader(prevBlockProofBytes)
+//	blockRef := blockProof.BlockRef()
+//	blockHeight := blockRef.BlockHeight()
+//	senderSignaturesIterator := blockProof.NodesIterator()
+//	randomSeedSignature := blockProof.RandomSeedSignature()
+//	prevRandomSeedSignature := prevBlockProof.RandomSeedSignature()
+//
+//	// Calculate the random seed based on prev block proof
+//	randomSeed := calculateRandomSeed(prevRandomSeedSignature)
+//	// validate random seed signature against master publicKey
+//	randomSeedBytes := randomSeedToBytes(randomSeed)
+//
+//	masterRandomSeed := (&protocol.SenderSignatureBuilder{ // MemberId = 0\empty => master-group-id
+//		Signature: primitives.Signature(randomSeedSignature),
+//	}).Build()
+//	if !lh.config.KeyManager.VerifyRandomSeed(blockHeight, randomSeedBytes, masterRandomSeed) {
+//		return false
+//	}
+//
+//	committeeMembers := lh.config.Membership.RequestOrderedCommittee(ctx, blockHeight, randomSeed, lh.config.maxCommitteeSize)
+//	if !ValidatePBFTProof(blockRef, senderSignaturesIterator, quorumSize(committeeMembers), lh.config.KeyManager, committeeMembers) {
+//		lh.config.Logger.Debug("ValidateBlockConsensus(): failed ValidateCommitProof()")
+//		return false
+//	}
+//
+//	return true
+//}
+//
+//func calculateRandomSeed(signature []byte) uint64 {
+//	hash := sha256.Sum256(signature)
+//	randomSeed := uint64(0)
+//	buf := bytes.NewBuffer(hash[:])
+//	err := binary.Read(buf, binary.LittleEndian, &randomSeed)
+//	if err != nil {
+//		log.Fatalf("calculateRandomSeed decode failed: %s", err)
+//	}
+//	return randomSeed
+//}
+//
+//func randomSeedToBytes(randomSeed uint64) []byte {
+//	randomSeedBytes := make([]byte, 8)
+//	binary.LittleEndian.PutUint64(randomSeedBytes, uint64(randomSeed))
+//	return randomSeedBytes
+//}
+
+func ValidatePBFTProof(
+	blockRef *protocol.BlockRef,
+	cSendersIterator *protocol.BlockProofNodesIterator,
+	q int,
+	keyManager KeyManager,
+	membersIds []primitives.MemberId) bool {
+
+	commitCount := 0
+
+	for {
+		if !cSendersIterator.HasNext() {
+			break
+		}
+		cSender := cSendersIterator.NextNodes()
+		cSenderMemberId := cSender.MemberId()
+		if isInMembers(membersIds, cSenderMemberId) == false {
+			return false
+		}
+		if !verifyBlockRefMessage(blockRef, cSender, keyManager) {
+			return false
+		}
+		commitCount++
+	}
+
+	if commitCount < q {
+		return false
+	}
+
+	return true
+}
+
 func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block Block, blockProofBytes []byte) bool {
 	lh.logger.Debug("ValidateBlockConsensus() ID=%s", Str(lh.config.Membership.MyMemberId()))
 	if blockProofBytes == nil || len(blockProofBytes) == 0 || block == nil {

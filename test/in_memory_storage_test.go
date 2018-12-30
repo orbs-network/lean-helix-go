@@ -4,6 +4,7 @@ import (
 	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
+	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/stretchr/testify/require"
 	"math"
 	"math/rand"
@@ -17,8 +18,8 @@ func TestStorePreprepare(t *testing.T) {
 	view := primitives.View(math.Floor(rand.Float64() * 1000000))
 	senderId1 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	keyManager1 := builders.NewMockKeyManager(senderId1)
-	keyManager2 := builders.NewMockKeyManager(senderId2)
+	keyManager1 := mocks.NewMockKeyManager(senderId1)
+	keyManager2 := mocks.NewMockKeyManager(senderId2)
 	block := builders.CreateBlock(leanhelix.GenesisBlock)
 
 	preprepareMessage1 := builders.APreprepareMessage(keyManager1, senderId1, blockHeight, view, block)
@@ -43,9 +44,9 @@ func TestStorePrepare(t *testing.T) {
 	senderId1 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	senderId3 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	keyManager1 := builders.NewMockKeyManager(senderId1)
-	keyManager2 := builders.NewMockKeyManager(senderId2)
-	keyManager3 := builders.NewMockKeyManager(senderId3)
+	keyManager1 := mocks.NewMockKeyManager(senderId1)
+	keyManager2 := mocks.NewMockKeyManager(senderId2)
+	keyManager3 := mocks.NewMockKeyManager(senderId3)
 	block1 := builders.CreateBlock(leanhelix.GenesisBlock)
 	block2 := builders.CreateBlock(leanhelix.GenesisBlock)
 	block1Hash := builders.CalculateBlockHash(block1)
@@ -82,9 +83,9 @@ func TestStoreCommit(t *testing.T) {
 	senderId1 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	senderId3 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	keyManager1 := builders.NewMockKeyManager(senderId1)
-	keyManager2 := builders.NewMockKeyManager(senderId2)
-	keyManager3 := builders.NewMockKeyManager(senderId3)
+	keyManager1 := mocks.NewMockKeyManager(senderId1)
+	keyManager2 := mocks.NewMockKeyManager(senderId2)
+	keyManager3 := mocks.NewMockKeyManager(senderId3)
 	block1 := builders.CreateBlock(leanhelix.GenesisBlock)
 	block2 := builders.CreateBlock(leanhelix.GenesisBlock)
 	block1Hash := builders.CalculateBlockHash(block1)
@@ -106,10 +107,6 @@ func TestStoreCommit(t *testing.T) {
 	actualCommitMessages, _ := storage.GetCommitMessages(blockHeight1, view1, block1Hash)
 	expectedMessages := []*leanhelix.CommitMessage{message1, message2, message3}
 	require.ElementsMatch(t, actualCommitMessages, expectedMessages, "stored commit messages should match the fetched commit messages")
-
-	actualCommitSendersIds := storage.GetCommitSendersIds(blockHeight1, view1, block1Hash)
-	expectedIds := []primitives.MemberId{senderId1, senderId2, senderId3}
-	require.ElementsMatch(t, actualCommitSendersIds, expectedIds, "stored commit messages senders should match the fetched commit messages senders")
 }
 
 func TestStoreViewChange(t *testing.T) {
@@ -121,9 +118,9 @@ func TestStoreViewChange(t *testing.T) {
 	senderId1 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	senderId3 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	keyManager1 := builders.NewMockKeyManager(senderId1)
-	keyManager2 := builders.NewMockKeyManager(senderId2)
-	keyManager3 := builders.NewMockKeyManager(senderId3)
+	keyManager1 := mocks.NewMockKeyManager(senderId1)
+	keyManager2 := mocks.NewMockKeyManager(senderId2)
+	keyManager3 := mocks.NewMockKeyManager(senderId3)
 
 	message1 := builders.AViewChangeMessage(keyManager1, senderId1, blockHeight1, view1, nil)
 	message2 := builders.AViewChangeMessage(keyManager2, senderId2, blockHeight1, view1, nil)
@@ -147,8 +144,8 @@ func TestLatestPreprepare(t *testing.T) {
 	blockHeight := primitives.BlockHeight(math.Floor(rand.Float64() * 1000000))
 	senderId1 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	keyManager1 := builders.NewMockKeyManager(senderId1)
-	keyManager2 := builders.NewMockKeyManager(senderId2)
+	keyManager1 := mocks.NewMockKeyManager(senderId1)
+	keyManager2 := mocks.NewMockKeyManager(senderId2)
 	block := builders.CreateBlock(leanhelix.GenesisBlock)
 
 	preprepareMessageOnView3 := builders.APreprepareMessage(keyManager1, senderId1, blockHeight, 3, block)
@@ -166,7 +163,7 @@ func TestDuplicatePreprepare(t *testing.T) {
 	var storage leanhelix.Storage = leanhelix.NewInMemoryStorage()
 	block := builders.CreateBlock(leanhelix.GenesisBlock)
 	memberId := primitives.MemberId("Member Id")
-	keyManager := builders.NewMockKeyManager(memberId)
+	keyManager := mocks.NewMockKeyManager(memberId)
 	ppm := builders.APreprepareMessage(keyManager, memberId, 1, 1, block)
 
 	firstTime := storage.StorePreprepare(ppm)
@@ -182,8 +179,8 @@ func TestDuplicatePrepare(t *testing.T) {
 	view := primitives.View(math.Floor(rand.Float64() * 1000000))
 	senderId1 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	sender1KeyManager := builders.NewMockKeyManager(senderId1)
-	sender2KeyManager := builders.NewMockKeyManager(senderId2)
+	sender1KeyManager := mocks.NewMockKeyManager(senderId1)
+	sender2KeyManager := mocks.NewMockKeyManager(senderId2)
 	block := builders.CreateBlock(leanhelix.GenesisBlock)
 	p1 := builders.APrepareMessage(sender1KeyManager, senderId1, blockHeight, view, block)
 	p2 := builders.APrepareMessage(sender2KeyManager, senderId2, blockHeight, view, block)
@@ -204,8 +201,8 @@ func TestDuplicateCommit(t *testing.T) {
 	view := primitives.View(math.Floor(rand.Float64() * 1000000))
 	senderId1 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	sender1KeyManager := builders.NewMockKeyManager(senderId1)
-	sender2KeyManager := builders.NewMockKeyManager(senderId2)
+	sender1KeyManager := mocks.NewMockKeyManager(senderId1)
+	sender2KeyManager := mocks.NewMockKeyManager(senderId2)
 	block := builders.CreateBlock(leanhelix.GenesisBlock)
 
 	c1 := builders.ACommitMessage(sender1KeyManager, senderId1, blockHeight, view, block)
@@ -228,8 +225,8 @@ func TestDuplicateViewChange(t *testing.T) {
 	view := primitives.View(math.Floor(rand.Float64() * 1000000))
 	senderId1 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	sender1KeyManager := builders.NewMockKeyManager(senderId1)
-	sender2KeyManager := builders.NewMockKeyManager(senderId2)
+	sender1KeyManager := mocks.NewMockKeyManager(senderId1)
+	sender2KeyManager := mocks.NewMockKeyManager(senderId2)
 	vc1 := builders.AViewChangeMessage(sender1KeyManager, senderId1, blockHeight, view, nil)
 	vc2 := builders.AViewChangeMessage(sender2KeyManager, senderId2, blockHeight, view, nil)
 
@@ -251,7 +248,7 @@ func TestClearBlockHeightLogs(t *testing.T) {
 	block := builders.CreateBlock(leanhelix.GenesisBlock)
 	blockHash := builders.CalculateBlockHash(block)
 	memberId := primitives.MemberId("Member Id")
-	keyManager := builders.NewMockKeyManager(memberId)
+	keyManager := mocks.NewMockKeyManager(memberId)
 
 	ppMsg := builders.APreprepareMessage(keyManager, memberId, blockHeight, view, block)
 	pMsg := builders.APrepareMessage(keyManager, memberId, blockHeight, view, block)
@@ -269,7 +266,7 @@ func TestClearBlockHeightLogs(t *testing.T) {
 	actualVC, _ := storage.GetViewChangeMessages(blockHeight, view)
 	require.Equal(t, actualPP, ppMsg, "stored preprepare message should match the fetched preprepare message")
 	require.Equal(t, 1, len(actualP), "Length of GetPrepareMessages() result array should be 1")
-	require.Equal(t, 1, len(actualC), "Length of GetCommitSendersIds() result array should be 1")
+	require.Equal(t, 1, len(actualC), "Length of GetCommitMessages() result array should be 1")
 	require.Equal(t, 1, len(actualVC), "Length of GetViewChangeMessages() result array should be 1")
 
 	storage.ClearBlockHeightLogs(blockHeight)
@@ -281,6 +278,6 @@ func TestClearBlockHeightLogs(t *testing.T) {
 
 	require.Nil(t, actualPP, "GetPreprepareMessage() should return nil after ClearBlockHeightLogs()")
 	require.Equal(t, 0, len(actualP), "Length of GetPrepareMessages() result array should be 0")
-	require.Equal(t, 0, len(actualC), "Length of GetCommitSendersIds() result array should be 0")
+	require.Equal(t, 0, len(actualC), "Length of GetCommitMessages() result array should be 0")
 	require.Equal(t, 0, len(actualVC), "Length of GetViewChangeMessages() result array should be 0")
 }

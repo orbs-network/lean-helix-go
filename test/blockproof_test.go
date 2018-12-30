@@ -5,6 +5,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test/builders"
+	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -22,10 +23,10 @@ func TestGeneratingBlockProof(t *testing.T) {
 	memberId2 := primitives.MemberId("Member2")
 	memberId3 := primitives.MemberId("Member3")
 
-	node0KeyManager := builders.NewMockKeyManager(memberId0)
-	node1KeyManager := builders.NewMockKeyManager(memberId1)
-	node2KeyManager := builders.NewMockKeyManager(memberId2)
-	node3KeyManager := builders.NewMockKeyManager(memberId3)
+	node0KeyManager := mocks.NewMockKeyManager(memberId0)
+	node1KeyManager := mocks.NewMockKeyManager(memberId1)
+	node2KeyManager := mocks.NewMockKeyManager(memberId2)
+	node3KeyManager := mocks.NewMockKeyManager(memberId3)
 
 	cm0 := builders.ACommitMessage(node1KeyManager, memberId1, 5, 6, block)
 	cm1 := builders.ACommitMessage(node2KeyManager, memberId2, 5, 6, block)

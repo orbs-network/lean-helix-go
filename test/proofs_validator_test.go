@@ -4,6 +4,7 @@ import (
 	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
+	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/stretchr/testify/require"
 	"math"
 	"testing"
@@ -15,11 +16,11 @@ func TestProofsValidator(t *testing.T) {
 	node1Id := primitives.MemberId("Node 1")
 	node2Id := primitives.MemberId("Node 2")
 	node3Id := primitives.MemberId("Node 3")
-	myKeyManager := builders.NewMockKeyManager(myMemberId)
-	leaderKeyManager := builders.NewMockKeyManager(leaderId)
-	node1KeyManager := builders.NewMockKeyManager(node1Id)
-	node2KeyManager := builders.NewMockKeyManager(node2Id)
-	node3KeyManager := builders.NewMockKeyManager(node3Id)
+	myKeyManager := mocks.NewMockKeyManager(myMemberId)
+	leaderKeyManager := mocks.NewMockKeyManager(leaderId)
+	node1KeyManager := mocks.NewMockKeyManager(node1Id)
+	node2KeyManager := mocks.NewMockKeyManager(node2Id)
+	node3KeyManager := mocks.NewMockKeyManager(node3Id)
 
 	membersIds := []primitives.MemberId{leaderId, node1Id, node2Id, node3Id}
 
@@ -82,13 +83,13 @@ func TestProofsValidator(t *testing.T) {
 	})
 
 	t.Run("TestProofsValidatorWithBadPreprepareSignature", func(t *testing.T) {
-		rejectingKeyManager := builders.NewMockKeyManager(myMemberId, leaderId)
+		rejectingKeyManager := mocks.NewMockKeyManager(myMemberId, leaderId)
 		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, q, rejectingKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof that did not pass preprepare signature validation")
 	})
 
 	t.Run("TestProofsValidatorWithBadPrepareSignature", func(t *testing.T) {
-		rejectingKeyManager := builders.NewMockKeyManager(myMemberId, node2Id)
+		rejectingKeyManager := mocks.NewMockKeyManager(myMemberId, node2Id)
 		result := leanhelix.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, q, rejectingKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof that did not pass prepare signature validation")
 	})
@@ -110,7 +111,7 @@ func TestProofsValidator(t *testing.T) {
 
 	t.Run("TestProofsValidatorWithANonMember", func(t *testing.T) {
 		nonMemberId := primitives.MemberId("Not in members Ids")
-		nonMemberKeyManager := builders.NewMockKeyManager(nonMemberId)
+		nonMemberKeyManager := mocks.NewMockKeyManager(nonMemberId)
 		pSigners := []*builders.MessageSigner{
 			{KeyManager: node1KeyManager, MemberId: node1Id},
 			{KeyManager: node2KeyManager, MemberId: node2Id},

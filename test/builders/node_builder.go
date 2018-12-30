@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
-	"github.com/orbs-network/lean-helix-go/test/gossip"
+	"github.com/orbs-network/lean-helix-go/test/mocks"
 )
 
 type NodeBuilder struct {
-	gossip        *gossip.Gossip
+	gossip        *mocks.Gossip
 	membership    leanhelix.Membership
 	blocksPool    *BlocksPool
 	logsToConsole bool
@@ -19,7 +19,7 @@ func NewNodeBuilder() *NodeBuilder {
 	return &NodeBuilder{}
 }
 
-func (builder *NodeBuilder) CommunicatesVia(gossip *gossip.Gossip) *NodeBuilder {
+func (builder *NodeBuilder) CommunicatesVia(gossip *mocks.Gossip) *NodeBuilder {
 	if builder.gossip == nil {
 		builder.gossip = gossip
 	}
@@ -59,7 +59,7 @@ func (builder *NodeBuilder) Build() *Node {
 	}
 
 	blockUtils := NewMockBlockUtils(builder.blocksPool)
-	electionTrigger := NewMockElectionTrigger()
+	electionTrigger := mocks.NewMockElectionTrigger()
 	var logger leanhelix.Logger
 	if builder.logsToConsole {
 		logger = leanhelix.NewConsoleLogger(memberId.KeyForMap())
@@ -71,7 +71,7 @@ func ADummyNode() *Node {
 	memberId := primitives.MemberId("Dummy")
 	return NewNodeBuilder().
 		WithMemberId(memberId).
-		ThatIsPartOf(gossip.NewMockMembership(memberId, nil, false)).
-		CommunicatesVia(gossip.NewGossip(nil)).
+		ThatIsPartOf(mocks.NewMockMembership(memberId, nil, false)).
+		CommunicatesVia(mocks.NewGossip(nil)).
 		Build()
 }

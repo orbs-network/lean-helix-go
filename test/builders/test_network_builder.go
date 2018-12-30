@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
-	"github.com/orbs-network/lean-helix-go/test/gossip"
+	"github.com/orbs-network/lean-helix-go/test/mocks"
 )
 
 type TestNetworkBuilder struct {
@@ -47,7 +47,7 @@ func (tb *TestNetworkBuilder) OrderCommitteeByHeight() *TestNetworkBuilder {
 
 func (tb *TestNetworkBuilder) Build() *TestNetwork {
 	blocksPool := tb.buildBlocksPool()
-	discovery := gossip.NewDiscovery()
+	discovery := mocks.NewDiscovery()
 	nodes := tb.createNodes(discovery, blocksPool, tb.logToConsole)
 	testNetwork := NewTestNetwork(discovery)
 	testNetwork.RegisterNodes(nodes)
@@ -70,13 +70,13 @@ func (tb *TestNetworkBuilder) buildBlocksPool() *BlocksPool {
 func (tb *TestNetworkBuilder) buildNode(
 	nodeBuilder *NodeBuilder,
 	memberId primitives.MemberId,
-	discovery *gossip.Discovery,
+	discovery *mocks.Discovery,
 	blocksPool *BlocksPool,
 	logToConsole bool) *Node {
 
-	gossipInstance := gossip.NewGossip(discovery)
+	gossipInstance := mocks.NewGossip(discovery)
 	discovery.RegisterGossip(memberId, gossipInstance)
-	membership := gossip.NewMockMembership(memberId, discovery, tb.orderCommitteeByHeight)
+	membership := mocks.NewMockMembership(memberId, discovery, tb.orderCommitteeByHeight)
 
 	b := nodeBuilder.
 		CommunicatesVia(gossipInstance).
@@ -90,7 +90,7 @@ func (tb *TestNetworkBuilder) buildNode(
 	return b.Build()
 }
 
-func (tb *TestNetworkBuilder) createNodes(discovery *gossip.Discovery, blocksPool *BlocksPool, logToConsole bool) []*Node {
+func (tb *TestNetworkBuilder) createNodes(discovery *mocks.Discovery, blocksPool *BlocksPool, logToConsole bool) []*Node {
 	var nodes []*Node
 	for i := 0; i < tb.NodeCount; i++ {
 		nodeBuilder := NewNodeBuilder()

@@ -6,6 +6,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
+	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -16,34 +17,34 @@ func testLogger() leanhelix.Logger {
 
 func GeneratePreprepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *leanhelix.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
-	keyManager := builders.NewMockKeyManager(senderMemberId)
+	keyManager := mocks.NewMockKeyManager(senderMemberId)
 	block := builders.CreateBlock(leanhelix.GenesisBlock)
 	return builders.APreprepareMessage(keyManager, senderMemberId, blockHeight, view, block).ToConsensusRawMessage()
 }
 
 func GeneratePrepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *leanhelix.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
-	keyManager := builders.NewMockKeyManager(senderMemberId)
+	keyManager := mocks.NewMockKeyManager(senderMemberId)
 	block := builders.CreateBlock(leanhelix.GenesisBlock)
 	return builders.APrepareMessage(keyManager, senderMemberId, blockHeight, view, block).ToConsensusRawMessage()
 }
 
 func GenerateCommitMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *leanhelix.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
-	keyManager := builders.NewMockKeyManager(senderMemberId)
+	keyManager := mocks.NewMockKeyManager(senderMemberId)
 	block := builders.CreateBlock(leanhelix.GenesisBlock)
 	return builders.ACommitMessage(keyManager, senderMemberId, blockHeight, view, block).ToConsensusRawMessage()
 }
 
 func GenerateViewChangeMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *leanhelix.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
-	keyManager := builders.NewMockKeyManager(senderMemberId)
+	keyManager := mocks.NewMockKeyManager(senderMemberId)
 	return builders.AViewChangeMessage(keyManager, senderMemberId, blockHeight, view, nil).ToConsensusRawMessage()
 }
 
 func GenerateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *leanhelix.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
-	keyManager := builders.NewMockKeyManager(senderMemberId)
+	keyManager := mocks.NewMockKeyManager(senderMemberId)
 	block := builders.CreateBlock(leanhelix.GenesisBlock)
 	return builders.ANewViewMessage(keyManager, senderMemberId, blockHeight, view, nil, nil, block).ToConsensusRawMessage()
 
