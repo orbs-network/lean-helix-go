@@ -30,9 +30,9 @@ func (net *TestNetwork) StartConsensus(ctx context.Context) *TestNetwork {
 	return net
 }
 
-func (net *TestNetwork) StartConsensusSync() *TestNetwork {
+func (net *TestNetwork) StartConsensusSync(ctx context.Context) *TestNetwork {
 	for _, node := range net.Nodes {
-		node.StartConsensusSync()
+		node.StartConsensusSync(ctx)
 	}
 
 	return net

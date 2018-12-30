@@ -22,7 +22,7 @@ func TestOnlyLeaderIsSendingPrePrepareOnce(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		net := builders.ABasicTestNetwork()
 
-		net.StartConsensusSync()
+		net.StartConsensusSync(ctx)
 		net.Nodes[0].Tick(ctx)
 		net.Nodes[1].Tick(ctx)
 		net.Nodes[2].Tick(ctx)

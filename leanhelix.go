@@ -66,15 +66,22 @@ func (lh *LeanHelix) Run(ctx context.Context) {
 	}
 }
 
-func (lh *LeanHelix) UpdateState(prevBlock Block, blockProofBytes []byte) {
+func (lh *LeanHelix) UpdateState(ctx context.Context, prevBlock Block, blockProofBytes []byte) {
 	var height primitives.BlockHeight
 	if prevBlock == nil {
 		height = 0
 	} else {
 		height = prevBlock.Height()
 	}
-	lh.logger.Debug("UpdateState() ID=%s prevBlockHeight=%d", Str(lh.config.Membership.MyMemberId()), height)
-	lh.acknowledgeBlockChannel <- prevBlock
+	lh.logger.Debug("LHFLOW UpdateState() ID=%s prevBlockHeight=%d", Str(lh.config.Membership.MyMemberId()), height)
+
+	select {
+	case <-ctx.Done():
+		return
+
+	case lh.acknowledgeBlockChannel <- prevBlock:
+	}
+
 }
 
 func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block Block, blockProofBytes []byte) bool {
@@ -146,18 +153,26 @@ func (lh *LeanHelix) HandleConsensusMessage(ctx context.Context, message *Consen
 func (lh *LeanHelix) Tick(ctx context.Context) bool {
 	select {
 	case <-ctx.Done():
+		lh.logger.Debug("LHFLOW Tick Done")
 		return false
 
 	case message := <-lh.messagesChannel:
+		//lh.logger.Debug("LHFLOW Tick Message")
 		lh.filter.HandleConsensusRawMessage(ctx, message)
 
 	case trigger := <-lh.config.ElectionTrigger.ElectionChannel():
+		lh.logger.Debug("LHFLOW Tick Election")
+		if trigger == nil {
+			lh.logger.Debug("LHFLOW Tick Election, OMG trigger is nil!")
+		}
 		trigger(ctx)
 
 	case prevBlock := <-lh.acknowledgeBlockChannel:
+		lh.logger.Debug("LHFLOW Tick Update")
 		// TODO: a byzantine node can send the genesis block in sync can cause a mess
 		prevHeight := GetBlockHeight(prevBlock)
 		if prevHeight >= lh.currentHeight {
+			lh.logger.Debug("Calling onNewConsensusRound() from Tick() prevHeight=%d lh.currentHeight=%d", prevHeight, lh.currentHeight)
 			lh.onNewConsensusRound(ctx, prevBlock)
 		}
 	}
@@ -168,8 +183,8 @@ func (lh *LeanHelix) Tick(ctx context.Context) bool {
 // ************************ Internal ***************************************
 
 func (lh *LeanHelix) onCommit(ctx context.Context, block Block, blockProof []byte) {
-	lh.logger.Debug("onCommit()")
 	lh.onCommitCallback(ctx, block, blockProof)
+	lh.logger.Debug("Calling onNewConsensusRound() from onCommit() lh.currentHeight=%d", lh.currentHeight)
 	lh.onNewConsensusRound(ctx, block)
 }
 
