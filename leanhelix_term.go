@@ -15,9 +15,11 @@ func NewLeanHelixTerm(ctx context.Context, config *Config, onCommit OnCommitCall
 
 	blockHeight := GetBlockHeight(prevBlock) + 1
 
+	messageFactory := NewMessageFactory(config.KeyManager, config.Membership.MyMemberId())
+
 	// TODO: Implement the random seed
 	committeeMembers := config.Membership.RequestOrderedCommittee(ctx, blockHeight, uint64(12345))
-	termInCommittee := NewTermInCommittee(ctx, config, committeeMembers, result.onInCommitteeCommit, blockHeight, prevBlock)
+	termInCommittee := NewTermInCommittee(ctx, config, messageFactory, committeeMembers, result.onInCommitteeCommit, blockHeight, prevBlock)
 	termInCommittee.StartTerm(ctx)
 
 	result.termInCommittee = termInCommittee

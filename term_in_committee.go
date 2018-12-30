@@ -38,13 +38,12 @@ type TermInCommittee struct {
 	QuorumSize                     int
 }
 
-func NewTermInCommittee(ctx context.Context, config *Config, committeeMembers []primitives.MemberId, onCommit OnInCommitteeCommitCallback, blockHeight primitives.BlockHeight, prevBlock Block) *TermInCommittee {
+func NewTermInCommittee(ctx context.Context, config *Config, messageFactory *MessageFactory, committeeMembers []primitives.MemberId, onCommit OnInCommitteeCommitCallback, blockHeight primitives.BlockHeight, prevBlock Block) *TermInCommittee {
 	keyManager := config.KeyManager
 	blockUtils := config.BlockUtils
 	membership := config.Membership
 	myMemberId := membership.MyMemberId()
 	comm := config.Communication
-	messageFactory := NewMessageFactory(keyManager, myMemberId)
 
 	panicOnLessThanMinimumCommitteeMembers(committeeMembers)
 
