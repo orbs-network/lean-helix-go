@@ -32,9 +32,9 @@ Initiates lean-helix library infinite listening loop.
 * `UpdateState(block, blockProof)`
   Called upon node sync.  Assumes the matching pair _(block,blockProof)_ are validated!\
   Conditional update: If given block->height is at least as on-going round, terminate participation in an on-going round and initiate participation in the subsequent consensus round.
-* `ValidateBlockConsensus(block, blockProof, prevBlockProof): isValid`
+* `ValidateBlockConsensus(ctx, block, blockProof, prevBlockProof): isValid`
   Validates given block against its BlockProof and its parent BlockProof _(prevBlockProof)_. Called as part of the **block sync** flow upon receiving a new block.
-* `HandleConsensusMessage(message)` - called upon reception of a consensus message.
+* `HandleConsensusMessage(ctx, message)` - called upon reception of a consensus message.
 
 #### Config
 The `Config` struct hold all the SPIs that LeanHelix requires to operate. In order to initialize LeanHelix you must provide an instance of the struct with all the SPIs implemented. 
@@ -43,7 +43,7 @@ The `Config` struct hold all the SPIs that LeanHelix requires to operate. In ord
 The interfaces used by the Lean Helix library are provided in a `Configuration interface` on creation and provides the necessary functionalities to operate. Described below in a suggested separated modules. 
 
 #### BlockUtils
-> Provide block funcionalities including its creation, validation and hashing scheme. 
+> Provide block functionality including its creation, validation and hashing scheme. 
 * `RequestNewBlockProposal(ctx, blockHeight, prevBlock) : block, blockHash`
     - **Description:** Returns a block interface with a block proposal along with its digest commitment. The block _(blockHash)_ will then go through consensus.
     - **Parameters:**
