@@ -17,14 +17,62 @@ func TestKeyManagerVerify(t *testing.T) {
 
 	content := []byte{1, 2, 3}
 
-	signature := signerKeyManager.SignConsensusMessage(1, content)
-
-	senderSignature := &protocol.SenderSignatureBuilder{
+	goodSenderSignature := &protocol.SenderSignatureBuilder{
 		MemberId:  signerId,
-		Signature: signature,
+		Signature: signerKeyManager.SignConsensusMessage(1, content),
 	}
 
-	actual := verifierKeyManager.VerifyConsensusMessage(1, content, senderSignature.Build())
-	require.True(t, actual)
+	badSenderSignature := &protocol.SenderSignatureBuilder{
+		MemberId:  signerId,
+		Signature: signerKeyManager.SignConsensusMessage(1, []byte{6, 6, 6}),
+	}
 
+	require.True(t, verifierKeyManager.VerifyConsensusMessage(1, content, goodSenderSignature.Build()))
+	require.False(t, verifierKeyManager.VerifyConsensusMessage(1, content, badSenderSignature.Build()))
+}
+
+func TestKeyManagerRandomSeedVerify(t *testing.T) {
+	signerId := primitives.MemberId("SignerId")
+	verifierId := primitives.MemberId("VerifierId")
+
+	signerKeyManager := mocks.NewMockKeyManager(signerId)
+	verifierKeyManager := mocks.NewMockKeyManager(verifierId)
+
+	content := []byte{1, 2, 3}
+
+	goodSenderSignature := &protocol.SenderSignatureBuilder{
+		MemberId:  signerId,
+		Signature: primitives.Signature(signerKeyManager.SignRandomSeed(1, content)),
+	}
+
+	badSenderSignature := &protocol.SenderSignatureBuilder{
+		MemberId:  signerId,
+		Signature: primitives.Signature(signerKeyManager.SignRandomSeed(1, []byte{6, 6, 6})),
+	}
+
+	require.True(t, verifierKeyManager.VerifyRandomSeed(1, content, goodSenderSignature.Build()))
+	require.False(t, verifierKeyManager.VerifyRandomSeed(1, content, badSenderSignature.Build()))
+}
+
+func TestKeyManagerAggregateVerification(t *testing.T) {
+	signerId := primitives.MemberId("SignerId")
+	verifierId := primitives.MemberId("VerifierId")
+
+	signerKeyManager := mocks.NewMockKeyManager(signerId)
+	verifierKeyManager := mocks.NewMockKeyManager(verifierId)
+
+	content := []byte{1, 2, 3}
+
+	goodSenderSignature := &protocol.SenderSignatureBuilder{
+		MemberId:  signerId,
+		Signature: primitives.Signature(signerKeyManager.AggregateRandomSeed(1, nil)),
+	}
+
+	badSenderSignature := &protocol.SenderSignatureBuilder{
+		MemberId:  signerId,
+		Signature: primitives.Signature(signerKeyManager.AggregateRandomSeed(2, nil)),
+	}
+
+	require.True(t, verifierKeyManager.VerifyRandomSeed(1, content, goodSenderSignature.Build()))
+	require.False(t, verifierKeyManager.VerifyRandomSeed(1, content, badSenderSignature.Build()))
 }

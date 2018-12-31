@@ -43,13 +43,20 @@ func (km *MockKeyManager) VerifyConsensusMessage(blockHeight primitives.BlockHei
 }
 
 func (km *MockKeyManager) SignRandomSeed(blockHeight primitives.BlockHeight, content []byte) primitives.RandomSeedSignature {
-	return nil
+	str := fmt.Sprintf("RND_SIG|%s|%s|%x", blockHeight, km.myMemberId.KeyForMap(), content)
+	return []byte(str)
 }
 
 func (km *MockKeyManager) VerifyRandomSeed(blockHeight primitives.BlockHeight, content []byte, sender *protocol.SenderSignature) bool {
-	return false
+	str := fmt.Sprintf("RND_SIG|%s|%s|%x", blockHeight, sender.MemberId().KeyForMap(), content)
+	expected := []byte(str)
+
+	aggStr := fmt.Sprintf("AGG_RND_SIG|%s", blockHeight)
+	aggExpected := []byte(aggStr)
+	return bytes.Equal(expected, sender.Signature()) || bytes.Equal(aggExpected, sender.Signature())
 }
 
 func (km *MockKeyManager) AggregateRandomSeed(blockHeight primitives.BlockHeight, randomSeedShares []*protocol.SenderSignature) primitives.RandomSeedSignature {
-	return nil
+	str := fmt.Sprintf("AGG_RND_SIG|%s", blockHeight)
+	return []byte(str)
 }
