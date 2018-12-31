@@ -1,11 +1,11 @@
 package builders
 
 import (
-	"github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
 )
 
 type chainItem struct {
-	block      leanhelix.Block
+	block      interfaces.Block
 	blockProof []byte
 }
 type InMemoryBlockChain struct {
@@ -15,16 +15,16 @@ type InMemoryBlockChain struct {
 func NewInMemoryBlockChain() *InMemoryBlockChain {
 	return &InMemoryBlockChain{
 		blockChain: []*chainItem{
-			{leanhelix.GenesisBlock, nil},
+			{interfaces.GenesisBlock, nil},
 		},
 	}
 }
 
-func (bs *InMemoryBlockChain) AppendBlockToChain(block leanhelix.Block, blockProof []byte) {
+func (bs *InMemoryBlockChain) AppendBlockToChain(block interfaces.Block, blockProof []byte) {
 	bs.blockChain = append(bs.blockChain, &chainItem{block, blockProof})
 }
 
-func (bs *InMemoryBlockChain) GetLastBlock() leanhelix.Block {
+func (bs *InMemoryBlockChain) GetLastBlock() interfaces.Block {
 	item := bs.blockChain[len(bs.blockChain)-1]
 	return item.block
 }

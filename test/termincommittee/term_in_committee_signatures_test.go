@@ -2,9 +2,9 @@ package termincommittee
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/test"
-	"github.com/orbs-network/lean-helix-go/test/builders"
+	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -13,9 +13,9 @@ func TestPreprepareSignature(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
 
-		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
-		block2 := builders.CreateBlock(block1)
-		block3 := builders.CreateBlock(block2)
+		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
+		block2 := mocks.CreateBlock(block1)
+		block3 := mocks.CreateBlock(block2)
 
 		h.setNode1AsTheLeader(ctx, 1, 1, block1)
 
@@ -44,7 +44,7 @@ func TestPrepareSignature(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
 
-		block := builders.CreateBlock(leanhelix.GenesisBlock)
+		block := mocks.CreateBlock(interfaces.GenesisBlock)
 
 		// start with 0 prepare
 		prepareCount := h.countPrepare(1, 0, block)
@@ -71,7 +71,7 @@ func TestViewChangeSignature(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
 
-		block := builders.CreateBlock(leanhelix.GenesisBlock)
+		block := mocks.CreateBlock(interfaces.GenesisBlock)
 
 		// start with 0 view-change
 		viewChangeCountOnView4 := h.countViewChange(1, 4)
@@ -103,9 +103,9 @@ func TestNewViewSignature(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
 
-		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
-		block2 := builders.CreateBlock(block1)
-		block3 := builders.CreateBlock(block2)
+		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
+		block2 := mocks.CreateBlock(block1)
+		block3 := mocks.CreateBlock(block2)
 
 		h.setNode1AsTheLeader(ctx, 1, 1, block1)
 

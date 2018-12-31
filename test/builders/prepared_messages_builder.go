@@ -1,25 +1,31 @@
 package builders
 
 import (
-	"github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/services/preparedmessages"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
+type Sender interface {
+	GetKeyManager() interfaces.KeyManager
+	GetMemberId() primitives.MemberId
+}
+
 func CreatePreparedMessages(
-	leader *Node,
-	members []*Node,
+	leader Sender,
+	members []Sender,
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
-	block leanhelix.Block) *leanhelix.PreparedMessages {
+	block interfaces.Block) *preparedmessages.PreparedMessages {
 
-	PPMessage := APreprepareMessage(leader.KeyManager, leader.MemberId, blockHeight, view, block)
-	PMessages := make([]*leanhelix.PrepareMessage, len(members))
+	PPMessage := APreprepareMessage(leader.GetKeyManager(), leader.GetMemberId(), blockHeight, view, block)
+	PMessages := make([]*interfaces.PrepareMessage, len(members))
 
 	for i, member := range members {
-		PMessages[i] = APrepareMessage(member.KeyManager, member.MemberId, blockHeight, view, block)
+		PMessages[i] = APrepareMessage(member.GetKeyManager(), member.GetMemberId(), blockHeight, view, block)
 	}
 
-	return &leanhelix.PreparedMessages{
+	return &preparedmessages.PreparedMessages{
 		PreprepareMessage: PPMessage,
 		PrepareMessages:   PMessages,
 	}

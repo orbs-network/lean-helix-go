@@ -2,19 +2,19 @@ package leaderelection
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go"
-	"github.com/orbs-network/lean-helix-go/test/builders"
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/test/network"
 	"testing"
 )
 
 type harness struct {
 	t   *testing.T
-	net *builders.TestNetwork
+	net *network.TestNetwork
 }
 
-func NewHarness(ctx context.Context, t *testing.T, blocksPool ...leanhelix.Block) *harness {
+func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Block) *harness {
 	//net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).LogToConsole().Build()
-	net := builders.ATestNetwork(4, blocksPool...)
+	net := network.ATestNetwork(4, blocksPool...)
 	net.NodesPauseOnRequestNewBlock()
 	net.StartConsensus(ctx)
 

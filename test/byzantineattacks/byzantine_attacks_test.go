@@ -2,21 +2,23 @@ package byzantineattacks
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
+	"github.com/orbs-network/lean-helix-go/test/mocks"
+	"github.com/orbs-network/lean-helix-go/test/network"
 	"testing"
 	"time"
 )
 
 func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block := builders.CreateBlock(leanhelix.GenesisBlock)
-		net := builders.
+		block := mocks.CreateBlock(interfaces.GenesisBlock)
+		net := network.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
-			WithBlocks([]leanhelix.Block{block}).
+			WithBlocks([]interfaces.Block{block}).
 			Build()
 
 		net.Nodes[3].Gossip.SetIncomingWhitelist([]primitives.MemberId{})
@@ -29,11 +31,11 @@ func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
 
 func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block := builders.CreateBlock(leanhelix.GenesisBlock)
-		net := builders.
+		block := mocks.CreateBlock(interfaces.GenesisBlock)
+		net := network.
 			NewTestNetworkBuilder().
 			WithNodeCount(7).
-			WithBlocks([]leanhelix.Block{block}).
+			WithBlocks([]interfaces.Block{block}).
 			Build()
 
 		net.Nodes[1].Gossip.SetIncomingWhitelist([]primitives.MemberId{})
@@ -47,11 +49,11 @@ func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 
 func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
-		net := builders.
+		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
+		net := network.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
-			WithBlocks([]leanhelix.Block{block1}).
+			WithBlocks([]interfaces.Block{block1}).
 			Build()
 
 		node0 := net.Nodes[0]
@@ -73,12 +75,12 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 
 func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		goodBlock := builders.CreateBlock(leanhelix.GenesisBlock)
-		fakeBlock := builders.CreateBlock(leanhelix.GenesisBlock)
-		net := builders.
+		goodBlock := mocks.CreateBlock(interfaces.GenesisBlock)
+		fakeBlock := mocks.CreateBlock(interfaces.GenesisBlock)
+		net := network.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
-			WithBlocks([]leanhelix.Block{goodBlock}).
+			WithBlocks([]interfaces.Block{goodBlock}).
 			Build()
 
 		node0 := net.Nodes[0]
@@ -105,13 +107,13 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 
 func TestThatAByzantineLeaderCanNotCauseAFork(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
-		block2 := builders.CreateBlock(leanhelix.GenesisBlock)
+		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
+		block2 := mocks.CreateBlock(interfaces.GenesisBlock)
 
-		net := builders.
+		net := network.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
-			WithBlocks([]leanhelix.Block{block1, block2}).
+			WithBlocks([]interfaces.Block{block1, block2}).
 			Build()
 
 		node0 := net.Nodes[0]
@@ -130,7 +132,7 @@ func TestThatAByzantineLeaderCanNotCauseAFork(t *testing.T) {
 		// we can expect (only) node2 to be prepared on block1
 		test.Eventually(time.Duration(100)*time.Millisecond, func() bool {
 			_, ppOk := node2.Storage.GetPreprepareMessage(1, 1)
-			p, _ := node2.Storage.GetPrepareMessages(1, 1, builders.CalculateBlockHash(block1))
+			p, _ := node2.Storage.GetPrepareMessages(1, 1, mocks.CalculateBlockHash(block1))
 			return ppOk && len(p) == 2
 		})
 

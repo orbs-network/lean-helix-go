@@ -3,11 +3,15 @@ package termincommittee
 import (
 	"context"
 	"fmt"
-	"github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/services"
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/services/messagesfactory"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test/builders"
+	"github.com/orbs-network/lean-helix-go/test/matchers"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
+	"github.com/orbs-network/lean-helix-go/test/network"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -16,24 +20,24 @@ type harness struct {
 	t                 *testing.T
 	myMemberId        primitives.MemberId
 	keyManager        *mocks.MockKeyManager
-	myNode            *builders.Node
-	net               *builders.TestNetwork
-	termInCommittee   *leanhelix.TermInCommittee
-	storage           leanhelix.Storage
+	myNode            *network.Node
+	net               *network.TestNetwork
+	termInCommittee   *services.TermInCommittee
+	storage           interfaces.Storage
 	electionTrigger   *mocks.ElectionTriggerMock
 	failVerifications bool
 }
 
-func NewHarness(ctx context.Context, t *testing.T, blocksPool ...leanhelix.Block) *harness {
-	net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).Build()
+func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Block) *harness {
+	net := network.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).Build()
 	myNode := net.Nodes[0]
 	termConfig := myNode.BuildConfig(nil)
 
 	prevBlock := myNode.GetLatestBlock()
-	blockHeight := leanhelix.GetBlockHeight(prevBlock) + 1
+	blockHeight := services.GetBlockHeight(prevBlock) + 1
 	committeeMembers := termConfig.Membership.RequestOrderedCommittee(ctx, blockHeight, uint64(12345))
-	messageFactory := leanhelix.NewMessageFactory(termConfig.KeyManager, termConfig.Membership.MyMemberId())
-	termInCommittee := leanhelix.NewTermInCommittee(ctx, termConfig, messageFactory, committeeMembers, nil, blockHeight, prevBlock)
+	messageFactory := messagesfactory.NewMessageFactory(termConfig.KeyManager, termConfig.Membership.MyMemberId())
+	termInCommittee := services.NewTermInCommittee(ctx, termConfig, messageFactory, committeeMembers, nil, blockHeight, prevBlock)
 	termInCommittee.StartTerm(ctx)
 
 	return &harness{
@@ -70,11 +74,11 @@ func (h *harness) getNodeMemberId(nodeIdx int) primitives.MemberId {
 	return h.net.Nodes[nodeIdx].MemberId
 }
 
-func (h *harness) getMyKeyManager() leanhelix.KeyManager {
+func (h *harness) getMyKeyManager() interfaces.KeyManager {
 	return h.getMemberKeyManager(0)
 }
 
-func (h *harness) getMemberKeyManager(nodeIdx int) leanhelix.KeyManager {
+func (h *harness) getMemberKeyManager(nodeIdx int) interfaces.KeyManager {
 	return h.net.Nodes[nodeIdx].KeyManager
 }
 
@@ -100,51 +104,51 @@ func (h *harness) electionTillView(ctx context.Context, view primitives.View) {
 	}
 }
 
-func (h *harness) setNode1AsTheLeader(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+func (h *harness) setNode1AsTheLeader(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	h.receiveNewView(ctx, 1, blockHeight, view, block)
 }
 
-func (h *harness) setMeAsTheLeader(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+func (h *harness) setMeAsTheLeader(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	h.receiveNewView(ctx, 0, blockHeight, view, block)
 }
 
-func (h *harness) receiveViewChange(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+func (h *harness) receiveViewChange(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	sender := h.net.Nodes[fromNodeIdx]
 	vc := builders.AViewChangeMessage(sender.KeyManager, sender.MemberId, blockHeight, view, nil)
 	h.termInCommittee.HandleLeanHelixViewChange(ctx, vc)
 }
 
-func (h *harness) receiveViewChangeMessage(ctx context.Context, msg *leanhelix.ViewChangeMessage) {
+func (h *harness) receiveViewChangeMessage(ctx context.Context, msg *interfaces.ViewChangeMessage) {
 	h.termInCommittee.HandleLeanHelixViewChange(ctx, msg)
 }
 
-func (h *harness) receivePreprepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+func (h *harness) receivePreprepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	leader := h.net.Nodes[fromNode]
 	ppm := builders.APreprepareMessage(leader.KeyManager, leader.MemberId, blockHeight, view, block)
 	h.termInCommittee.HandleLeanHelixPrePrepare(ctx, ppm)
 }
 
-func (h *harness) receivePreprepareMessage(ctx context.Context, ppm *leanhelix.PreprepareMessage) {
+func (h *harness) receivePreprepareMessage(ctx context.Context, ppm *interfaces.PreprepareMessage) {
 	h.termInCommittee.HandleLeanHelixPrePrepare(ctx, ppm)
 }
 
-func (h *harness) receivePrepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+func (h *harness) receivePrepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	sender := h.net.Nodes[fromNode]
 	pm := builders.APrepareMessage(sender.KeyManager, sender.MemberId, blockHeight, view, block)
 	h.termInCommittee.HandleLeanHelixPrepare(ctx, pm)
 }
 
-func (h *harness) createPreprepareMessage(fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block, blockHash primitives.BlockHash) *leanhelix.PreprepareMessage {
+func (h *harness) createPreprepareMessage(fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block, blockHash primitives.BlockHash) *interfaces.PreprepareMessage {
 	leader := h.net.Nodes[fromNode]
-	messageFactory := leanhelix.NewMessageFactory(leader.KeyManager, leader.MemberId)
+	messageFactory := messagesfactory.NewMessageFactory(leader.KeyManager, leader.MemberId)
 	return messageFactory.CreatePreprepareMessage(blockHeight, view, block, blockHash)
 }
 
-func (h *harness) HandleLeanHelixNewView(ctx context.Context, nvm *leanhelix.NewViewMessage) {
+func (h *harness) HandleLeanHelixNewView(ctx context.Context, nvm *interfaces.NewViewMessage) {
 	h.termInCommittee.HandleLeanHelixNewView(ctx, nvm)
 }
 
-func (h *harness) receiveNewView(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) {
+func (h *harness) receiveNewView(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	leaderKeyManager := h.getMemberKeyManager(fromNodeIdx)
 	leaderMemberId := h.getNodeMemberId(fromNodeIdx)
 
@@ -167,10 +171,10 @@ func (h *harness) receiveNewView(ctx context.Context, fromNodeIdx int, blockHeig
 	h.termInCommittee.HandleLeanHelixNewView(ctx, nvm)
 }
 
-func (h *harness) getLastSentViewChangeMessage() *leanhelix.ViewChangeMessage {
+func (h *harness) getLastSentViewChangeMessage() *interfaces.ViewChangeMessage {
 	messages := h.myNode.Gossip.GetSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE)
-	lastMessage := leanhelix.ToConsensusMessage(messages[len(messages)-1])
-	return lastMessage.(*leanhelix.ViewChangeMessage)
+	lastMessage := interfaces.ToConsensusMessage(messages[len(messages)-1])
+	return lastMessage.(*interfaces.ViewChangeMessage)
 }
 
 func (h *harness) countViewChange(blockHeight primitives.BlockHeight, view primitives.View) int {
@@ -178,23 +182,23 @@ func (h *harness) countViewChange(blockHeight primitives.BlockHeight, view primi
 	return len(messages)
 }
 
-func (h *harness) countCommits(blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) int {
-	messages, _ := h.storage.GetCommitMessages(blockHeight, view, builders.CalculateBlockHash(block))
+func (h *harness) countCommits(blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) int {
+	messages, _ := h.storage.GetCommitMessages(blockHeight, view, mocks.CalculateBlockHash(block))
 	return len(messages)
 }
 
-func (h *harness) hasPreprepare(blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) bool {
+func (h *harness) hasPreprepare(blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) bool {
 	message, ok := h.storage.GetPreprepareMessage(blockHeight, view)
 
 	if message == nil || !ok {
 		return false
 	}
 
-	return builders.BlocksAreEqual(message.Block(), block)
+	return matchers.BlocksAreEqual(message.Block(), block)
 }
 
-func (h *harness) countPrepare(blockHeight primitives.BlockHeight, view primitives.View, block leanhelix.Block) int {
-	messages, _ := h.storage.GetPrepareMessages(blockHeight, view, builders.CalculateBlockHash(block))
+func (h *harness) countPrepare(blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) int {
+	messages, _ := h.storage.GetPrepareMessages(blockHeight, view, mocks.CalculateBlockHash(block))
 	return len(messages)
 }
 

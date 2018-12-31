@@ -1,43 +1,43 @@
 package test
 
 import (
-	"github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 )
 
-func GeneratePreprepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *leanhelix.ConsensusRawMessage {
+func GeneratePreprepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
 	keyManager := mocks.NewMockKeyManager(senderMemberId)
-	block := builders.CreateBlock(leanhelix.GenesisBlock)
+	block := mocks.CreateBlock(interfaces.GenesisBlock)
 	return builders.APreprepareMessage(keyManager, senderMemberId, blockHeight, view, block).ToConsensusRawMessage()
 }
 
-func GeneratePrepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *leanhelix.ConsensusRawMessage {
+func GeneratePrepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
 	keyManager := mocks.NewMockKeyManager(senderMemberId)
-	block := builders.CreateBlock(leanhelix.GenesisBlock)
+	block := mocks.CreateBlock(interfaces.GenesisBlock)
 	return builders.APrepareMessage(keyManager, senderMemberId, blockHeight, view, block).ToConsensusRawMessage()
 }
 
-func GenerateCommitMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *leanhelix.ConsensusRawMessage {
+func GenerateCommitMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
 	keyManager := mocks.NewMockKeyManager(senderMemberId)
-	block := builders.CreateBlock(leanhelix.GenesisBlock)
+	block := mocks.CreateBlock(interfaces.GenesisBlock)
 	return builders.ACommitMessage(keyManager, senderMemberId, blockHeight, view, block).ToConsensusRawMessage()
 }
 
-func GenerateViewChangeMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *leanhelix.ConsensusRawMessage {
+func GenerateViewChangeMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
 	keyManager := mocks.NewMockKeyManager(senderMemberId)
 	return builders.AViewChangeMessage(keyManager, senderMemberId, blockHeight, view, nil).ToConsensusRawMessage()
 }
 
-func GenerateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *leanhelix.ConsensusRawMessage {
+func GenerateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
 	keyManager := mocks.NewMockKeyManager(senderMemberId)
-	block := builders.CreateBlock(leanhelix.GenesisBlock)
+	block := mocks.CreateBlock(interfaces.GenesisBlock)
 	return builders.ANewViewMessage(keyManager, senderMemberId, blockHeight, view, nil, nil, block).ToConsensusRawMessage()
 
 }

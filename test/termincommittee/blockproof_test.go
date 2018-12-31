@@ -2,22 +2,25 @@ package termincommittee
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/services/blockproof"
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
+	"github.com/orbs-network/lean-helix-go/test/mocks"
+	"github.com/orbs-network/lean-helix-go/test/network"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestNodeSync(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
-		block2 := builders.CreateBlock(block1)
-		block3 := builders.CreateBlock(block2)
+		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
+		block2 := mocks.CreateBlock(block1)
+		block3 := mocks.CreateBlock(block2)
 
-		net := builders.ATestNetwork(4, block1, block2, block3)
+		net := network.ATestNetwork(4, block1, block2, block3)
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
@@ -39,7 +42,7 @@ func TestNodeSync(t *testing.T) {
 		net.WaitForNodesToCommitASpecificBlock(block2, node0, node1, node2)
 
 		// node3 is still "stuck" on the genesis block
-		require.True(t, node3.GetLatestBlock() == leanhelix.GenesisBlock)
+		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)
 
 		net.WaitForNodeToRequestNewBlock(node0)
 
@@ -60,11 +63,11 @@ func TestNodeSync(t *testing.T) {
 
 func TestAValidBlockProof(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
-		block2 := builders.CreateBlock(block1)
-		block3 := builders.CreateBlock(block2)
+		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
+		block2 := mocks.CreateBlock(block1)
+		block3 := mocks.CreateBlock(block2)
 
-		net := builders.ABasicTestNetwork()
+		net := network.ABasicTestNetwork()
 
 		net.StartConsensus(ctx)
 		node0 := net.Nodes[0]
@@ -76,9 +79,9 @@ func TestAValidBlockProof(t *testing.T) {
 		cm1 := builders.ACommitMessage(node2.KeyManager, node2.MemberId, block3.Height(), 6, block3)
 		cm2 := builders.ACommitMessage(node3.KeyManager, node3.MemberId, block3.Height(), 6, block3)
 
-		commitMessages := []*leanhelix.CommitMessage{cm0, cm1, cm2}
+		commitMessages := []*interfaces.CommitMessage{cm0, cm1, cm2}
 
-		blockProof := leanhelix.GenerateLeanHelixBlockProof(commitMessages).Raw()
+		blockProof := blockproof.GenerateLeanHelixBlockProof(commitMessages).Raw()
 		require.False(t, node0.ValidateBlockConsensus(ctx, nil, blockProof))
 		require.True(t, node0.ValidateBlockConsensus(ctx, block3, blockProof))
 	})
@@ -86,13 +89,13 @@ func TestAValidBlockProof(t *testing.T) {
 
 func TestThatWeDoNotAcceptNilBlockProof(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := builders.ABasicTestNetwork()
+		net := network.ABasicTestNetwork()
 
 		net.StartConsensus(ctx)
 
-		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
-		block2 := builders.CreateBlock(block1)
-		block3 := builders.CreateBlock(block2)
+		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
+		block2 := mocks.CreateBlock(block1)
+		block3 := mocks.CreateBlock(block2)
 		require.False(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, nil))
 		require.False(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, []byte{}))
 	})
@@ -100,16 +103,16 @@ func TestThatWeDoNotAcceptNilBlockProof(t *testing.T) {
 
 func TestThatBlockRefInsideProofValidation(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := builders.ABasicTestNetwork()
+		net := network.ABasicTestNetwork()
 		net.StartConsensus(ctx)
 
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
 
-		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
-		block2 := builders.CreateBlock(block1)
-		block3 := builders.CreateBlock(block2)
+		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
+		block2 := mocks.CreateBlock(block1)
+		block3 := mocks.CreateBlock(block2)
 		blockHeight := block3.Height()
 
 		goodBlockRef := generateACommitBlockRefBuilder(blockHeight, block3)
@@ -124,7 +127,7 @@ func TestThatBlockRefInsideProofValidation(t *testing.T) {
 			BlockRef: &protocol.BlockRefBuilder{
 				MessageType: protocol.LEAN_HELIX_COMMIT,
 				BlockHeight: 666,
-				BlockHash:   builders.CalculateBlockHash(block3),
+				BlockHash:   mocks.CalculateBlockHash(block3),
 			},
 			Nodes: signatures,
 		}).Build()
@@ -133,7 +136,7 @@ func TestThatBlockRefInsideProofValidation(t *testing.T) {
 			BlockRef: &protocol.BlockRefBuilder{
 				MessageType: protocol.LEAN_HELIX_NEW_VIEW,
 				BlockHeight: blockHeight,
-				BlockHash:   builders.CalculateBlockHash(block3),
+				BlockHash:   mocks.CalculateBlockHash(block3),
 			},
 			Nodes: signatures,
 		}).Build()
@@ -142,7 +145,7 @@ func TestThatBlockRefInsideProofValidation(t *testing.T) {
 			BlockRef: &protocol.BlockRefBuilder{
 				MessageType: protocol.LEAN_HELIX_COMMIT,
 				BlockHeight: blockHeight,
-				BlockHash:   builders.CalculateBlockHash(block1),
+				BlockHash:   mocks.CalculateBlockHash(block1),
 			},
 			Nodes: signatures,
 		}).Build()
@@ -151,7 +154,7 @@ func TestThatBlockRefInsideProofValidation(t *testing.T) {
 			BlockRef: &protocol.BlockRefBuilder{
 				MessageType: protocol.LEAN_HELIX_COMMIT,
 				BlockHeight: blockHeight,
-				BlockHash:   builders.CalculateBlockHash(block3),
+				BlockHash:   mocks.CalculateBlockHash(block3),
 			},
 			Nodes: signatures,
 		}).Build()
@@ -164,15 +167,15 @@ func TestThatBlockRefInsideProofValidation(t *testing.T) {
 	})
 }
 
-func generateACommitBlockRefBuilder(blockHeight primitives.BlockHeight, block leanhelix.Block) *protocol.BlockRefBuilder {
+func generateACommitBlockRefBuilder(blockHeight primitives.BlockHeight, block interfaces.Block) *protocol.BlockRefBuilder {
 	return &protocol.BlockRefBuilder{
 		MessageType: protocol.LEAN_HELIX_COMMIT,
 		BlockHeight: blockHeight,
-		BlockHash:   builders.CalculateBlockHash(block),
+		BlockHash:   mocks.CalculateBlockHash(block),
 	}
 }
 
-func generateSignatures(blockHeight primitives.BlockHeight, blockRef *protocol.BlockRef, nodes ...*builders.Node) []*protocol.SenderSignatureBuilder {
+func generateSignatures(blockHeight primitives.BlockHeight, blockRef *protocol.BlockRef, nodes ...*network.Node) []*protocol.SenderSignatureBuilder {
 	var result []*protocol.SenderSignatureBuilder
 	for _, node := range nodes {
 		result = append(result, &protocol.SenderSignatureBuilder{
@@ -186,17 +189,17 @@ func generateSignatures(blockHeight primitives.BlockHeight, blockRef *protocol.B
 
 func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := builders.ABasicTestNetwork()
+		net := network.ABasicTestNetwork()
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
-		outOfNetworkNode := builders.ADummyNode()
+		outOfNetworkNode := network.ADummyNode()
 
 		net.StartConsensus(ctx)
 
-		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
-		block2 := builders.CreateBlock(block1)
-		block3 := builders.CreateBlock(block2)
+		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
+		block2 := mocks.CreateBlock(block1)
+		block3 := mocks.CreateBlock(block2)
 
 		blockHeight := block3.Height()
 		goodBlockRef := generateACommitBlockRefBuilder(blockHeight, block3)

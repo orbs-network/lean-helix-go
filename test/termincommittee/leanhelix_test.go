@@ -2,17 +2,19 @@ package termincommittee
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test"
-	"github.com/orbs-network/lean-helix-go/test/builders"
+	"github.com/orbs-network/lean-helix-go/test/matchers"
+	"github.com/orbs-network/lean-helix-go/test/mocks"
+	"github.com/orbs-network/lean-helix-go/test/network"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestHappyFlow(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := builders.ABasicTestNetwork()
+		net := network.ABasicTestNetwork()
 		net.StartConsensus(ctx)
 		require.True(t, net.WaitForAllNodesToCommitTheSameBlock())
 	})
@@ -20,7 +22,7 @@ func TestHappyFlow(t *testing.T) {
 
 func TestOnlyLeaderIsSendingPrePrepareOnce(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := builders.ABasicTestNetwork()
+		net := network.ABasicTestNetwork()
 
 		net.StartConsensusSync(ctx)
 		net.Nodes[0].Tick(ctx)
@@ -37,7 +39,7 @@ func TestOnlyLeaderIsSendingPrePrepareOnce(t *testing.T) {
 
 func TestHappyFlowMessages(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := builders.ABasicTestNetwork()
+		net := network.ABasicTestNetwork()
 		net.NodesPauseOnRequestNewBlock()
 
 		net.StartConsensus(ctx)
@@ -70,7 +72,7 @@ func TestHappyFlowMessages(t *testing.T) {
 
 func TestConsensusFor8Blocks(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := builders.ABasicTestNetwork().StartConsensus(ctx)
+		net := network.ABasicTestNetwork().StartConsensus(ctx)
 		for i := 0; i < 8; i++ {
 			net.WaitForAllNodesToCommitTheSameBlock()
 		}
@@ -79,10 +81,10 @@ func TestConsensusFor8Blocks(t *testing.T) {
 
 func TestHangingNode(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := builders.CreateBlock(leanhelix.GenesisBlock)
-		block2 := builders.CreateBlock(block1)
+		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
+		block2 := mocks.CreateBlock(block1)
 
-		net := builders.ATestNetwork(4, block1, block2)
+		net := network.ATestNetwork(4, block1, block2)
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
@@ -93,26 +95,26 @@ func TestHangingNode(t *testing.T) {
 		net.WaitForNodesToValidate(node1, node2, node3)
 		net.ResumeNodesValidation(node1, node2)
 		net.WaitForNodesToCommitABlock(node0, node1, node2)
-		require.True(t, builders.BlocksAreEqual(node0.GetLatestBlock(), block1))
-		require.True(t, builders.BlocksAreEqual(node1.GetLatestBlock(), block1))
-		require.True(t, builders.BlocksAreEqual(node2.GetLatestBlock(), block1))
-		require.True(t, node3.GetLatestBlock() == leanhelix.GenesisBlock)
+		require.True(t, matchers.BlocksAreEqual(node0.GetLatestBlock(), block1))
+		require.True(t, matchers.BlocksAreEqual(node1.GetLatestBlock(), block1))
+		require.True(t, matchers.BlocksAreEqual(node2.GetLatestBlock(), block1))
+		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)
 
 		net.WaitForNodesToValidate(node1, node2)
 		net.ResumeNodesValidation(node1, node2)
 		net.WaitForNodesToCommitABlock(node0, node1, node2)
-		require.True(t, builders.BlocksAreEqual(node0.GetLatestBlock(), block2))
-		require.True(t, builders.BlocksAreEqual(node1.GetLatestBlock(), block2))
-		require.True(t, builders.BlocksAreEqual(node2.GetLatestBlock(), block2))
-		require.True(t, node3.GetLatestBlock() == leanhelix.GenesisBlock)
+		require.True(t, matchers.BlocksAreEqual(node0.GetLatestBlock(), block2))
+		require.True(t, matchers.BlocksAreEqual(node1.GetLatestBlock(), block2))
+		require.True(t, matchers.BlocksAreEqual(node2.GetLatestBlock(), block2))
+		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)
 
 		net.ResumeNodesValidation(node3)
 		net.WaitForNodesToCommitABlock(node3)
-		require.True(t, builders.BlocksAreEqual(node3.GetLatestBlock(), block1))
+		require.True(t, matchers.BlocksAreEqual(node3.GetLatestBlock(), block1))
 
 		net.WaitForNodesToValidate(node3)
 		net.ResumeNodesValidation(node3)
 		net.WaitForNodesToCommitABlock(node3)
-		require.True(t, builders.BlocksAreEqual(node3.GetLatestBlock(), block2))
+		require.True(t, matchers.BlocksAreEqual(node3.GetLatestBlock(), block2))
 	})
 }

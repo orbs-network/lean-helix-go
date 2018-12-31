@@ -1,64 +1,67 @@
 package builders
 
 import (
-	"github.com/orbs-network/lean-helix-go"
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/services/messagesfactory"
+	"github.com/orbs-network/lean-helix-go/services/preparedmessages"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
+	"github.com/orbs-network/lean-helix-go/test/mocks"
 )
 
 func APreprepareMessage(
-	keyManager leanhelix.KeyManager,
+	keyManager interfaces.KeyManager,
 	senderMemberId primitives.MemberId,
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
-	block leanhelix.Block) *leanhelix.PreprepareMessage {
+	block interfaces.Block) *interfaces.PreprepareMessage {
 
-	messageFactory := leanhelix.NewMessageFactory(keyManager, senderMemberId)
-	return messageFactory.CreatePreprepareMessage(blockHeight, view, block, CalculateBlockHash(block))
+	messageFactory := messagesfactory.NewMessageFactory(keyManager, senderMemberId)
+	return messageFactory.CreatePreprepareMessage(blockHeight, view, block, mocks.CalculateBlockHash(block))
 }
 
 func APrepareMessage(
-	keyManager leanhelix.KeyManager,
+	keyManager interfaces.KeyManager,
 	senderMemberId primitives.MemberId,
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
-	block leanhelix.Block) *leanhelix.PrepareMessage {
+	block interfaces.Block) *interfaces.PrepareMessage {
 
-	messageFactory := leanhelix.NewMessageFactory(keyManager, senderMemberId)
-	return messageFactory.CreatePrepareMessage(blockHeight, view, CalculateBlockHash(block))
+	messageFactory := messagesfactory.NewMessageFactory(keyManager, senderMemberId)
+	return messageFactory.CreatePrepareMessage(blockHeight, view, mocks.CalculateBlockHash(block))
 }
 
 func ACommitMessage(
-	keyManager leanhelix.KeyManager,
+	keyManager interfaces.KeyManager,
 	senderMemberId primitives.MemberId,
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
-	block leanhelix.Block) *leanhelix.CommitMessage {
+	block interfaces.Block) *interfaces.CommitMessage {
 
-	messageFactory := leanhelix.NewMessageFactory(keyManager, senderMemberId)
-	return messageFactory.CreateCommitMessage(blockHeight, view, CalculateBlockHash(block))
+	messageFactory := messagesfactory.NewMessageFactory(keyManager, senderMemberId)
+	return messageFactory.CreateCommitMessage(blockHeight, view, mocks.CalculateBlockHash(block))
 }
 
 func AViewChangeMessage(
-	keyManager leanhelix.KeyManager,
+	keyManager interfaces.KeyManager,
 	senderMemberId primitives.MemberId,
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
-	preparedMessages *leanhelix.PreparedMessages) *leanhelix.ViewChangeMessage {
+	preparedMessages *preparedmessages.PreparedMessages) *interfaces.ViewChangeMessage {
 
-	messageFactory := leanhelix.NewMessageFactory(keyManager, senderMemberId)
+	messageFactory := messagesfactory.NewMessageFactory(keyManager, senderMemberId)
 	return messageFactory.CreateViewChangeMessage(blockHeight, view, preparedMessages)
 }
 
 func ANewViewMessage(
-	keyManager leanhelix.KeyManager,
+	keyManager interfaces.KeyManager,
 	senderMemberId primitives.MemberId,
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
 	ppContentBuilder *protocol.PreprepareContentBuilder,
 	confirmations []*protocol.ViewChangeMessageContentBuilder,
-	block leanhelix.Block) *leanhelix.NewViewMessage {
+	block interfaces.Block) *interfaces.NewViewMessage {
 
-	messageFactory := leanhelix.NewMessageFactory(keyManager, senderMemberId)
+	messageFactory := messagesfactory.NewMessageFactory(keyManager, senderMemberId)
 	return messageFactory.CreateNewViewMessage(blockHeight, view, ppContentBuilder, confirmations, block)
 }

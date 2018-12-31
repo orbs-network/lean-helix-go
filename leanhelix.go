@@ -2,52 +2,40 @@ package leanhelix
 
 import (
 	"context"
+	"github.com/orbs-network/lean-helix-go/services"
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/services/logger"
+	"github.com/orbs-network/lean-helix-go/services/messagesfilter"
+	"github.com/orbs-network/lean-helix-go/services/proofsvalidator"
+	"github.com/orbs-network/lean-helix-go/services/storage"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
-	"math"
 )
 
 type LeanHelix struct {
-	messagesChannel         chan *ConsensusRawMessage
-	acknowledgeBlockChannel chan Block
+	messagesChannel         chan *interfaces.ConsensusRawMessage
+	acknowledgeBlockChannel chan interfaces.Block
 	currentHeight           primitives.BlockHeight
-	config                  *Config
-	logger                  Logger
-	filter                  *ConsensusMessageFilter
-	leanHelixTerm           *LeanHelixTerm
-	onCommitCallback        OnCommitCallback
+	config                  *interfaces.Config
+	logger                  interfaces.Logger
+	filter                  *messagesfilter.ConsensusMessageFilter
+	leanHelixTerm           *services.LeanHelixTerm
+	onCommitCallback        interfaces.OnCommitCallback
 }
-
-var GenesisBlock Block = nil
-
-func GetBlockHeight(prevBlock Block) primitives.BlockHeight {
-	if prevBlock == GenesisBlock {
-		return 0
-	} else {
-		return prevBlock.Height()
-	}
-}
-
-func CalcQuorumSize(committeeMembersCount int) int {
-	f := int(math.Floor(float64(committeeMembersCount-1) / 3))
-	return committeeMembersCount - f
-}
-
-type OnCommitCallback func(ctx context.Context, block Block, blockProof []byte)
 
 // ***********************************
 // LeanHelix Constructor
 // ***********************************
-func NewLeanHelix(config *Config, onCommitCallback OnCommitCallback) *LeanHelix {
+func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommitCallback) *LeanHelix {
 	if config.Logger == nil {
-		config.Logger = NewSilentLogger()
+		config.Logger = logger.NewSilentLogger()
 	}
 
-	config.Logger.Debug("NewLeanHelix() ID=%s", Str(config.Membership.MyMemberId()))
-	filter := NewConsensusMessageFilter(config.Membership.MyMemberId(), config.Logger)
+	config.Logger.Debug("NewLeanHelix() ID=%s", services.Str(config.Membership.MyMemberId()))
+	filter := messagesfilter.NewConsensusMessageFilter(config.Membership.MyMemberId(), config.Logger)
 	return &LeanHelix{
-		messagesChannel:         make(chan *ConsensusRawMessage),
-		acknowledgeBlockChannel: make(chan Block),
+		messagesChannel:         make(chan *interfaces.ConsensusRawMessage),
+		acknowledgeBlockChannel: make(chan interfaces.Block),
 		currentHeight:           0,
 		config:                  config,
 		logger:                  config.Logger,
@@ -66,14 +54,14 @@ func (lh *LeanHelix) Run(ctx context.Context) {
 	}
 }
 
-func (lh *LeanHelix) UpdateState(ctx context.Context, prevBlock Block, blockProofBytes []byte) {
+func (lh *LeanHelix) UpdateState(ctx context.Context, prevBlock interfaces.Block, blockProofBytes []byte) {
 	var height primitives.BlockHeight
 	if prevBlock == nil {
 		height = 0
 	} else {
 		height = prevBlock.Height()
 	}
-	lh.logger.Debug("LHFLOW UpdateState() ID=%s prevBlockHeight=%d", Str(lh.config.Membership.MyMemberId()), height)
+	lh.logger.Debug("LHFLOW UpdateState() ID=%s prevBlockHeight=%d", services.Str(lh.config.Membership.MyMemberId()), height)
 
 	select {
 	case <-ctx.Done():
@@ -84,7 +72,7 @@ func (lh *LeanHelix) UpdateState(ctx context.Context, prevBlock Block, blockProo
 
 }
 
-//func (lh *LeanHelix) ValidateBlockConsensusGad(ctx context.Context, block Block, blockProofBytes []byte, prevBlockProofBytes []byte) bool {
+//func (lh *LeanHelix) ValidateBlockConsensusGad(ctx context.Context, block interfaces.Block, blockProofBytes []byte, prevBlockProofBytes []byte) bool {
 //	blockProof := protocol.BlockProofReader(blockProofBytes)
 //	prevBlockProof := protocol.BlockProofReader(prevBlockProofBytes)
 //	blockRef := blockProof.BlockRef()
@@ -135,7 +123,7 @@ func ValidatePBFTProof(
 	blockRef *protocol.BlockRef,
 	cSendersIterator *protocol.BlockProofNodesIterator,
 	q int,
-	keyManager KeyManager,
+	keyManager interfaces.KeyManager,
 	membersIds []primitives.MemberId) bool {
 
 	commitCount := 0
@@ -146,10 +134,10 @@ func ValidatePBFTProof(
 		}
 		cSender := cSendersIterator.NextNodes()
 		cSenderMemberId := cSender.MemberId()
-		if isInMembers(membersIds, cSenderMemberId) == false {
+		if proofsvalidator.IsInMembers(membersIds, cSenderMemberId) == false {
 			return false
 		}
-		if !verifyBlockRefMessage(blockRef, cSender, keyManager) {
+		if !proofsvalidator.VerifyBlockRefMessage(blockRef, cSender, keyManager) {
 			return false
 		}
 		commitCount++
@@ -162,8 +150,8 @@ func ValidatePBFTProof(
 	return true
 }
 
-func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block Block, blockProofBytes []byte) bool {
-	lh.logger.Debug("ValidateBlockConsensus() ID=%s", Str(lh.config.Membership.MyMemberId()))
+func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProofBytes []byte) bool {
+	lh.logger.Debug("ValidateBlockConsensus() ID=%s", services.Str(lh.config.Membership.MyMemberId()))
 	if blockProofBytes == nil || len(blockProofBytes) == 0 || block == nil {
 		return false
 	}
@@ -186,7 +174,7 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block Block, bl
 	committeeMembers := lh.config.Membership.RequestOrderedCommittee(ctx, blockHeight, 0)
 
 	sendersIterator := blockProof.NodesIterator()
-	set := make(map[MemberIdStr]bool)
+	set := make(map[storage.MemberIdStr]bool)
 	var sendersCounter = 0
 	for {
 		if !sendersIterator.HasNext() {
@@ -194,32 +182,32 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block Block, bl
 		}
 
 		sender := sendersIterator.NextNodes()
-		if !verifyBlockRefMessage(blockRef, sender, lh.config.KeyManager) {
+		if !proofsvalidator.VerifyBlockRefMessage(blockRef, sender, lh.config.KeyManager) {
 			return false
 		}
 
 		memberId := sender.MemberId()
-		if _, ok := set[MemberIdStr(memberId)]; ok {
+		if _, ok := set[storage.MemberIdStr(memberId)]; ok {
 			return false
 		}
 
-		if !isInMembers(committeeMembers, memberId) {
+		if !proofsvalidator.IsInMembers(committeeMembers, memberId) {
 			return false
 		}
 
-		set[MemberIdStr(memberId)] = true
+		set[storage.MemberIdStr(memberId)] = true
 		sendersCounter++
 	}
 
-	if sendersCounter < CalcQuorumSize(len(committeeMembers)) {
+	if sendersCounter < services.CalcQuorumSize(len(committeeMembers)) {
 		return false
 	}
 
 	return true
 }
 
-func (lh *LeanHelix) HandleConsensusMessage(ctx context.Context, message *ConsensusRawMessage) {
-	lh.logger.Debug("HandleConsensusRawMessage() ID=%s", Str(lh.config.Membership.MyMemberId()))
+func (lh *LeanHelix) HandleConsensusMessage(ctx context.Context, message *interfaces.ConsensusRawMessage) {
+	lh.logger.Debug("HandleConsensusRawMessage() ID=%s", services.Str(lh.config.Membership.MyMemberId()))
 	select {
 	case <-ctx.Done():
 		return
@@ -248,7 +236,7 @@ func (lh *LeanHelix) Tick(ctx context.Context) bool {
 	case prevBlock := <-lh.acknowledgeBlockChannel:
 		lh.logger.Debug("LHFLOW Tick Update")
 		// TODO: a byzantine node can send the genesis block in sync can cause a mess
-		prevHeight := GetBlockHeight(prevBlock)
+		prevHeight := services.GetBlockHeight(prevBlock)
 		if prevHeight >= lh.currentHeight {
 			lh.logger.Debug("Calling onNewConsensusRound() from Tick() prevHeight=%d lh.currentHeight=%d", prevHeight, lh.currentHeight)
 			lh.onNewConsensusRound(ctx, prevBlock)
@@ -260,18 +248,14 @@ func (lh *LeanHelix) Tick(ctx context.Context) bool {
 
 // ************************ Internal ***************************************
 
-func (lh *LeanHelix) onCommit(ctx context.Context, block Block, blockProof []byte) {
+func (lh *LeanHelix) onCommit(ctx context.Context, block interfaces.Block, blockProof []byte) {
 	lh.onCommitCallback(ctx, block, blockProof)
 	lh.logger.Debug("Calling onNewConsensusRound() from onCommit() lh.currentHeight=%d", lh.currentHeight)
 	lh.onNewConsensusRound(ctx, block)
 }
 
-func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, prevBlock Block) {
-	lh.currentHeight = GetBlockHeight(prevBlock) + 1
-	lh.leanHelixTerm = NewLeanHelixTerm(ctx, lh.config, lh.onCommit, prevBlock)
+func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, prevBlock interfaces.Block) {
+	lh.currentHeight = services.GetBlockHeight(prevBlock) + 1
+	lh.leanHelixTerm = services.NewLeanHelixTerm(ctx, lh.config, lh.onCommit, prevBlock)
 	lh.filter.SetBlockHeight(ctx, lh.currentHeight, lh.leanHelixTerm)
-}
-
-func Str(memberId primitives.MemberId) string {
-	return memberId.String()[:6]
 }
