@@ -21,7 +21,7 @@ func TestStorePreprepare(t *testing.T) {
 	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	keyManager1 := mocks.NewMockKeyManager(senderId1)
 	keyManager2 := mocks.NewMockKeyManager(senderId2)
-	block := mocks.CreateBlock(interfaces.GenesisBlock)
+	block := mocks.ABlock(interfaces.GenesisBlock)
 
 	preprepareMessage1 := builders.APreprepareMessage(keyManager1, senderId1, blockHeight, view, block)
 	preprepareMessage2 := builders.APreprepareMessage(keyManager2, senderId2, blockHeight, view, block)
@@ -48,8 +48,8 @@ func TestStorePrepare(t *testing.T) {
 	keyManager1 := mocks.NewMockKeyManager(senderId1)
 	keyManager2 := mocks.NewMockKeyManager(senderId2)
 	keyManager3 := mocks.NewMockKeyManager(senderId3)
-	block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-	block2 := mocks.CreateBlock(interfaces.GenesisBlock)
+	block1 := mocks.ABlock(interfaces.GenesisBlock)
+	block2 := mocks.ABlock(interfaces.GenesisBlock)
 	block1Hash := mocks.CalculateBlockHash(block1)
 
 	message1 := builders.APrepareMessage(keyManager1, senderId1, blockHeight1, view1, block1)
@@ -87,8 +87,8 @@ func TestStoreCommit(t *testing.T) {
 	keyManager1 := mocks.NewMockKeyManager(senderId1)
 	keyManager2 := mocks.NewMockKeyManager(senderId2)
 	keyManager3 := mocks.NewMockKeyManager(senderId3)
-	block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-	block2 := mocks.CreateBlock(interfaces.GenesisBlock)
+	block1 := mocks.ABlock(interfaces.GenesisBlock)
+	block2 := mocks.ABlock(interfaces.GenesisBlock)
 	block1Hash := mocks.CalculateBlockHash(block1)
 
 	message1 := builders.ACommitMessage(keyManager1, senderId1, blockHeight1, view1, block1)
@@ -147,7 +147,7 @@ func TestLatestPreprepare(t *testing.T) {
 	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	keyManager1 := mocks.NewMockKeyManager(senderId1)
 	keyManager2 := mocks.NewMockKeyManager(senderId2)
-	block := mocks.CreateBlock(interfaces.GenesisBlock)
+	block := mocks.ABlock(interfaces.GenesisBlock)
 
 	preprepareMessageOnView3 := builders.APreprepareMessage(keyManager1, senderId1, blockHeight, 3, block)
 	preprepareMessageOnView2 := builders.APreprepareMessage(keyManager2, senderId2, blockHeight, 2, block)
@@ -162,7 +162,7 @@ func TestLatestPreprepare(t *testing.T) {
 
 func TestDuplicatePreprepare(t *testing.T) {
 	var s interfaces.Storage = storage.NewInMemoryStorage()
-	block := mocks.CreateBlock(interfaces.GenesisBlock)
+	block := mocks.ABlock(interfaces.GenesisBlock)
 	memberId := primitives.MemberId("Member Id")
 	keyManager := mocks.NewMockKeyManager(memberId)
 	ppm := builders.APreprepareMessage(keyManager, memberId, 1, 1, block)
@@ -182,7 +182,7 @@ func TestDuplicatePrepare(t *testing.T) {
 	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	sender1KeyManager := mocks.NewMockKeyManager(senderId1)
 	sender2KeyManager := mocks.NewMockKeyManager(senderId2)
-	block := mocks.CreateBlock(interfaces.GenesisBlock)
+	block := mocks.ABlock(interfaces.GenesisBlock)
 	p1 := builders.APrepareMessage(sender1KeyManager, senderId1, blockHeight, view, block)
 	p2 := builders.APrepareMessage(sender2KeyManager, senderId2, blockHeight, view, block)
 
@@ -204,7 +204,7 @@ func TestDuplicateCommit(t *testing.T) {
 	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
 	sender1KeyManager := mocks.NewMockKeyManager(senderId1)
 	sender2KeyManager := mocks.NewMockKeyManager(senderId2)
-	block := mocks.CreateBlock(interfaces.GenesisBlock)
+	block := mocks.ABlock(interfaces.GenesisBlock)
 
 	c1 := builders.ACommitMessage(sender1KeyManager, senderId1, blockHeight, view, block)
 	c2 := builders.ACommitMessage(sender2KeyManager, senderId2, blockHeight, view, block)
@@ -246,7 +246,7 @@ func TestClearBlockHeightLogs(t *testing.T) {
 	var s interfaces.Storage = storage.NewInMemoryStorage()
 	blockHeight := primitives.BlockHeight(math.Floor(rand.Float64() * 1000000))
 	view := primitives.View(math.Floor(rand.Float64() * 1000000))
-	block := mocks.CreateBlock(interfaces.GenesisBlock)
+	block := mocks.ABlock(interfaces.GenesisBlock)
 	blockHash := mocks.CalculateBlockHash(block)
 	memberId := primitives.MemberId("Member Id")
 	keyManager := mocks.NewMockKeyManager(memberId)

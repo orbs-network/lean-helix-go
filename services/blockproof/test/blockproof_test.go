@@ -17,7 +17,7 @@ func CompareSenderSignature(commitMessage *interfaces.CommitMessage, senderSigna
 }
 
 func TestGeneratingBlockProof(t *testing.T) {
-	block := mocks.CreateBlock(interfaces.GenesisBlock)
+	block := mocks.ABlock(interfaces.GenesisBlock)
 
 	memberId0 := primitives.MemberId("Member0")
 	memberId1 := primitives.MemberId("Member1")

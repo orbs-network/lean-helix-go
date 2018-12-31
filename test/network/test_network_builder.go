@@ -56,10 +56,10 @@ func (tb *TestNetworkBuilder) Build() *TestNetwork {
 
 func (tb *TestNetworkBuilder) buildBlocksPool() *mocks.BlocksPool {
 	if tb.upcomingBlocks == nil {
-		b1 := mocks.CreateBlock(interfaces.GenesisBlock)
-		b2 := mocks.CreateBlock(b1)
-		b3 := mocks.CreateBlock(b2)
-		b4 := mocks.CreateBlock(b3)
+		b1 := mocks.ABlock(interfaces.GenesisBlock)
+		b2 := mocks.ABlock(b1)
+		b3 := mocks.ABlock(b2)
+		b4 := mocks.ABlock(b3)
 
 		return mocks.NewBlocksPool([]interfaces.Block{b1, b2, b3, b4})
 	} else {

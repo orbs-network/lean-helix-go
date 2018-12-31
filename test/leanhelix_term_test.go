@@ -10,21 +10,21 @@ import (
 func GeneratePreprepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
 	keyManager := mocks.NewMockKeyManager(senderMemberId)
-	block := mocks.CreateBlock(interfaces.GenesisBlock)
+	block := mocks.ABlock(interfaces.GenesisBlock)
 	return builders.APreprepareMessage(keyManager, senderMemberId, blockHeight, view, block).ToConsensusRawMessage()
 }
 
 func GeneratePrepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
 	keyManager := mocks.NewMockKeyManager(senderMemberId)
-	block := mocks.CreateBlock(interfaces.GenesisBlock)
+	block := mocks.ABlock(interfaces.GenesisBlock)
 	return builders.APrepareMessage(keyManager, senderMemberId, blockHeight, view, block).ToConsensusRawMessage()
 }
 
 func GenerateCommitMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
 	keyManager := mocks.NewMockKeyManager(senderMemberId)
-	block := mocks.CreateBlock(interfaces.GenesisBlock)
+	block := mocks.ABlock(interfaces.GenesisBlock)
 	return builders.ACommitMessage(keyManager, senderMemberId, blockHeight, view, block).ToConsensusRawMessage()
 }
 
@@ -37,7 +37,7 @@ func GenerateViewChangeMessage(blockHeight primitives.BlockHeight, view primitiv
 func GenerateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
 	keyManager := mocks.NewMockKeyManager(senderMemberId)
-	block := mocks.CreateBlock(interfaces.GenesisBlock)
+	block := mocks.ABlock(interfaces.GenesisBlock)
 	return builders.ANewViewMessage(keyManager, senderMemberId, blockHeight, view, nil, nil, block).ToConsensusRawMessage()
 
 }

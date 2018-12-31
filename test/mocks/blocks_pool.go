@@ -15,7 +15,7 @@ func (bp *BlocksPool) PopBlock() interfaces.Block {
 		// Simple queue impl, see https://github.com/golang/go/wiki/SliceTricks
 		nextBlock, bp.upcomingBlocks = bp.upcomingBlocks[0], bp.upcomingBlocks[1:]
 	} else {
-		nextBlock = CreateBlock(bp.latestBlock)
+		nextBlock = ABlock(bp.latestBlock)
 	}
 	bp.latestBlock = nextBlock
 	return nextBlock

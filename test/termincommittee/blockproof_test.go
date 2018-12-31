@@ -16,9 +16,9 @@ import (
 
 func TestNodeSync(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-		block2 := mocks.CreateBlock(block1)
-		block3 := mocks.CreateBlock(block2)
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
+		block3 := mocks.ABlock(block2)
 
 		net := network.ATestNetwork(4, block1, block2, block3)
 		node0 := net.Nodes[0]
@@ -63,9 +63,9 @@ func TestNodeSync(t *testing.T) {
 
 func TestAValidBlockProof(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-		block2 := mocks.CreateBlock(block1)
-		block3 := mocks.CreateBlock(block2)
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
+		block3 := mocks.ABlock(block2)
 
 		net := network.ABasicTestNetwork()
 
@@ -93,9 +93,9 @@ func TestThatWeDoNotAcceptNilBlockProof(t *testing.T) {
 
 		net.StartConsensus(ctx)
 
-		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-		block2 := mocks.CreateBlock(block1)
-		block3 := mocks.CreateBlock(block2)
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
+		block3 := mocks.ABlock(block2)
 		require.False(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, nil))
 		require.False(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, []byte{}))
 	})
@@ -110,9 +110,9 @@ func TestThatBlockRefInsideProofValidation(t *testing.T) {
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
 
-		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-		block2 := mocks.CreateBlock(block1)
-		block3 := mocks.CreateBlock(block2)
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
+		block3 := mocks.ABlock(block2)
 		blockHeight := block3.Height()
 
 		goodBlockRef := generateACommitBlockRefBuilder(blockHeight, block3)
@@ -197,9 +197,9 @@ func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 
 		net.StartConsensus(ctx)
 
-		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-		block2 := mocks.CreateBlock(block1)
-		block3 := mocks.CreateBlock(block2)
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
+		block3 := mocks.ABlock(block2)
 
 		blockHeight := block3.Height()
 		goodBlockRef := generateACommitBlockRefBuilder(blockHeight, block3)

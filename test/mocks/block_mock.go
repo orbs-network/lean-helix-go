@@ -20,7 +20,7 @@ func (b *MockBlock) Body() string {
 	return b.body
 }
 
-func CreateBlock(previousBlock interfaces.Block) interfaces.Block {
+func ABlock(previousBlock interfaces.Block) interfaces.Block {
 	var prevBlockHeight primitives.BlockHeight
 	if previousBlock == interfaces.GenesisBlock {
 		prevBlockHeight = 0

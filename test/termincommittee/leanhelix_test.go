@@ -81,8 +81,8 @@ func TestConsensusFor8Blocks(t *testing.T) {
 
 func TestHangingNode(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-		block2 := mocks.CreateBlock(block1)
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
 
 		net := network.ATestNetwork(4, block1, block2)
 		node0 := net.Nodes[0]

@@ -17,7 +17,7 @@ func TestGenesisBlock(t *testing.T) {
 
 func TestAppendingToBlockChain(t *testing.T) {
 	blockChain := builders.NewInMemoryBlockChain()
-	block := mocks.CreateBlock(interfaces.GenesisBlock)
+	block := mocks.ABlock(interfaces.GenesisBlock)
 	blockChain.AppendBlockToChain(block, nil)
 
 	actual := blockChain.GetLastBlock()
@@ -26,9 +26,9 @@ func TestAppendingToBlockChain(t *testing.T) {
 
 func TestGettingTheLatestBlock(t *testing.T) {
 	blockChain := builders.NewInMemoryBlockChain()
-	block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-	block2 := mocks.CreateBlock(block1)
-	block3 := mocks.CreateBlock(block2)
+	block1 := mocks.ABlock(interfaces.GenesisBlock)
+	block2 := mocks.ABlock(block1)
+	block3 := mocks.ABlock(block2)
 	blockChain.AppendBlockToChain(block1, nil)
 	blockChain.AppendBlockToChain(block2, nil)
 	blockChain.AppendBlockToChain(block3, nil)
@@ -39,9 +39,9 @@ func TestGettingTheLatestBlock(t *testing.T) {
 
 func TestGettingTheLatestBlockProof(t *testing.T) {
 	blockChain := builders.NewInMemoryBlockChain()
-	block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-	block2 := mocks.CreateBlock(block1)
-	block3 := mocks.CreateBlock(block2)
+	block1 := mocks.ABlock(interfaces.GenesisBlock)
+	block2 := mocks.ABlock(block1)
+	block3 := mocks.ABlock(block2)
 	blockChain.AppendBlockToChain(block1, []byte{1, 2, 3})
 	blockChain.AppendBlockToChain(block2, []byte{4, 5, 6})
 	blockChain.AppendBlockToChain(block3, []byte{7, 8, 9})

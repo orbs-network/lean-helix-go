@@ -15,8 +15,8 @@ import (
 func TestMessageBuilderAndReader(t *testing.T) {
 	height := primitives.BlockHeight(math.Floor(rand.Float64() * 1000000000))
 	view := primitives.View(math.Floor(rand.Float64() * 1000000000))
-	block := mocks.CreateBlock(interfaces.GenesisBlock)
-	b1 := mocks.CreateBlock(interfaces.GenesisBlock)
+	block := mocks.ABlock(interfaces.GenesisBlock)
+	b1 := mocks.ABlock(interfaces.GenesisBlock)
 	memberId := primitives.MemberId("Member Id")
 	mockKeyManager := mocks.NewMockKeyManager(memberId, nil)
 	mf := messagesfactory.NewMessageFactory(mockKeyManager, memberId)

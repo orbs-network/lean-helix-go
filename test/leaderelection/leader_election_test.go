@@ -14,8 +14,8 @@ import (
 
 func Test2fPlus1ViewChangeToBeElected(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-		block2 := mocks.CreateBlock(block1)
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
 
 		h := NewHarness(ctx, t, block1, block2)
 
@@ -50,9 +50,9 @@ func Test2fPlus1ViewChangeToBeElected(t *testing.T) {
 
 func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-		block2 := mocks.CreateBlock(block1)
-		block3 := mocks.CreateBlock(block1)
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
+		block3 := mocks.ABlock(block1)
 
 		h := NewHarness(ctx, t, block1, block2, block3)
 
@@ -117,8 +117,8 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 
 func TestNotCountingViewChangeFromTheSameNode(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-		block2 := mocks.CreateBlock(block1)
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
 
 		h := NewHarness(ctx, t, block1, block2)
 
@@ -141,8 +141,8 @@ func TestNotCountingViewChangeFromTheSameNode(t *testing.T) {
 
 func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-		block2 := mocks.CreateBlock(block1)
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
 
 		h := NewHarness(ctx, t, block1, block2)
 

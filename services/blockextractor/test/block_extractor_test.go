@@ -34,7 +34,7 @@ func TestKeepOnlyMessagesWithBlock(t *testing.T) {
 	keyManager2 := mocks.NewMockKeyManager(memberId2)
 	keyManager3 := mocks.NewMockKeyManager(memberId3)
 
-	block := mocks.CreateBlock(interfaces.GenesisBlock)
+	block := mocks.ABlock(interfaces.GenesisBlock)
 
 	preparedMessages := &preparedmessages.PreparedMessages{
 		PreprepareMessage: nil,
@@ -58,18 +58,18 @@ func TestReturnBlockFromPPMWithHighestView(t *testing.T) {
 	node3 := testNetwork.Nodes[3]
 
 	// view on view 3
-	blockOnView3 := mocks.CreateBlock(interfaces.GenesisBlock)
+	blockOnView3 := mocks.ABlock(interfaces.GenesisBlock)
 	preparedOnView3 := builders.CreatePreparedMessages(node3, []builders.Sender{node1, node2}, 1, 3, blockOnView3)
 
 	VCMessageOnView3 := builders.AViewChangeMessage(node0.KeyManager, node0.MemberId, 1, 5, preparedOnView3)
 
 	// view on view 8
-	blockOnView8 := mocks.CreateBlock(interfaces.GenesisBlock)
+	blockOnView8 := mocks.ABlock(interfaces.GenesisBlock)
 	preparedOnView8 := builders.CreatePreparedMessages(node0, []builders.Sender{node1, node2}, 1, 8, blockOnView8)
 	VCMessageOnView8 := builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 5, preparedOnView8)
 
 	// view on view 4
-	blockOnView4 := mocks.CreateBlock(interfaces.GenesisBlock)
+	blockOnView4 := mocks.ABlock(interfaces.GenesisBlock)
 	preparedOnView4 := builders.CreatePreparedMessages(node0, []builders.Sender{node1, node2}, 1, 4, blockOnView4)
 	VCMessageOnView4 := builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 5, preparedOnView4)
 

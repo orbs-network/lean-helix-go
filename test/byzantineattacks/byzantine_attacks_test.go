@@ -14,7 +14,7 @@ import (
 
 func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block := mocks.CreateBlock(interfaces.GenesisBlock)
+		block := mocks.ABlock(interfaces.GenesisBlock)
 		net := network.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
@@ -31,7 +31,7 @@ func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
 
 func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block := mocks.CreateBlock(interfaces.GenesisBlock)
+		block := mocks.ABlock(interfaces.GenesisBlock)
 		net := network.
 			NewTestNetworkBuilder().
 			WithNodeCount(7).
@@ -49,7 +49,7 @@ func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 
 func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		net := network.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
@@ -75,8 +75,8 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 
 func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		goodBlock := mocks.CreateBlock(interfaces.GenesisBlock)
-		fakeBlock := mocks.CreateBlock(interfaces.GenesisBlock)
+		goodBlock := mocks.ABlock(interfaces.GenesisBlock)
+		fakeBlock := mocks.ABlock(interfaces.GenesisBlock)
 		net := network.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
@@ -107,8 +107,8 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 
 func TestThatAByzantineLeaderCanNotCauseAFork(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-		block2 := mocks.CreateBlock(interfaces.GenesisBlock)
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(interfaces.GenesisBlock)
 
 		net := network.
 			NewTestNetworkBuilder().

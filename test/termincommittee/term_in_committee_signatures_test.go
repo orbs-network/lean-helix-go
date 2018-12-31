@@ -13,9 +13,9 @@ func TestPreprepareSignature(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
 
-		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-		block2 := mocks.CreateBlock(block1)
-		block3 := mocks.CreateBlock(block2)
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
+		block3 := mocks.ABlock(block2)
 
 		h.setNode1AsTheLeader(ctx, 1, 1, block1)
 
@@ -44,7 +44,7 @@ func TestPrepareSignature(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
 
-		block := mocks.CreateBlock(interfaces.GenesisBlock)
+		block := mocks.ABlock(interfaces.GenesisBlock)
 
 		// start with 0 prepare
 		prepareCount := h.countPrepare(1, 0, block)
@@ -71,7 +71,7 @@ func TestViewChangeSignature(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
 
-		block := mocks.CreateBlock(interfaces.GenesisBlock)
+		block := mocks.ABlock(interfaces.GenesisBlock)
 
 		// start with 0 view-change
 		viewChangeCountOnView4 := h.countViewChange(1, 4)
@@ -103,9 +103,9 @@ func TestNewViewSignature(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
 
-		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-		block2 := mocks.CreateBlock(block1)
-		block3 := mocks.CreateBlock(block2)
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
+		block3 := mocks.ABlock(block2)
 
 		h.setNode1AsTheLeader(ctx, 1, 1, block1)
 

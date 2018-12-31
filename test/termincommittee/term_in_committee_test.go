@@ -29,7 +29,7 @@ func TestNewViewNotAcceptedIfDidNotPassValidation(t *testing.T) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, startView)
 
-			block := mocks.CreateBlock(interfaces.GenesisBlock)
+			block := mocks.ABlock(interfaces.GenesisBlock)
 
 			h.checkView(startView)
 			if failValidations {
@@ -57,7 +57,7 @@ func TestNewViewNotAcceptViewsFromThePast(t *testing.T) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, startView)
 
-			block := mocks.CreateBlock(interfaces.GenesisBlock)
+			block := mocks.ABlock(interfaces.GenesisBlock)
 
 			h.receiveNewView(ctx, 2, 1, view, block)
 
@@ -80,7 +80,7 @@ func TestNewViewIsSentWithTheHighestBlockFromTheViewChangeProofs(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
 
-		blockOnView3 := mocks.CreateBlock(interfaces.GenesisBlock)
+		blockOnView3 := mocks.ABlock(interfaces.GenesisBlock)
 		preparedMessagesOnView3 := builders.CreatePreparedMessages(
 			h.net.Nodes[3],
 			[]builders.Sender{h.net.Nodes[0], h.net.Nodes[1], h.net.Nodes[2]},
@@ -88,7 +88,7 @@ func TestNewViewIsSentWithTheHighestBlockFromTheViewChangeProofs(t *testing.T) {
 			3,
 			blockOnView3)
 
-		blockOnView4 := mocks.CreateBlock(interfaces.GenesisBlock)
+		blockOnView4 := mocks.ABlock(interfaces.GenesisBlock)
 		preparedMessagesOnView4 := builders.CreatePreparedMessages(
 			h.net.Nodes[0],
 			[]builders.Sender{h.net.Nodes[1], h.net.Nodes[2], h.net.Nodes[3]},
@@ -125,7 +125,7 @@ func TestNewViewWithOlderBlockIsRejected(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
 
-		blockOnView3 := mocks.CreateBlock(interfaces.GenesisBlock)
+		blockOnView3 := mocks.ABlock(interfaces.GenesisBlock)
 		preparedMessagesOnView3 := builders.CreatePreparedMessages(
 			h.net.Nodes[3],
 			[]builders.Sender{h.net.Nodes[0], h.net.Nodes[1], h.net.Nodes[2]},
@@ -133,7 +133,7 @@ func TestNewViewWithOlderBlockIsRejected(t *testing.T) {
 			3,
 			blockOnView3)
 
-		blockOnView4 := mocks.CreateBlock(interfaces.GenesisBlock)
+		blockOnView4 := mocks.ABlock(interfaces.GenesisBlock)
 		preparedMessagesOnView4 := builders.CreatePreparedMessages(
 			h.net.Nodes[0],
 			[]builders.Sender{h.net.Nodes[1], h.net.Nodes[2], h.net.Nodes[3]},
@@ -171,7 +171,7 @@ func TestNewViewNotAcceptMessageIfNotFromTheLeader(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		sendNewView := func(fromNodeIdx int, shouldAcceptMessage bool) {
 			h := NewHarness(ctx, t)
-			block := mocks.CreateBlock(interfaces.GenesisBlock)
+			block := mocks.ABlock(interfaces.GenesisBlock)
 
 			h.receiveNewView(ctx, fromNodeIdx, 1, 1, block)
 			if shouldAcceptMessage {
@@ -231,7 +231,7 @@ func TestNewViewNotAcceptedWithWrongPPDetails(t *testing.T) {
 			}
 		}
 
-		block := mocks.CreateBlock(interfaces.GenesisBlock)
+		block := mocks.ABlock(interfaces.GenesisBlock)
 
 		// good new view
 		sendNewView(block, 10, 1, block, 10, 1, true)
@@ -248,7 +248,7 @@ func TestNewViewNotAcceptedWithWrongViewChangeDetails(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		sendNewView := func(blockHeight primitives.BlockHeight, view primitives.View, vcsBlockHeight [3]primitives.BlockHeight, vcsView [3]primitives.View, shouldAcceptMessage bool) {
 			h := NewHarness(ctx, t)
-			block := mocks.CreateBlock(interfaces.GenesisBlock)
+			block := mocks.ABlock(interfaces.GenesisBlock)
 
 			h.checkView(0)
 
@@ -296,7 +296,7 @@ func TestNewViewNotAcceptedWithBadVotes(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		sendNewView := func(leaderNodeIdx int, members []int, shouldAcceptMessage bool) {
 			h := NewHarness(ctx, t)
-			block := mocks.CreateBlock(interfaces.GenesisBlock)
+			block := mocks.ABlock(interfaces.GenesisBlock)
 
 			h.checkView(0)
 
@@ -345,7 +345,7 @@ func TestViewChangeNotAcceptViewsFromThePast(t *testing.T) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, startView)
 
-			block := mocks.CreateBlock(interfaces.GenesisBlock)
+			block := mocks.ABlock(interfaces.GenesisBlock)
 
 			viewChangeCountBefore := h.countViewChange(1, view)
 			h.receiveViewChange(ctx, 3, 1, view, block)
@@ -376,8 +376,8 @@ func TestViewChangeIsRejectedIfTargetIsNotTheNewLeader(t *testing.T) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, view)
 
-			block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-			block2 := mocks.CreateBlock(block1)
+			block1 := mocks.ABlock(interfaces.GenesisBlock)
+			block2 := mocks.ABlock(block1)
 
 			viewChangeCountBefore := h.countViewChange(1, view)
 			h.receiveViewChange(ctx, 3, 1, view, block2)
@@ -405,7 +405,7 @@ func TestPrepareNotAcceptViewsFromThePast(t *testing.T) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, startView)
 
-			block := mocks.CreateBlock(interfaces.GenesisBlock)
+			block := mocks.ABlock(interfaces.GenesisBlock)
 
 			prepareCountBefore := h.countPrepare(1, view, block)
 			h.receivePrepare(ctx, 1, 1, view, block)
@@ -436,7 +436,7 @@ func TestPrepareNotAcceptingMessagesFromTheLeader(t *testing.T) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, 1)
 
-			block := mocks.CreateBlock(interfaces.GenesisBlock)
+			block := mocks.ABlock(interfaces.GenesisBlock)
 
 			prepareCountBefore := h.countPrepare(1, view, block)
 			h.receivePrepare(ctx, fromNode, 1, view, block)
@@ -468,7 +468,7 @@ func TestPreprepareAcceptOnlyMatchingViews(t *testing.T) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, startView)
 
-			block := mocks.CreateBlock(interfaces.GenesisBlock)
+			block := mocks.ABlock(interfaces.GenesisBlock)
 
 			hasPreprepare := h.hasPreprepare(1, startView, block)
 			require.False(t, hasPreprepare, "No preprepare should exist in the storage")
@@ -496,7 +496,7 @@ func TestPreprepareAcceptOnlyMatchingViews(t *testing.T) {
 
 func TestPrepare2fPlus1ForACommit(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block := mocks.CreateBlock(interfaces.GenesisBlock)
+		block := mocks.ABlock(interfaces.GenesisBlock)
 
 		h := NewHarness(ctx, t, block)
 		h.setNode1AsTheLeader(ctx, 1, 1, block)
@@ -516,7 +516,7 @@ func TestPrepare2fPlus1ForACommit(t *testing.T) {
 
 func TestDisposingATermInCommitteeClearTheStorage(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block := mocks.CreateBlock(interfaces.GenesisBlock)
+		block := mocks.ABlock(interfaces.GenesisBlock)
 
 		h := NewHarness(ctx, t, block)
 
@@ -541,7 +541,7 @@ func TestDisposingATermInCommitteeClearTheStorage(t *testing.T) {
 
 func TestAValidPreparedProofIsSentOnViewChange(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block := mocks.CreateBlock(interfaces.GenesisBlock)
+		block := mocks.ABlock(interfaces.GenesisBlock)
 
 		h := NewHarness(ctx, t, block)
 
@@ -591,8 +591,8 @@ func TestAValidPreparedProofIsSentOnViewChange(t *testing.T) {
 
 func TestAValidViewChangeMessageWithPreparedProof(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-		block2 := mocks.CreateBlock(block1)
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
 
 		h := NewHarness(ctx, t)
 		h.setNode1AsTheLeader(ctx, 10, 1, block1)
@@ -614,8 +614,8 @@ func TestAValidViewChangeMessageWithPreparedProof(t *testing.T) {
 
 func TestViewChangeMessageWithoutQuorumInThePreparedProof(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-		block2 := mocks.CreateBlock(block1)
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
 
 		// an invalid prepare messages
 		h := NewHarness(ctx, t)
@@ -637,8 +637,8 @@ func TestViewChangeMessageWithoutQuorumInThePreparedProof(t *testing.T) {
 
 func TestViewChangeMessageWithAnInvalidPreparedProof(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := mocks.CreateBlock(interfaces.GenesisBlock)
-		block2 := mocks.CreateBlock(block1)
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
 
 		// an invalid prepare messages
 		h := NewHarness(ctx, t)

@@ -32,7 +32,7 @@ func TestProofsValidator(t *testing.T) {
 	const view = 0
 	const targetBlockHeight = blockHeight
 	const targetView = view + 1
-	block := mocks.CreateBlock(interfaces.GenesisBlock)
+	block := mocks.ABlock(interfaces.GenesisBlock)
 	blockHash := mocks.CalculateBlockHash(block)
 
 	leaderMessageSigner := &builders.MessageSigner{KeyManager: leaderKeyManager, MemberId: leaderId}
@@ -188,7 +188,7 @@ func TestProofsValidator(t *testing.T) {
 		require.False(t, actualBadView, "Did not reject mismatching view")
 
 		// Mismatching blockHash //
-		otherBlock := mocks.CreateBlock(interfaces.GenesisBlock)
+		otherBlock := mocks.ABlock(interfaces.GenesisBlock)
 		badBlockHashProof := builders.APreparedProofByMessages(
 			builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, view, block),
 			[]*interfaces.PrepareMessage{
