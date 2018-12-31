@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
-	"github.com/orbs-network/lean-helix-go/test/sns"
+	"github.com/orbs-network/lean-helix-go/test"
 )
 
 func CalculateBlockHash(block interfaces.Block) primitives.BlockHash {
@@ -23,10 +23,10 @@ type MockBlockUtils struct {
 	blocksPool *BlocksPool
 
 	PauseOnRequestNewBlock bool
-	RequestNewBlockSns     *sns.Sns
+	RequestNewBlockSns     *test.Sns
 
 	ValidationCounter int
-	ValidationSns     *sns.Sns
+	ValidationSns     *test.Sns
 	PauseOnValidation bool
 	ValidationResult  bool
 }
@@ -36,10 +36,10 @@ func NewMockBlockUtils(blocksPool *BlocksPool) *MockBlockUtils {
 		blocksPool: blocksPool,
 
 		PauseOnRequestNewBlock: false,
-		RequestNewBlockSns:     sns.NewSignalAndStop(),
+		RequestNewBlockSns:     test.NewSignalAndStop(),
 
 		ValidationCounter: 0,
-		ValidationSns:     sns.NewSignalAndStop(),
+		ValidationSns:     test.NewSignalAndStop(),
 		PauseOnValidation: false,
 		ValidationResult:  true,
 	}

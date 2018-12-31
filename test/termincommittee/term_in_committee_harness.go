@@ -3,9 +3,10 @@ package termincommittee
 import (
 	"context"
 	"fmt"
-	"github.com/orbs-network/lean-helix-go/services"
+	"github.com/orbs-network/lean-helix-go/services/blockheight"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/messagesfactory"
+	"github.com/orbs-network/lean-helix-go/services/termincommittee"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test/builders"
@@ -22,7 +23,7 @@ type harness struct {
 	keyManager        *mocks.MockKeyManager
 	myNode            *network.Node
 	net               *network.TestNetwork
-	termInCommittee   *services.TermInCommittee
+	termInCommittee   *termincommittee.TermInCommittee
 	storage           interfaces.Storage
 	electionTrigger   *mocks.ElectionTriggerMock
 	failVerifications bool
@@ -34,10 +35,10 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 	termConfig := myNode.BuildConfig(nil)
 
 	prevBlock := myNode.GetLatestBlock()
-	blockHeight := services.GetBlockHeight(prevBlock) + 1
+	blockHeight := blockheight.GetBlockHeight(prevBlock) + 1
 	committeeMembers := termConfig.Membership.RequestOrderedCommittee(ctx, blockHeight, uint64(12345))
 	messageFactory := messagesfactory.NewMessageFactory(termConfig.KeyManager, termConfig.Membership.MyMemberId())
-	termInCommittee := services.NewTermInCommittee(ctx, termConfig, messageFactory, committeeMembers, nil, blockHeight, prevBlock)
+	termInCommittee := termincommittee.NewTermInCommittee(ctx, termConfig, messageFactory, committeeMembers, nil, blockHeight, prevBlock)
 	termInCommittee.StartTerm(ctx)
 
 	return &harness{

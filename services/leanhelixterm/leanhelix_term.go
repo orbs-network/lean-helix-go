@@ -1,43 +1,30 @@
-package services
+package leanhelixterm
 
 import (
 	"context"
 	"fmt"
+	"github.com/orbs-network/lean-helix-go/services/blockheight"
 	"github.com/orbs-network/lean-helix-go/services/blockproof"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/messagesfactory"
-	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
-	"math"
+	"github.com/orbs-network/lean-helix-go/services/termincommittee"
 )
 
-func GetBlockHeight(prevBlock interfaces.Block) primitives.BlockHeight {
-	if prevBlock == interfaces.GenesisBlock {
-		return 0
-	} else {
-		return prevBlock.Height()
-	}
-}
-
-func CalcQuorumSize(committeeMembersCount int) int {
-	f := int(math.Floor(float64(committeeMembersCount-1) / 3))
-	return committeeMembersCount - f
-}
-
 type LeanHelixTerm struct {
-	termInCommittee *TermInCommittee
+	termInCommittee *termincommittee.TermInCommittee
 	onCommit        interfaces.OnCommitCallback
 }
 
 func NewLeanHelixTerm(ctx context.Context, config *interfaces.Config, onCommit interfaces.OnCommitCallback, prevBlock interfaces.Block) *LeanHelixTerm {
 	result := &LeanHelixTerm{}
 
-	blockHeight := GetBlockHeight(prevBlock) + 1
+	blockHeight := blockheight.GetBlockHeight(prevBlock) + 1
 
 	messageFactory := messagesfactory.NewMessageFactory(config.KeyManager, config.Membership.MyMemberId())
 
 	// TODO: Implement the random seed
 	committeeMembers := config.Membership.RequestOrderedCommittee(ctx, blockHeight, uint64(12345))
-	termInCommittee := NewTermInCommittee(ctx, config, messageFactory, committeeMembers, result.onInCommitteeCommit, blockHeight, prevBlock)
+	termInCommittee := termincommittee.NewTermInCommittee(ctx, config, messageFactory, committeeMembers, result.onInCommitteeCommit, blockHeight, prevBlock)
 	termInCommittee.StartTerm(ctx)
 
 	result.termInCommittee = termInCommittee

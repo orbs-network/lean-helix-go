@@ -1,4 +1,4 @@
-package sns
+package test
 
 type Sns struct {
 	signalChannel chan bool

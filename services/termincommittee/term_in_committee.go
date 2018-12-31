@@ -1,4 +1,4 @@
-package services
+package termincommittee
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/messagesfactory"
 	"github.com/orbs-network/lean-helix-go/services/preparedmessages"
 	"github.com/orbs-network/lean-helix-go/services/proofsvalidator"
+	"github.com/orbs-network/lean-helix-go/services/quorum"
 	"github.com/orbs-network/lean-helix-go/services/storage"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
@@ -86,7 +87,7 @@ func NewTermInCommittee(ctx context.Context, config *interfaces.Config, messageF
 		messageFactory:                 messageFactory,
 		myMemberId:                     myMemberId,
 		logger:                         config.Logger,
-		QuorumSize:                     CalcQuorumSize(len(committeeMembers)),
+		QuorumSize:                     quorum.CalcQuorumSize(len(committeeMembers)),
 	}
 
 	newTerm.logger.Debug("H=%d V=0 ID=%s NewTermInCommittee: committeeMembersCount=%d", blockHeight, Str(myMemberId), len(committeeMembers))
