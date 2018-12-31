@@ -1,4 +1,4 @@
-package messagesfilter
+package rawmessagesfilter
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
-type ConsensusMessageFilter struct {
+type RawMessageFilter struct {
 	blockHeight              primitives.BlockHeight
 	consensusMessagesHandler ConsensusMessagesHandler
 	myMemberId               primitives.MemberId
@@ -14,8 +14,8 @@ type ConsensusMessageFilter struct {
 	logger                   interfaces.Logger
 }
 
-func NewConsensusMessageFilter(myMemberId primitives.MemberId, logger interfaces.Logger) *ConsensusMessageFilter {
-	res := &ConsensusMessageFilter{
+func NewConsensusMessageFilter(myMemberId primitives.MemberId, logger interfaces.Logger) *RawMessageFilter {
+	res := &RawMessageFilter{
 		myMemberId:   myMemberId,
 		messageCache: make(map[primitives.BlockHeight][]interfaces.ConsensusMessage),
 		logger:       logger,
@@ -24,7 +24,7 @@ func NewConsensusMessageFilter(myMemberId primitives.MemberId, logger interfaces
 	return res
 }
 
-func (f *ConsensusMessageFilter) HandleConsensusRawMessage(ctx context.Context, rawMessage *interfaces.ConsensusRawMessage) {
+func (f *RawMessageFilter) HandleConsensusRawMessage(ctx context.Context, rawMessage *interfaces.ConsensusRawMessage) {
 	message := interfaces.ToConsensusMessage(rawMessage)
 	if f.isMyMessage(message) {
 		return
@@ -39,14 +39,14 @@ func (f *ConsensusMessageFilter) HandleConsensusRawMessage(ctx context.Context, 
 		return
 	}
 
-	f.processGossipMessage(ctx, message)
+	f.processConsensusMessage(ctx, message)
 }
 
-func (f *ConsensusMessageFilter) isMyMessage(message interfaces.ConsensusMessage) bool {
+func (f *RawMessageFilter) isMyMessage(message interfaces.ConsensusMessage) bool {
 	return f.myMemberId.Equal(message.SenderMemberId())
 }
 
-func (f *ConsensusMessageFilter) clearCacheHistory(height primitives.BlockHeight) {
+func (f *RawMessageFilter) clearCacheHistory(height primitives.BlockHeight) {
 	for messageHeight := range f.messageCache {
 		if messageHeight < height {
 			delete(f.messageCache, messageHeight)
@@ -54,7 +54,7 @@ func (f *ConsensusMessageFilter) clearCacheHistory(height primitives.BlockHeight
 	}
 }
 
-func (f *ConsensusMessageFilter) pushToCache(height primitives.BlockHeight, message interfaces.ConsensusMessage) {
+func (f *RawMessageFilter) pushToCache(height primitives.BlockHeight, message interfaces.ConsensusMessage) {
 	if f.messageCache[height] == nil {
 		f.messageCache[height] = []interfaces.ConsensusMessage{message}
 	} else {
@@ -62,7 +62,7 @@ func (f *ConsensusMessageFilter) pushToCache(height primitives.BlockHeight, mess
 	}
 }
 
-func (f *ConsensusMessageFilter) processGossipMessage(ctx context.Context, message interfaces.ConsensusMessage) {
+func (f *RawMessageFilter) processConsensusMessage(ctx context.Context, message interfaces.ConsensusMessage) {
 	if f.consensusMessagesHandler == nil {
 		return
 	}
@@ -70,17 +70,17 @@ func (f *ConsensusMessageFilter) processGossipMessage(ctx context.Context, messa
 	f.consensusMessagesHandler.HandleConsensusMessage(ctx, message)
 }
 
-func (f *ConsensusMessageFilter) consumeCacheMessages(ctx context.Context, blockHeight primitives.BlockHeight) {
+func (f *RawMessageFilter) consumeCacheMessages(ctx context.Context, blockHeight primitives.BlockHeight) {
 	f.clearCacheHistory(blockHeight)
 
 	messages := f.messageCache[blockHeight]
 	for _, message := range messages {
-		f.processGossipMessage(ctx, message)
+		f.processConsensusMessage(ctx, message)
 	}
 	delete(f.messageCache, blockHeight)
 }
 
-func (f *ConsensusMessageFilter) SetBlockHeight(ctx context.Context, blockHeight primitives.BlockHeight, consensusMessagesHandler ConsensusMessagesHandler) {
+func (f *RawMessageFilter) SetBlockHeight(ctx context.Context, blockHeight primitives.BlockHeight, consensusMessagesHandler ConsensusMessagesHandler) {
 	f.consensusMessagesHandler = consensusMessagesHandler
 	f.blockHeight = blockHeight
 	f.consumeCacheMessages(ctx, blockHeight)

@@ -74,12 +74,12 @@ func (tb *TestNetworkBuilder) buildNode(
 	blocksPool *mocks.BlocksPool,
 	logToConsole bool) *Node {
 
-	gossipInstance := mocks.NewGossip(discovery)
-	discovery.RegisterGossip(memberId, gossipInstance)
+	communicationInstance := mocks.NewCommunication(discovery)
+	discovery.RegisterCommunication(memberId, communicationInstance)
 	membership := mocks.NewMockMembership(memberId, discovery, tb.orderCommitteeByHeight)
 
 	b := nodeBuilder.
-		CommunicatesVia(gossipInstance).
+		CommunicatesVia(communicationInstance).
 		ThatIsPartOf(membership).
 		WithBlocksPool(blocksPool).
 		WithMemberId(memberId)

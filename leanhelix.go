@@ -6,9 +6,9 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/leanhelixterm"
 	"github.com/orbs-network/lean-helix-go/services/logger"
-	"github.com/orbs-network/lean-helix-go/services/messagesfilter"
 	"github.com/orbs-network/lean-helix-go/services/proofsvalidator"
 	"github.com/orbs-network/lean-helix-go/services/quorum"
+	"github.com/orbs-network/lean-helix-go/services/rawmessagesfilter"
 	"github.com/orbs-network/lean-helix-go/services/storage"
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
@@ -21,7 +21,7 @@ type LeanHelix struct {
 	currentHeight           primitives.BlockHeight
 	config                  *interfaces.Config
 	logger                  interfaces.Logger
-	filter                  *messagesfilter.ConsensusMessageFilter
+	filter                  *rawmessagesfilter.RawMessageFilter
 	leanHelixTerm           *leanhelixterm.LeanHelixTerm
 	onCommitCallback        interfaces.OnCommitCallback
 }
@@ -35,7 +35,7 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 	}
 
 	config.Logger.Debug("NewLeanHelix() ID=%s", termincommittee.Str(config.Membership.MyMemberId()))
-	filter := messagesfilter.NewConsensusMessageFilter(config.Membership.MyMemberId(), config.Logger)
+	filter := rawmessagesfilter.NewConsensusMessageFilter(config.Membership.MyMemberId(), config.Logger)
 	return &LeanHelix{
 		messagesChannel:         make(chan *interfaces.ConsensusRawMessage),
 		acknowledgeBlockChannel: make(chan interfaces.Block),

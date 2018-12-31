@@ -9,7 +9,7 @@ import (
 )
 
 type NodeBuilder struct {
-	gossip        *mocks.CommunicationMock
+	communication *mocks.CommunicationMock
 	membership    interfaces.Membership
 	blocksPool    *mocks.BlocksPool
 	logsToConsole bool
@@ -20,9 +20,9 @@ func NewNodeBuilder() *NodeBuilder {
 	return &NodeBuilder{}
 }
 
-func (builder *NodeBuilder) CommunicatesVia(gossip *mocks.CommunicationMock) *NodeBuilder {
-	if builder.gossip == nil {
-		builder.gossip = gossip
+func (builder *NodeBuilder) CommunicatesVia(communication *mocks.CommunicationMock) *NodeBuilder {
+	if builder.communication == nil {
+		builder.communication = communication
 	}
 	return builder
 }
@@ -65,7 +65,7 @@ func (builder *NodeBuilder) Build() *Node {
 	if builder.logsToConsole {
 		l = logger.NewConsoleLogger(memberId.KeyForMap())
 	}
-	return NewNode(builder.membership, builder.gossip, blockUtils, electionTrigger, l)
+	return NewNode(builder.membership, builder.communication, blockUtils, electionTrigger, l)
 }
 
 func ADummyNode() *Node {
@@ -73,6 +73,6 @@ func ADummyNode() *Node {
 	return NewNodeBuilder().
 		WithMemberId(memberId).
 		ThatIsPartOf(mocks.NewMockMembership(memberId, nil, false)).
-		CommunicatesVia(mocks.NewGossip(nil)).
+		CommunicatesVia(mocks.NewCommunication(nil)).
 		Build()
 }

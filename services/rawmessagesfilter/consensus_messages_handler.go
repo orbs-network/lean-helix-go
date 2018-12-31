@@ -1,4 +1,4 @@
-package messagesfilter
+package rawmessagesfilter
 
 import (
 	"context"

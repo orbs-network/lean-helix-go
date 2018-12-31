@@ -13,8 +13,8 @@ type TestNetwork struct {
 	Discovery *mocks.Discovery
 }
 
-func (net *TestNetwork) GetNodeGossip(memberId primitives.MemberId) *mocks.CommunicationMock {
-	return net.Discovery.GetGossipById(memberId)
+func (net *TestNetwork) GetNodeCommunication(memberId primitives.MemberId) *mocks.CommunicationMock {
+	return net.Discovery.GetCommunicationById(memberId)
 }
 
 func (net *TestNetwork) TriggerElection() {

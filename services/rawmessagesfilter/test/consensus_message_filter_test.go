@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/logger"
-	"github.com/orbs-network/lean-helix-go/services/messagesfilter"
+	"github.com/orbs-network/lean-helix-go/services/rawmessagesfilter"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
@@ -54,7 +54,7 @@ func GenerateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.
 
 func TestGettingAMessage(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := messagesfilter.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
+		filter := rawmessagesfilter.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
 		messagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, messagesHandler)
 
@@ -78,7 +78,7 @@ func TestGettingAMessage(t *testing.T) {
 
 func TestFilterMessagesFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := messagesfilter.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
+		filter := rawmessagesfilter.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
 		messagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, messagesHandler)
 
@@ -96,7 +96,7 @@ func TestFilterMessagesFromThePast(t *testing.T) {
 
 func TestCacheMessagesFromTheFuture(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := messagesfilter.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
+		filter := rawmessagesfilter.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
 		messagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, messagesHandler)
 
@@ -114,7 +114,7 @@ func TestCacheMessagesFromTheFuture(t *testing.T) {
 
 func TestFilterMessagesWithMyMemberId(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := messagesfilter.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
+		filter := rawmessagesfilter.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
 		messagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, messagesHandler)
 

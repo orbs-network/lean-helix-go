@@ -21,7 +21,7 @@ type Node struct {
 	BlockUtils       *mocks.MockBlockUtils
 	KeyManager       *mocks.MockKeyManager
 	Storage          interfaces.Storage
-	Gossip           *mocks.CommunicationMock
+	Communication    *mocks.CommunicationMock
 	Membership       interfaces.Membership
 	MemberId         primitives.MemberId
 	NodeStateChannel chan *NodeState
@@ -89,7 +89,7 @@ func (node *Node) StartConsensusSync(ctx context.Context) {
 
 func (node *Node) BuildConfig(logger interfaces.Logger) *interfaces.Config {
 	return &interfaces.Config{
-		Communication:   node.Gossip,
+		Communication:   node.Communication,
 		Membership:      node.Membership,
 		ElectionTrigger: node.ElectionTrigger,
 		BlockUtils:      node.BlockUtils,
@@ -102,7 +102,7 @@ func (node *Node) BuildConfig(logger interfaces.Logger) *interfaces.Config {
 
 func NewNode(
 	membership interfaces.Membership,
-	gossip *mocks.CommunicationMock,
+	communication *mocks.CommunicationMock,
 	blockUtils *mocks.MockBlockUtils,
 	electionTrigger *mocks.ElectionTriggerMock,
 	logger interfaces.Logger) *Node {
@@ -114,14 +114,14 @@ func NewNode(
 		BlockUtils:       blockUtils,
 		KeyManager:       mocks.NewMockKeyManager(memberId),
 		Storage:          storage.NewInMemoryStorage(),
-		Gossip:           gossip,
+		Communication:    communication,
 		Membership:       membership,
 		MemberId:         memberId,
 		NodeStateChannel: make(chan *NodeState),
 	}
 
 	leanHelix := leanhelix.NewLeanHelix(node.BuildConfig(logger), node.onCommittedBlock)
-	gossip.RegisterOnMessage(leanHelix.HandleConsensusMessage)
+	communication.RegisterOnMessage(leanHelix.HandleConsensusMessage)
 
 	node.leanHelix = leanHelix
 	return node

@@ -114,7 +114,7 @@ func TestNewViewIsSentWithTheHighestBlockFromTheViewChangeProofs(t *testing.T) {
 			OnView(5).
 			Build()
 
-		h.HandleLeanHelixNewView(ctx, nvm)
+		h.HandleNewView(ctx, nvm)
 
 		h.checkView(5)
 		require.True(t, h.hasPreprepare(1, 5, blockOnView4))
@@ -159,7 +159,7 @@ func TestNewViewWithOlderBlockIsRejected(t *testing.T) {
 			OnView(5).
 			Build()
 
-		h.HandleLeanHelixNewView(ctx, nvm)
+		h.HandleNewView(ctx, nvm)
 
 		h.checkView(0)
 		require.False(t, h.hasPreprepare(1, 5, blockOnView3))
@@ -222,7 +222,7 @@ func TestNewViewNotAcceptedWithWrongPPDetails(t *testing.T) {
 				WithViewChangeVotes(votes).
 				Build()
 
-			h.HandleLeanHelixNewView(ctx, nvm)
+			h.HandleNewView(ctx, nvm)
 
 			if shouldAcceptMessage {
 				h.checkView(1)
@@ -268,7 +268,7 @@ func TestNewViewNotAcceptedWithWrongViewChangeDetails(t *testing.T) {
 				WithViewChangeVotes(votes).
 				Build()
 
-			h.HandleLeanHelixNewView(ctx, nvm)
+			h.HandleNewView(ctx, nvm)
 
 			if shouldAcceptMessage {
 				h.checkView(1)
@@ -316,7 +316,7 @@ func TestNewViewNotAcceptedWithBadVotes(t *testing.T) {
 				OnBlockHeight(10).
 				OnView(1).
 				Build()
-			h.HandleLeanHelixNewView(ctx, nvm)
+			h.HandleNewView(ctx, nvm)
 
 			if shouldAcceptMessage {
 				h.checkView(1)

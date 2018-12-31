@@ -50,7 +50,15 @@ type TermInCommittee struct {
 	QuorumSize                     int
 }
 
-func NewTermInCommittee(ctx context.Context, config *interfaces.Config, messageFactory *messagesfactory.MessageFactory, committeeMembers []primitives.MemberId, onCommit OnInCommitteeCommitCallback, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) *TermInCommittee {
+func NewTermInCommittee(
+	ctx context.Context,
+	config *interfaces.Config,
+	messageFactory *messagesfactory.MessageFactory,
+	committeeMembers []primitives.MemberId,
+	blockHeight primitives.BlockHeight,
+	prevBlock interfaces.Block,
+	onCommit OnInCommitteeCommitCallback) *TermInCommittee {
+
 	keyManager := config.KeyManager
 	blockUtils := config.BlockUtils
 	membership := config.Membership
@@ -73,9 +81,11 @@ func NewTermInCommittee(ctx context.Context, config *interfaces.Config, messageF
 		config.Storage = storage.NewInMemoryStorage()
 	}
 
-	newTerm := &TermInCommittee{
-		onCommit:                       onCommit,
+	config.Logger.Debug("H=%d V=0 ID=%s NewTermInCommittee: committeeMembersCount=%d", blockHeight, Str(myMemberId), len(committeeMembers))
+
+	result := &TermInCommittee{
 		height:                         blockHeight,
+		onCommit:                       onCommit,
 		prevBlock:                      prevBlock,
 		keyManager:                     keyManager,
 		communication:                  comm,
@@ -90,9 +100,8 @@ func NewTermInCommittee(ctx context.Context, config *interfaces.Config, messageF
 		QuorumSize:                     quorum.CalcQuorumSize(len(committeeMembers)),
 	}
 
-	newTerm.logger.Debug("H=%d V=0 ID=%s NewTermInCommittee: committeeMembersCount=%d", blockHeight, Str(myMemberId), len(committeeMembers))
-	newTerm.initView(ctx, 0)
-	return newTerm
+	result.startTerm(ctx)
+	return result
 }
 
 func panicOnLessThanMinimumCommitteeMembers(committeeMembers []primitives.MemberId) {
@@ -101,9 +110,10 @@ func panicOnLessThanMinimumCommitteeMembers(committeeMembers []primitives.Member
 	}
 }
 
-func (tic *TermInCommittee) StartTerm(ctx context.Context) {
+func (tic *TermInCommittee) startTerm(ctx context.Context) {
+	tic.initView(ctx, 0)
 	if tic.isLeader() {
-		tic.logger.Debug("H=%d V=%d StartTerm() I AM THE LEADER ID=%s", tic.height, tic.view, Str(tic.myMemberId))
+		tic.logger.Debug("H=%d V=%d startTerm() I AM THE LEADER ID=%s", tic.height, tic.view, Str(tic.myMemberId))
 		block, blockHash := tic.blockUtils.RequestNewBlockProposal(ctx, tic.height, tic.prevBlock)
 		ppm := tic.messageFactory.CreatePreprepareMessage(tic.height, tic.view, block, blockHash)
 
@@ -163,10 +173,10 @@ func (tic *TermInCommittee) sendConsensusMessage(ctx context.Context, message in
 	tic.communication.SendConsensusMessage(ctx, tic.otherCommitteeMembersMemberIds, rawMessage)
 }
 
-func (tic *TermInCommittee) HandleLeanHelixPrePrepare(ctx context.Context, ppm *interfaces.PreprepareMessage) {
+func (tic *TermInCommittee) HandlePrePrepare(ctx context.Context, ppm *interfaces.PreprepareMessage) {
 	tic.logger.Debug("H=%s V=%s LHFLOW HandleLeanHelixPreprepare() receiver=%s sender=%s", tic.height, tic.view, Str(tic.myMemberId), ppm.SenderMemberId())
 	if err := tic.validatePreprepare(ctx, ppm); err != nil {
-		tic.logger.Debug("H=%s V=%s HandleLeanHelixPrePrepare() err=%v", err)
+		tic.logger.Debug("H=%s V=%s HandlePrePrepare() err=%v", err)
 	} else {
 		tic.processPreprepare(ctx, ppm)
 	}
@@ -221,8 +231,8 @@ func (tic *TermInCommittee) hasPreprepare(blockHeight primitives.BlockHeight, vi
 	return ok
 }
 
-func (tic *TermInCommittee) HandleLeanHelixPrepare(ctx context.Context, pm *interfaces.PrepareMessage) {
-	tic.logger.Debug("H=%s V=%s LHFLOW HandleLeanHelixPrepare() receiver=%s sender=%s", tic.height, tic.view, Str(tic.myMemberId), pm.SenderMemberId())
+func (tic *TermInCommittee) HandlePrepare(ctx context.Context, pm *interfaces.PrepareMessage) {
+	tic.logger.Debug("H=%s V=%s LHFLOW HandlePrepare() receiver=%s sender=%s", tic.height, tic.view, Str(tic.myMemberId), pm.SenderMemberId())
 	header := pm.Content().SignedHeader()
 	sender := pm.Content().Sender()
 
@@ -244,8 +254,8 @@ func (tic *TermInCommittee) HandleLeanHelixPrepare(ctx context.Context, pm *inte
 	}
 }
 
-func (tic *TermInCommittee) HandleLeanHelixViewChange(ctx context.Context, vcm *interfaces.ViewChangeMessage) {
-	tic.logger.Debug("H=%s V=%s LHFLOW HandleLeanHelixViewChange() receiver=%s sender=%s", tic.height, tic.view, Str(tic.myMemberId), vcm.SenderMemberId())
+func (tic *TermInCommittee) HandleViewChange(ctx context.Context, vcm *interfaces.ViewChangeMessage) {
+	tic.logger.Debug("H=%s V=%s LHFLOW HandleViewChange() receiver=%s sender=%s", tic.height, tic.view, Str(tic.myMemberId), vcm.SenderMemberId())
 	if !tic.isViewChangeValid(tic.myMemberId, tic.view, vcm.Content()) {
 		tic.logger.Info("message ViewChange is not valid")
 		return
@@ -344,8 +354,8 @@ func (tic *TermInCommittee) onPrepared(ctx context.Context, blockHeight primitiv
 	tic.checkCommitted(ctx, blockHeight, view, blockHash)
 }
 
-func (tic *TermInCommittee) HandleLeanHelixCommit(ctx context.Context, cm *interfaces.CommitMessage) {
-	tic.logger.Debug("H=%s V=%s LHFLOW HandleLeanHelixCommit() receiver=%s sender=%s", tic.height, tic.view, Str(tic.myMemberId), cm.SenderMemberId())
+func (tic *TermInCommittee) HandleCommit(ctx context.Context, cm *interfaces.CommitMessage) {
+	tic.logger.Debug("H=%s V=%s LHFLOW HandleCommit() receiver=%s sender=%s", tic.height, tic.view, Str(tic.myMemberId), cm.SenderMemberId())
 	header := cm.Content().SignedHeader()
 	sender := cm.Content().Sender()
 
@@ -425,8 +435,8 @@ func (tic *TermInCommittee) latestViewChangeVote(confirmations []*protocol.ViewC
 	}
 }
 
-func (tic *TermInCommittee) HandleLeanHelixNewView(ctx context.Context, nvm *interfaces.NewViewMessage) {
-	tic.logger.Debug("H=%s V=%s LHFLOW HandleLeanHelixNewView() receiver=%s sender=%s", tic.height, tic.view, Str(tic.myMemberId), nvm.SenderMemberId())
+func (tic *TermInCommittee) HandleNewView(ctx context.Context, nvm *interfaces.NewViewMessage) {
+	tic.logger.Debug("H=%s V=%s LHFLOW HandleNewView() receiver=%s sender=%s", tic.height, tic.view, Str(tic.myMemberId), nvm.SenderMemberId())
 	header := nvm.Content().SignedHeader()
 	sender := nvm.Content().Sender()
 	ppMessageContent := nvm.Content().Message()
@@ -440,39 +450,39 @@ func (tic *TermInCommittee) HandleLeanHelixNewView(ctx context.Context, nvm *int
 	}
 
 	if !tic.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender) {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderId}", ignored because the signature verification failed` });
-		tic.logger.Debug("HandleLeanHelixNewView(): verify failed")
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", ignored because the signature verification failed` });
+		tic.logger.Debug("HandleNewView(): verify failed")
 		return
 	}
 
 	futureLeaderId := tic.calcLeaderMemberId(header.View())
 	if !sender.MemberId().Equal(futureLeaderId) {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderId}", rejected because it match the new id (${view})` });
-		tic.logger.Debug("HandleLeanHelixNewView(): no match for future leader")
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", rejected because it match the new id (${view})` });
+		tic.logger.Debug("HandleNewView(): no match for future leader")
 		return
 	}
 
 	if !tic.validateViewChangeVotes(header.BlockHeight(), header.View(), viewChangeConfirmations) {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderId}", votes is invalid` });
-		tic.logger.Debug("HandleLeanHelixNewView(): validateViewChangeVotes failed")
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", votes is invalid` });
+		tic.logger.Debug("HandleNewView(): validateViewChangeVotes failed")
 		return
 	}
 
 	if tic.view > header.View() {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderId}", view is from the past` });
-		tic.logger.Debug("HandleLeanHelixNewView(): current view is higher than message view")
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", view is from the past` });
+		tic.logger.Debug("HandleNewView(): current view is higher than message view")
 		return
 	}
 
 	if !ppMessageContent.SignedHeader().View().Equal(header.View()) {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderId}", view doesn't match PP.view` });
-		tic.logger.Debug("HandleLeanHelixNewView(): NewView.view and NewView.Preprepare.view do not match")
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", view doesn't match PP.view` });
+		tic.logger.Debug("HandleNewView(): NewView.view and NewView.Preprepare.view do not match")
 		return
 	}
 
 	if !ppMessageContent.SignedHeader().BlockHeight().Equal(header.BlockHeight()) {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderId}", blockHeight doesn't match PP.Block()Height` });
-		tic.logger.Debug("HandleLeanHelixNewView(): NewView.BlockHeight and NewView.Preprepare.BlockHeight do not match")
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", blockHeight doesn't match PP.Block()Height` });
+		tic.logger.Debug("HandleNewView(): NewView.BlockHeight and NewView.Preprepare.BlockHeight do not match")
 		return
 	}
 
@@ -480,8 +490,8 @@ func (tic *TermInCommittee) HandleLeanHelixNewView(ctx context.Context, nvm *int
 	if latestVote != nil {
 		viewChangeMessageValid := tic.isViewChangeValid(futureLeaderId, header.View(), latestVote)
 		if !viewChangeMessageValid {
-			//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderId}", view change votes are invalid` });
-			tic.logger.Debug("HandleLeanHelixNewView(): NewView.ViewChangeConfirmation (with latest view) is invalid")
+			//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", view change votes are invalid` });
+			tic.logger.Debug("HandleNewView(): NewView.ViewChangeConfirmation (with latest view) is invalid")
 			return
 		}
 
@@ -490,8 +500,8 @@ func (tic *TermInCommittee) HandleLeanHelixNewView(ctx context.Context, nvm *int
 		if latestVoteBlockHash != nil {
 			isValidDigest := tic.blockUtils.ValidateBlockCommitment(header.BlockHeight(), nvm.Block(), latestVoteBlockHash)
 			if !isValidDigest {
-				//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleLeanHelixNewView from "${senderId}", the given _Block (PP._Block) doesn't match the best _Block from the VCProof` });
-				tic.logger.Debug("HandleLeanHelixNewView(): NewView.ViewChangeConfirmation (with latest view) is invalid")
+				//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", the given _Block (PP._Block) doesn't match the best _Block from the VCProof` });
+				tic.logger.Debug("HandleNewView(): NewView.ViewChangeConfirmation (with latest view) is invalid")
 				return
 			}
 		}

@@ -25,7 +25,7 @@ func (m *MockMembership) MyMemberId() primitives.MemberId {
 }
 
 func (m *MockMembership) RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64) []primitives.MemberId {
-	result := m.discovery.AllGossipsMemberIds()
+	result := m.discovery.AllCommunicationsMemberIds()
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].KeyForMap() < result[j].KeyForMap()
 	})

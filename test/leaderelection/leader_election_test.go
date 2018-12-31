@@ -26,15 +26,15 @@ func Test2fPlus1ViewChangeToBeElected(t *testing.T) {
 
 		// hang the leader (node0)
 		h.net.WaitForNodeToRequestNewBlock(node0)
-		node0.Gossip.SetOutgoingWhitelist([]primitives.MemberId{})
+		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
 
 		// manually cause new-view with 3 view-changes
 		node0VCMessage := builders.AViewChangeMessage(node0.KeyManager, node0.MemberId, 1, 1, nil)
 		node2VCMessage := builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 1, nil)
 		node3VCMessage := builders.AViewChangeMessage(node3.KeyManager, node3.MemberId, 1, 1, nil)
-		node1.Gossip.OnRemoteMessage(ctx, node0VCMessage.ToConsensusRawMessage())
-		node1.Gossip.OnRemoteMessage(ctx, node2VCMessage.ToConsensusRawMessage())
-		node1.Gossip.OnRemoteMessage(ctx, node3VCMessage.ToConsensusRawMessage())
+		node1.Communication.OnRemoteMessage(ctx, node0VCMessage.ToConsensusRawMessage())
+		node1.Communication.OnRemoteMessage(ctx, node2VCMessage.ToConsensusRawMessage())
+		node1.Communication.OnRemoteMessage(ctx, node3VCMessage.ToConsensusRawMessage())
 
 		// now that we caused node1 to be the new leader, he'll ask for a new block (block2)
 		h.net.WaitForNodeToRequestNewBlock(node1)
@@ -66,14 +66,14 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 
 		// processing block 2
 		h.net.WaitForNodeToRequestNewBlock(node0)
-		node0.Gossip.SetOutgoingWhitelist([]primitives.MemberId{})
+		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
 		// selection node 1 as the leader (dropping block2)
 		h.net.Nodes[0].TriggerElection()
 		h.net.Nodes[1].TriggerElection()
 		h.net.Nodes[2].TriggerElection()
 		h.net.Nodes[3].TriggerElection()
 
-		node0.Gossip.ClearOutgoingWhitelist()
+		node0.Communication.ClearOutgoingWhitelist()
 
 		h.net.WaitForNodeToRequestNewBlock(node1)
 		h.net.ResumeNodeRequestNewBlock(node0)
@@ -93,7 +93,7 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 		node3 := h.net.Nodes[3]
 
 		h.net.WaitForNodeToRequestNewBlock(node0)
-		node0.Gossip.SetOutgoingWhitelist([]primitives.MemberId{})
+		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
 
 		// selection node 1 as the leader
 		node0.TriggerElection()
@@ -103,15 +103,15 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 
 		h.net.ResumeNodeRequestNewBlock(node0)
 		h.net.WaitForNodeToRequestNewBlock(node1)
-		node0.Gossip.ClearOutgoingWhitelist()
+		node0.Communication.ClearOutgoingWhitelist()
 
 		h.net.ResumeNodeRequestNewBlock(node1)
 		h.net.WaitForAllNodesToCommitTheSameBlock()
 
-		require.Equal(t, 1, node0.Gossip.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))
-		require.Equal(t, 1, node2.Gossip.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))
-		require.Equal(t, 1, node3.Gossip.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))
-		require.Equal(t, 1, node1.Gossip.CountSentMessages(protocol.LEAN_HELIX_NEW_VIEW))
+		require.Equal(t, 1, node0.Communication.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))
+		require.Equal(t, 1, node2.Communication.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))
+		require.Equal(t, 1, node3.Communication.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))
+		require.Equal(t, 1, node1.Communication.CountSentMessages(protocol.LEAN_HELIX_NEW_VIEW))
 	})
 }
 
@@ -130,12 +130,12 @@ func TestNotCountingViewChangeFromTheSameNode(t *testing.T) {
 		h.net.WaitForNodeToRequestNewBlock(node0)
 
 		// sending only 4 view-change from the same node
-		node1.Gossip.OnRemoteMessage(ctx, builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-		node1.Gossip.OnRemoteMessage(ctx, builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-		node1.Gossip.OnRemoteMessage(ctx, builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-		node1.Gossip.OnRemoteMessage(ctx, builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
+		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
+		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
+		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
+		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
 
-		node1.Gossip.CountSentMessages(protocol.LEAN_HELIX_NEW_VIEW)
+		node1.Communication.CountSentMessages(protocol.LEAN_HELIX_NEW_VIEW)
 	})
 }
 
@@ -156,8 +156,8 @@ func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 		// sending only 2 view-change (not enough to be elected)
 		node0VCMessage := builders.AViewChangeMessage(node0.KeyManager, node0.MemberId, 1, 1, nil)
 		node2VCMessage := builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 1, nil)
-		node1.Gossip.OnRemoteMessage(ctx, node0VCMessage.ToConsensusRawMessage())
-		node1.Gossip.OnRemoteMessage(ctx, node2VCMessage.ToConsensusRawMessage())
+		node1.Communication.OnRemoteMessage(ctx, node0VCMessage.ToConsensusRawMessage())
+		node1.Communication.OnRemoteMessage(ctx, node2VCMessage.ToConsensusRawMessage())
 
 		// release the hanged the leader (node0)
 		h.net.ResumeNodeRequestNewBlock(node0)

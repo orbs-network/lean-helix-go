@@ -21,7 +21,7 @@ func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
 			WithBlocks([]interfaces.Block{block}).
 			Build()
 
-		net.Nodes[3].Gossip.SetIncomingWhitelist([]primitives.MemberId{})
+		net.Nodes[3].Communication.SetIncomingWhitelist([]primitives.MemberId{})
 
 		net.StartConsensus(ctx)
 
@@ -38,8 +38,8 @@ func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 			WithBlocks([]interfaces.Block{block}).
 			Build()
 
-		net.Nodes[1].Gossip.SetIncomingWhitelist([]primitives.MemberId{})
-		net.Nodes[2].Gossip.SetIncomingWhitelist([]primitives.MemberId{})
+		net.Nodes[1].Communication.SetIncomingWhitelist([]primitives.MemberId{})
+		net.Nodes[2].Communication.SetIncomingWhitelist([]primitives.MemberId{})
 
 		net.StartConsensus(ctx)
 
@@ -61,7 +61,7 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 		node2 := net.Nodes[2]
 		//node3 := net.Nodes[3]
 
-		node0.Gossip.SetOutgoingWhitelist([]primitives.MemberId{node1.MemberId, node2.MemberId})
+		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{node1.MemberId, node2.MemberId})
 
 		// the leader (node0) is suggesting block1 to node1 and node2 (not to node3)
 		net.StartConsensus(ctx)
@@ -94,10 +94,10 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 
 		// fake a preprepare message from node3 (byzantineNode) that points to a unrelated block (Should be ignored)
 		ppm := builders.APreprepareMessage(byzantineNode.KeyManager, byzantineNode.MemberId, 1, 1, fakeBlock)
-		byzantineNode.Gossip.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
-		byzantineNode.Gossip.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
-		byzantineNode.Gossip.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
-		byzantineNode.Gossip.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
+		byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
+		byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
+		byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
+		byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
 
 		net.ResumeNodeRequestNewBlock(node0)
 
@@ -120,10 +120,10 @@ func TestThatAByzantineLeaderCanNotCauseAFork(t *testing.T) {
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
 		node3 := net.Nodes[3]
-		node0.Gossip.SetOutgoingWhitelist([]primitives.MemberId{node1.MemberId, node2.MemberId})
-		node1.Gossip.SetOutgoingWhitelist([]primitives.MemberId{node2.MemberId})
-		node2.Gossip.SetOutgoingWhitelist([]primitives.MemberId{})
-		node3.Gossip.SetOutgoingWhitelist([]primitives.MemberId{})
+		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{node1.MemberId, node2.MemberId})
+		node1.Communication.SetOutgoingWhitelist([]primitives.MemberId{node2.MemberId})
+		node2.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
+		node3.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
 
 		net.StartConsensus(ctx)
 
@@ -139,13 +139,13 @@ func TestThatAByzantineLeaderCanNotCauseAFork(t *testing.T) {
 		// now that node2 is prepared on block1, we'll close any communication
 		// to it, and open all the other nodes communication.
 		// then, we trigger an election. Node2's prepared block will not get sent in a view-change
-		node0.Gossip.ClearOutgoingWhitelist()
-		node1.Gossip.ClearOutgoingWhitelist()
-		node2.Gossip.ClearOutgoingWhitelist()
-		node3.Gossip.ClearOutgoingWhitelist()
+		node0.Communication.ClearOutgoingWhitelist()
+		node1.Communication.ClearOutgoingWhitelist()
+		node2.Communication.ClearOutgoingWhitelist()
+		node3.Communication.ClearOutgoingWhitelist()
 
-		node2.Gossip.SetOutgoingWhitelist([]primitives.MemberId{})
-		node2.Gossip.SetIncomingWhitelist([]primitives.MemberId{})
+		node2.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
+		node2.Communication.SetIncomingWhitelist([]primitives.MemberId{})
 
 		// selection node 1 as the leader
 		node0.TriggerElection()

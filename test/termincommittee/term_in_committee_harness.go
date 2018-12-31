@@ -38,8 +38,7 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 	blockHeight := blockheight.GetBlockHeight(prevBlock) + 1
 	committeeMembers := termConfig.Membership.RequestOrderedCommittee(ctx, blockHeight, uint64(12345))
 	messageFactory := messagesfactory.NewMessageFactory(termConfig.KeyManager, termConfig.Membership.MyMemberId())
-	termInCommittee := termincommittee.NewTermInCommittee(ctx, termConfig, messageFactory, committeeMembers, nil, blockHeight, prevBlock)
-	termInCommittee.StartTerm(ctx)
+	termInCommittee := termincommittee.NewTermInCommittee(ctx, termConfig, messageFactory, committeeMembers, blockHeight, prevBlock, nil)
 
 	return &harness{
 		t:                 t,
@@ -116,27 +115,27 @@ func (h *harness) setMeAsTheLeader(ctx context.Context, blockHeight primitives.B
 func (h *harness) receiveViewChange(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	sender := h.net.Nodes[fromNodeIdx]
 	vc := builders.AViewChangeMessage(sender.KeyManager, sender.MemberId, blockHeight, view, nil)
-	h.termInCommittee.HandleLeanHelixViewChange(ctx, vc)
+	h.termInCommittee.HandleViewChange(ctx, vc)
 }
 
 func (h *harness) receiveViewChangeMessage(ctx context.Context, msg *interfaces.ViewChangeMessage) {
-	h.termInCommittee.HandleLeanHelixViewChange(ctx, msg)
+	h.termInCommittee.HandleViewChange(ctx, msg)
 }
 
 func (h *harness) receivePreprepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	leader := h.net.Nodes[fromNode]
 	ppm := builders.APreprepareMessage(leader.KeyManager, leader.MemberId, blockHeight, view, block)
-	h.termInCommittee.HandleLeanHelixPrePrepare(ctx, ppm)
+	h.termInCommittee.HandlePrePrepare(ctx, ppm)
 }
 
 func (h *harness) receivePreprepareMessage(ctx context.Context, ppm *interfaces.PreprepareMessage) {
-	h.termInCommittee.HandleLeanHelixPrePrepare(ctx, ppm)
+	h.termInCommittee.HandlePrePrepare(ctx, ppm)
 }
 
 func (h *harness) receivePrepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	sender := h.net.Nodes[fromNode]
 	pm := builders.APrepareMessage(sender.KeyManager, sender.MemberId, blockHeight, view, block)
-	h.termInCommittee.HandleLeanHelixPrepare(ctx, pm)
+	h.termInCommittee.HandlePrepare(ctx, pm)
 }
 
 func (h *harness) createPreprepareMessage(fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block, blockHash primitives.BlockHash) *interfaces.PreprepareMessage {
@@ -145,8 +144,8 @@ func (h *harness) createPreprepareMessage(fromNode int, blockHeight primitives.B
 	return messageFactory.CreatePreprepareMessage(blockHeight, view, block, blockHash)
 }
 
-func (h *harness) HandleLeanHelixNewView(ctx context.Context, nvm *interfaces.NewViewMessage) {
-	h.termInCommittee.HandleLeanHelixNewView(ctx, nvm)
+func (h *harness) HandleNewView(ctx context.Context, nvm *interfaces.NewViewMessage) {
+	h.termInCommittee.HandleNewView(ctx, nvm)
 }
 
 func (h *harness) receiveNewView(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
@@ -169,11 +168,11 @@ func (h *harness) receiveNewView(ctx context.Context, fromNodeIdx int, blockHeig
 		OnBlockHeight(blockHeight).
 		OnView(view).
 		Build()
-	h.termInCommittee.HandleLeanHelixNewView(ctx, nvm)
+	h.termInCommittee.HandleNewView(ctx, nvm)
 }
 
 func (h *harness) getLastSentViewChangeMessage() *interfaces.ViewChangeMessage {
-	messages := h.myNode.Gossip.GetSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE)
+	messages := h.myNode.Communication.GetSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE)
 	lastMessage := interfaces.ToConsensusMessage(messages[len(messages)-1])
 	return lastMessage.(*interfaces.ViewChangeMessage)
 }

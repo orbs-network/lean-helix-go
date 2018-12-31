@@ -26,7 +26,7 @@ type CommunicationMock struct {
 	statsSentMessages          []*interfaces.ConsensusRawMessage
 }
 
-func NewGossip(discovery *Discovery) *CommunicationMock {
+func NewCommunication(discovery *Discovery) *CommunicationMock {
 	return &CommunicationMock{
 		discovery:                  discovery,
 		outgoingChannelsMap:        make(map[string]chan *outgoingMessage),
@@ -132,8 +132,8 @@ func (g *CommunicationMock) SendToNode(ctx context.Context, targetMemberId primi
 		}
 	}
 
-	if targetGossip := g.discovery.GetGossipById(targetMemberId); targetGossip != nil {
-		targetGossip.OnRemoteMessage(ctx, consensusRawMessage)
+	if targetCommunication := g.discovery.GetCommunicationById(targetMemberId); targetCommunication != nil {
+		targetCommunication.OnRemoteMessage(ctx, consensusRawMessage)
 	}
 	return
 }
