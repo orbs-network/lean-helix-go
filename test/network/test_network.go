@@ -13,7 +13,7 @@ type TestNetwork struct {
 	Discovery *mocks.Discovery
 }
 
-func (net *TestNetwork) GetNodeGossip(memberId primitives.MemberId) *mocks.Gossip {
+func (net *TestNetwork) GetNodeGossip(memberId primitives.MemberId) *mocks.CommunicationMock {
 	return net.Discovery.GetGossipById(memberId)
 }
 

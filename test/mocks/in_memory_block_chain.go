@@ -1,4 +1,4 @@
-package builders
+package mocks
 
 import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"

@@ -6,7 +6,6 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/storage"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
-	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 )
 
@@ -17,12 +16,12 @@ type NodeState struct {
 
 type Node struct {
 	leanHelix        *leanhelix.LeanHelix
-	blockChain       *builders.InMemoryBlockChain
+	blockChain       *mocks.InMemoryBlockChain
 	ElectionTrigger  *mocks.ElectionTriggerMock
 	BlockUtils       *mocks.MockBlockUtils
 	KeyManager       *mocks.MockKeyManager
 	Storage          interfaces.Storage
-	Gossip           *mocks.Gossip
+	Gossip           *mocks.CommunicationMock
 	Membership       interfaces.Membership
 	MemberId         primitives.MemberId
 	NodeStateChannel chan *NodeState
@@ -103,14 +102,14 @@ func (node *Node) BuildConfig(logger interfaces.Logger) *interfaces.Config {
 
 func NewNode(
 	membership interfaces.Membership,
-	gossip *mocks.Gossip,
+	gossip *mocks.CommunicationMock,
 	blockUtils *mocks.MockBlockUtils,
 	electionTrigger *mocks.ElectionTriggerMock,
 	logger interfaces.Logger) *Node {
 
 	memberId := membership.MyMemberId()
 	node := &Node{
-		blockChain:       builders.NewInMemoryBlockChain(),
+		blockChain:       mocks.NewInMemoryBlockChain(),
 		ElectionTrigger:  electionTrigger,
 		BlockUtils:       blockUtils,
 		KeyManager:       mocks.NewMockKeyManager(memberId),

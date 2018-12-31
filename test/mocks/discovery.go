@@ -5,20 +5,20 @@ import (
 )
 
 type Discovery struct {
-	gossips map[string]*Gossip
+	gossips map[string]*CommunicationMock
 }
 
 func NewDiscovery() *Discovery {
 	return &Discovery{
-		gossips: make(map[string]*Gossip),
+		gossips: make(map[string]*CommunicationMock),
 	}
 }
 
-func (d *Discovery) GetGossipById(memberId primitives.MemberId) *Gossip {
+func (d *Discovery) GetGossipById(memberId primitives.MemberId) *CommunicationMock {
 	return d.getGossipByMemberIdStr(memberId.KeyForMap())
 }
 
-func (d *Discovery) getGossipByMemberIdStr(memberIdStr string) *Gossip {
+func (d *Discovery) getGossipByMemberIdStr(memberIdStr string) *CommunicationMock {
 	result, ok := d.gossips[memberIdStr]
 	if !ok {
 		return nil
@@ -26,7 +26,7 @@ func (d *Discovery) getGossipByMemberIdStr(memberIdStr string) *Gossip {
 	return result
 }
 
-func (d *Discovery) RegisterGossip(memberId primitives.MemberId, gossip *Gossip) {
+func (d *Discovery) RegisterGossip(memberId primitives.MemberId, gossip *CommunicationMock) {
 	d.gossips[memberId.KeyForMap()] = gossip
 }
 
@@ -34,13 +34,13 @@ func (d *Discovery) UnregisterGossip(memberId primitives.MemberId) {
 	delete(d.gossips, memberId.KeyForMap())
 }
 
-func (d *Discovery) Gossips(memberIds []primitives.MemberId) []*Gossip {
+func (d *Discovery) Gossips(memberIds []primitives.MemberId) []*CommunicationMock {
 
 	if memberIds == nil {
 		return d.getAllGossips()
 	}
 
-	res := make([]*Gossip, 0, 1)
+	res := make([]*CommunicationMock, 0, 1)
 	for key := range d.gossips {
 		if !indexOf(key, memberIds) {
 			continue
@@ -70,8 +70,8 @@ func (d *Discovery) AllGossipsMemberIds() []primitives.MemberId {
 	return memberIds
 }
 
-func (d *Discovery) getAllGossips() []*Gossip {
-	gossips := make([]*Gossip, 0, len(d.gossips))
+func (d *Discovery) getAllGossips() []*CommunicationMock {
+	gossips := make([]*CommunicationMock, 0, len(d.gossips))
 	for _, val := range d.gossips {
 		gossips = append(gossips, val)
 	}

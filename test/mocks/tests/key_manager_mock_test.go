@@ -1,4 +1,4 @@
-package test
+package tests
 
 import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"

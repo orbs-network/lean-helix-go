@@ -21,18 +21,18 @@ func TestDiscovery(t *testing.T) {
 		require.NotNil(t, instance, "Discovery instance created")
 	})
 
-	t.Run("get Gossip instance by ID", func(t *testing.T) {
+	t.Run("get CommunicationMock instance by ID", func(t *testing.T) {
 		test.WithContext(func(ctx context.Context) {
 			id := genMemberId()
 			gd := NewDiscovery()
 			expectedGossip := NewGossip(gd)
 			gd.RegisterGossip(id, expectedGossip)
 			actualGossip := gd.GetGossipById(id)
-			require.Equal(t, expectedGossip, actualGossip, "received Gossip instance by ID")
+			require.Equal(t, expectedGossip, actualGossip, "received CommunicationMock instance by ID")
 		})
 	})
 
-	t.Run("get all Gossip IDs", func(t *testing.T) {
+	t.Run("get all CommunicationMock IDs", func(t *testing.T) {
 		test.WithContext(func(ctx context.Context) {
 			id1 := genMemberId()
 			id2 := genMemberId()
@@ -73,7 +73,7 @@ func TestDiscovery(t *testing.T) {
 			gd.RegisterGossip(id1, g1)
 			gd.RegisterGossip(id2, g2)
 			actual := gd.Gossips(nil)
-			expected := []*Gossip{g1, g2}
+			expected := []*CommunicationMock{g1, g2}
 			require.ElementsMatch(t, actual, expected, "list of all gossips")
 		})
 	})
@@ -91,7 +91,7 @@ func TestDiscovery(t *testing.T) {
 			gd.RegisterGossip(id2, g2)
 			gd.RegisterGossip(id3, g3)
 			actual := gd.Gossips([]primitives.MemberId{id1, id3})
-			expected := []*Gossip{g1, g3}
+			expected := []*CommunicationMock{g1, g3}
 			require.ElementsMatch(t, actual, expected, "list of requested gossips")
 		})
 	})

@@ -1,22 +1,21 @@
-package test
+package tests
 
 import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
-	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestGenesisBlock(t *testing.T) {
-	blockChain := builders.NewInMemoryBlockChain()
+	blockChain := mocks.NewInMemoryBlockChain()
 	actual := blockChain.GetLastBlock()
 	expected := interfaces.GenesisBlock
 	require.Equal(t, expected, actual, "Did not return the genesis block as the first block")
 }
 
 func TestAppendingToBlockChain(t *testing.T) {
-	blockChain := builders.NewInMemoryBlockChain()
+	blockChain := mocks.NewInMemoryBlockChain()
 	block := mocks.ABlock(interfaces.GenesisBlock)
 	blockChain.AppendBlockToChain(block, nil)
 
@@ -25,7 +24,7 @@ func TestAppendingToBlockChain(t *testing.T) {
 }
 
 func TestGettingTheLatestBlock(t *testing.T) {
-	blockChain := builders.NewInMemoryBlockChain()
+	blockChain := mocks.NewInMemoryBlockChain()
 	block1 := mocks.ABlock(interfaces.GenesisBlock)
 	block2 := mocks.ABlock(block1)
 	block3 := mocks.ABlock(block2)
@@ -38,7 +37,7 @@ func TestGettingTheLatestBlock(t *testing.T) {
 }
 
 func TestGettingTheLatestBlockProof(t *testing.T) {
-	blockChain := builders.NewInMemoryBlockChain()
+	blockChain := mocks.NewInMemoryBlockChain()
 	block1 := mocks.ABlock(interfaces.GenesisBlock)
 	block2 := mocks.ABlock(block1)
 	block3 := mocks.ABlock(block2)

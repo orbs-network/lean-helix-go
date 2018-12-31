@@ -9,7 +9,7 @@ import (
 )
 
 type NodeBuilder struct {
-	gossip        *mocks.Gossip
+	gossip        *mocks.CommunicationMock
 	membership    interfaces.Membership
 	blocksPool    *mocks.BlocksPool
 	logsToConsole bool
@@ -20,7 +20,7 @@ func NewNodeBuilder() *NodeBuilder {
 	return &NodeBuilder{}
 }
 
-func (builder *NodeBuilder) CommunicatesVia(gossip *mocks.Gossip) *NodeBuilder {
+func (builder *NodeBuilder) CommunicatesVia(gossip *mocks.CommunicationMock) *NodeBuilder {
 	if builder.gossip == nil {
 		builder.gossip = gossip
 	}

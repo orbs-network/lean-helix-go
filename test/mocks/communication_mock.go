@@ -16,7 +16,7 @@ type outgoingMessage struct {
 	message *interfaces.ConsensusRawMessage
 }
 
-type Gossip struct {
+type CommunicationMock struct {
 	discovery                  *Discovery
 	outgoingChannelsMap        map[string]chan *outgoingMessage
 	totalSubscriptions         int
@@ -26,8 +26,8 @@ type Gossip struct {
 	statsSentMessages          []*interfaces.ConsensusRawMessage
 }
 
-func NewGossip(discovery *Discovery) *Gossip {
-	return &Gossip{
+func NewGossip(discovery *Discovery) *CommunicationMock {
+	return &CommunicationMock{
 		discovery:                  discovery,
 		outgoingChannelsMap:        make(map[string]chan *outgoingMessage),
 		totalSubscriptions:         0,
@@ -38,7 +38,7 @@ func NewGossip(discovery *Discovery) *Gossip {
 	}
 }
 
-func (g *Gossip) messageSenderLoop(ctx context.Context, channel chan *outgoingMessage) {
+func (g *CommunicationMock) messageSenderLoop(ctx context.Context, channel chan *outgoingMessage) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -50,7 +50,7 @@ func (g *Gossip) messageSenderLoop(ctx context.Context, channel chan *outgoingMe
 	}
 }
 
-func (g *Gossip) getOutgoingChannelByTarget(ctx context.Context, target primitives.MemberId) chan *outgoingMessage {
+func (g *CommunicationMock) getOutgoingChannelByTarget(ctx context.Context, target primitives.MemberId) chan *outgoingMessage {
 	channel := g.outgoingChannelsMap[target.String()]
 	if channel == nil {
 		channel = make(chan *outgoingMessage, 100)
@@ -61,7 +61,7 @@ func (g *Gossip) getOutgoingChannelByTarget(ctx context.Context, target primitiv
 	return channel
 }
 
-func (g *Gossip) SendConsensusMessage(ctx context.Context, targets []primitives.MemberId, message *interfaces.ConsensusRawMessage) {
+func (g *CommunicationMock) SendConsensusMessage(ctx context.Context, targets []primitives.MemberId, message *interfaces.ConsensusRawMessage) {
 	g.statsSentMessages = append(g.statsSentMessages, message)
 	for _, target := range targets {
 		channel := g.getOutgoingChannelByTarget(ctx, target)
@@ -69,17 +69,17 @@ func (g *Gossip) SendConsensusMessage(ctx context.Context, targets []primitives.
 	}
 }
 
-func (g *Gossip) RegisterOnMessage(cb func(ctx context.Context, message *interfaces.ConsensusRawMessage)) int {
+func (g *CommunicationMock) RegisterOnMessage(cb func(ctx context.Context, message *interfaces.ConsensusRawMessage)) int {
 	g.totalSubscriptions++
 	g.subscriptions[g.totalSubscriptions] = &SubscriptionValue{cb}
 	return g.totalSubscriptions
 }
 
-func (g *Gossip) UnregisterOnMessage(subscriptionToken int) {
+func (g *CommunicationMock) UnregisterOnMessage(subscriptionToken int) {
 	delete(g.subscriptions, subscriptionToken)
 }
 
-func (g *Gossip) OnRemoteMessage(ctx context.Context, rawMessage *interfaces.ConsensusRawMessage) {
+func (g *CommunicationMock) OnRemoteMessage(ctx context.Context, rawMessage *interfaces.ConsensusRawMessage) {
 	for _, s := range g.subscriptions {
 		if g.incomingWhiteListMemberIds != nil {
 			senderMemberId := interfaces.ToConsensusMessage(rawMessage).SenderMemberId()
@@ -91,7 +91,7 @@ func (g *Gossip) OnRemoteMessage(ctx context.Context, rawMessage *interfaces.Con
 	}
 }
 
-func (g *Gossip) inIncomingWhitelist(memberId primitives.MemberId) bool {
+func (g *CommunicationMock) inIncomingWhitelist(memberId primitives.MemberId) bool {
 	for _, currentId := range g.incomingWhiteListMemberIds {
 		if currentId.Equal(memberId) {
 			return true
@@ -100,7 +100,7 @@ func (g *Gossip) inIncomingWhitelist(memberId primitives.MemberId) bool {
 	return false
 }
 
-func (g *Gossip) inOutgoingWhitelist(memberId primitives.MemberId) bool {
+func (g *CommunicationMock) inOutgoingWhitelist(memberId primitives.MemberId) bool {
 	for _, currentId := range g.outgoingWhitelist {
 		if currentId.Equal(memberId) {
 			return true
@@ -109,23 +109,23 @@ func (g *Gossip) inOutgoingWhitelist(memberId primitives.MemberId) bool {
 	return false
 }
 
-func (g *Gossip) SetOutgoingWhitelist(outgoingWhitelist []primitives.MemberId) {
+func (g *CommunicationMock) SetOutgoingWhitelist(outgoingWhitelist []primitives.MemberId) {
 	g.outgoingWhitelist = outgoingWhitelist
 }
 
-func (g *Gossip) ClearOutgoingWhitelist() {
+func (g *CommunicationMock) ClearOutgoingWhitelist() {
 	g.SetOutgoingWhitelist(nil)
 }
 
-func (g *Gossip) SetIncomingWhitelist(incomingWhitelist []primitives.MemberId) {
+func (g *CommunicationMock) SetIncomingWhitelist(incomingWhitelist []primitives.MemberId) {
 	g.incomingWhiteListMemberIds = incomingWhitelist
 }
 
-func (g *Gossip) ClearIncomingWhitelist() {
+func (g *CommunicationMock) ClearIncomingWhitelist() {
 	g.SetIncomingWhitelist(nil)
 }
 
-func (g *Gossip) SendToNode(ctx context.Context, targetMemberId primitives.MemberId, consensusRawMessage *interfaces.ConsensusRawMessage) {
+func (g *CommunicationMock) SendToNode(ctx context.Context, targetMemberId primitives.MemberId, consensusRawMessage *interfaces.ConsensusRawMessage) {
 	if g.outgoingWhitelist != nil {
 		if !g.inOutgoingWhitelist(targetMemberId) {
 			return
@@ -138,7 +138,7 @@ func (g *Gossip) SendToNode(ctx context.Context, targetMemberId primitives.Membe
 	return
 }
 
-func (g *Gossip) CountSentMessages(messageType protocol.MessageType) int {
+func (g *CommunicationMock) CountSentMessages(messageType protocol.MessageType) int {
 	res := 0
 	for _, msg := range g.statsSentMessages {
 		if interfaces.ToConsensusMessage(msg).MessageType() == messageType {
@@ -148,7 +148,7 @@ func (g *Gossip) CountSentMessages(messageType protocol.MessageType) int {
 	return res
 }
 
-func (g *Gossip) GetSentMessages(messageType protocol.MessageType) []*interfaces.ConsensusRawMessage {
+func (g *CommunicationMock) GetSentMessages(messageType protocol.MessageType) []*interfaces.ConsensusRawMessage {
 	var res []*interfaces.ConsensusRawMessage
 	for _, msg := range g.statsSentMessages {
 		if interfaces.ToConsensusMessage(msg).MessageType() == messageType {
