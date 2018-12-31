@@ -133,9 +133,8 @@ func TestNotTriggerIfSameHeightButDifferentView(t *testing.T) {
 }
 
 func TestViewChanges(t *testing.T) {
-	t.Skip()
 	test.WithContext(func(ctx context.Context) {
-		et := buildElectionTrigger(ctx, 20*time.Millisecond)
+		et := buildElectionTrigger(ctx, 50*time.Millisecond)
 
 		wasCalled := false
 		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View) { wasCalled = true }
