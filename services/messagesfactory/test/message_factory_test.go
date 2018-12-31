@@ -15,20 +15,26 @@ import (
 )
 
 func TestMessageFactory(t *testing.T) {
-	memberId := primitives.MemberId("Member Id0")
+	memberId0 := primitives.MemberId("Member Id0")
 	memberId1 := primitives.MemberId("Member Id1")
 	memberId2 := primitives.MemberId("Member Id2")
 
-	keyManager := mocks.NewMockKeyManager(memberId)
 	blockHeight := primitives.BlockHeight(math.Floor(rand.Float64() * 1000000000))
 	view := primitives.View(math.Floor(rand.Float64() * 1000000000))
 	block := mocks.ABlock(interfaces.GenesisBlock)
 	blockHash := mocks.CalculateBlockHash(block)
+
+	node0KeyManager := mocks.NewMockKeyManager(memberId0)
 	node1KeyManager := mocks.NewMockKeyManager(memberId1)
 	node2KeyManager := mocks.NewMockKeyManager(memberId2)
-	leaderFac := messagesfactory.NewMessageFactory(keyManager, memberId)
-	node1Factory := messagesfactory.NewMessageFactory(node1KeyManager, memberId1)
-	node2Fac := messagesfactory.NewMessageFactory(node2KeyManager, memberId2)
+
+	node0Share := primitives.RandomSeedSignature{0, 0, 0, 0}
+	node1Share := primitives.RandomSeedSignature{1, 1, 1, 1}
+	node2Share := primitives.RandomSeedSignature{2, 2, 2, 2}
+
+	node0Factory := messagesfactory.NewMessageFactory(node0KeyManager, memberId0, node0Share)
+	node1Factory := messagesfactory.NewMessageFactory(node1KeyManager, memberId1, node1Share)
+	node2Factory := messagesfactory.NewMessageFactory(node2KeyManager, memberId2, node2Share)
 
 	t.Run("create PreprepareMessage", func(t *testing.T) {
 		signedHeader := &protocol.BlockRefBuilder{
@@ -40,13 +46,13 @@ func TestMessageFactory(t *testing.T) {
 		ppmcb := &protocol.PreprepareContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
-				MemberId:  memberId,
-				Signature: keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw()),
+				MemberId:  memberId0,
+				Signature: node0KeyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw()),
 			},
 		}
 
 		expectedPPM := interfaces.NewPreprepareMessage(ppmcb.Build(), block)
-		actualPPM := leaderFac.CreatePreprepareMessage(blockHeight, view, block, blockHash)
+		actualPPM := node0Factory.CreatePreprepareMessage(blockHeight, view, block, blockHash)
 
 		require.True(t, bytes.Compare(expectedPPM.Raw(), actualPPM.Raw()) == 0, "compared bytes of PPM")
 	})
@@ -61,13 +67,13 @@ func TestMessageFactory(t *testing.T) {
 		prepareContentBuilder := &protocol.PrepareContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
-				MemberId:  memberId,
-				Signature: keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw()),
+				MemberId:  memberId0,
+				Signature: node0KeyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw()),
 			},
 		}
 
 		expectedPM := interfaces.NewPrepareMessage(prepareContentBuilder.Build())
-		actualPM := leaderFac.CreatePrepareMessage(blockHeight, view, blockHash)
+		actualPM := node0Factory.CreatePrepareMessage(blockHeight, view, blockHash)
 
 		require.True(t, bytes.Compare(expectedPM.Raw(), actualPM.Raw()) == 0, "compared bytes of PM")
 	})
@@ -82,13 +88,14 @@ func TestMessageFactory(t *testing.T) {
 		cmcb := &protocol.CommitContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
-				MemberId:  memberId,
-				Signature: keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw()),
+				MemberId:  memberId0,
+				Signature: node0KeyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw()),
 			},
+			Share: node0Share,
 		}
 
 		expectedCM := interfaces.NewCommitMessage(cmcb.Build())
-		actualCM := leaderFac.CreateCommitMessage(blockHeight, view, blockHash)
+		actualCM := node0Factory.CreateCommitMessage(blockHeight, view, blockHash)
 
 		require.True(t, bytes.Compare(expectedCM.Raw(), actualCM.Raw()) == 0, "compared bytes of CM")
 
@@ -123,8 +130,8 @@ func TestMessageFactory(t *testing.T) {
 			BlockHash:   blockHash,
 		}
 		ppSender := &protocol.SenderSignatureBuilder{
-			MemberId:  memberId,
-			Signature: keyManager.SignConsensusMessage(blockHeight, ppBlockRefBuilder.Build().Raw()),
+			MemberId:  memberId0,
+			Signature: node0KeyManager.SignConsensusMessage(blockHeight, ppBlockRefBuilder.Build().Raw()),
 		}
 		pBlockRefBuilder := &protocol.BlockRefBuilder{
 			MessageType: protocol.LEAN_HELIX_PREPARE,
@@ -163,10 +170,10 @@ func TestMessageFactory(t *testing.T) {
 		}
 
 		preparedMessages := &preparedmessages.PreparedMessages{
-			PreprepareMessage: leaderFac.CreatePreprepareMessage(blockHeight, view, block, blockHash),
+			PreprepareMessage: node0Factory.CreatePreprepareMessage(blockHeight, view, block, blockHash),
 			PrepareMessages: []*interfaces.PrepareMessage{
 				node1Factory.CreatePrepareMessage(blockHeight, view, blockHash),
-				node2Fac.CreatePrepareMessage(blockHeight, view, blockHash),
+				node2Factory.CreatePrepareMessage(blockHeight, view, blockHash),
 			},
 		}
 
@@ -187,8 +194,8 @@ func TestMessageFactory(t *testing.T) {
 			BlockHash:   blockHash,
 		}
 		ppSender := &protocol.SenderSignatureBuilder{
-			MemberId:  memberId,
-			Signature: keyManager.SignConsensusMessage(blockHeight, ppBlockRefBuilder.Build().Raw()),
+			MemberId:  memberId0,
+			Signature: node0KeyManager.SignConsensusMessage(blockHeight, ppBlockRefBuilder.Build().Raw()),
 		}
 		pBlockRefBuilder := &protocol.BlockRefBuilder{
 			MessageType: protocol.LEAN_HELIX_PREPARE,
@@ -242,8 +249,8 @@ func TestMessageFactory(t *testing.T) {
 			},
 		}
 		nvmSender := &protocol.SenderSignatureBuilder{
-			MemberId:  memberId,
-			Signature: keyManager.SignConsensusMessage(blockHeight, nvmHeader.Build().Raw()),
+			MemberId:  memberId0,
+			Signature: node0KeyManager.SignConsensusMessage(blockHeight, nvmHeader.Build().Raw()),
 		}
 		nvmContentBuilder := &protocol.NewViewMessageContentBuilder{
 			SignedHeader: nvmHeader,
@@ -255,23 +262,23 @@ func TestMessageFactory(t *testing.T) {
 		}
 
 		// Construct "actual" message with message factories
-		ppm := leaderFac.CreatePreprepareMessage(blockHeight, view, block, blockHash)
+		ppm := node0Factory.CreatePreprepareMessage(blockHeight, view, block, blockHash)
 		preparedMessages := &preparedmessages.PreparedMessages{
 			PreprepareMessage: ppm,
 			PrepareMessages: []*interfaces.PrepareMessage{
 				node1Factory.CreatePrepareMessage(blockHeight, view, blockHash),
-				node2Fac.CreatePrepareMessage(blockHeight, view, blockHash),
+				node2Factory.CreatePrepareMessage(blockHeight, view, blockHash),
 			},
 		}
 		confirmations := []*protocol.ViewChangeMessageContentBuilder{
 			node1Factory.CreateViewChangeMessageContentBuilder(blockHeight, view, preparedMessages),
-			node2Fac.CreateViewChangeMessageContentBuilder(blockHeight, view, preparedMessages),
+			node2Factory.CreateViewChangeMessageContentBuilder(blockHeight, view, preparedMessages),
 		}
 
-		actualNVM := leaderFac.CreateNewViewMessage(
+		actualNVM := node0Factory.CreateNewViewMessage(
 			blockHeight,
 			view,
-			leaderFac.CreatePreprepareMessageContentBuilder(blockHeight, view, block, blockHash),
+			node0Factory.CreatePreprepareMessageContentBuilder(blockHeight, view, block, blockHash),
 			confirmations,
 			block)
 		expectedNVM := interfaces.NewNewViewMessage(nvmContentBuilder.Build(), block)

@@ -37,7 +37,7 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 	prevBlock := myNode.GetLatestBlock()
 	blockHeight := blockheight.GetBlockHeight(prevBlock) + 1
 	committeeMembers := termConfig.Membership.RequestOrderedCommittee(ctx, blockHeight, uint64(12345))
-	messageFactory := messagesfactory.NewMessageFactory(termConfig.KeyManager, termConfig.Membership.MyMemberId())
+	messageFactory := messagesfactory.NewMessageFactory(termConfig.KeyManager, termConfig.Membership.MyMemberId(), nil)
 	termInCommittee := termincommittee.NewTermInCommittee(ctx, termConfig, messageFactory, committeeMembers, blockHeight, prevBlock, nil)
 
 	return &harness{
@@ -140,7 +140,7 @@ func (h *harness) receivePrepare(ctx context.Context, fromNode int, blockHeight 
 
 func (h *harness) createPreprepareMessage(fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block, blockHash primitives.BlockHash) *interfaces.PreprepareMessage {
 	leader := h.net.Nodes[fromNode]
-	messageFactory := messagesfactory.NewMessageFactory(leader.KeyManager, leader.MemberId)
+	messageFactory := messagesfactory.NewMessageFactory(leader.KeyManager, leader.MemberId, nil)
 	return messageFactory.CreatePreprepareMessage(blockHeight, view, block, blockHash)
 }
 

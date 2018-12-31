@@ -8,8 +8,9 @@ import (
 )
 
 type MessageFactory struct {
-	keyManager interfaces.KeyManager
-	memberId   primitives.MemberId
+	keyManager          interfaces.KeyManager
+	memberId            primitives.MemberId
+	randomSeedSignature primitives.RandomSeedSignature
 }
 
 func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
@@ -97,6 +98,7 @@ func (f *MessageFactory) CreateCommitMessage(
 	contentBuilder := protocol.CommitContentBuilder{
 		SignedHeader: signedHeader,
 		Sender:       sender,
+		Share:        f.randomSeedSignature,
 	}
 
 	return interfaces.NewCommitMessage(contentBuilder.Build())
@@ -203,9 +205,9 @@ func (f *MessageFactory) CreateNewViewMessageContentBuilder(
 	confirmations []*protocol.ViewChangeMessageContentBuilder) *protocol.NewViewMessageContentBuilder {
 
 	signedHeader := &protocol.NewViewHeaderBuilder{
-		MessageType: protocol.LEAN_HELIX_NEW_VIEW,
-		BlockHeight: blockHeight,
-		View:        view,
+		MessageType:             protocol.LEAN_HELIX_NEW_VIEW,
+		BlockHeight:             blockHeight,
+		View:                    view,
 		ViewChangeConfirmations: confirmations,
 	}
 
@@ -232,9 +234,10 @@ func (f *MessageFactory) CreateNewViewMessage(
 	return interfaces.NewNewViewMessage(contentBuilder.Build(), block)
 }
 
-func NewMessageFactory(keyManager interfaces.KeyManager, memberId primitives.MemberId) *MessageFactory {
+func NewMessageFactory(keyManager interfaces.KeyManager, memberId primitives.MemberId, randomSeedSignature primitives.RandomSeedSignature) *MessageFactory {
 	return &MessageFactory{
-		keyManager: keyManager,
-		memberId:   memberId,
+		keyManager:          keyManager,
+		memberId:            memberId,
+		randomSeedSignature: randomSeedSignature,
 	}
 }

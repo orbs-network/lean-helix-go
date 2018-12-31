@@ -16,7 +16,7 @@ func APreprepareMessage(
 	view primitives.View,
 	block interfaces.Block) *interfaces.PreprepareMessage {
 
-	messageFactory := messagesfactory.NewMessageFactory(keyManager, senderMemberId)
+	messageFactory := messagesfactory.NewMessageFactory(keyManager, senderMemberId, nil)
 	return messageFactory.CreatePreprepareMessage(blockHeight, view, block, mocks.CalculateBlockHash(block))
 }
 
@@ -27,7 +27,7 @@ func APrepareMessage(
 	view primitives.View,
 	block interfaces.Block) *interfaces.PrepareMessage {
 
-	messageFactory := messagesfactory.NewMessageFactory(keyManager, senderMemberId)
+	messageFactory := messagesfactory.NewMessageFactory(keyManager, senderMemberId, nil)
 	return messageFactory.CreatePrepareMessage(blockHeight, view, mocks.CalculateBlockHash(block))
 }
 
@@ -38,7 +38,7 @@ func ACommitMessage(
 	view primitives.View,
 	block interfaces.Block) *interfaces.CommitMessage {
 
-	messageFactory := messagesfactory.NewMessageFactory(keyManager, senderMemberId)
+	messageFactory := messagesfactory.NewMessageFactory(keyManager, senderMemberId, nil)
 	return messageFactory.CreateCommitMessage(blockHeight, view, mocks.CalculateBlockHash(block))
 }
 
@@ -49,7 +49,7 @@ func AViewChangeMessage(
 	view primitives.View,
 	preparedMessages *preparedmessages.PreparedMessages) *interfaces.ViewChangeMessage {
 
-	messageFactory := messagesfactory.NewMessageFactory(keyManager, senderMemberId)
+	messageFactory := messagesfactory.NewMessageFactory(keyManager, senderMemberId, nil)
 	return messageFactory.CreateViewChangeMessage(blockHeight, view, preparedMessages)
 }
 
@@ -62,6 +62,6 @@ func ANewViewMessage(
 	confirmations []*protocol.ViewChangeMessageContentBuilder,
 	block interfaces.Block) *interfaces.NewViewMessage {
 
-	messageFactory := messagesfactory.NewMessageFactory(keyManager, senderMemberId)
+	messageFactory := messagesfactory.NewMessageFactory(keyManager, senderMemberId, nil)
 	return messageFactory.CreateNewViewMessage(blockHeight, view, ppContentBuilder, confirmations, block)
 }
