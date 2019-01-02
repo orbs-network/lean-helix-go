@@ -5,6 +5,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/messagesfactory"
 	"github.com/orbs-network/lean-helix-go/services/preparedmessages"
+	"github.com/orbs-network/lean-helix-go/services/randomseed"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
@@ -28,13 +29,10 @@ func TestMessageFactory(t *testing.T) {
 	node1KeyManager := mocks.NewMockKeyManager(memberId1)
 	node2KeyManager := mocks.NewMockKeyManager(memberId2)
 
-	node0Share := primitives.RandomSeedSignature{0, 0, 0, 0}
-	node1Share := primitives.RandomSeedSignature{1, 1, 1, 1}
-	node2Share := primitives.RandomSeedSignature{2, 2, 2, 2}
-
-	node0Factory := messagesfactory.NewMessageFactory(node0KeyManager, memberId0, node0Share)
-	node1Factory := messagesfactory.NewMessageFactory(node1KeyManager, memberId1, node1Share)
-	node2Factory := messagesfactory.NewMessageFactory(node2KeyManager, memberId2, node2Share)
+	randomSeed := uint64(678)
+	node0Factory := messagesfactory.NewMessageFactory(node0KeyManager, memberId0, randomSeed)
+	node1Factory := messagesfactory.NewMessageFactory(node1KeyManager, memberId1, randomSeed)
+	node2Factory := messagesfactory.NewMessageFactory(node2KeyManager, memberId2, randomSeed)
 
 	t.Run("create PreprepareMessage", func(t *testing.T) {
 		signedHeader := &protocol.BlockRefBuilder{
@@ -85,13 +83,16 @@ func TestMessageFactory(t *testing.T) {
 			View:        view,
 			BlockHash:   blockHash,
 		}
+
+		randomSeedBytes := randomseed.RandomSeedToBytes(randomSeed)
+		share := node0KeyManager.SignRandomSeed(blockHeight, randomSeedBytes)
 		cmcb := &protocol.CommitContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
 				MemberId:  memberId0,
 				Signature: node0KeyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw()),
 			},
-			Share: node0Share,
+			Share: share,
 		}
 
 		expectedCM := interfaces.NewCommitMessage(cmcb.Build())

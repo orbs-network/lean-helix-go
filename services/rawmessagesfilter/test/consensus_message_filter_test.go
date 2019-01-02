@@ -35,7 +35,7 @@ func GenerateCommitMessage(blockHeight primitives.BlockHeight, view primitives.V
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
 	keyManager := mocks.NewMockKeyManager(senderMemberId)
 	block := mocks.ABlock(interfaces.GenesisBlock)
-	return builders.ACommitMessage(keyManager, senderMemberId, blockHeight, view, block).ToConsensusRawMessage()
+	return builders.ACommitMessage(keyManager, senderMemberId, blockHeight, view, block, 0).ToConsensusRawMessage()
 }
 
 func GenerateViewChangeMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {

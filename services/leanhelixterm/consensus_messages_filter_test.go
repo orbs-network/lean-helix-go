@@ -25,11 +25,11 @@ func GeneratePrepareMessage(blockHeight primitives.BlockHeight, view primitives.
 	return builders.APrepareMessage(keyManager, senderMemberId, blockHeight, view, block).ToConsensusRawMessage()
 }
 
-func GenerateCommitMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
+func GenerateCommitMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string, randomSeed uint64) *interfaces.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
 	keyManager := mocks.NewMockKeyManager(senderMemberId)
 	block := mocks.ABlock(interfaces.GenesisBlock)
-	return builders.ACommitMessage(keyManager, senderMemberId, blockHeight, view, block).ToConsensusRawMessage()
+	return builders.ACommitMessage(keyManager, senderMemberId, blockHeight, view, block, randomSeed).ToConsensusRawMessage()
 }
 
 func GenerateViewChangeMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
@@ -49,11 +49,12 @@ func GenerateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.
 func TestProcessingAMessage(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		messagesHandler := mocks.NewTermMessagesHandlerMock()
-		consensusMessagesFilter := NewConsensusMessagesFilter(messagesHandler)
+		keyManager := mocks.NewMockKeyManager(primitives.MemberId("My ID"))
+		consensusMessagesFilter := NewConsensusMessagesFilter(messagesHandler, keyManager, 99)
 
 		ppm := GeneratePreprepareMessage(10, 20, "Sender MemberId")
 		pm := GeneratePrepareMessage(10, 20, "Sender MemberId")
-		cm := GenerateCommitMessage(10, 20, "Sender MemberId")
+		cm := GenerateCommitMessage(10, 20, "Sender MemberId", 99)
 		vcm := GenerateViewChangeMessage(10, 20, "Sender MemberId")
 		nvm := GenerateNewViewMessage(10, 20, "Sender MemberId")
 
@@ -77,13 +78,33 @@ func TestProcessingAMessage(t *testing.T) {
 	})
 }
 
+func TestFilteringACommitWithBadSeed(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		messagesHandler := mocks.NewTermMessagesHandlerMock()
+		keyManager := mocks.NewMockKeyManager(primitives.MemberId("My ID"))
+		consensusMessagesFilter := NewConsensusMessagesFilter(messagesHandler, keyManager, 99)
+
+		goodCommit := GenerateCommitMessage(10, 20, "Sender MemberId", 99)
+		badCommit := GenerateCommitMessage(10, 20, "Sender MemberId", 666)
+
+		require.Equal(t, 0, len(messagesHandler.HistoryC))
+
+		consensusMessagesFilter.HandleConsensusMessage(ctx, interfaces.ToConsensusMessage(goodCommit))
+		require.Equal(t, 1, len(messagesHandler.HistoryC))
+
+		consensusMessagesFilter.HandleConsensusMessage(ctx, interfaces.ToConsensusMessage(badCommit))
+		require.Equal(t, 1, len(messagesHandler.HistoryC)) // still on 1
+	})
+}
+
 func TestNotSendingMessagesWhenTheHandlerWasNotSet(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		consensusMessagesFilter := NewConsensusMessagesFilter(nil)
+		keyManager := mocks.NewMockKeyManager(primitives.MemberId("My ID"))
+		consensusMessagesFilter := NewConsensusMessagesFilter(nil, keyManager, 99)
 
 		ppm := GeneratePreprepareMessage(10, 20, "Sender MemberId")
 		pm := GeneratePrepareMessage(10, 20, "Sender MemberId")
-		cm := GenerateCommitMessage(10, 20, "Sender MemberId")
+		cm := GenerateCommitMessage(10, 20, "Sender MemberId", 99)
 		vcm := GenerateViewChangeMessage(10, 20, "Sender MemberId")
 		nvm := GenerateNewViewMessage(10, 20, "Sender MemberId")
 

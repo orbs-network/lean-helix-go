@@ -20,7 +20,7 @@ type NewViewBuilder struct {
 }
 
 func (builder *NewViewBuilder) Build() *interfaces.NewViewMessage {
-	messageFactory := messagesfactory.NewMessageFactory(builder.leaderKeyManager, builder.leaderMemberId, nil)
+	messageFactory := messagesfactory.NewMessageFactory(builder.leaderKeyManager, builder.leaderMemberId, 0)
 
 	ppmCB := builder.customPP
 	if ppmCB == nil {
@@ -38,7 +38,7 @@ func (builder *NewViewBuilder) LeadBy(keyManager interfaces.KeyManager, memberId
 }
 
 func (builder *NewViewBuilder) WithCustomPreprepare(keyManager interfaces.KeyManager, memberId primitives.MemberId, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) *NewViewBuilder {
-	messageFactory := messagesfactory.NewMessageFactory(keyManager, memberId, nil)
+	messageFactory := messagesfactory.NewMessageFactory(keyManager, memberId, 0)
 	builder.customPP = messageFactory.CreatePreprepareMessageContentBuilder(blockHeight, view, block, mocks.CalculateBlockHash(block))
 	return builder
 }
@@ -86,7 +86,7 @@ type VotesBuilder struct {
 func (builder *VotesBuilder) Build() []*protocol.ViewChangeMessageContentBuilder {
 	var votes []*protocol.ViewChangeMessageContentBuilder
 	for _, voter := range builder.voters {
-		messageFactory := messagesfactory.NewMessageFactory(voter.keyManager, voter.memberId, nil)
+		messageFactory := messagesfactory.NewMessageFactory(voter.keyManager, voter.memberId, 0)
 		vcmCB := messageFactory.CreateViewChangeMessageContentBuilder(voter.blockHeight, voter.view, voter.preparedMessages)
 		votes = append(votes, vcmCB)
 	}

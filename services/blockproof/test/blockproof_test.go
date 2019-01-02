@@ -32,10 +32,10 @@ func TestGeneratingBlockProof(t *testing.T) {
 	node2KeyManager := mocks.NewMockKeyManager(memberId2)
 	node3KeyManager := mocks.NewMockKeyManager(memberId3)
 
-	cm0 := builders.ACommitMessage(node1KeyManager, memberId1, 5, 6, block)
-	cm1 := builders.ACommitMessage(node2KeyManager, memberId2, 5, 6, block)
-	cm2 := builders.ACommitMessage(node3KeyManager, memberId3, 5, 6, block)
-	cm3 := builders.ACommitMessage(node0KeyManager, memberId0, 5, 6, block)
+	cm0 := builders.ACommitMessage(node1KeyManager, memberId1, 5, 6, block, 0)
+	cm1 := builders.ACommitMessage(node2KeyManager, memberId2, 5, 6, block, 0)
+	cm2 := builders.ACommitMessage(node3KeyManager, memberId3, 5, 6, block, 0)
+	cm3 := builders.ACommitMessage(node0KeyManager, memberId0, 5, 6, block, 0)
 
 	commitMessages := []*interfaces.CommitMessage{cm0, cm1, cm2, cm3}
 
@@ -117,9 +117,9 @@ func TestAValidBlockProof(t *testing.T) {
 		node2 := net.Nodes[2]
 		node3 := net.Nodes[3]
 
-		cm0 := builders.ACommitMessage(node1.KeyManager, node1.MemberId, block3.Height(), 6, block3)
-		cm1 := builders.ACommitMessage(node2.KeyManager, node2.MemberId, block3.Height(), 6, block3)
-		cm2 := builders.ACommitMessage(node3.KeyManager, node3.MemberId, block3.Height(), 6, block3)
+		cm0 := builders.ACommitMessage(node1.KeyManager, node1.MemberId, block3.Height(), 6, block3, 0)
+		cm1 := builders.ACommitMessage(node2.KeyManager, node2.MemberId, block3.Height(), 6, block3, 0)
+		cm2 := builders.ACommitMessage(node3.KeyManager, node3.MemberId, block3.Height(), 6, block3, 0)
 
 		commitMessages := []*interfaces.CommitMessage{cm0, cm1, cm2}
 

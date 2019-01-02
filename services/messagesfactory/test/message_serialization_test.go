@@ -19,7 +19,7 @@ func TestMessageBuilderAndReader(t *testing.T) {
 	b1 := mocks.ABlock(interfaces.GenesisBlock)
 	memberId := primitives.MemberId("Member Id")
 	mockKeyManager := mocks.NewMockKeyManager(memberId, nil)
-	mf := messagesfactory.NewMessageFactory(mockKeyManager, memberId, nil)
+	mf := messagesfactory.NewMessageFactory(mockKeyManager, memberId, 0)
 
 	t.Run("build and read PreprepareMessage", func(t *testing.T) {
 		ppm := mf.CreatePreprepareMessage(height, view, b1, mocks.CalculateBlockHash(b1))

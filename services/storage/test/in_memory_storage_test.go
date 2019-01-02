@@ -91,12 +91,12 @@ func TestStoreCommit(t *testing.T) {
 	block2 := mocks.ABlock(interfaces.GenesisBlock)
 	block1Hash := mocks.CalculateBlockHash(block1)
 
-	message1 := builders.ACommitMessage(keyManager1, senderId1, blockHeight1, view1, block1)
-	message2 := builders.ACommitMessage(keyManager2, senderId2, blockHeight1, view1, block1)
-	message3 := builders.ACommitMessage(keyManager3, senderId3, blockHeight1, view1, block1)
-	message4 := builders.ACommitMessage(keyManager1, senderId1, blockHeight2, view1, block1)
-	message5 := builders.ACommitMessage(keyManager1, senderId1, blockHeight1, view2, block1)
-	message6 := builders.ACommitMessage(keyManager1, senderId1, blockHeight1, view1, block2)
+	message1 := builders.ACommitMessage(keyManager1, senderId1, blockHeight1, view1, block1, 0)
+	message2 := builders.ACommitMessage(keyManager2, senderId2, blockHeight1, view1, block1, 0)
+	message3 := builders.ACommitMessage(keyManager3, senderId3, blockHeight1, view1, block1, 0)
+	message4 := builders.ACommitMessage(keyManager1, senderId1, blockHeight2, view1, block1, 0)
+	message5 := builders.ACommitMessage(keyManager1, senderId1, blockHeight1, view2, block1, 0)
+	message6 := builders.ACommitMessage(keyManager1, senderId1, blockHeight1, view1, block2, 0)
 
 	s.StoreCommit(message1)
 	s.StoreCommit(message2)
@@ -206,8 +206,8 @@ func TestDuplicateCommit(t *testing.T) {
 	sender2KeyManager := mocks.NewMockKeyManager(senderId2)
 	block := mocks.ABlock(interfaces.GenesisBlock)
 
-	c1 := builders.ACommitMessage(sender1KeyManager, senderId1, blockHeight, view, block)
-	c2 := builders.ACommitMessage(sender2KeyManager, senderId2, blockHeight, view, block)
+	c1 := builders.ACommitMessage(sender1KeyManager, senderId1, blockHeight, view, block, 0)
+	c2 := builders.ACommitMessage(sender2KeyManager, senderId2, blockHeight, view, block, 0)
 
 	firstTime := s.StoreCommit(c1)
 	require.True(t, firstTime, "StoreCommit() returns true if storing a new value (1 of 2)")
@@ -253,7 +253,7 @@ func TestClearBlockHeightLogs(t *testing.T) {
 
 	ppMsg := builders.APreprepareMessage(keyManager, memberId, blockHeight, view, block)
 	pMsg := builders.APrepareMessage(keyManager, memberId, blockHeight, view, block)
-	cMsg := builders.ACommitMessage(keyManager, memberId, blockHeight, view, block)
+	cMsg := builders.ACommitMessage(keyManager, memberId, blockHeight, view, block, 0)
 	vcMsg := builders.AViewChangeMessage(keyManager, memberId, blockHeight, view, nil)
 
 	s.StorePreprepare(ppMsg)

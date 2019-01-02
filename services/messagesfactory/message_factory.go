@@ -3,14 +3,15 @@ package messagesfactory
 import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/preparedmessages"
+	"github.com/orbs-network/lean-helix-go/services/randomseed"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
 type MessageFactory struct {
-	keyManager          interfaces.KeyManager
-	memberId            primitives.MemberId
-	randomSeedSignature primitives.RandomSeedSignature
+	keyManager interfaces.KeyManager
+	memberId   primitives.MemberId
+	randomSeed uint64
 }
 
 func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
@@ -95,10 +96,12 @@ func (f *MessageFactory) CreateCommitMessage(
 		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw())),
 	}
 
+	randomSeedBytes := randomseed.RandomSeedToBytes(f.randomSeed)
+	share := f.keyManager.SignRandomSeed(blockHeight, randomSeedBytes)
 	contentBuilder := protocol.CommitContentBuilder{
 		SignedHeader: signedHeader,
 		Sender:       sender,
-		Share:        f.randomSeedSignature,
+		Share:        share,
 	}
 
 	return interfaces.NewCommitMessage(contentBuilder.Build())
@@ -234,10 +237,10 @@ func (f *MessageFactory) CreateNewViewMessage(
 	return interfaces.NewNewViewMessage(contentBuilder.Build(), block)
 }
 
-func NewMessageFactory(keyManager interfaces.KeyManager, memberId primitives.MemberId, randomSeedSignature primitives.RandomSeedSignature) *MessageFactory {
+func NewMessageFactory(keyManager interfaces.KeyManager, memberId primitives.MemberId, randomSeed uint64) *MessageFactory {
 	return &MessageFactory{
-		keyManager:          keyManager,
-		memberId:            memberId,
-		randomSeedSignature: randomSeedSignature,
+		keyManager: keyManager,
+		memberId:   memberId,
+		randomSeed: randomSeed,
 	}
 }
