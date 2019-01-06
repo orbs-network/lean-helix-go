@@ -5,10 +5,10 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
-func GetBlockHeight(prevBlock interfaces.Block) primitives.BlockHeight {
-	if prevBlock == interfaces.GenesisBlock {
+func GetBlockHeight(block interfaces.Block) primitives.BlockHeight {
+	if block == interfaces.GenesisBlock {
 		return 0
 	} else {
-		return prevBlock.Height()
+		return block.Height()
 	}
 }
