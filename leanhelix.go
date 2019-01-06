@@ -153,7 +153,7 @@ func ValidatePBFTProof(
 	return true
 }
 
-func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProofBytes []byte) bool {
+func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProofBytes []byte, prevBlockProofBytes []byte) bool {
 	lh.logger.Debug("ValidateBlockConsensus() ID=%s", termincommittee.Str(lh.config.Membership.MyMemberId()))
 	if blockProofBytes == nil || len(blockProofBytes) == 0 || block == nil {
 		return false
@@ -203,6 +203,10 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 	}
 
 	if sendersCounter < quorum.CalcQuorumSize(len(committeeMembers)) {
+		return false
+	}
+
+	if len(blockProof.RandomSeedSignature()) == 0 || blockProof.RandomSeedSignature() == nil {
 		return false
 	}
 

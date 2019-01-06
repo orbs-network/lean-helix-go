@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
 type chainItem struct {
@@ -31,5 +32,10 @@ func (bs *InMemoryBlockChain) GetLastBlock() interfaces.Block {
 
 func (bs *InMemoryBlockChain) GetLastBlockProof() []byte {
 	item := bs.blockChain[len(bs.blockChain)-1]
+	return item.blockProof
+}
+
+func (bs *InMemoryBlockChain) GetBlockProofAt(height primitives.BlockHeight) []byte {
+	item := bs.blockChain[height]
 	return item.blockProof
 }

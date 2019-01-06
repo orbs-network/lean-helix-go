@@ -25,7 +25,8 @@ func GenerateLeanHelixBlockProof(commitMessages []*interfaces.CommitMessage) *pr
 	}
 
 	return (&protocol.BlockProofBuilder{
-		BlockRef: blockRefBuilder,
-		Nodes:    cSendersBuilders,
+		BlockRef:            blockRefBuilder,
+		Nodes:               cSendersBuilders,
+		RandomSeedSignature: []byte{1, 2, 3},
 	}).Build()
 }

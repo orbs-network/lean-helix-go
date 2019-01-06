@@ -43,6 +43,10 @@ func (node *Node) GetLatestBlockProof() []byte {
 	return node.blockChain.GetLastBlockProof()
 }
 
+func (node *Node) GetBlockProofAt(height primitives.BlockHeight) []byte {
+	return node.blockChain.GetBlockProofAt(height)
+}
+
 func (node *Node) TriggerElection() {
 	node.ElectionTrigger.ManualTrigger()
 }
@@ -66,13 +70,13 @@ func (node *Node) StartConsensus(ctx context.Context) {
 	}
 }
 
-func (node *Node) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProof []byte) bool {
-	return node.leanHelix.ValidateBlockConsensus(ctx, block, blockProof)
+func (node *Node) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProof []byte, prevBlockProof []byte) bool {
+	return node.leanHelix.ValidateBlockConsensus(ctx, block, blockProof, prevBlockProof)
 }
 
-func (node *Node) Sync(ctx context.Context, prevBlock interfaces.Block, blockProof []byte) {
+func (node *Node) Sync(ctx context.Context, prevBlock interfaces.Block, blockProof []byte, prevBlockProof []byte) {
 	if node.leanHelix != nil {
-		if node.leanHelix.ValidateBlockConsensus(ctx, prevBlock, blockProof) {
+		if node.leanHelix.ValidateBlockConsensus(ctx, prevBlock, blockProof, prevBlockProof) {
 			go node.leanHelix.UpdateState(ctx, prevBlock, nil)
 		}
 	}
