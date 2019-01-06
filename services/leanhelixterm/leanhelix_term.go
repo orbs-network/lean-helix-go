@@ -20,7 +20,7 @@ func NewLeanHelixTerm(ctx context.Context, config *interfaces.Config, onCommit i
 
 	// TODO: Implement the random seed
 	committeeMembers := config.Membership.RequestOrderedCommittee(ctx, blockHeight, randomSeed)
-	termInCommittee := termincommittee.NewTermInCommittee(ctx, config, messageFactory, committeeMembers, blockHeight, prevBlock, CommitsToProof(onCommit))
+	termInCommittee := termincommittee.NewTermInCommittee(ctx, config, messageFactory, committeeMembers, blockHeight, prevBlock, CommitsToProof(config.KeyManager, onCommit))
 
 	return &LeanHelixTerm{
 		ConsensusMessagesFilter: NewConsensusMessagesFilter(termInCommittee, config.KeyManager, randomSeed),

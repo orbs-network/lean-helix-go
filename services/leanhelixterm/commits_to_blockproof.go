@@ -7,9 +7,9 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
 )
 
-func CommitsToProof(onCommit interfaces.OnCommitCallback) termincommittee.OnInCommitteeCommitCallback {
+func CommitsToProof(keyManager interfaces.KeyManager, onCommit interfaces.OnCommitCallback) termincommittee.OnInCommitteeCommitCallback {
 	return func(ctx context.Context, block interfaces.Block, commitMessages []*interfaces.CommitMessage) {
-		proof := blockproof.GenerateLeanHelixBlockProof(commitMessages).Raw()
+		proof := blockproof.GenerateLeanHelixBlockProof(keyManager, commitMessages).Raw()
 		onCommit(ctx, block, proof)
 	}
 }

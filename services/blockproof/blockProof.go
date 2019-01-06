@@ -6,7 +6,7 @@ import (
 )
 
 // assume commit messages are valid and still hold
-func GenerateLeanHelixBlockProof(commitMessages []*interfaces.CommitMessage) *protocol.BlockProof {
+func GenerateLeanHelixBlockProof(keyManager interfaces.KeyManager, commitMessages []*interfaces.CommitMessage) *protocol.BlockProof {
 	blockHeight := commitMessages[0].BlockHeight()
 	blockRefBuilder := &protocol.BlockRefBuilder{
 		MessageType: protocol.LEAN_HELIX_COMMIT,
@@ -16,17 +16,25 @@ func GenerateLeanHelixBlockProof(commitMessages []*interfaces.CommitMessage) *pr
 	}
 
 	cSendersBuilders := make([]*protocol.SenderSignatureBuilder, 0)
+	//cShares := make([]*protocol.SenderSignature, 0)
 	for _, cm := range commitMessages {
 		memberId := cm.Content().Sender().MemberId()
 		cSendersBuilders = append(cSendersBuilders, &protocol.SenderSignatureBuilder{
 			MemberId:  memberId,
 			Signature: cm.Content().Sender().Signature(),
 		})
+
+		//cShares = append(cShares, (&protocol.SenderSignatureBuilder{
+		//	MemberId:  memberId,
+		//	Signature: primitives.Signature(cm.Content().Share()),
+		//}).Build())
 	}
 
+	//randomSeedSignature := keyManager.AggregateRandomSeed(blockHeight, cShares)
+	randomSeedSignature := []byte{1, 2, 3}
 	return (&protocol.BlockProofBuilder{
 		BlockRef:            blockRefBuilder,
 		Nodes:               cSendersBuilders,
-		RandomSeedSignature: []byte{1, 2, 3},
+		RandomSeedSignature: randomSeedSignature,
 	}).Build()
 }

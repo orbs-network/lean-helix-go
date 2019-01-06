@@ -39,7 +39,7 @@ func TestGeneratingBlockProof(t *testing.T) {
 
 	commitMessages := []*interfaces.CommitMessage{cm0, cm1, cm2, cm3}
 
-	blockProof := blockproof.GenerateLeanHelixBlockProof(commitMessages)
+	blockProof := blockproof.GenerateLeanHelixBlockProof(node1KeyManager, commitMessages)
 
 	// BlockRef
 	blockRef := blockProof.BlockRef()
@@ -111,7 +111,7 @@ func genBlockProofMessages(block interfaces.Block, view primitives.View, randomS
 		commitMessages = append(commitMessages, cm)
 	}
 
-	return blockproof.GenerateLeanHelixBlockProof(commitMessages)
+	return blockproof.GenerateLeanHelixBlockProof(nodes[0].KeyManager, commitMessages)
 }
 
 func TestAValidBlockProof(t *testing.T) {
