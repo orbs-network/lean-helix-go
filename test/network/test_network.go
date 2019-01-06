@@ -49,13 +49,6 @@ func (net *TestNetwork) RegisterNodes(nodes []*Node) {
 	}
 }
 
-func (net *TestNetwork) ShutDown() {
-	// TODO: Is this needed?
-	//for _, node := range net.Nodes {
-	//	node.Dispose()
-	//}
-}
-
 func (net *TestNetwork) AllNodesChainEndsWithABlock(block interfaces.Block) bool {
 	for _, node := range net.Nodes {
 		if matchers.BlocksAreEqual(block, node.GetLatestBlock()) == false {
