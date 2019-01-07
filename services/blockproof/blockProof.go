@@ -2,6 +2,7 @@ package blockproof
 
 import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
@@ -16,7 +17,7 @@ func GenerateLeanHelixBlockProof(keyManager interfaces.KeyManager, commitMessage
 	}
 
 	cSendersBuilders := make([]*protocol.SenderSignatureBuilder, 0)
-	//cShares := make([]*protocol.SenderSignature, 0)
+	cShares := make([]*protocol.SenderSignature, 0)
 	for _, cm := range commitMessages {
 		memberId := cm.Content().Sender().MemberId()
 		cSendersBuilders = append(cSendersBuilders, &protocol.SenderSignatureBuilder{
@@ -24,14 +25,13 @@ func GenerateLeanHelixBlockProof(keyManager interfaces.KeyManager, commitMessage
 			Signature: cm.Content().Sender().Signature(),
 		})
 
-		//cShares = append(cShares, (&protocol.SenderSignatureBuilder{
-		//	MemberId:  memberId,
-		//	Signature: primitives.Signature(cm.Content().Share()),
-		//}).Build())
+		cShares = append(cShares, (&protocol.SenderSignatureBuilder{
+			MemberId:  memberId,
+			Signature: primitives.Signature(cm.Content().Share()),
+		}).Build())
 	}
 
-	//randomSeedSignature := keyManager.AggregateRandomSeed(blockHeight, cShares)
-	randomSeedSignature := []byte{1, 2, 3}
+	randomSeedSignature := keyManager.AggregateRandomSeed(blockHeight, cShares)
 	return (&protocol.BlockProofBuilder{
 		BlockRef:            blockRefBuilder,
 		Nodes:               cSendersBuilders,

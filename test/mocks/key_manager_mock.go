@@ -7,10 +7,17 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
+type VerifyRandomSeedCallParams struct {
+	BlockHeight primitives.BlockHeight
+	Content     []byte
+	Sender      *protocol.SenderSignature
+}
+
 type MockKeyManager struct {
 	myMemberId              primitives.MemberId
 	rejectedMemberIds       []primitives.MemberId
 	FailFutureVerifications bool
+	VerifyRandomSeedHistory []*VerifyRandomSeedCallParams
 }
 
 func NewMockKeyManager(memberId primitives.MemberId, rejectedMemberIds ...primitives.MemberId) *MockKeyManager {
@@ -48,6 +55,8 @@ func (km *MockKeyManager) SignRandomSeed(blockHeight primitives.BlockHeight, con
 }
 
 func (km *MockKeyManager) VerifyRandomSeed(blockHeight primitives.BlockHeight, content []byte, sender *protocol.SenderSignature) bool {
+	km.VerifyRandomSeedHistory = append(km.VerifyRandomSeedHistory, &VerifyRandomSeedCallParams{blockHeight, content, sender})
+
 	str := fmt.Sprintf("RND_SIG|%s|%s|%x", blockHeight, sender.MemberId().KeyForMap(), content)
 	expected := []byte(str)
 

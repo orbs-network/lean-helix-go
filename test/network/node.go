@@ -74,10 +74,10 @@ func (node *Node) ValidateBlockConsensus(ctx context.Context, block interfaces.B
 	return node.leanHelix.ValidateBlockConsensus(ctx, block, blockProof, prevBlockProof)
 }
 
-func (node *Node) Sync(ctx context.Context, prevBlock interfaces.Block, blockProof []byte, prevBlockProof []byte) {
+func (node *Node) Sync(ctx context.Context, prevBlock interfaces.Block, blockProofBytes []byte, prevBlockProofBytes []byte) {
 	if node.leanHelix != nil {
-		if node.leanHelix.ValidateBlockConsensus(ctx, prevBlock, blockProof, prevBlockProof) {
-			go node.leanHelix.UpdateState(ctx, prevBlock, nil)
+		if node.leanHelix.ValidateBlockConsensus(ctx, prevBlock, blockProofBytes, prevBlockProofBytes) {
+			go node.leanHelix.UpdateState(ctx, prevBlock, prevBlockProofBytes)
 		}
 	}
 }

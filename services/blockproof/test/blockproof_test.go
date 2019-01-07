@@ -32,10 +32,10 @@ func TestGeneratingBlockProof(t *testing.T) {
 	node2KeyManager := mocks.NewMockKeyManager(memberId2)
 	node3KeyManager := mocks.NewMockKeyManager(memberId3)
 
-	cm0 := builders.ACommitMessage(node1KeyManager, memberId1, 5, 6, block, 0)
-	cm1 := builders.ACommitMessage(node2KeyManager, memberId2, 5, 6, block, 0)
-	cm2 := builders.ACommitMessage(node3KeyManager, memberId3, 5, 6, block, 0)
-	cm3 := builders.ACommitMessage(node0KeyManager, memberId0, 5, 6, block, 0)
+	cm0 := builders.ACommitMessage(node0KeyManager, memberId0, 5, 6, block, 0)
+	cm1 := builders.ACommitMessage(node1KeyManager, memberId1, 5, 6, block, 0)
+	cm2 := builders.ACommitMessage(node2KeyManager, memberId2, 5, 6, block, 0)
+	cm3 := builders.ACommitMessage(node3KeyManager, memberId3, 5, 6, block, 0)
 
 	commitMessages := []*interfaces.CommitMessage{cm0, cm1, cm2, cm3}
 
@@ -48,12 +48,36 @@ func TestGeneratingBlockProof(t *testing.T) {
 	require.Equal(t, primitives.View(6), blockRef.View())
 	require.True(t, mocks.CalculateBlockHash(block).Equal(blockRef.BlockHash()))
 
+	// Nodes
 	i := blockProof.NodesIterator()
 	require.True(t, compareSenderSignature(cm0, i.NextNodes()))
 	require.True(t, compareSenderSignature(cm1, i.NextNodes()))
 	require.True(t, compareSenderSignature(cm2, i.NextNodes()))
 	require.True(t, compareSenderSignature(cm3, i.NextNodes()))
 	require.False(t, i.HasNext())
+
+	// RandomSeedSignature
+	cShares := []*protocol.SenderSignature{
+		(&protocol.SenderSignatureBuilder{
+			MemberId:  memberId0,
+			Signature: primitives.Signature(cm0.Content().Share()),
+		}).Build(),
+		(&protocol.SenderSignatureBuilder{
+			MemberId:  memberId1,
+			Signature: primitives.Signature(cm1.Content().Share()),
+		}).Build(),
+		(&protocol.SenderSignatureBuilder{
+			MemberId:  memberId2,
+			Signature: primitives.Signature(cm2.Content().Share()),
+		}).Build(),
+		(&protocol.SenderSignatureBuilder{
+			MemberId:  memberId3,
+			Signature: primitives.Signature(cm3.Content().Share()),
+		}).Build(),
+	}
+	randomSeedSignature := node1KeyManager.AggregateRandomSeed(5, cShares)
+
+	require.Equal(t, randomSeedSignature, blockProof.RandomSeedSignature())
 }
 
 func TestNodeSync(t *testing.T) {
@@ -94,7 +118,7 @@ func TestNodeSync(t *testing.T) {
 		// syncing node3
 		latestBlock := node0.GetLatestBlock()
 		latestBlockProof := node0.GetLatestBlockProof()
-		prevBlockProof := node0.GetBlockProofAt(latestBlock.Height() - 1)
+		prevBlockProof := node0.GetBlockProofAt(latestBlock.Height())
 		node3.Sync(ctx, latestBlock, latestBlockProof, prevBlockProof)
 
 		net.ResumeNodeRequestNewBlock(node0)
@@ -167,10 +191,12 @@ func TestThatBlockRefInsideProofValidation(t *testing.T) {
 
 		goodBlockRef := generateACommitBlockRefBuilder(blockHeight, block3)
 		signatures := generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node2)
+		goodRSS := node0.KeyManager.AggregateRandomSeed(blockHeight, nil)
 
 		nilBlockRefProof := (&protocol.BlockProofBuilder{
-			BlockRef: nil,
-			Nodes:    signatures,
+			BlockRef:            nil,
+			Nodes:               signatures,
+			RandomSeedSignature: goodRSS,
 		}).Build()
 
 		badBlockHeightProof := (&protocol.BlockProofBuilder{
@@ -179,7 +205,8 @@ func TestThatBlockRefInsideProofValidation(t *testing.T) {
 				BlockHeight: 666,
 				BlockHash:   mocks.CalculateBlockHash(block3),
 			},
-			Nodes: signatures,
+			Nodes:               signatures,
+			RandomSeedSignature: goodRSS,
 		}).Build()
 
 		badMessageTypeProof := (&protocol.BlockProofBuilder{
@@ -188,7 +215,8 @@ func TestThatBlockRefInsideProofValidation(t *testing.T) {
 				BlockHeight: blockHeight,
 				BlockHash:   mocks.CalculateBlockHash(block3),
 			},
-			Nodes: signatures,
+			Nodes:               signatures,
+			RandomSeedSignature: goodRSS,
 		}).Build()
 
 		badBlockHash := (&protocol.BlockProofBuilder{
@@ -197,7 +225,8 @@ func TestThatBlockRefInsideProofValidation(t *testing.T) {
 				BlockHeight: blockHeight,
 				BlockHash:   mocks.CalculateBlockHash(block1),
 			},
-			Nodes: signatures,
+			Nodes:               signatures,
+			RandomSeedSignature: goodRSS,
 		}).Build()
 
 		goodPrevProof := (&protocol.BlockProofBuilder{
@@ -211,7 +240,7 @@ func TestThatBlockRefInsideProofValidation(t *testing.T) {
 				BlockHash:   mocks.CalculateBlockHash(block3),
 			},
 			Nodes:               signatures,
-			RandomSeedSignature: []byte{1, 2, 3},
+			RandomSeedSignature: goodRSS,
 		}).Build()
 
 		require.True(t, node0.ValidateBlockConsensus(ctx, block3, goodProof.Raw(), goodPrevProof.Raw()))
@@ -258,6 +287,7 @@ func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 
 		blockHeight := block3.Height()
 		goodBlockRef := generateACommitBlockRefBuilder(blockHeight, block3)
+		goodRSS := node0.KeyManager.AggregateRandomSeed(blockHeight, nil)
 
 		// good prev proof
 		goodPrevProof := &protocol.BlockProofBuilder{
@@ -268,31 +298,35 @@ func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 		goodProof := &protocol.BlockProofBuilder{
 			BlockRef:            goodBlockRef,
 			Nodes:               generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node2),
-			RandomSeedSignature: []byte{1, 2, 3},
+			RandomSeedSignature: goodRSS,
 		}
 
 		// proof with bad block height
 		badBlockRefBlockHeightProof := &protocol.BlockProofBuilder{
-			BlockRef: generateACommitBlockRefBuilder(666, block3),
-			Nodes:    generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node2),
+			BlockRef:            generateACommitBlockRefBuilder(666, block3),
+			Nodes:               generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node2),
+			RandomSeedSignature: goodRSS,
 		}
 
 		// proof with not enough nodes
 		noQuorumProof := &protocol.BlockProofBuilder{
-			BlockRef: goodBlockRef,
-			Nodes:    generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1),
+			BlockRef:            goodBlockRef,
+			Nodes:               generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1),
+			RandomSeedSignature: goodRSS,
 		}
 
 		// proof with duplicate nodes
 		duplicateNodesProof := &protocol.BlockProofBuilder{
-			BlockRef: goodBlockRef,
-			Nodes:    generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node1),
+			BlockRef:            goodBlockRef,
+			Nodes:               generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node1),
+			RandomSeedSignature: goodRSS,
 		}
 
 		// proof with a node that's not part of the network
 		unknownNodeProof := &protocol.BlockProofBuilder{
-			BlockRef: goodBlockRef,
-			Nodes:    generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, outOfNetworkNode),
+			BlockRef:            goodBlockRef,
+			Nodes:               generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, outOfNetworkNode),
+			RandomSeedSignature: goodRSS,
 		}
 
 		require.True(t, node0.ValidateBlockConsensus(ctx, block3, goodProof.Build().Raw(), goodPrevProof.Build().Raw()))
@@ -318,6 +352,7 @@ func TestRandomSeedSignatureValidation(t *testing.T) {
 
 		blockHeight := block3.Height()
 		goodBlockRef := generateACommitBlockRefBuilder(blockHeight, block3)
+		goodRSS := node0.KeyManager.AggregateRandomSeed(blockHeight, nil)
 
 		// good prev proof
 		goodPrevProof := &protocol.BlockProofBuilder{
@@ -328,7 +363,7 @@ func TestRandomSeedSignatureValidation(t *testing.T) {
 		goodProof := &protocol.BlockProofBuilder{
 			BlockRef:            goodBlockRef,
 			Nodes:               generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node2),
-			RandomSeedSignature: []byte{123},
+			RandomSeedSignature: goodRSS,
 		}
 
 		// proof with no random seed signature

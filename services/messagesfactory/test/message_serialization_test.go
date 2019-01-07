@@ -52,7 +52,6 @@ func TestMessageBuilderAndReader(t *testing.T) {
 		require.Equal(t, receivedVCMC.SignedHeader().MessageType(), protocol.LEAN_HELIX_VIEW_CHANGE, "Message type should be LEAN_HELIX_VIEW_CHANGE")
 		require.True(t, receivedVCMC.SignedHeader().BlockHeight().Equal(height), "Height = %v", height)
 		require.True(t, receivedVCMC.SignedHeader().View().Equal(view), "View = %v", view)
-		// TODO add test with preparedproof and do require.Equal on some of the proof's internal properties
 	})
 	t.Run("build and read NewViewMessage", func(t *testing.T) {
 		ppmcb := mf.CreatePreprepareMessageContentBuilder(height, view, b1, mocks.CalculateBlockHash(b1))
