@@ -37,6 +37,7 @@ func TestMessageFactory(t *testing.T) {
 	t.Run("create PreprepareMessage", func(t *testing.T) {
 		signedHeader := &protocol.BlockRefBuilder{
 			MessageType: protocol.LEAN_HELIX_PREPREPARE,
+			NetworkId:   networkId,
 			BlockHeight: blockHeight,
 			View:        view,
 			BlockHash:   blockHash,
@@ -58,6 +59,7 @@ func TestMessageFactory(t *testing.T) {
 	t.Run("create PrepareMessage", func(t *testing.T) {
 		signedHeader := &protocol.BlockRefBuilder{
 			MessageType: protocol.LEAN_HELIX_PREPARE,
+			NetworkId:   networkId,
 			BlockHeight: blockHeight,
 			View:        view,
 			BlockHash:   blockHash,
@@ -79,6 +81,7 @@ func TestMessageFactory(t *testing.T) {
 	t.Run("create CommitMessage", func(t *testing.T) {
 		signedHeader := &protocol.BlockRefBuilder{
 			MessageType: protocol.LEAN_HELIX_COMMIT,
+			NetworkId:   networkId,
 			BlockHeight: blockHeight,
 			View:        view,
 			BlockHash:   blockHash,
@@ -105,6 +108,7 @@ func TestMessageFactory(t *testing.T) {
 	t.Run("create ViewChangeMessage without PreparedProof", func(t *testing.T) {
 		signedHeader := &protocol.ViewChangeHeaderBuilder{
 			MessageType:   protocol.LEAN_HELIX_VIEW_CHANGE,
+			NetworkId:     networkId,
 			BlockHeight:   blockHeight,
 			View:          view,
 			PreparedProof: nil,
@@ -126,6 +130,7 @@ func TestMessageFactory(t *testing.T) {
 	t.Run("create ViewChangeMessage with PreparedProof", func(t *testing.T) {
 		ppBlockRefBuilder := &protocol.BlockRefBuilder{
 			MessageType: protocol.LEAN_HELIX_PREPREPARE,
+			NetworkId:   networkId,
 			BlockHeight: blockHeight,
 			View:        view,
 			BlockHash:   blockHash,
@@ -136,6 +141,7 @@ func TestMessageFactory(t *testing.T) {
 		}
 		pBlockRefBuilder := &protocol.BlockRefBuilder{
 			MessageType: protocol.LEAN_HELIX_PREPARE,
+			NetworkId:   networkId,
 			BlockHeight: blockHeight,
 			View:        view,
 			BlockHash:   blockHash,
@@ -158,6 +164,7 @@ func TestMessageFactory(t *testing.T) {
 		}
 		signedHeader := &protocol.ViewChangeHeaderBuilder{
 			MessageType:   protocol.LEAN_HELIX_VIEW_CHANGE,
+			NetworkId:     networkId,
 			BlockHeight:   blockHeight,
 			View:          view,
 			PreparedProof: proofBuilder,
@@ -190,6 +197,7 @@ func TestMessageFactory(t *testing.T) {
 		// Construct the "expected" message manually
 		ppBlockRefBuilder := &protocol.BlockRefBuilder{
 			MessageType: protocol.LEAN_HELIX_PREPREPARE,
+			NetworkId:   networkId,
 			BlockHeight: blockHeight,
 			View:        view,
 			BlockHash:   blockHash,
@@ -200,6 +208,7 @@ func TestMessageFactory(t *testing.T) {
 		}
 		pBlockRefBuilder := &protocol.BlockRefBuilder{
 			MessageType: protocol.LEAN_HELIX_PREPARE,
+			NetworkId:   networkId,
 			BlockHeight: blockHeight,
 			View:        view,
 			BlockHash:   blockHash,
@@ -223,6 +232,7 @@ func TestMessageFactory(t *testing.T) {
 
 		nodesVCHeader := &protocol.ViewChangeHeaderBuilder{
 			MessageType:   protocol.LEAN_HELIX_VIEW_CHANGE,
+			NetworkId:     networkId,
 			BlockHeight:   blockHeight,
 			View:          view,
 			PreparedProof: proofBuilder,
@@ -243,6 +253,7 @@ func TestMessageFactory(t *testing.T) {
 		}
 		nvmHeader := &protocol.NewViewHeaderBuilder{
 			MessageType: protocol.LEAN_HELIX_NEW_VIEW,
+			NetworkId:   networkId,
 			BlockHeight: blockHeight,
 			View:        view,
 			ViewChangeConfirmations: []*protocol.ViewChangeMessageContentBuilder{

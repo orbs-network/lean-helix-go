@@ -19,6 +19,7 @@ type ConsensusRawMessageConverter interface {
 type ConsensusMessage interface {
 	Serializable
 	ConsensusRawMessageConverter
+	NetworkId() primitives.NetworkId
 	MessageType() protocol.MessageType
 	SenderMemberId() primitives.MemberId
 	BlockHeight() primitives.BlockHeight
@@ -129,6 +130,10 @@ type PreprepareMessage struct {
 	block   Block
 }
 
+func (ppm *PreprepareMessage) NetworkId() primitives.NetworkId {
+	return ppm.content.SignedHeader().NetworkId()
+}
+
 func (ppm *PreprepareMessage) MessageType() protocol.MessageType {
 	return ppm.content.SignedHeader().MessageType()
 }
@@ -179,6 +184,10 @@ type PrepareMessage struct {
 	content *protocol.PrepareContent
 }
 
+func (pm *PrepareMessage) NetworkId() primitives.NetworkId {
+	return pm.content.SignedHeader().NetworkId()
+}
+
 func (pm *PrepareMessage) MessageType() protocol.MessageType {
 	return pm.content.SignedHeader().MessageType()
 }
@@ -219,6 +228,10 @@ func NewPrepareMessage(content *protocol.PrepareContent) *PrepareMessage {
 //---------
 type CommitMessage struct {
 	content *protocol.CommitContent
+}
+
+func (cm *CommitMessage) NetworkId() primitives.NetworkId {
+	return cm.content.SignedHeader().NetworkId()
 }
 
 func (cm *CommitMessage) MessageType() protocol.MessageType {
@@ -262,6 +275,10 @@ func NewCommitMessage(content *protocol.CommitContent) *CommitMessage {
 type ViewChangeMessage struct {
 	content *protocol.ViewChangeMessageContent
 	block   Block
+}
+
+func (vcm *ViewChangeMessage) NetworkId() primitives.NetworkId {
+	return vcm.content.SignedHeader().NetworkId()
 }
 
 func (vcm *ViewChangeMessage) MessageType() protocol.MessageType {
@@ -312,6 +329,10 @@ func NewViewChangeMessage(content *protocol.ViewChangeMessageContent, block Bloc
 type NewViewMessage struct {
 	content *protocol.NewViewMessageContent
 	block   Block
+}
+
+func (nvm *NewViewMessage) NetworkId() primitives.NetworkId {
+	return nvm.content.SignedHeader().NetworkId()
 }
 
 func (nvm *NewViewMessage) MessageType() protocol.MessageType {
@@ -370,6 +391,7 @@ func ExtractConfirmationsFromViewChangeMessages(vcms []*ViewChangeMessage) []*pr
 		if proof != nil && len(proof.Raw()) > 0 {
 			ppBlockRefBuilder := &protocol.BlockRefBuilder{
 				MessageType: proof.PreprepareBlockRef().MessageType(),
+				NetworkId:   proof.PreprepareBlockRef().NetworkId(),
 				BlockHeight: proof.PreprepareBlockRef().BlockHeight(),
 				View:        proof.PreprepareBlockRef().View(),
 				BlockHash:   proof.PreprepareBlockRef().BlockHash(),
@@ -380,6 +402,7 @@ func ExtractConfirmationsFromViewChangeMessages(vcms []*ViewChangeMessage) []*pr
 			}
 			pBlockRef := &protocol.BlockRefBuilder{
 				MessageType: proof.PrepareBlockRef().MessageType(),
+				NetworkId:   proof.PrepareBlockRef().NetworkId(),
 				BlockHeight: proof.PrepareBlockRef().BlockHeight(),
 				View:        proof.PrepareBlockRef().View(),
 				BlockHash:   proof.PrepareBlockRef().BlockHash(),
@@ -411,6 +434,7 @@ func ExtractConfirmationsFromViewChangeMessages(vcms []*ViewChangeMessage) []*pr
 		viewChangeMessageContentBuilder := &protocol.ViewChangeMessageContentBuilder{
 			SignedHeader: &protocol.ViewChangeHeaderBuilder{
 				MessageType:   header.MessageType(),
+				NetworkId:     header.NetworkId(),
 				BlockHeight:   header.BlockHeight(),
 				View:          header.View(),
 				PreparedProof: proofBuilder,

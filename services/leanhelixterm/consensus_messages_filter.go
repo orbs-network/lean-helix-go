@@ -39,7 +39,7 @@ func (mp *ConsensusMessagesFilter) HandleConsensusMessage(ctx context.Context, m
 
 		randomSeedBytes := randomseed.RandomSeedToBytes(mp.randomSeed)
 		if !mp.keyManager.VerifyRandomSeed(message.BlockHeight(), randomSeedBytes, senderSignature) {
-			// fmt.Println("Filter VerifyRandomSeed Failed")
+			//fmt.Println("Filter VerifyRandomSeed Failed")
 			return
 		}
 		mp.handler.HandleCommit(ctx, message)

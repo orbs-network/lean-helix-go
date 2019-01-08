@@ -64,12 +64,7 @@ func (lh *LeanHelix) Run(ctx context.Context) {
 }
 
 func (lh *LeanHelix) UpdateState(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte) {
-	var height primitives.BlockHeight
-	if prevBlock == nil {
-		height = 0
-	} else {
-		height = prevBlock.Height()
-	}
+	height := blockheight.GetBlockHeight(prevBlock)
 	lh.logger.Debug("LHFLOW UpdateState() ID=%s prevBlockHeight=%d", termincommittee.Str(lh.config.Membership.MyMemberId()), height)
 
 	select {
@@ -164,7 +159,6 @@ func (lh *LeanHelix) Tick(ctx context.Context) bool {
 		return false
 
 	case message := <-lh.messagesChannel:
-		//lh.logger.Debug("LHFLOW Tick Message")
 		lh.filter.HandleConsensusRawMessage(ctx, message)
 
 	case trigger := <-lh.config.ElectionTrigger.ElectionChannel():

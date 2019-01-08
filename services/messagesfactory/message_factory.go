@@ -23,6 +23,7 @@ func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
 
 	signedHeader := &protocol.BlockRefBuilder{
 		MessageType: protocol.LEAN_HELIX_PREPREPARE,
+		NetworkId:   f.networkId,
 		BlockHeight: blockHeight,
 		View:        view,
 		BlockHash:   blockHash,
@@ -62,6 +63,7 @@ func (f *MessageFactory) CreatePrepareMessage(
 
 	signedHeader := &protocol.BlockRefBuilder{
 		MessageType: protocol.LEAN_HELIX_PREPARE,
+		NetworkId:   f.networkId,
 		BlockHeight: blockHeight,
 		View:        view,
 		BlockHash:   blockHash,
@@ -87,6 +89,7 @@ func (f *MessageFactory) CreateCommitMessage(
 
 	signedHeader := &protocol.BlockRefBuilder{
 		MessageType: protocol.LEAN_HELIX_COMMIT,
+		NetworkId:   f.networkId,
 		BlockHeight: blockHeight,
 		View:        view,
 		BlockHash:   blockHash,
@@ -126,6 +129,7 @@ func CreatePreparedProofBuilderFromPreparedMessages(preparedMessages *preparedme
 	} else {
 		ppBlockRef = &protocol.BlockRefBuilder{
 			MessageType: protocol.LEAN_HELIX_PREPREPARE,
+			NetworkId:   preprepareMessage.NetworkId(),
 			BlockHeight: preprepareMessage.BlockHeight(),
 			View:        preprepareMessage.View(),
 			BlockHash:   preprepareMessage.Content().SignedHeader().BlockHash(),
@@ -142,6 +146,7 @@ func CreatePreparedProofBuilderFromPreparedMessages(preparedMessages *preparedme
 	} else {
 		pBlockRef = &protocol.BlockRefBuilder{
 			MessageType: protocol.LEAN_HELIX_PREPARE,
+			NetworkId:   prepareMessages[0].NetworkId(),
 			BlockHeight: prepareMessages[0].BlockHeight(),
 			View:        prepareMessages[0].View(),
 			BlockHash:   prepareMessages[0].Content().SignedHeader().BlockHash(),
@@ -171,6 +176,7 @@ func (f *MessageFactory) CreateViewChangeMessageContentBuilder(
 	preparedProofBuilder := CreatePreparedProofBuilderFromPreparedMessages(preparedMessages)
 	signedHeader := &protocol.ViewChangeHeaderBuilder{
 		MessageType:   protocol.LEAN_HELIX_VIEW_CHANGE,
+		NetworkId:     f.networkId,
 		BlockHeight:   blockHeight,
 		View:          view,
 		PreparedProof: preparedProofBuilder,
@@ -210,6 +216,7 @@ func (f *MessageFactory) CreateNewViewMessageContentBuilder(
 
 	signedHeader := &protocol.NewViewHeaderBuilder{
 		MessageType:             protocol.LEAN_HELIX_NEW_VIEW,
+		NetworkId:               f.networkId,
 		BlockHeight:             blockHeight,
 		View:                    view,
 		ViewChangeConfirmations: confirmations,

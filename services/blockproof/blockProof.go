@@ -11,6 +11,7 @@ func GenerateLeanHelixBlockProof(keyManager interfaces.KeyManager, commitMessage
 	blockHeight := commitMessages[0].BlockHeight()
 	blockRefBuilder := &protocol.BlockRefBuilder{
 		MessageType: protocol.LEAN_HELIX_COMMIT,
+		NetworkId:   commitMessages[0].NetworkId(),
 		BlockHeight: blockHeight,
 		View:        commitMessages[0].View(),
 		BlockHash:   commitMessages[0].Content().SignedHeader().BlockHash(),

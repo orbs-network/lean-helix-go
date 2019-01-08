@@ -56,18 +56,19 @@ message SenderSignature {
 }
 
 message BlockRef {
-    MessageType message_type = 1;
-    primitives.block_height block_height = 2;
-    primitives.view view = 3;
-    primitives.block_hash block_hash = 4;
-    primitives.network_id network_id = 5;
+    primitives.network_id network_id = 1;
+    MessageType message_type = 2;
+    primitives.block_height block_height = 3;
+    primitives.view view = 4;
+    primitives.block_hash block_hash = 5;
 }
 
 message ViewChangeHeader {
-    MessageType message_type = 1;
-    primitives.block_height block_height = 2;
-    primitives.view view = 3;
-    PreparedProof prepared_proof = 4;
+    primitives.network_id network_id = 1;
+    MessageType message_type = 2;
+    primitives.block_height block_height = 3;
+    primitives.view view = 4;
+    PreparedProof prepared_proof = 5;
 }
 
 message PreparedProof {
@@ -78,10 +79,11 @@ message PreparedProof {
 }
 
 message NewViewHeader {
-    MessageType message_type = 1;
-    primitives.block_height block_height = 2;
-    primitives.view view = 3;
-    repeated ViewChangeMessageContent view_change_confirmations = 4;
+    primitives.network_id network_id = 1;
+    MessageType message_type = 2;
+    primitives.block_height block_height = 3;
+    primitives.view view = 4;
+    repeated ViewChangeMessageContent view_change_confirmations = 5;
 }
 
 message BlockProof {

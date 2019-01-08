@@ -13,6 +13,7 @@ import (
 )
 
 func TestProofsValidator(t *testing.T) {
+	networkId := primitives.NetworkId(rand.Uint64())
 	myMemberId := primitives.MemberId("My MemberId")
 	leaderId := primitives.MemberId("Leader ID")
 	node1Id := primitives.MemberId("Node 1")
@@ -42,7 +43,7 @@ func TestProofsValidator(t *testing.T) {
 		{KeyManager: node2KeyManager, MemberId: node2Id},
 		{KeyManager: node3KeyManager, MemberId: node3Id},
 	}
-	goodPrepareProof := builders.CreatePreparedProof(leaderMessageSigner, nodesMessageSigners, blockHeight, view, blockHash)
+	goodPrepareProof := builders.CreatePreparedProof(networkId, leaderMessageSigner, nodesMessageSigners, blockHeight, view, blockHash)
 
 	calcLeaderId := func(view primitives.View) primitives.MemberId {
 		return membersIds[view]
@@ -59,13 +60,13 @@ func TestProofsValidator(t *testing.T) {
 			{KeyManager: node2KeyManager, MemberId: node2Id},
 			{KeyManager: node3KeyManager, MemberId: node3Id},
 		}
-		preparedProofWithoutPP := builders.CreatePreparedProof(nil, pSigners, blockHeight, view, blockHash)
+		preparedProofWithoutPP := builders.CreatePreparedProof(networkId, nil, pSigners, blockHeight, view, blockHash)
 		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithoutPP, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof that did not have a preprepare message")
 	})
 
 	t.Run("TestProofsValidatorWithNoPrepares", func(t *testing.T) {
-		preparedProofWithoutP := builders.CreatePreparedProof(leaderMessageSigner, nil, blockHeight, view, blockHash)
+		preparedProofWithoutP := builders.CreatePreparedProof(networkId, leaderMessageSigner, nil, blockHeight, view, blockHash)
 		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithoutP, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof that did not have prepare messages")
 	})
@@ -79,7 +80,7 @@ func TestProofsValidator(t *testing.T) {
 		pSigners := []*builders.MessageSigner{
 			{KeyManager: node1KeyManager, MemberId: node1Id},
 		}
-		preparedProofWithNotEnoughP := builders.CreatePreparedProof(leaderMessageSigner, pSigners, blockHeight, view, blockHash)
+		preparedProofWithNotEnoughP := builders.CreatePreparedProof(networkId, leaderMessageSigner, pSigners, blockHeight, view, blockHash)
 		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithNotEnoughP, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with not enough prepares")
 	})
@@ -119,7 +120,7 @@ func TestProofsValidator(t *testing.T) {
 			{KeyManager: node2KeyManager, MemberId: node2Id},
 			{KeyManager: nonMemberKeyManager, MemberId: nonMemberId},
 		}
-		preparedProof := builders.CreatePreparedProof(leaderMessageSigner, pSigners, blockHeight, view, blockHash)
+		preparedProof := builders.CreatePreparedProof(networkId, leaderMessageSigner, pSigners, blockHeight, view, blockHash)
 		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProof, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with a none member")
 	})
@@ -132,7 +133,7 @@ func TestProofsValidator(t *testing.T) {
 		}
 		ppSigner := &builders.MessageSigner{KeyManager: node1KeyManager, MemberId: node1Id}
 
-		preparedProofWithPFromLeader := builders.CreatePreparedProof(ppSigner, pSigners, blockHeight, view, blockHash)
+		preparedProofWithPFromLeader := builders.CreatePreparedProof(networkId, ppSigner, pSigners, blockHeight, view, blockHash)
 		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithPFromLeader, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with a prepare from the leader")
 	})
@@ -209,7 +210,7 @@ func TestProofsValidator(t *testing.T) {
 			{KeyManager: node2KeyManager, MemberId: node2Id},
 			{KeyManager: node1KeyManager, MemberId: node1Id},
 		}
-		preparedProofWithDuplicatePSenderId := builders.CreatePreparedProof(leaderMessageSigner, pSigners, blockHeight, view, blockHash)
+		preparedProofWithDuplicatePSenderId := builders.CreatePreparedProof(networkId, leaderMessageSigner, pSigners, blockHeight, view, blockHash)
 		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithDuplicatePSenderId, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with duplicate sender Id")
 	})
