@@ -25,7 +25,7 @@ func Test2fPlus1ViewChangeToBeElected(t *testing.T) {
 		node3 := h.net.Nodes[3]
 
 		// hang the leader (node0)
-		h.net.WaitForNodeToRequestNewBlock(node0)
+		h.net.WaitForNodeToRequestNewBlock(ctx, node0)
 		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
 
 		// manually cause new-view with 3 view-changes
@@ -37,14 +37,14 @@ func Test2fPlus1ViewChangeToBeElected(t *testing.T) {
 		node1.Communication.OnRemoteMessage(ctx, node3VCMessage.ToConsensusRawMessage())
 
 		// now that we caused node1 to be the new leader, he'll ask for a new block (block2)
-		h.net.WaitForNodeToRequestNewBlock(node1)
-		h.net.ResumeNodeRequestNewBlock(node1)
+		h.net.WaitForNodeToRequestNewBlock(ctx, node1)
+		h.net.ResumeNodeRequestNewBlock(ctx, node1)
 
 		// release the hanged the leader (node0)
-		h.net.ResumeNodeRequestNewBlock(node0)
+		h.net.ResumeNodeRequestNewBlock(ctx, node0)
 
 		// make sure that we're on block2
-		h.net.WaitForAllNodesToCommitBlock(block2)
+		h.net.WaitForAllNodesToCommitBlock(ctx, block2)
 	})
 }
 
@@ -60,27 +60,27 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 		node1 := h.net.Nodes[1]
 
 		// processing block1, should be agreed by all nodes
-		h.net.WaitForNodeToRequestNewBlock(node0)
-		h.net.ResumeNodeRequestNewBlock(node0)
-		h.net.WaitForAllNodesToCommitBlock(block1)
+		h.net.WaitForNodeToRequestNewBlock(ctx, node0)
+		h.net.ResumeNodeRequestNewBlock(ctx, node0)
+		h.net.WaitForAllNodesToCommitBlock(ctx, block1)
 
 		// processing block 2
-		h.net.WaitForNodeToRequestNewBlock(node0)
+		h.net.WaitForNodeToRequestNewBlock(ctx, node0)
 		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
 		// selection node 1 as the leader (dropping block2)
-		h.net.Nodes[0].TriggerElection()
-		h.net.Nodes[1].TriggerElection()
-		h.net.Nodes[2].TriggerElection()
-		h.net.Nodes[3].TriggerElection()
+		h.net.Nodes[0].TriggerElection(ctx)
+		h.net.Nodes[1].TriggerElection(ctx)
+		h.net.Nodes[2].TriggerElection(ctx)
+		h.net.Nodes[3].TriggerElection(ctx)
 
 		node0.Communication.ClearOutgoingWhitelist()
 
-		h.net.WaitForNodeToRequestNewBlock(node1)
-		h.net.ResumeNodeRequestNewBlock(node0)
+		h.net.WaitForNodeToRequestNewBlock(ctx, node1)
+		h.net.ResumeNodeRequestNewBlock(ctx, node0)
 
 		// processing block 3
-		h.net.ResumeNodeRequestNewBlock(node1)
-		h.net.WaitForAllNodesToCommitBlock(block3)
+		h.net.ResumeNodeRequestNewBlock(ctx, node1)
+		h.net.WaitForAllNodesToCommitBlock(ctx, block3)
 	})
 }
 
@@ -92,21 +92,21 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 		node2 := h.net.Nodes[2]
 		node3 := h.net.Nodes[3]
 
-		h.net.WaitForNodeToRequestNewBlock(node0)
+		h.net.WaitForNodeToRequestNewBlock(ctx, node0)
 		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
 
 		// selection node 1 as the leader
-		node0.TriggerElection()
-		node1.TriggerElection()
-		node2.TriggerElection()
-		node3.TriggerElection()
+		node0.TriggerElection(ctx)
+		node1.TriggerElection(ctx)
+		node2.TriggerElection(ctx)
+		node3.TriggerElection(ctx)
 
-		h.net.ResumeNodeRequestNewBlock(node0)
-		h.net.WaitForNodeToRequestNewBlock(node1)
+		h.net.ResumeNodeRequestNewBlock(ctx, node0)
+		h.net.WaitForNodeToRequestNewBlock(ctx, node1)
 		node0.Communication.ClearOutgoingWhitelist()
 
-		h.net.ResumeNodeRequestNewBlock(node1)
-		h.net.WaitForAllNodesToCommitTheSameBlock()
+		h.net.ResumeNodeRequestNewBlock(ctx, node1)
+		h.net.WaitForAllNodesToCommitTheSameBlock(ctx)
 
 		require.Equal(t, 1, node0.Communication.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))
 		require.Equal(t, 1, node2.Communication.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))
@@ -127,7 +127,7 @@ func TestNotCountingViewChangeFromTheSameNode(t *testing.T) {
 		node2 := h.net.Nodes[2]
 
 		// hang the leader (node0)
-		h.net.WaitForNodeToRequestNewBlock(node0)
+		h.net.WaitForNodeToRequestNewBlock(ctx, node0)
 
 		// sending only 4 view-change from the same node
 		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
@@ -151,7 +151,7 @@ func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 		node2 := h.net.Nodes[2]
 
 		// hang the leader (node0)
-		h.net.WaitForNodeToRequestNewBlock(node0)
+		h.net.WaitForNodeToRequestNewBlock(ctx, node0)
 
 		// sending only 2 view-change (not enough to be elected)
 		node0VCMessage := builders.AViewChangeMessage(node0.KeyManager, node0.MemberId, 1, 1, nil)
@@ -160,10 +160,10 @@ func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 		node1.Communication.OnRemoteMessage(ctx, node2VCMessage.ToConsensusRawMessage())
 
 		// release the hanged the leader (node0)
-		h.net.ResumeNodeRequestNewBlock(node0)
+		h.net.ResumeNodeRequestNewBlock(ctx, node0)
 
 		// make sure that we're on block2
-		h.net.WaitForAllNodesToCommitBlock(block2)
+		h.net.WaitForAllNodesToCommitBlock(ctx, block2)
 	})
 }
 
@@ -180,38 +180,38 @@ func TestLeaderCircularOrdering(t *testing.T) {
 		h.net.Nodes[2].BlockUtils.ValidationResult = false
 		h.net.Nodes[3].BlockUtils.ValidationResult = false
 
-		h.net.WaitForNodeToRequestNewBlock(h.net.Nodes[0])
+		h.net.WaitForNodeToRequestNewBlock(ctx, h.net.Nodes[0])
 
 		// selecting node 1 as the leader
-		h.net.Nodes[0].TriggerElection()
-		h.net.Nodes[2].TriggerElection()
-		h.net.Nodes[3].TriggerElection()
+		h.net.Nodes[0].TriggerElection(ctx)
+		h.net.Nodes[2].TriggerElection(ctx)
+		h.net.Nodes[3].TriggerElection(ctx)
 
-		h.net.ResumeNodeRequestNewBlock(h.net.Nodes[0])
-		h.net.WaitForNodeToRequestNewBlock(h.net.Nodes[1])
+		h.net.ResumeNodeRequestNewBlock(ctx, h.net.Nodes[0])
+		h.net.WaitForNodeToRequestNewBlock(ctx, h.net.Nodes[1])
 
 		// selecting node 2 as the leader
-		h.net.Nodes[0].TriggerElection()
-		h.net.Nodes[1].TriggerElection()
-		h.net.Nodes[3].TriggerElection()
+		h.net.Nodes[0].TriggerElection(ctx)
+		h.net.Nodes[1].TriggerElection(ctx)
+		h.net.Nodes[3].TriggerElection(ctx)
 
-		h.net.ResumeNodeRequestNewBlock(h.net.Nodes[1])
-		h.net.WaitForNodeToRequestNewBlock(h.net.Nodes[2])
+		h.net.ResumeNodeRequestNewBlock(ctx, h.net.Nodes[1])
+		h.net.WaitForNodeToRequestNewBlock(ctx, h.net.Nodes[2])
 
 		// selecting node 3 as the leader
-		h.net.Nodes[0].TriggerElection()
-		h.net.Nodes[1].TriggerElection()
-		h.net.Nodes[2].TriggerElection()
+		h.net.Nodes[0].TriggerElection(ctx)
+		h.net.Nodes[1].TriggerElection(ctx)
+		h.net.Nodes[2].TriggerElection(ctx)
 
-		h.net.ResumeNodeRequestNewBlock(h.net.Nodes[2])
-		h.net.WaitForNodeToRequestNewBlock(h.net.Nodes[3])
+		h.net.ResumeNodeRequestNewBlock(ctx, h.net.Nodes[2])
+		h.net.WaitForNodeToRequestNewBlock(ctx, h.net.Nodes[3])
 
 		// back to node 0 as the leader
-		h.net.Nodes[1].TriggerElection()
-		h.net.Nodes[2].TriggerElection()
-		h.net.Nodes[3].TriggerElection()
+		h.net.Nodes[1].TriggerElection(ctx)
+		h.net.Nodes[2].TriggerElection(ctx)
+		h.net.Nodes[3].TriggerElection(ctx)
 
-		h.net.ResumeNodeRequestNewBlock(h.net.Nodes[3])
-		h.net.WaitForNodeToRequestNewBlock(h.net.Nodes[0])
+		h.net.ResumeNodeRequestNewBlock(ctx, h.net.Nodes[3])
+		h.net.WaitForNodeToRequestNewBlock(ctx, h.net.Nodes[0])
 	})
 }

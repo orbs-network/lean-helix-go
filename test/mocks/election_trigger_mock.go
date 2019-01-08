@@ -28,12 +28,16 @@ func (et *ElectionTriggerMock) ElectionChannel() chan func(ctx context.Context) 
 	return et.electionChannel
 }
 
-func (et *ElectionTriggerMock) ManualTrigger() {
+func (et *ElectionTriggerMock) ManualTrigger(ctx context.Context) {
 	go func() {
-		et.electionChannel <- func(ctx context.Context) {
+		select {
+		case <-ctx.Done():
+			return
+		case et.electionChannel <- func(ctx context.Context) {
 			if et.cb != nil {
 				et.cb(ctx, et.blockHeight, et.view)
 			}
+		}:
 		}
 	}()
 }

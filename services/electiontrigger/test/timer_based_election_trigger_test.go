@@ -14,8 +14,12 @@ func buildElectionTrigger(ctx context.Context, timeout time.Duration) *electiont
 	et := electiontrigger.NewTimerBasedElectionTrigger(timeout)
 	go func() {
 		for {
-			trigger := <-et.ElectionChannel()
-			trigger(ctx)
+			select {
+			case <-ctx.Done():
+				return
+			case trigger := <-et.ElectionChannel():
+				trigger(ctx)
+			}
 		}
 	}()
 

@@ -47,8 +47,8 @@ func (node *Node) GetBlockProofAt(height primitives.BlockHeight) []byte {
 	return node.blockChain.GetBlockProofAt(height)
 }
 
-func (node *Node) TriggerElection() {
-	node.ElectionTrigger.ManualTrigger()
+func (node *Node) TriggerElection(ctx context.Context) {
+	node.ElectionTrigger.ManualTrigger(ctx)
 }
 
 func (node *Node) TriggerElectionSync(ctx context.Context) {
@@ -57,10 +57,20 @@ func (node *Node) TriggerElectionSync(ctx context.Context) {
 
 func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, blockProof []byte) {
 	node.blockChain.AppendBlockToChain(block, blockProof)
-	node.NodeStateChannel <- &NodeState{
+
+	nodeState := &NodeState{
 		block:           block,
 		validationCount: node.BlockUtils.ValidationCounter,
 	}
+
+	select {
+	case <-ctx.Done():
+		return
+
+	case node.NodeStateChannel <- nodeState:
+		return
+	}
+
 }
 
 func (node *Node) StartConsensus(ctx context.Context) {

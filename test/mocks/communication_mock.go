@@ -65,7 +65,11 @@ func (g *CommunicationMock) SendConsensusMessage(ctx context.Context, targets []
 	g.statsSentMessages = append(g.statsSentMessages, message)
 	for _, target := range targets {
 		channel := g.getOutgoingChannelByTarget(ctx, target)
-		channel <- &outgoingMessage{target, message}
+		select {
+		case <-ctx.Done():
+			return
+		case channel <- &outgoingMessage{target, message}:
+		}
 	}
 }
 

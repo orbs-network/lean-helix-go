@@ -25,7 +25,7 @@ func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
 
 		net.StartConsensus(ctx)
 
-		net.WaitForNodesToCommitABlock(net.Nodes[0], net.Nodes[1], net.Nodes[2])
+		net.WaitForNodesToCommitABlock(ctx, net.Nodes[0], net.Nodes[1], net.Nodes[2])
 	})
 }
 
@@ -43,7 +43,7 @@ func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 
 		net.StartConsensus(ctx)
 
-		net.WaitForNodesToCommitABlock(net.Nodes[0], net.Nodes[3], net.Nodes[4], net.Nodes[5], net.Nodes[6])
+		net.WaitForNodesToCommitABlock(ctx, net.Nodes[0], net.Nodes[3], net.Nodes[4], net.Nodes[5], net.Nodes[6])
 	})
 }
 
@@ -67,7 +67,7 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 		net.StartConsensus(ctx)
 
 		// node0, node1 and node2 should reach consensus
-		net.WaitForNodesToCommitASpecificBlock(block1, node0, node1, node2)
+		net.WaitForNodesToCommitASpecificBlock(ctx, block1, node0, node1, node2)
 
 		node0.StartConsensus(ctx)
 	})
@@ -90,7 +90,7 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 		net.NodesPauseOnRequestNewBlock(node0)
 		net.StartConsensus(ctx)
 
-		net.WaitForNodeToRequestNewBlock(node0)
+		net.WaitForNodeToRequestNewBlock(ctx, node0)
 
 		// fake a preprepare message from node3 (byzantineNode) that points to a unrelated block (Should be ignored)
 		ppm := builders.APreprepareMessage(byzantineNode.KeyManager, byzantineNode.MemberId, 1, 1, fakeBlock)
@@ -99,9 +99,9 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 		byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
 		byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
 
-		net.ResumeNodeRequestNewBlock(node0)
+		net.ResumeNodeRequestNewBlock(ctx, node0)
 
-		net.WaitForAllNodesToCommitBlock(goodBlock)
+		net.WaitForAllNodesToCommitBlock(ctx, goodBlock)
 	})
 }
 
@@ -148,11 +148,11 @@ func TestThatAByzantineLeaderCanNotCauseAFork(t *testing.T) {
 		node2.Communication.SetIncomingWhitelist([]primitives.MemberId{})
 
 		// selection node 1 as the leader
-		node0.TriggerElection()
-		node1.TriggerElection()
-		node2.TriggerElection()
-		node3.TriggerElection()
+		node0.TriggerElection(ctx)
+		node1.TriggerElection(ctx)
+		node2.TriggerElection(ctx)
+		node3.TriggerElection(ctx)
 
-		net.WaitForNodesToCommitASpecificBlock(block2, node0, node1, node3)
+		net.WaitForNodesToCommitASpecificBlock(ctx, block2, node0, node1, node3)
 	})
 }

@@ -47,7 +47,7 @@ func NewMockBlockUtils(blocksPool *BlocksPool) *MockBlockUtils {
 
 func (b *MockBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
 	if b.PauseOnRequestNewBlock {
-		b.RequestNewBlockSns.SignalAndStop()
+		b.RequestNewBlockSns.SignalAndStop(ctx)
 	}
 
 	block := b.blocksPool.PopBlock()
@@ -66,7 +66,7 @@ func (b *MockBlockUtils) CounterOfValidation() int {
 func (b *MockBlockUtils) ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, block interfaces.Block, blockHash primitives.BlockHash, prevBlock interfaces.Block) bool {
 	b.ValidationCounter++
 	if b.PauseOnValidation {
-		b.ValidationSns.SignalAndStop()
+		b.ValidationSns.SignalAndStop(ctx)
 	}
 
 	return b.ValidationResult

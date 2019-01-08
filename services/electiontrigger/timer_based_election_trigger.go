@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func setTimeout(ctx context.Context, cb func(), timeout time.Duration) chan bool {
+func setTimeout(ctx context.Context, cb func(ctx context.Context), timeout time.Duration) chan bool {
 	timer := time.NewTimer(timeout)
 	clear := make(chan bool)
 
@@ -17,7 +17,7 @@ func setTimeout(ctx context.Context, cb func(), timeout time.Duration) chan bool
 			case <-ctx.Done():
 				return
 			case <-timer.C:
-				cb()
+				cb(ctx)
 				return
 			case <-clear:
 				timer.Stop()
@@ -54,7 +54,7 @@ func (t *TimerBasedElectionTrigger) RegisterOnElection(ctx context.Context, bloc
 		t.firstTime = false
 		t.view = view
 		t.blockHeight = blockHeight
-		t.stop()
+		t.stop(ctx)
 		t.clearTimer = setTimeout(ctx, t.onTimeout, t.calcTimeout(view))
 	}
 }
@@ -63,10 +63,14 @@ func (t *TimerBasedElectionTrigger) ElectionChannel() chan func(ctx context.Cont
 	return t.electionChannel
 }
 
-func (t *TimerBasedElectionTrigger) stop() {
+func (t *TimerBasedElectionTrigger) stop(ctx context.Context) {
 	if t.clearTimer != nil {
-		t.clearTimer <- true
-		t.clearTimer = nil
+		select {
+		case <-ctx.Done():
+			return
+		case t.clearTimer <- true:
+			t.clearTimer = nil
+		}
 	}
 }
 
@@ -76,9 +80,13 @@ func (t *TimerBasedElectionTrigger) trigger(ctx context.Context) {
 	}
 }
 
-func (t *TimerBasedElectionTrigger) onTimeout() {
+func (t *TimerBasedElectionTrigger) onTimeout(ctx context.Context) {
 	t.clearTimer = nil
-	t.electionChannel <- t.trigger
+	select {
+	case <-ctx.Done():
+		return
+	case t.electionChannel <- t.trigger:
+	}
 }
 
 func (t *TimerBasedElectionTrigger) calcTimeout(view primitives.View) time.Duration {

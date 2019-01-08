@@ -27,7 +27,7 @@ func TestCallingCallback(t *testing.T) {
 		}
 		et.RegisterOnElection(ctx, expectedHeight, expectedView, cb)
 
-		go et.ManualTrigger()
+		go et.ManualTrigger(ctx)
 		trigger := <-et.ElectionChannel()
 		trigger(ctx)
 
@@ -40,7 +40,7 @@ func TestIgnoreEmptyCallback(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		et := mocks.NewMockElectionTrigger()
 
-		go et.ManualTrigger()
+		go et.ManualTrigger(ctx)
 		trigger := <-et.ElectionChannel()
 		trigger(ctx)
 	})

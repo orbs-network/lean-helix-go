@@ -625,7 +625,7 @@ func TestViewChangeMessageWithoutQuorumInThePreparedProof(t *testing.T) {
 			PreprepareMessage: builders.APreprepareMessage(h.getMyKeyManager(), h.myMemberId, 1, 0, block2),
 			PrepareMessages: []*interfaces.PrepareMessage{
 				builders.APrepareMessage(h.getMemberKeyManager(1), h.getNodeMemberId(1), 1, 0, block2),
-			}, // <- not enough
+			}, // not enough
 		}
 
 		msg := builders.AViewChangeMessage(h.getMyKeyManager(), h.myMemberId, 10, 4, preparedMessages)
@@ -646,7 +646,7 @@ func TestViewChangeMessageWithAnInvalidPreparedProof(t *testing.T) {
 
 		preparedMessages := &preparedmessages.PreparedMessages{
 			PreprepareMessage: builders.APreprepareMessage(h.getMyKeyManager(), h.myMemberId, 1, 0, block2),
-			PrepareMessages:   nil, // <- BAD
+			PrepareMessages:   nil, // BAD
 		}
 
 		msg := builders.AViewChangeMessage(h.getMyKeyManager(), h.myMemberId, 10, 4, preparedMessages)

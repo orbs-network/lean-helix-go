@@ -24,6 +24,6 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 	}
 }
 
-func (h *harness) TriggerElection() {
-	h.net.TriggerElection()
+func (h *harness) TriggerElection(ctx context.Context) {
+	h.net.TriggerElection(ctx)
 }
