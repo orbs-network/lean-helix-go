@@ -14,7 +14,7 @@ type MessageSigner struct {
 }
 
 func CreatePreparedProof(
-	networkId primitives.NetworkId,
+	instanceId primitives.InstanceId,
 	ppSigner *MessageSigner,
 	pSigners []*MessageSigner,
 	height primitives.BlockHeight,
@@ -32,7 +32,7 @@ func CreatePreparedProof(
 	} else {
 		pBlockRef = &protocol.BlockRefBuilder{
 			MessageType: protocol.LEAN_HELIX_PREPARE,
-			NetworkId:   networkId,
+			InstanceId:  instanceId,
 			BlockHeight: height,
 			View:        view,
 			BlockHash:   blockHash,
@@ -51,7 +51,7 @@ func CreatePreparedProof(
 	} else {
 		ppBlockRef = &protocol.BlockRefBuilder{
 			MessageType: protocol.LEAN_HELIX_PREPREPARE,
-			NetworkId:   networkId,
+			InstanceId:  instanceId,
 			BlockHeight: height,
 			View:        view,
 			BlockHash:   blockHash,

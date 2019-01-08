@@ -1330,7 +1330,7 @@ func SenderSignatureBuilderFromRaw(raw []byte) *SenderSignatureBuilder {
 // reader
 
 type BlockRef struct {
-	// NetworkId primitives.NetworkId
+	// InstanceId primitives.InstanceId
 	// MessageType MessageType
 	// BlockHeight primitives.BlockHeight
 	// View primitives.View
@@ -1345,7 +1345,7 @@ func (x *BlockRef) String() string {
 	if x == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("{NetworkId:%s,MessageType:%s,BlockHeight:%s,View:%s,BlockHash:%s,}", x.StringNetworkId(), x.StringMessageType(), x.StringBlockHeight(), x.StringView(), x.StringBlockHash())
+	return fmt.Sprintf("{InstanceId:%s,MessageType:%s,BlockHeight:%s,View:%s,BlockHash:%s,}", x.StringInstanceId(), x.StringMessageType(), x.StringBlockHeight(), x.StringView(), x.StringBlockHash())
 }
 
 var _BlockRef_Scheme = []membuffers.FieldType{membuffers.TypeUint64, membuffers.TypeUint16, membuffers.TypeUint64, membuffers.TypeUint64, membuffers.TypeBytes}
@@ -1375,20 +1375,20 @@ func (x *BlockRef) Equal(y *BlockRef) bool {
 	return bytes.Equal(x.Raw(), y.Raw())
 }
 
-func (x *BlockRef) NetworkId() primitives.NetworkId {
-	return primitives.NetworkId(x._message.GetUint64(0))
+func (x *BlockRef) InstanceId() primitives.InstanceId {
+	return primitives.InstanceId(x._message.GetUint64(0))
 }
 
-func (x *BlockRef) RawNetworkId() []byte {
+func (x *BlockRef) RawInstanceId() []byte {
 	return x._message.RawBufferForField(0, 0)
 }
 
-func (x *BlockRef) MutateNetworkId(v primitives.NetworkId) error {
+func (x *BlockRef) MutateInstanceId(v primitives.InstanceId) error {
 	return x._message.SetUint64(0, uint64(v))
 }
 
-func (x *BlockRef) StringNetworkId() string {
-	return fmt.Sprintf("%s", x.NetworkId())
+func (x *BlockRef) StringInstanceId() string {
+	return fmt.Sprintf("%s", x.InstanceId())
 }
 
 func (x *BlockRef) MessageType() MessageType {
@@ -1458,7 +1458,7 @@ func (x *BlockRef) StringBlockHash() string {
 // builder
 
 type BlockRefBuilder struct {
-	NetworkId   primitives.NetworkId
+	InstanceId  primitives.InstanceId
 	MessageType MessageType
 	BlockHeight primitives.BlockHeight
 	View        primitives.View
@@ -1485,7 +1485,7 @@ func (w *BlockRefBuilder) Write(buf []byte) (err error) {
 		return w._builder.WriteOverrideWithRawBuffer(buf, w._overrideWithRawBuffer)
 	}
 	w._builder.Reset()
-	w._builder.WriteUint64(buf, uint64(w.NetworkId))
+	w._builder.WriteUint64(buf, uint64(w.InstanceId))
 	w._builder.WriteUint16(buf, uint16(w.MessageType))
 	w._builder.WriteUint64(buf, uint64(w.BlockHeight))
 	w._builder.WriteUint64(buf, uint64(w.View))
@@ -1503,7 +1503,7 @@ func (w *BlockRefBuilder) HexDump(prefix string, offsetFromStart membuffers.Offs
 		}
 	}()
 	w._builder.Reset()
-	w._builder.HexDumpUint64(prefix, offsetFromStart, "BlockRef.NetworkId", uint64(w.NetworkId))
+	w._builder.HexDumpUint64(prefix, offsetFromStart, "BlockRef.InstanceId", uint64(w.InstanceId))
 	w._builder.HexDumpUint16(prefix, offsetFromStart, "BlockRef.MessageType", uint16(w.MessageType))
 	w._builder.HexDumpUint64(prefix, offsetFromStart, "BlockRef.BlockHeight", uint64(w.BlockHeight))
 	w._builder.HexDumpUint64(prefix, offsetFromStart, "BlockRef.View", uint64(w.View))
@@ -1544,7 +1544,7 @@ func BlockRefBuilderFromRaw(raw []byte) *BlockRefBuilder {
 // reader
 
 type ViewChangeHeader struct {
-	// NetworkId primitives.NetworkId
+	// InstanceId primitives.InstanceId
 	// MessageType MessageType
 	// BlockHeight primitives.BlockHeight
 	// View primitives.View
@@ -1559,7 +1559,7 @@ func (x *ViewChangeHeader) String() string {
 	if x == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("{NetworkId:%s,MessageType:%s,BlockHeight:%s,View:%s,PreparedProof:%s,}", x.StringNetworkId(), x.StringMessageType(), x.StringBlockHeight(), x.StringView(), x.StringPreparedProof())
+	return fmt.Sprintf("{InstanceId:%s,MessageType:%s,BlockHeight:%s,View:%s,PreparedProof:%s,}", x.StringInstanceId(), x.StringMessageType(), x.StringBlockHeight(), x.StringView(), x.StringPreparedProof())
 }
 
 var _ViewChangeHeader_Scheme = []membuffers.FieldType{membuffers.TypeUint64, membuffers.TypeUint16, membuffers.TypeUint64, membuffers.TypeUint64, membuffers.TypeMessage}
@@ -1589,20 +1589,20 @@ func (x *ViewChangeHeader) Equal(y *ViewChangeHeader) bool {
 	return bytes.Equal(x.Raw(), y.Raw())
 }
 
-func (x *ViewChangeHeader) NetworkId() primitives.NetworkId {
-	return primitives.NetworkId(x._message.GetUint64(0))
+func (x *ViewChangeHeader) InstanceId() primitives.InstanceId {
+	return primitives.InstanceId(x._message.GetUint64(0))
 }
 
-func (x *ViewChangeHeader) RawNetworkId() []byte {
+func (x *ViewChangeHeader) RawInstanceId() []byte {
 	return x._message.RawBufferForField(0, 0)
 }
 
-func (x *ViewChangeHeader) MutateNetworkId(v primitives.NetworkId) error {
+func (x *ViewChangeHeader) MutateInstanceId(v primitives.InstanceId) error {
 	return x._message.SetUint64(0, uint64(v))
 }
 
-func (x *ViewChangeHeader) StringNetworkId() string {
-	return fmt.Sprintf("%s", x.NetworkId())
+func (x *ViewChangeHeader) StringInstanceId() string {
+	return fmt.Sprintf("%s", x.InstanceId())
 }
 
 func (x *ViewChangeHeader) MessageType() MessageType {
@@ -1673,7 +1673,7 @@ func (x *ViewChangeHeader) StringPreparedProof() string {
 // builder
 
 type ViewChangeHeaderBuilder struct {
-	NetworkId     primitives.NetworkId
+	InstanceId    primitives.InstanceId
 	MessageType   MessageType
 	BlockHeight   primitives.BlockHeight
 	View          primitives.View
@@ -1700,7 +1700,7 @@ func (w *ViewChangeHeaderBuilder) Write(buf []byte) (err error) {
 		return w._builder.WriteOverrideWithRawBuffer(buf, w._overrideWithRawBuffer)
 	}
 	w._builder.Reset()
-	w._builder.WriteUint64(buf, uint64(w.NetworkId))
+	w._builder.WriteUint64(buf, uint64(w.InstanceId))
 	w._builder.WriteUint16(buf, uint16(w.MessageType))
 	w._builder.WriteUint64(buf, uint64(w.BlockHeight))
 	w._builder.WriteUint64(buf, uint64(w.View))
@@ -1721,7 +1721,7 @@ func (w *ViewChangeHeaderBuilder) HexDump(prefix string, offsetFromStart membuff
 		}
 	}()
 	w._builder.Reset()
-	w._builder.HexDumpUint64(prefix, offsetFromStart, "ViewChangeHeader.NetworkId", uint64(w.NetworkId))
+	w._builder.HexDumpUint64(prefix, offsetFromStart, "ViewChangeHeader.InstanceId", uint64(w.InstanceId))
 	w._builder.HexDumpUint16(prefix, offsetFromStart, "ViewChangeHeader.MessageType", uint16(w.MessageType))
 	w._builder.HexDumpUint64(prefix, offsetFromStart, "ViewChangeHeader.BlockHeight", uint64(w.BlockHeight))
 	w._builder.HexDumpUint64(prefix, offsetFromStart, "ViewChangeHeader.View", uint64(w.View))
@@ -2012,7 +2012,7 @@ func PreparedProofBuilderFromRaw(raw []byte) *PreparedProofBuilder {
 // reader
 
 type NewViewHeader struct {
-	// NetworkId primitives.NetworkId
+	// InstanceId primitives.InstanceId
 	// MessageType MessageType
 	// BlockHeight primitives.BlockHeight
 	// View primitives.View
@@ -2027,7 +2027,7 @@ func (x *NewViewHeader) String() string {
 	if x == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("{NetworkId:%s,MessageType:%s,BlockHeight:%s,View:%s,ViewChangeConfirmations:%s,}", x.StringNetworkId(), x.StringMessageType(), x.StringBlockHeight(), x.StringView(), x.StringViewChangeConfirmations())
+	return fmt.Sprintf("{InstanceId:%s,MessageType:%s,BlockHeight:%s,View:%s,ViewChangeConfirmations:%s,}", x.StringInstanceId(), x.StringMessageType(), x.StringBlockHeight(), x.StringView(), x.StringViewChangeConfirmations())
 }
 
 var _NewViewHeader_Scheme = []membuffers.FieldType{membuffers.TypeUint64, membuffers.TypeUint16, membuffers.TypeUint64, membuffers.TypeUint64, membuffers.TypeMessageArray}
@@ -2057,20 +2057,20 @@ func (x *NewViewHeader) Equal(y *NewViewHeader) bool {
 	return bytes.Equal(x.Raw(), y.Raw())
 }
 
-func (x *NewViewHeader) NetworkId() primitives.NetworkId {
-	return primitives.NetworkId(x._message.GetUint64(0))
+func (x *NewViewHeader) InstanceId() primitives.InstanceId {
+	return primitives.InstanceId(x._message.GetUint64(0))
 }
 
-func (x *NewViewHeader) RawNetworkId() []byte {
+func (x *NewViewHeader) RawInstanceId() []byte {
 	return x._message.RawBufferForField(0, 0)
 }
 
-func (x *NewViewHeader) MutateNetworkId(v primitives.NetworkId) error {
+func (x *NewViewHeader) MutateInstanceId(v primitives.InstanceId) error {
 	return x._message.SetUint64(0, uint64(v))
 }
 
-func (x *NewViewHeader) StringNetworkId() string {
-	return fmt.Sprintf("%s", x.NetworkId())
+func (x *NewViewHeader) StringInstanceId() string {
+	return fmt.Sprintf("%s", x.InstanceId())
 }
 
 func (x *NewViewHeader) MessageType() MessageType {
@@ -2158,7 +2158,7 @@ func (x *NewViewHeader) StringViewChangeConfirmations() (res string) {
 // builder
 
 type NewViewHeaderBuilder struct {
-	NetworkId               primitives.NetworkId
+	InstanceId              primitives.InstanceId
 	MessageType             MessageType
 	BlockHeight             primitives.BlockHeight
 	View                    primitives.View
@@ -2193,7 +2193,7 @@ func (w *NewViewHeaderBuilder) Write(buf []byte) (err error) {
 		return w._builder.WriteOverrideWithRawBuffer(buf, w._overrideWithRawBuffer)
 	}
 	w._builder.Reset()
-	w._builder.WriteUint64(buf, uint64(w.NetworkId))
+	w._builder.WriteUint64(buf, uint64(w.InstanceId))
 	w._builder.WriteUint16(buf, uint16(w.MessageType))
 	w._builder.WriteUint64(buf, uint64(w.BlockHeight))
 	w._builder.WriteUint64(buf, uint64(w.View))
@@ -2214,7 +2214,7 @@ func (w *NewViewHeaderBuilder) HexDump(prefix string, offsetFromStart membuffers
 		}
 	}()
 	w._builder.Reset()
-	w._builder.HexDumpUint64(prefix, offsetFromStart, "NewViewHeader.NetworkId", uint64(w.NetworkId))
+	w._builder.HexDumpUint64(prefix, offsetFromStart, "NewViewHeader.InstanceId", uint64(w.InstanceId))
 	w._builder.HexDumpUint16(prefix, offsetFromStart, "NewViewHeader.MessageType", uint16(w.MessageType))
 	w._builder.HexDumpUint64(prefix, offsetFromStart, "NewViewHeader.BlockHeight", uint64(w.BlockHeight))
 	w._builder.HexDumpUint64(prefix, offsetFromStart, "NewViewHeader.View", uint64(w.View))

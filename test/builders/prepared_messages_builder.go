@@ -12,18 +12,18 @@ type Sender interface {
 }
 
 func CreatePreparedMessages(
-	networkId primitives.NetworkId,
+	instanceId primitives.InstanceId,
 	leader Sender,
 	members []Sender,
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
 	block interfaces.Block) *preparedmessages.PreparedMessages {
 
-	PPMessage := APreprepareMessage(networkId, leader.GetKeyManager(), leader.GetMemberId(), blockHeight, view, block)
+	PPMessage := APreprepareMessage(instanceId, leader.GetKeyManager(), leader.GetMemberId(), blockHeight, view, block)
 	PMessages := make([]*interfaces.PrepareMessage, len(members))
 
 	for i, member := range members {
-		PMessages[i] = APrepareMessage(networkId, member.GetKeyManager(), member.GetMemberId(), blockHeight, view, block)
+		PMessages[i] = APrepareMessage(instanceId, member.GetKeyManager(), member.GetMemberId(), blockHeight, view, block)
 	}
 
 	return &preparedmessages.PreparedMessages{

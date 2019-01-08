@@ -9,7 +9,7 @@ import (
 )
 
 type TestNetworkBuilder struct {
-	networkId              primitives.NetworkId
+	instanceId             primitives.InstanceId
 	NodeCount              int
 	logToConsole           bool
 	customNodeBuilders     []*NodeBuilder
@@ -30,8 +30,8 @@ func (tb *TestNetworkBuilder) WithCustomNodeBuilder(nodeBuilder *NodeBuilder) *T
 	return tb
 }
 
-func (builder *TestNetworkBuilder) InNetwork(networkId primitives.NetworkId) *TestNetworkBuilder {
-	builder.networkId = networkId
+func (builder *TestNetworkBuilder) InNetwork(instanceId primitives.InstanceId) *TestNetworkBuilder {
+	builder.instanceId = instanceId
 	return builder
 }
 
@@ -56,7 +56,7 @@ func (tb *TestNetworkBuilder) Build() *TestNetwork {
 	blocksPool := tb.buildBlocksPool()
 	discovery := mocks.NewDiscovery()
 	nodes := tb.createNodes(discovery, blocksPool, tb.logToConsole)
-	testNetwork := NewTestNetwork(tb.networkId, discovery)
+	testNetwork := NewTestNetwork(tb.instanceId, discovery)
 	testNetwork.RegisterNodes(nodes)
 	return testNetwork
 }
@@ -86,7 +86,7 @@ func (tb *TestNetworkBuilder) buildNode(
 	membership := mocks.NewMockMembership(memberId, discovery, tb.orderCommitteeByHeight)
 
 	b := nodeBuilder.
-		InNetwork(tb.networkId).
+		AsInstanceId(tb.instanceId).
 		CommunicatesVia(communicationInstance).
 		ThatIsPartOf(membership).
 		WithBlocksPool(blocksPool).
@@ -144,6 +144,6 @@ func ABasicTestNetwork() *TestNetwork {
 }
 
 func ATestNetwork(countOfNodes int, blocksPool ...interfaces.Block) *TestNetwork {
-	networkId := primitives.NetworkId(rand.Uint64())
-	return NewTestNetworkBuilder().WithNodeCount(countOfNodes).WithBlocks(blocksPool).InNetwork(networkId).Build()
+	instanceId := primitives.InstanceId(rand.Uint64())
+	return NewTestNetworkBuilder().WithNodeCount(countOfNodes).WithBlocks(blocksPool).InNetwork(instanceId).Build()
 }

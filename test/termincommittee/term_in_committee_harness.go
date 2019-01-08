@@ -19,7 +19,7 @@ import (
 
 type harness struct {
 	t                 *testing.T
-	networkId         primitives.NetworkId
+	instanceId        primitives.InstanceId
 	myMemberId        primitives.MemberId
 	keyManager        *mocks.MockKeyManager
 	myNode            *network.Node
@@ -38,12 +38,12 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 	prevBlock := myNode.GetLatestBlock()
 	blockHeight := blockheight.GetBlockHeight(prevBlock) + 1
 	committeeMembers := termConfig.Membership.RequestOrderedCommittee(ctx, blockHeight, uint64(12345))
-	messageFactory := messagesfactory.NewMessageFactory(termConfig.NetworkId, termConfig.KeyManager, termConfig.Membership.MyMemberId(), 0)
+	messageFactory := messagesfactory.NewMessageFactory(termConfig.InstanceId, termConfig.KeyManager, termConfig.Membership.MyMemberId(), 0)
 	termInCommittee := termincommittee.NewTermInCommittee(ctx, termConfig, messageFactory, committeeMembers, blockHeight, prevBlock, nil)
 
 	return &harness{
 		t:                 t,
-		networkId:         termConfig.NetworkId,
+		instanceId:        termConfig.InstanceId,
 		myMemberId:        myNode.MemberId,
 		myNode:            myNode,
 		net:               net,
@@ -116,7 +116,7 @@ func (h *harness) setMeAsTheLeader(ctx context.Context, blockHeight primitives.B
 
 func (h *harness) receiveViewChange(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	sender := h.net.Nodes[fromNodeIdx]
-	vc := builders.AViewChangeMessage(h.networkId, sender.KeyManager, sender.MemberId, blockHeight, view, nil)
+	vc := builders.AViewChangeMessage(h.instanceId, sender.KeyManager, sender.MemberId, blockHeight, view, nil)
 	h.termInCommittee.HandleViewChange(ctx, vc)
 }
 
@@ -126,7 +126,7 @@ func (h *harness) receiveViewChangeMessage(ctx context.Context, msg *interfaces.
 
 func (h *harness) receivePreprepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	leader := h.net.Nodes[fromNode]
-	ppm := builders.APreprepareMessage(h.networkId, leader.KeyManager, leader.MemberId, blockHeight, view, block)
+	ppm := builders.APreprepareMessage(h.instanceId, leader.KeyManager, leader.MemberId, blockHeight, view, block)
 	h.termInCommittee.HandlePrePrepare(ctx, ppm)
 }
 
@@ -136,13 +136,13 @@ func (h *harness) receivePreprepareMessage(ctx context.Context, ppm *interfaces.
 
 func (h *harness) receivePrepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	sender := h.net.Nodes[fromNode]
-	pm := builders.APrepareMessage(h.networkId, sender.KeyManager, sender.MemberId, blockHeight, view, block)
+	pm := builders.APrepareMessage(h.instanceId, sender.KeyManager, sender.MemberId, blockHeight, view, block)
 	h.termInCommittee.HandlePrepare(ctx, pm)
 }
 
 func (h *harness) createPreprepareMessage(fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block, blockHash primitives.BlockHash) *interfaces.PreprepareMessage {
 	leader := h.net.Nodes[fromNode]
-	messageFactory := messagesfactory.NewMessageFactory(h.networkId, leader.KeyManager, leader.MemberId, 0)
+	messageFactory := messagesfactory.NewMessageFactory(h.instanceId, leader.KeyManager, leader.MemberId, 0)
 	return messageFactory.CreatePreprepareMessage(blockHeight, view, block, blockHash)
 }
 
@@ -161,7 +161,7 @@ func (h *harness) receiveNewView(ctx context.Context, fromNodeIdx int, blockHeig
 		}
 	}
 
-	votes := builders.ASimpleViewChangeVotes(h.networkId, voters, blockHeight, view)
+	votes := builders.ASimpleViewChangeVotes(h.instanceId, voters, blockHeight, view)
 	nvm := builders.
 		NewNewViewBuilder().
 		LeadBy(leaderKeyManager, leaderMemberId).

@@ -93,7 +93,7 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 		net.WaitForNodeToRequestNewBlock(ctx, node0)
 
 		// fake a preprepare message from node3 (byzantineNode) that points to a unrelated block (Should be ignored)
-		ppm := builders.APreprepareMessage(net.NetworkId, byzantineNode.KeyManager, byzantineNode.MemberId, 1, 1, fakeBlock)
+		ppm := builders.APreprepareMessage(net.InstanceId, byzantineNode.KeyManager, byzantineNode.MemberId, 1, 1, fakeBlock)
 		byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
 		byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
 		byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())

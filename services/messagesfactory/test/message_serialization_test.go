@@ -12,14 +12,14 @@ import (
 )
 
 func TestMessageBuilderAndReader(t *testing.T) {
-	networkId := primitives.NetworkId(rand.Uint64())
+	instanceId := primitives.InstanceId(rand.Uint64())
 	height := primitives.BlockHeight(rand.Uint64())
 	view := primitives.View(rand.Uint64())
 	block := mocks.ABlock(interfaces.GenesisBlock)
 	b1 := mocks.ABlock(interfaces.GenesisBlock)
 	memberId := primitives.MemberId("Member Id")
 	mockKeyManager := mocks.NewMockKeyManager(memberId, nil)
-	mf := messagesfactory.NewMessageFactory(networkId, mockKeyManager, memberId, 0)
+	mf := messagesfactory.NewMessageFactory(instanceId, mockKeyManager, memberId, 0)
 
 	t.Run("build and read PreprepareMessage", func(t *testing.T) {
 		ppm := mf.CreatePreprepareMessage(height, view, b1, mocks.CalculateBlockHash(b1))

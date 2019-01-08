@@ -19,7 +19,7 @@ type ConsensusRawMessageConverter interface {
 type ConsensusMessage interface {
 	Serializable
 	ConsensusRawMessageConverter
-	NetworkId() primitives.NetworkId
+	InstanceId() primitives.InstanceId
 	MessageType() protocol.MessageType
 	SenderMemberId() primitives.MemberId
 	BlockHeight() primitives.BlockHeight
@@ -130,8 +130,8 @@ type PreprepareMessage struct {
 	block   Block
 }
 
-func (ppm *PreprepareMessage) NetworkId() primitives.NetworkId {
-	return ppm.content.SignedHeader().NetworkId()
+func (ppm *PreprepareMessage) InstanceId() primitives.InstanceId {
+	return ppm.content.SignedHeader().InstanceId()
 }
 
 func (ppm *PreprepareMessage) MessageType() protocol.MessageType {
@@ -184,8 +184,8 @@ type PrepareMessage struct {
 	content *protocol.PrepareContent
 }
 
-func (pm *PrepareMessage) NetworkId() primitives.NetworkId {
-	return pm.content.SignedHeader().NetworkId()
+func (pm *PrepareMessage) InstanceId() primitives.InstanceId {
+	return pm.content.SignedHeader().InstanceId()
 }
 
 func (pm *PrepareMessage) MessageType() protocol.MessageType {
@@ -230,8 +230,8 @@ type CommitMessage struct {
 	content *protocol.CommitContent
 }
 
-func (cm *CommitMessage) NetworkId() primitives.NetworkId {
-	return cm.content.SignedHeader().NetworkId()
+func (cm *CommitMessage) InstanceId() primitives.InstanceId {
+	return cm.content.SignedHeader().InstanceId()
 }
 
 func (cm *CommitMessage) MessageType() protocol.MessageType {
@@ -277,8 +277,8 @@ type ViewChangeMessage struct {
 	block   Block
 }
 
-func (vcm *ViewChangeMessage) NetworkId() primitives.NetworkId {
-	return vcm.content.SignedHeader().NetworkId()
+func (vcm *ViewChangeMessage) InstanceId() primitives.InstanceId {
+	return vcm.content.SignedHeader().InstanceId()
 }
 
 func (vcm *ViewChangeMessage) MessageType() protocol.MessageType {
@@ -331,8 +331,8 @@ type NewViewMessage struct {
 	block   Block
 }
 
-func (nvm *NewViewMessage) NetworkId() primitives.NetworkId {
-	return nvm.content.SignedHeader().NetworkId()
+func (nvm *NewViewMessage) InstanceId() primitives.InstanceId {
+	return nvm.content.SignedHeader().InstanceId()
 }
 
 func (nvm *NewViewMessage) MessageType() protocol.MessageType {
@@ -391,7 +391,7 @@ func ExtractConfirmationsFromViewChangeMessages(vcms []*ViewChangeMessage) []*pr
 		if proof != nil && len(proof.Raw()) > 0 {
 			ppBlockRefBuilder := &protocol.BlockRefBuilder{
 				MessageType: proof.PreprepareBlockRef().MessageType(),
-				NetworkId:   proof.PreprepareBlockRef().NetworkId(),
+				InstanceId:  proof.PreprepareBlockRef().InstanceId(),
 				BlockHeight: proof.PreprepareBlockRef().BlockHeight(),
 				View:        proof.PreprepareBlockRef().View(),
 				BlockHash:   proof.PreprepareBlockRef().BlockHash(),
@@ -402,7 +402,7 @@ func ExtractConfirmationsFromViewChangeMessages(vcms []*ViewChangeMessage) []*pr
 			}
 			pBlockRef := &protocol.BlockRefBuilder{
 				MessageType: proof.PrepareBlockRef().MessageType(),
-				NetworkId:   proof.PrepareBlockRef().NetworkId(),
+				InstanceId:  proof.PrepareBlockRef().InstanceId(),
 				BlockHeight: proof.PrepareBlockRef().BlockHeight(),
 				View:        proof.PrepareBlockRef().View(),
 				BlockHash:   proof.PrepareBlockRef().BlockHash(),
@@ -434,7 +434,7 @@ func ExtractConfirmationsFromViewChangeMessages(vcms []*ViewChangeMessage) []*pr
 		viewChangeMessageContentBuilder := &protocol.ViewChangeMessageContentBuilder{
 			SignedHeader: &protocol.ViewChangeHeaderBuilder{
 				MessageType:   header.MessageType(),
-				NetworkId:     header.NetworkId(),
+				InstanceId:    header.InstanceId(),
 				BlockHeight:   header.BlockHeight(),
 				View:          header.View(),
 				PreparedProof: proofBuilder,

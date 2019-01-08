@@ -15,7 +15,7 @@ type NodeState struct {
 }
 
 type Node struct {
-	networkId        primitives.NetworkId
+	instanceId       primitives.InstanceId
 	leanHelix        *leanhelix.LeanHelix
 	blockChain       *mocks.InMemoryBlockChain
 	ElectionTrigger  *mocks.ElectionTriggerMock
@@ -104,7 +104,7 @@ func (node *Node) StartConsensusSync(ctx context.Context) {
 
 func (node *Node) BuildConfig(logger interfaces.Logger) *interfaces.Config {
 	return &interfaces.Config{
-		NetworkId:       node.networkId,
+		InstanceId:      node.instanceId,
 		Communication:   node.Communication,
 		Membership:      node.Membership,
 		ElectionTrigger: node.ElectionTrigger,
@@ -117,7 +117,7 @@ func (node *Node) BuildConfig(logger interfaces.Logger) *interfaces.Config {
 }
 
 func NewNode(
-	networkId primitives.NetworkId,
+	instanceId primitives.InstanceId,
 	membership interfaces.Membership,
 	communication *mocks.CommunicationMock,
 	blockUtils *mocks.MockBlockUtils,
@@ -126,7 +126,7 @@ func NewNode(
 
 	memberId := membership.MyMemberId()
 	node := &Node{
-		networkId:        networkId,
+		instanceId:       instanceId,
 		blockChain:       mocks.NewInMemoryBlockChain(),
 		ElectionTrigger:  electionTrigger,
 		BlockUtils:       blockUtils,

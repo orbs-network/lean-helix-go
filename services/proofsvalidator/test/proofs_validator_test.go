@@ -13,7 +13,7 @@ import (
 )
 
 func TestProofsValidator(t *testing.T) {
-	networkId := primitives.NetworkId(rand.Uint64())
+	instanceId := primitives.InstanceId(rand.Uint64())
 	myMemberId := primitives.MemberId("My MemberId")
 	leaderId := primitives.MemberId("Leader ID")
 	node1Id := primitives.MemberId("Node 1")
@@ -43,7 +43,7 @@ func TestProofsValidator(t *testing.T) {
 		{KeyManager: node2KeyManager, MemberId: node2Id},
 		{KeyManager: node3KeyManager, MemberId: node3Id},
 	}
-	goodPrepareProof := builders.CreatePreparedProof(networkId, leaderMessageSigner, nodesMessageSigners, blockHeight, view, blockHash)
+	goodPrepareProof := builders.CreatePreparedProof(instanceId, leaderMessageSigner, nodesMessageSigners, blockHeight, view, blockHash)
 
 	calcLeaderId := func(view primitives.View) primitives.MemberId {
 		return membersIds[view]
@@ -60,13 +60,13 @@ func TestProofsValidator(t *testing.T) {
 			{KeyManager: node2KeyManager, MemberId: node2Id},
 			{KeyManager: node3KeyManager, MemberId: node3Id},
 		}
-		preparedProofWithoutPP := builders.CreatePreparedProof(networkId, nil, pSigners, blockHeight, view, blockHash)
+		preparedProofWithoutPP := builders.CreatePreparedProof(instanceId, nil, pSigners, blockHeight, view, blockHash)
 		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithoutPP, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof that did not have a preprepare message")
 	})
 
 	t.Run("TestProofsValidatorWithNoPrepares", func(t *testing.T) {
-		preparedProofWithoutP := builders.CreatePreparedProof(networkId, leaderMessageSigner, nil, blockHeight, view, blockHash)
+		preparedProofWithoutP := builders.CreatePreparedProof(instanceId, leaderMessageSigner, nil, blockHeight, view, blockHash)
 		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithoutP, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof that did not have prepare messages")
 	})
@@ -80,7 +80,7 @@ func TestProofsValidator(t *testing.T) {
 		pSigners := []*builders.MessageSigner{
 			{KeyManager: node1KeyManager, MemberId: node1Id},
 		}
-		preparedProofWithNotEnoughP := builders.CreatePreparedProof(networkId, leaderMessageSigner, pSigners, blockHeight, view, blockHash)
+		preparedProofWithNotEnoughP := builders.CreatePreparedProof(instanceId, leaderMessageSigner, pSigners, blockHeight, view, blockHash)
 		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithNotEnoughP, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with not enough prepares")
 	})
@@ -120,7 +120,7 @@ func TestProofsValidator(t *testing.T) {
 			{KeyManager: node2KeyManager, MemberId: node2Id},
 			{KeyManager: nonMemberKeyManager, MemberId: nonMemberId},
 		}
-		preparedProof := builders.CreatePreparedProof(networkId, leaderMessageSigner, pSigners, blockHeight, view, blockHash)
+		preparedProof := builders.CreatePreparedProof(instanceId, leaderMessageSigner, pSigners, blockHeight, view, blockHash)
 		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProof, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with a none member")
 	})
@@ -133,7 +133,7 @@ func TestProofsValidator(t *testing.T) {
 		}
 		ppSigner := &builders.MessageSigner{KeyManager: node1KeyManager, MemberId: node1Id}
 
-		preparedProofWithPFromLeader := builders.CreatePreparedProof(networkId, ppSigner, pSigners, blockHeight, view, blockHash)
+		preparedProofWithPFromLeader := builders.CreatePreparedProof(instanceId, ppSigner, pSigners, blockHeight, view, blockHash)
 		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithPFromLeader, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with a prepare from the leader")
 	})
@@ -149,18 +149,18 @@ func TestProofsValidator(t *testing.T) {
 
 	t.Run("TestProofsValidatorWithMismatchingContent", func(t *testing.T) {
 		// Good proof //
-		networkId := primitives.NetworkId(rand.Uint64())
+		instanceId := primitives.InstanceId(rand.Uint64())
 		const blockHeight = 5
 		const view = 0
 		const targetBlockHeight = blockHeight
 		const targetView = view + 1
 
 		goodPrepareProof := builders.APreparedProofByMessages(
-			builders.APreprepareMessage(networkId, leaderKeyManager, leaderId, blockHeight, view, block),
+			builders.APreprepareMessage(instanceId, leaderKeyManager, leaderId, blockHeight, view, block),
 			[]*interfaces.PrepareMessage{
-				builders.APrepareMessage(networkId, node1KeyManager, node1Id, blockHeight, view, block),
-				builders.APrepareMessage(networkId, node2KeyManager, node2Id, blockHeight, view, block),
-				builders.APrepareMessage(networkId, node3KeyManager, node3Id, blockHeight, view, block),
+				builders.APrepareMessage(instanceId, node1KeyManager, node1Id, blockHeight, view, block),
+				builders.APrepareMessage(instanceId, node2KeyManager, node2Id, blockHeight, view, block),
+				builders.APrepareMessage(instanceId, node3KeyManager, node3Id, blockHeight, view, block),
 			})
 
 		actualGood := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, q, myKeyManager, membersIds, calcLeaderId)
@@ -168,11 +168,11 @@ func TestProofsValidator(t *testing.T) {
 
 		// Mismatching blockHeight //
 		badHeightProof := builders.APreparedProofByMessages(
-			builders.APreprepareMessage(networkId, leaderKeyManager, leaderId, blockHeight, view, block),
+			builders.APreprepareMessage(instanceId, leaderKeyManager, leaderId, blockHeight, view, block),
 			[]*interfaces.PrepareMessage{
-				builders.APrepareMessage(networkId, node1KeyManager, node1Id, blockHeight, view, block),
-				builders.APrepareMessage(networkId, node2KeyManager, node2Id, 666, view, block),
-				builders.APrepareMessage(networkId, node3KeyManager, node3Id, blockHeight, view, block),
+				builders.APrepareMessage(instanceId, node1KeyManager, node1Id, blockHeight, view, block),
+				builders.APrepareMessage(instanceId, node2KeyManager, node2Id, 666, view, block),
+				builders.APrepareMessage(instanceId, node3KeyManager, node3Id, blockHeight, view, block),
 			})
 
 		actualBadHeight := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, badHeightProof, q, myKeyManager, membersIds, calcLeaderId)
@@ -180,11 +180,11 @@ func TestProofsValidator(t *testing.T) {
 
 		// Mismatching view //
 		badViewProof := builders.APreparedProofByMessages(
-			builders.APreprepareMessage(networkId, leaderKeyManager, leaderId, blockHeight, view, block),
+			builders.APreprepareMessage(instanceId, leaderKeyManager, leaderId, blockHeight, view, block),
 			[]*interfaces.PrepareMessage{
-				builders.APrepareMessage(networkId, node1KeyManager, node1Id, blockHeight, view, block),
-				builders.APrepareMessage(networkId, node2KeyManager, node2Id, blockHeight, 666, block),
-				builders.APrepareMessage(networkId, node3KeyManager, node3Id, blockHeight, view, block),
+				builders.APrepareMessage(instanceId, node1KeyManager, node1Id, blockHeight, view, block),
+				builders.APrepareMessage(instanceId, node2KeyManager, node2Id, blockHeight, 666, block),
+				builders.APrepareMessage(instanceId, node3KeyManager, node3Id, blockHeight, view, block),
 			})
 
 		actualBadView := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, badViewProof, q, myKeyManager, membersIds, calcLeaderId)
@@ -193,11 +193,11 @@ func TestProofsValidator(t *testing.T) {
 		// Mismatching blockHash //
 		otherBlock := mocks.ABlock(interfaces.GenesisBlock)
 		badBlockHashProof := builders.APreparedProofByMessages(
-			builders.APreprepareMessage(networkId, leaderKeyManager, leaderId, blockHeight, view, block),
+			builders.APreprepareMessage(instanceId, leaderKeyManager, leaderId, blockHeight, view, block),
 			[]*interfaces.PrepareMessage{
-				builders.APrepareMessage(networkId, node1KeyManager, node1Id, blockHeight, view, block),
-				builders.APrepareMessage(networkId, node2KeyManager, node2Id, blockHeight, view, otherBlock),
-				builders.APrepareMessage(networkId, node3KeyManager, node3Id, blockHeight, view, block),
+				builders.APrepareMessage(instanceId, node1KeyManager, node1Id, blockHeight, view, block),
+				builders.APrepareMessage(instanceId, node2KeyManager, node2Id, blockHeight, view, otherBlock),
+				builders.APrepareMessage(instanceId, node3KeyManager, node3Id, blockHeight, view, block),
 			})
 
 		actualBadBlockHash := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, badBlockHashProof, q, myKeyManager, membersIds, calcLeaderId)
@@ -210,7 +210,7 @@ func TestProofsValidator(t *testing.T) {
 			{KeyManager: node2KeyManager, MemberId: node2Id},
 			{KeyManager: node1KeyManager, MemberId: node1Id},
 		}
-		preparedProofWithDuplicatePSenderId := builders.CreatePreparedProof(networkId, leaderMessageSigner, pSigners, blockHeight, view, blockHash)
+		preparedProofWithDuplicatePSenderId := builders.CreatePreparedProof(instanceId, leaderMessageSigner, pSigners, blockHeight, view, blockHash)
 		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithDuplicatePSenderId, q, myKeyManager, membersIds, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with duplicate sender Id")
 	})

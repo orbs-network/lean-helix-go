@@ -9,7 +9,7 @@ import (
 type OnCommitCallback func(ctx context.Context, block Block, blockProof []byte)
 
 type Config struct {
-	NetworkId       primitives.NetworkId
+	InstanceId      primitives.InstanceId
 	Communication   Communication
 	Membership      Membership
 	BlockUtils      BlockUtils

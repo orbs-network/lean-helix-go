@@ -9,7 +9,7 @@ import (
 )
 
 type MessageFactory struct {
-	networkId  primitives.NetworkId
+	instanceId primitives.InstanceId
 	keyManager interfaces.KeyManager
 	memberId   primitives.MemberId
 	randomSeed uint64
@@ -23,7 +23,7 @@ func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
 
 	signedHeader := &protocol.BlockRefBuilder{
 		MessageType: protocol.LEAN_HELIX_PREPREPARE,
-		NetworkId:   f.networkId,
+		InstanceId:  f.instanceId,
 		BlockHeight: blockHeight,
 		View:        view,
 		BlockHash:   blockHash,
@@ -63,7 +63,7 @@ func (f *MessageFactory) CreatePrepareMessage(
 
 	signedHeader := &protocol.BlockRefBuilder{
 		MessageType: protocol.LEAN_HELIX_PREPARE,
-		NetworkId:   f.networkId,
+		InstanceId:  f.instanceId,
 		BlockHeight: blockHeight,
 		View:        view,
 		BlockHash:   blockHash,
@@ -89,7 +89,7 @@ func (f *MessageFactory) CreateCommitMessage(
 
 	signedHeader := &protocol.BlockRefBuilder{
 		MessageType: protocol.LEAN_HELIX_COMMIT,
-		NetworkId:   f.networkId,
+		InstanceId:  f.instanceId,
 		BlockHeight: blockHeight,
 		View:        view,
 		BlockHash:   blockHash,
@@ -129,7 +129,7 @@ func CreatePreparedProofBuilderFromPreparedMessages(preparedMessages *preparedme
 	} else {
 		ppBlockRef = &protocol.BlockRefBuilder{
 			MessageType: protocol.LEAN_HELIX_PREPREPARE,
-			NetworkId:   preprepareMessage.NetworkId(),
+			InstanceId:  preprepareMessage.InstanceId(),
 			BlockHeight: preprepareMessage.BlockHeight(),
 			View:        preprepareMessage.View(),
 			BlockHash:   preprepareMessage.Content().SignedHeader().BlockHash(),
@@ -146,7 +146,7 @@ func CreatePreparedProofBuilderFromPreparedMessages(preparedMessages *preparedme
 	} else {
 		pBlockRef = &protocol.BlockRefBuilder{
 			MessageType: protocol.LEAN_HELIX_PREPARE,
-			NetworkId:   prepareMessages[0].NetworkId(),
+			InstanceId:  prepareMessages[0].InstanceId(),
 			BlockHeight: prepareMessages[0].BlockHeight(),
 			View:        prepareMessages[0].View(),
 			BlockHash:   prepareMessages[0].Content().SignedHeader().BlockHash(),
@@ -176,7 +176,7 @@ func (f *MessageFactory) CreateViewChangeMessageContentBuilder(
 	preparedProofBuilder := CreatePreparedProofBuilderFromPreparedMessages(preparedMessages)
 	signedHeader := &protocol.ViewChangeHeaderBuilder{
 		MessageType:   protocol.LEAN_HELIX_VIEW_CHANGE,
-		NetworkId:     f.networkId,
+		InstanceId:    f.instanceId,
 		BlockHeight:   blockHeight,
 		View:          view,
 		PreparedProof: preparedProofBuilder,
@@ -216,7 +216,7 @@ func (f *MessageFactory) CreateNewViewMessageContentBuilder(
 
 	signedHeader := &protocol.NewViewHeaderBuilder{
 		MessageType:             protocol.LEAN_HELIX_NEW_VIEW,
-		NetworkId:               f.networkId,
+		InstanceId:              f.instanceId,
 		BlockHeight:             blockHeight,
 		View:                    view,
 		ViewChangeConfirmations: confirmations,
@@ -245,9 +245,9 @@ func (f *MessageFactory) CreateNewViewMessage(
 	return interfaces.NewNewViewMessage(contentBuilder.Build(), block)
 }
 
-func NewMessageFactory(networkId primitives.NetworkId, keyManager interfaces.KeyManager, memberId primitives.MemberId, randomSeed uint64) *MessageFactory {
+func NewMessageFactory(instanceId primitives.InstanceId, keyManager interfaces.KeyManager, memberId primitives.MemberId, randomSeed uint64) *MessageFactory {
 	return &MessageFactory{
-		networkId:  networkId,
+		instanceId: instanceId,
 		keyManager: keyManager,
 		memberId:   memberId,
 		randomSeed: randomSeed,

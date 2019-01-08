@@ -14,7 +14,7 @@ import (
 
 func TestStorePreprepare(t *testing.T) {
 	var s interfaces.Storage = storage.NewInMemoryStorage()
-	networkId := primitives.NetworkId(rand.Uint64())
+	instanceId := primitives.InstanceId(rand.Uint64())
 	blockHeight := primitives.BlockHeight(rand.Uint64())
 	view := primitives.View(rand.Uint64())
 	senderId1 := primitives.MemberId(strconv.Itoa(rand.Int()))
@@ -23,8 +23,8 @@ func TestStorePreprepare(t *testing.T) {
 	keyManager2 := mocks.NewMockKeyManager(senderId2)
 	block := mocks.ABlock(interfaces.GenesisBlock)
 
-	preprepareMessage1 := builders.APreprepareMessage(networkId, keyManager1, senderId1, blockHeight, view, block)
-	preprepareMessage2 := builders.APreprepareMessage(networkId, keyManager2, senderId2, blockHeight, view, block)
+	preprepareMessage1 := builders.APreprepareMessage(instanceId, keyManager1, senderId1, blockHeight, view, block)
+	preprepareMessage2 := builders.APreprepareMessage(instanceId, keyManager2, senderId2, blockHeight, view, block)
 
 	s.StorePreprepare(preprepareMessage1)
 	s.StorePreprepare(preprepareMessage2)
@@ -38,7 +38,7 @@ func TestStorePreprepare(t *testing.T) {
 
 func TestStorePrepare(t *testing.T) {
 	var s interfaces.Storage = storage.NewInMemoryStorage()
-	networkId := primitives.NetworkId(rand.Uint64())
+	instanceId := primitives.InstanceId(rand.Uint64())
 	blockHeight1 := primitives.BlockHeight(rand.Uint64())
 	blockHeight2 := primitives.BlockHeight(rand.Uint64())
 	view1 := primitives.View(rand.Uint64())
@@ -53,12 +53,12 @@ func TestStorePrepare(t *testing.T) {
 	block2 := mocks.ABlock(interfaces.GenesisBlock)
 	block1Hash := mocks.CalculateBlockHash(block1)
 
-	message1 := builders.APrepareMessage(networkId, keyManager1, senderId1, blockHeight1, view1, block1)
-	message2 := builders.APrepareMessage(networkId, keyManager2, senderId2, blockHeight1, view1, block1)
-	message3 := builders.APrepareMessage(networkId, keyManager3, senderId3, blockHeight1, view1, block1)
-	message4 := builders.APrepareMessage(networkId, keyManager1, senderId1, blockHeight2, view1, block1)
-	message5 := builders.APrepareMessage(networkId, keyManager1, senderId1, blockHeight1, view2, block1)
-	message6 := builders.APrepareMessage(networkId, keyManager1, senderId1, blockHeight1, view1, block2)
+	message1 := builders.APrepareMessage(instanceId, keyManager1, senderId1, blockHeight1, view1, block1)
+	message2 := builders.APrepareMessage(instanceId, keyManager2, senderId2, blockHeight1, view1, block1)
+	message3 := builders.APrepareMessage(instanceId, keyManager3, senderId3, blockHeight1, view1, block1)
+	message4 := builders.APrepareMessage(instanceId, keyManager1, senderId1, blockHeight2, view1, block1)
+	message5 := builders.APrepareMessage(instanceId, keyManager1, senderId1, blockHeight1, view2, block1)
+	message6 := builders.APrepareMessage(instanceId, keyManager1, senderId1, blockHeight1, view1, block2)
 
 	s.StorePrepare(message1)
 	s.StorePrepare(message2)
@@ -78,7 +78,7 @@ func TestStorePrepare(t *testing.T) {
 
 func TestStoreCommit(t *testing.T) {
 	var s interfaces.Storage = storage.NewInMemoryStorage()
-	networkId := primitives.NetworkId(rand.Uint64())
+	instanceId := primitives.InstanceId(rand.Uint64())
 	blockHeight1 := primitives.BlockHeight(rand.Uint64())
 	blockHeight2 := primitives.BlockHeight(rand.Uint64())
 	view1 := primitives.View(rand.Uint64())
@@ -93,12 +93,12 @@ func TestStoreCommit(t *testing.T) {
 	block2 := mocks.ABlock(interfaces.GenesisBlock)
 	block1Hash := mocks.CalculateBlockHash(block1)
 
-	message1 := builders.ACommitMessage(networkId, keyManager1, senderId1, blockHeight1, view1, block1, 0)
-	message2 := builders.ACommitMessage(networkId, keyManager2, senderId2, blockHeight1, view1, block1, 0)
-	message3 := builders.ACommitMessage(networkId, keyManager3, senderId3, blockHeight1, view1, block1, 0)
-	message4 := builders.ACommitMessage(networkId, keyManager1, senderId1, blockHeight2, view1, block1, 0)
-	message5 := builders.ACommitMessage(networkId, keyManager1, senderId1, blockHeight1, view2, block1, 0)
-	message6 := builders.ACommitMessage(networkId, keyManager1, senderId1, blockHeight1, view1, block2, 0)
+	message1 := builders.ACommitMessage(instanceId, keyManager1, senderId1, blockHeight1, view1, block1, 0)
+	message2 := builders.ACommitMessage(instanceId, keyManager2, senderId2, blockHeight1, view1, block1, 0)
+	message3 := builders.ACommitMessage(instanceId, keyManager3, senderId3, blockHeight1, view1, block1, 0)
+	message4 := builders.ACommitMessage(instanceId, keyManager1, senderId1, blockHeight2, view1, block1, 0)
+	message5 := builders.ACommitMessage(instanceId, keyManager1, senderId1, blockHeight1, view2, block1, 0)
+	message6 := builders.ACommitMessage(instanceId, keyManager1, senderId1, blockHeight1, view1, block2, 0)
 
 	s.StoreCommit(message1)
 	s.StoreCommit(message2)
@@ -114,7 +114,7 @@ func TestStoreCommit(t *testing.T) {
 
 func TestStoreViewChange(t *testing.T) {
 	var s interfaces.Storage = storage.NewInMemoryStorage()
-	networkId := primitives.NetworkId(rand.Uint64())
+	instanceId := primitives.InstanceId(rand.Uint64())
 	blockHeight1 := primitives.BlockHeight(rand.Uint64())
 	blockHeight2 := primitives.BlockHeight(rand.Uint64())
 	view1 := primitives.View(rand.Uint64())
@@ -126,11 +126,11 @@ func TestStoreViewChange(t *testing.T) {
 	keyManager2 := mocks.NewMockKeyManager(senderId2)
 	keyManager3 := mocks.NewMockKeyManager(senderId3)
 
-	message1 := builders.AViewChangeMessage(networkId, keyManager1, senderId1, blockHeight1, view1, nil)
-	message2 := builders.AViewChangeMessage(networkId, keyManager2, senderId2, blockHeight1, view1, nil)
-	message3 := builders.AViewChangeMessage(networkId, keyManager3, senderId3, blockHeight1, view1, nil)
-	message4 := builders.AViewChangeMessage(networkId, keyManager1, senderId1, blockHeight2, view1, nil)
-	message5 := builders.AViewChangeMessage(networkId, keyManager1, senderId1, blockHeight1, view2, nil)
+	message1 := builders.AViewChangeMessage(instanceId, keyManager1, senderId1, blockHeight1, view1, nil)
+	message2 := builders.AViewChangeMessage(instanceId, keyManager2, senderId2, blockHeight1, view1, nil)
+	message3 := builders.AViewChangeMessage(instanceId, keyManager3, senderId3, blockHeight1, view1, nil)
+	message4 := builders.AViewChangeMessage(instanceId, keyManager1, senderId1, blockHeight2, view1, nil)
+	message5 := builders.AViewChangeMessage(instanceId, keyManager1, senderId1, blockHeight1, view2, nil)
 
 	s.StoreViewChange(message1)
 	s.StoreViewChange(message2)
@@ -145,7 +145,7 @@ func TestStoreViewChange(t *testing.T) {
 
 func TestLatestPreprepare(t *testing.T) {
 	var s interfaces.Storage = storage.NewInMemoryStorage()
-	networkId := primitives.NetworkId(rand.Uint64())
+	instanceId := primitives.InstanceId(rand.Uint64())
 	blockHeight := primitives.BlockHeight(rand.Uint64())
 	senderId1 := primitives.MemberId(strconv.Itoa(rand.Int()))
 	senderId2 := primitives.MemberId(strconv.Itoa(rand.Int()))
@@ -153,8 +153,8 @@ func TestLatestPreprepare(t *testing.T) {
 	keyManager2 := mocks.NewMockKeyManager(senderId2)
 	block := mocks.ABlock(interfaces.GenesisBlock)
 
-	preprepareMessageOnView3 := builders.APreprepareMessage(networkId, keyManager1, senderId1, blockHeight, 3, block)
-	preprepareMessageOnView2 := builders.APreprepareMessage(networkId, keyManager2, senderId2, blockHeight, 2, block)
+	preprepareMessageOnView3 := builders.APreprepareMessage(instanceId, keyManager1, senderId1, blockHeight, 3, block)
+	preprepareMessageOnView2 := builders.APreprepareMessage(instanceId, keyManager2, senderId2, blockHeight, 2, block)
 
 	s.StorePreprepare(preprepareMessageOnView3)
 	s.StorePreprepare(preprepareMessageOnView2)
@@ -166,11 +166,11 @@ func TestLatestPreprepare(t *testing.T) {
 
 func TestDuplicatePreprepare(t *testing.T) {
 	var s interfaces.Storage = storage.NewInMemoryStorage()
-	networkId := primitives.NetworkId(rand.Uint64())
+	instanceId := primitives.InstanceId(rand.Uint64())
 	block := mocks.ABlock(interfaces.GenesisBlock)
 	memberId := primitives.MemberId("Member Id")
 	keyManager := mocks.NewMockKeyManager(memberId)
-	ppm := builders.APreprepareMessage(networkId, keyManager, memberId, 1, 1, block)
+	ppm := builders.APreprepareMessage(instanceId, keyManager, memberId, 1, 1, block)
 
 	firstTime := s.StorePreprepare(ppm)
 	require.True(t, firstTime, "StorePreprepare() returns true if storing a new value ")
@@ -181,7 +181,7 @@ func TestDuplicatePreprepare(t *testing.T) {
 
 func TestDuplicatePrepare(t *testing.T) {
 	var s interfaces.Storage = storage.NewInMemoryStorage()
-	networkId := primitives.NetworkId(rand.Uint64())
+	instanceId := primitives.InstanceId(rand.Uint64())
 	blockHeight := primitives.BlockHeight(rand.Uint64())
 	view := primitives.View(rand.Uint64())
 	senderId1 := primitives.MemberId(strconv.Itoa(rand.Int()))
@@ -189,8 +189,8 @@ func TestDuplicatePrepare(t *testing.T) {
 	sender1KeyManager := mocks.NewMockKeyManager(senderId1)
 	sender2KeyManager := mocks.NewMockKeyManager(senderId2)
 	block := mocks.ABlock(interfaces.GenesisBlock)
-	p1 := builders.APrepareMessage(networkId, sender1KeyManager, senderId1, blockHeight, view, block)
-	p2 := builders.APrepareMessage(networkId, sender2KeyManager, senderId2, blockHeight, view, block)
+	p1 := builders.APrepareMessage(instanceId, sender1KeyManager, senderId1, blockHeight, view, block)
+	p2 := builders.APrepareMessage(instanceId, sender2KeyManager, senderId2, blockHeight, view, block)
 
 	firstTime := s.StorePrepare(p1)
 	require.True(t, firstTime, "StorePrepare() returns true if storing a new value (1 of 2)")
@@ -204,7 +204,7 @@ func TestDuplicatePrepare(t *testing.T) {
 
 func TestDuplicateCommit(t *testing.T) {
 	var s interfaces.Storage = storage.NewInMemoryStorage()
-	networkId := primitives.NetworkId(rand.Uint64())
+	instanceId := primitives.InstanceId(rand.Uint64())
 	blockHeight := primitives.BlockHeight(rand.Uint64())
 	view := primitives.View(rand.Uint64())
 	senderId1 := primitives.MemberId(strconv.Itoa(rand.Int()))
@@ -213,8 +213,8 @@ func TestDuplicateCommit(t *testing.T) {
 	sender2KeyManager := mocks.NewMockKeyManager(senderId2)
 	block := mocks.ABlock(interfaces.GenesisBlock)
 
-	c1 := builders.ACommitMessage(networkId, sender1KeyManager, senderId1, blockHeight, view, block, 0)
-	c2 := builders.ACommitMessage(networkId, sender2KeyManager, senderId2, blockHeight, view, block, 0)
+	c1 := builders.ACommitMessage(instanceId, sender1KeyManager, senderId1, blockHeight, view, block, 0)
+	c2 := builders.ACommitMessage(instanceId, sender2KeyManager, senderId2, blockHeight, view, block, 0)
 
 	firstTime := s.StoreCommit(c1)
 	require.True(t, firstTime, "StoreCommit() returns true if storing a new value (1 of 2)")
@@ -229,15 +229,15 @@ func TestDuplicateCommit(t *testing.T) {
 
 func TestDuplicateViewChange(t *testing.T) {
 	var s interfaces.Storage = storage.NewInMemoryStorage()
-	networkId := primitives.NetworkId(rand.Uint64())
+	instanceId := primitives.InstanceId(rand.Uint64())
 	blockHeight := primitives.BlockHeight(rand.Uint64())
 	view := primitives.View(rand.Uint64())
 	senderId1 := primitives.MemberId(strconv.Itoa(rand.Int()))
 	senderId2 := primitives.MemberId(strconv.Itoa(rand.Int()))
 	sender1KeyManager := mocks.NewMockKeyManager(senderId1)
 	sender2KeyManager := mocks.NewMockKeyManager(senderId2)
-	vc1 := builders.AViewChangeMessage(networkId, sender1KeyManager, senderId1, blockHeight, view, nil)
-	vc2 := builders.AViewChangeMessage(networkId, sender2KeyManager, senderId2, blockHeight, view, nil)
+	vc1 := builders.AViewChangeMessage(instanceId, sender1KeyManager, senderId1, blockHeight, view, nil)
+	vc2 := builders.AViewChangeMessage(instanceId, sender2KeyManager, senderId2, blockHeight, view, nil)
 
 	firstTime := s.StoreViewChange(vc1)
 	require.True(t, firstTime, "StoreViewChange() returns true if storing a new value (1 of 2)")
@@ -252,7 +252,7 @@ func TestDuplicateViewChange(t *testing.T) {
 
 func TestClearBlockHeightLogs(t *testing.T) {
 	var s interfaces.Storage = storage.NewInMemoryStorage()
-	networkId := primitives.NetworkId(rand.Uint64())
+	instanceId := primitives.InstanceId(rand.Uint64())
 	blockHeight := primitives.BlockHeight(rand.Uint64())
 	view := primitives.View(rand.Uint64())
 	block := mocks.ABlock(interfaces.GenesisBlock)
@@ -260,10 +260,10 @@ func TestClearBlockHeightLogs(t *testing.T) {
 	memberId := primitives.MemberId("Member Id")
 	keyManager := mocks.NewMockKeyManager(memberId)
 
-	ppMsg := builders.APreprepareMessage(networkId, keyManager, memberId, blockHeight, view, block)
-	pMsg := builders.APrepareMessage(networkId, keyManager, memberId, blockHeight, view, block)
-	cMsg := builders.ACommitMessage(networkId, keyManager, memberId, blockHeight, view, block, 0)
-	vcMsg := builders.AViewChangeMessage(networkId, keyManager, memberId, blockHeight, view, nil)
+	ppMsg := builders.APreprepareMessage(instanceId, keyManager, memberId, blockHeight, view, block)
+	pMsg := builders.APrepareMessage(instanceId, keyManager, memberId, blockHeight, view, block)
+	cMsg := builders.ACommitMessage(instanceId, keyManager, memberId, blockHeight, view, block, 0)
+	vcMsg := builders.AViewChangeMessage(instanceId, keyManager, memberId, blockHeight, view, nil)
 
 	s.StorePreprepare(ppMsg)
 	s.StorePrepare(pMsg)

@@ -40,7 +40,7 @@ message view {
     // size 8 bytes
 }
 
-message network_id {
+message instance_id {
     option inline_type = "uint64";
     uint64 value = 1;
     // size 8 bytes

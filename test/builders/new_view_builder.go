@@ -10,7 +10,7 @@ import (
 )
 
 type NewViewBuilder struct {
-	networkId        primitives.NetworkId
+	instanceId       primitives.InstanceId
 	leaderKeyManager interfaces.KeyManager
 	leaderMemberId   primitives.MemberId
 	votes            []*protocol.ViewChangeMessageContentBuilder
@@ -21,7 +21,7 @@ type NewViewBuilder struct {
 }
 
 func (builder *NewViewBuilder) Build() *interfaces.NewViewMessage {
-	messageFactory := messagesfactory.NewMessageFactory(builder.networkId, builder.leaderKeyManager, builder.leaderMemberId, 0)
+	messageFactory := messagesfactory.NewMessageFactory(builder.instanceId, builder.leaderKeyManager, builder.leaderMemberId, 0)
 
 	ppmCB := builder.customPP
 	if ppmCB == nil {
@@ -38,8 +38,8 @@ func (builder *NewViewBuilder) LeadBy(keyManager interfaces.KeyManager, memberId
 	return builder
 }
 
-func (builder *NewViewBuilder) WithCustomPreprepare(networkId primitives.NetworkId, keyManager interfaces.KeyManager, memberId primitives.MemberId, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) *NewViewBuilder {
-	messageFactory := messagesfactory.NewMessageFactory(networkId, keyManager, memberId, 0)
+func (builder *NewViewBuilder) WithCustomPreprepare(instanceId primitives.InstanceId, keyManager interfaces.KeyManager, memberId primitives.MemberId, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) *NewViewBuilder {
+	messageFactory := messagesfactory.NewMessageFactory(instanceId, keyManager, memberId, 0)
 	builder.customPP = messageFactory.CreatePreprepareMessageContentBuilder(blockHeight, view, block, mocks.CalculateBlockHash(block))
 	return builder
 }
@@ -81,14 +81,14 @@ type Vote struct {
 }
 
 type VotesBuilder struct {
-	networkId primitives.NetworkId
-	voters    []*Vote
+	instanceId primitives.InstanceId
+	voters     []*Vote
 }
 
 func (builder *VotesBuilder) Build() []*protocol.ViewChangeMessageContentBuilder {
 	var votes []*protocol.ViewChangeMessageContentBuilder
 	for _, voter := range builder.voters {
-		messageFactory := messagesfactory.NewMessageFactory(builder.networkId, voter.keyManager, voter.memberId, 0)
+		messageFactory := messagesfactory.NewMessageFactory(builder.instanceId, voter.keyManager, voter.memberId, 0)
 		vcmCB := messageFactory.CreateViewChangeMessageContentBuilder(voter.blockHeight, voter.view, voter.preparedMessages)
 		votes = append(votes, vcmCB)
 	}
@@ -102,8 +102,8 @@ func (builder *VotesBuilder) WithVote(keyManager interfaces.KeyManager, memberId
 	return builder
 }
 
-func NewVotesBuilder(networkId primitives.NetworkId) *VotesBuilder {
-	return &VotesBuilder{networkId: networkId}
+func NewVotesBuilder(instanceId primitives.InstanceId) *VotesBuilder {
+	return &VotesBuilder{instanceId: instanceId}
 }
 
 type Voter struct {
@@ -111,8 +111,8 @@ type Voter struct {
 	MemberId   primitives.MemberId
 }
 
-func ASimpleViewChangeVotes(networkId primitives.NetworkId, voters []*Voter, blockHeight primitives.BlockHeight, view primitives.View) []*protocol.ViewChangeMessageContentBuilder {
-	builder := NewVotesBuilder(networkId)
+func ASimpleViewChangeVotes(instanceId primitives.InstanceId, voters []*Voter, blockHeight primitives.BlockHeight, view primitives.View) []*protocol.ViewChangeMessageContentBuilder {
+	builder := NewVotesBuilder(instanceId)
 	for _, voter := range voters {
 		builder.WithVote(voter.KeyManager, voter.MemberId, blockHeight, view, nil)
 	}

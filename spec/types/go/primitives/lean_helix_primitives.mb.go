@@ -90,17 +90,17 @@ func (x View) KeyForMap() uint64 {
 	return uint64(x)
 }
 
-type NetworkId uint64
+type InstanceId uint64
 
-func (x NetworkId) String() string {
+func (x InstanceId) String() string {
 	return fmt.Sprintf("%x", uint64(x))
 }
 
-func (x NetworkId) Equal(y NetworkId) bool {
+func (x InstanceId) Equal(y InstanceId) bool {
 	return x == y
 }
 
-func (x NetworkId) KeyForMap() uint64 {
+func (x InstanceId) KeyForMap() uint64 {
 	return uint64(x)
 }
 

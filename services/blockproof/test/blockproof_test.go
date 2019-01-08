@@ -22,7 +22,7 @@ func compareSenderSignature(commitMessage *interfaces.CommitMessage, senderSigna
 
 func TestGeneratingBlockProof(t *testing.T) {
 	block := mocks.ABlock(interfaces.GenesisBlock)
-	networkId := primitives.NetworkId(rand.Uint64())
+	instanceId := primitives.InstanceId(rand.Uint64())
 
 	memberId0 := primitives.MemberId("Member0")
 	memberId1 := primitives.MemberId("Member1")
@@ -34,10 +34,10 @@ func TestGeneratingBlockProof(t *testing.T) {
 	node2KeyManager := mocks.NewMockKeyManager(memberId2)
 	node3KeyManager := mocks.NewMockKeyManager(memberId3)
 
-	cm0 := builders.ACommitMessage(networkId, node0KeyManager, memberId0, 5, 6, block, 0)
-	cm1 := builders.ACommitMessage(networkId, node1KeyManager, memberId1, 5, 6, block, 0)
-	cm2 := builders.ACommitMessage(networkId, node2KeyManager, memberId2, 5, 6, block, 0)
-	cm3 := builders.ACommitMessage(networkId, node3KeyManager, memberId3, 5, 6, block, 0)
+	cm0 := builders.ACommitMessage(instanceId, node0KeyManager, memberId0, 5, 6, block, 0)
+	cm1 := builders.ACommitMessage(instanceId, node1KeyManager, memberId1, 5, 6, block, 0)
+	cm2 := builders.ACommitMessage(instanceId, node2KeyManager, memberId2, 5, 6, block, 0)
+	cm3 := builders.ACommitMessage(instanceId, node3KeyManager, memberId3, 5, 6, block, 0)
 
 	commitMessages := []*interfaces.CommitMessage{cm0, cm1, cm2, cm3}
 
@@ -130,10 +130,10 @@ func TestNodeSync(t *testing.T) {
 	})
 }
 
-func genBlockProofMessages(networkId primitives.NetworkId, block interfaces.Block, view primitives.View, randomSeed uint64, nodes ...*network.Node) *protocol.BlockProof {
+func genBlockProofMessages(instanceId primitives.InstanceId, block interfaces.Block, view primitives.View, randomSeed uint64, nodes ...*network.Node) *protocol.BlockProof {
 	var commitMessages []*interfaces.CommitMessage
 	for _, node := range nodes {
-		cm := builders.ACommitMessage(networkId, node.KeyManager, node.MemberId, block.Height(), view, block, randomSeed)
+		cm := builders.ACommitMessage(instanceId, node.KeyManager, node.MemberId, block.Height(), view, block, randomSeed)
 		commitMessages = append(commitMessages, cm)
 	}
 
@@ -154,8 +154,8 @@ func TestAValidBlockProof(t *testing.T) {
 		node2 := net.Nodes[2]
 		node3 := net.Nodes[3]
 
-		blockProof := genBlockProofMessages(net.NetworkId, block3, 6, 0, node1, node2, node3).Raw()
-		prevBlockProof := genBlockProofMessages(net.NetworkId, block2, 3, 0, node1, node2, node3).Raw()
+		blockProof := genBlockProofMessages(net.InstanceId, block3, 6, 0, node1, node2, node3).Raw()
+		prevBlockProof := genBlockProofMessages(net.InstanceId, block2, 3, 0, node1, node2, node3).Raw()
 		require.True(t, node0.ValidateBlockConsensus(ctx, block3, blockProof, prevBlockProof))
 		require.False(t, node0.ValidateBlockConsensus(ctx, nil, blockProof, prevBlockProof))
 	})
@@ -191,7 +191,7 @@ func TestThatBlockRefInsideProofValidation(t *testing.T) {
 		block3 := mocks.ABlock(block2)
 		blockHeight := block3.Height()
 
-		goodBlockRef := generateACommitBlockRefBuilder(net.NetworkId, blockHeight, block3)
+		goodBlockRef := generateACommitBlockRefBuilder(net.InstanceId, blockHeight, block3)
 		signatures := generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node2)
 		goodRSS := node0.KeyManager.AggregateRandomSeed(blockHeight, nil)
 
@@ -204,7 +204,7 @@ func TestThatBlockRefInsideProofValidation(t *testing.T) {
 		badBlockHeightProof := (&protocol.BlockProofBuilder{
 			BlockRef: &protocol.BlockRefBuilder{
 				MessageType: protocol.LEAN_HELIX_COMMIT,
-				NetworkId:   net.NetworkId,
+				InstanceId:  net.InstanceId,
 				BlockHeight: 666,
 				BlockHash:   mocks.CalculateBlockHash(block3),
 			},
@@ -215,7 +215,7 @@ func TestThatBlockRefInsideProofValidation(t *testing.T) {
 		badMessageTypeProof := (&protocol.BlockProofBuilder{
 			BlockRef: &protocol.BlockRefBuilder{
 				MessageType: protocol.LEAN_HELIX_NEW_VIEW,
-				NetworkId:   net.NetworkId,
+				InstanceId:  net.InstanceId,
 				BlockHeight: blockHeight,
 				BlockHash:   mocks.CalculateBlockHash(block3),
 			},
@@ -226,7 +226,7 @@ func TestThatBlockRefInsideProofValidation(t *testing.T) {
 		badBlockHash := (&protocol.BlockProofBuilder{
 			BlockRef: &protocol.BlockRefBuilder{
 				MessageType: protocol.LEAN_HELIX_COMMIT,
-				NetworkId:   net.NetworkId,
+				InstanceId:  net.InstanceId,
 				BlockHeight: blockHeight,
 				BlockHash:   mocks.CalculateBlockHash(block1),
 			},
@@ -241,7 +241,7 @@ func TestThatBlockRefInsideProofValidation(t *testing.T) {
 		goodProof := (&protocol.BlockProofBuilder{
 			BlockRef: &protocol.BlockRefBuilder{
 				MessageType: protocol.LEAN_HELIX_COMMIT,
-				NetworkId:   net.NetworkId,
+				InstanceId:  net.InstanceId,
 				BlockHeight: blockHeight,
 				BlockHash:   mocks.CalculateBlockHash(block3),
 			},
@@ -257,10 +257,10 @@ func TestThatBlockRefInsideProofValidation(t *testing.T) {
 	})
 }
 
-func generateACommitBlockRefBuilder(networkId primitives.NetworkId, blockHeight primitives.BlockHeight, block interfaces.Block) *protocol.BlockRefBuilder {
+func generateACommitBlockRefBuilder(instanceId primitives.InstanceId, blockHeight primitives.BlockHeight, block interfaces.Block) *protocol.BlockRefBuilder {
 	return &protocol.BlockRefBuilder{
 		MessageType: protocol.LEAN_HELIX_COMMIT,
-		NetworkId:   networkId,
+		InstanceId:  instanceId,
 		BlockHeight: blockHeight,
 		BlockHash:   mocks.CalculateBlockHash(block),
 	}
@@ -293,7 +293,7 @@ func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 		block3 := mocks.ABlock(block2)
 
 		blockHeight := block3.Height()
-		goodBlockRef := generateACommitBlockRefBuilder(net.NetworkId, blockHeight, block3)
+		goodBlockRef := generateACommitBlockRefBuilder(net.InstanceId, blockHeight, block3)
 		goodRSS := node0.KeyManager.AggregateRandomSeed(blockHeight, nil)
 
 		// good prev proof
@@ -310,7 +310,7 @@ func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 
 		// proof with bad block height
 		badBlockRefBlockHeightProof := &protocol.BlockProofBuilder{
-			BlockRef:            generateACommitBlockRefBuilder(net.NetworkId, 666, block3),
+			BlockRef:            generateACommitBlockRefBuilder(net.InstanceId, 666, block3),
 			Nodes:               generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node2),
 			RandomSeedSignature: goodRSS,
 		}
@@ -358,7 +358,7 @@ func TestRandomSeedSignatureValidation(t *testing.T) {
 		block3 := mocks.ABlock(block2)
 
 		blockHeight := block3.Height()
-		goodBlockRef := generateACommitBlockRefBuilder(net.NetworkId, blockHeight, block3)
+		goodBlockRef := generateACommitBlockRefBuilder(net.InstanceId, blockHeight, block3)
 		goodRSS := node0.KeyManager.AggregateRandomSeed(blockHeight, nil)
 
 		// good prev proof

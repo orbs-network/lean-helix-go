@@ -9,9 +9,9 @@ import (
 )
 
 type TestNetwork struct {
-	NetworkId primitives.NetworkId
-	Nodes     []*Node
-	Discovery *mocks.Discovery
+	InstanceId primitives.InstanceId
+	Nodes      []*Node
+	Discovery  *mocks.Discovery
 }
 
 func (net *TestNetwork) GetNodeCommunication(memberId primitives.MemberId) *mocks.CommunicationMock {
@@ -202,10 +202,10 @@ func (net *TestNetwork) AllNodesValidatedNoMoreThanOnceBeforeCommit(ctx context.
 	return true
 }
 
-func NewTestNetwork(networkId primitives.NetworkId, discovery *mocks.Discovery) *TestNetwork {
+func NewTestNetwork(instanceId primitives.InstanceId, discovery *mocks.Discovery) *TestNetwork {
 	return &TestNetwork{
-		NetworkId: networkId,
-		Nodes:     []*Node{},
-		Discovery: discovery,
+		InstanceId: instanceId,
+		Nodes:      []*Node{},
+		Discovery:  discovery,
 	}
 }

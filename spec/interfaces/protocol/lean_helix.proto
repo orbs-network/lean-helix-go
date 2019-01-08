@@ -56,7 +56,7 @@ message SenderSignature {
 }
 
 message BlockRef {
-    primitives.network_id network_id = 1;
+    primitives.instance_id instance_id = 1;
     MessageType message_type = 2;
     primitives.block_height block_height = 3;
     primitives.view view = 4;
@@ -64,7 +64,7 @@ message BlockRef {
 }
 
 message ViewChangeHeader {
-    primitives.network_id network_id = 1;
+    primitives.instance_id instance_id = 1;
     MessageType message_type = 2;
     primitives.block_height block_height = 3;
     primitives.view view = 4;
@@ -79,7 +79,7 @@ message PreparedProof {
 }
 
 message NewViewHeader {
-    primitives.network_id network_id = 1;
+    primitives.instance_id instance_id = 1;
     MessageType message_type = 2;
     primitives.block_height block_height = 3;
     primitives.view view = 4;
