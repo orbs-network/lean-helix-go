@@ -2,10 +2,10 @@
 package protocol
 
 import (
-	"github.com/orbs-network/membuffers/go"
 	"bytes"
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/membuffers/go"
 )
 
 /////////////////////////////////////////////////////////////////////////////
@@ -28,8 +28,8 @@ func (x *LeanhelixContent) String() string {
 	return fmt.Sprintf("{Message:%s,}", x.StringMessage())
 }
 
-var _LeanhelixContent_Scheme = []membuffers.FieldType{membuffers.TypeUnion,}
-var _LeanhelixContent_Unions = [][]membuffers.FieldType{{membuffers.TypeMessage,membuffers.TypeMessage,membuffers.TypeMessage,membuffers.TypeMessage,membuffers.TypeMessage,}}
+var _LeanhelixContent_Scheme = []membuffers.FieldType{membuffers.TypeUnion}
+var _LeanhelixContent_Unions = [][]membuffers.FieldType{{membuffers.TypeMessage, membuffers.TypeMessage, membuffers.TypeMessage, membuffers.TypeMessage, membuffers.TypeMessage}}
 
 func LeanhelixContentReader(buf []byte) *LeanhelixContent {
 	x := &LeanhelixContent{}
@@ -46,23 +46,23 @@ func (x *LeanhelixContent) Raw() []byte {
 }
 
 func (x *LeanhelixContent) Equal(y *LeanhelixContent) bool {
-  if x == nil && y == nil {
-    return true
-  }
-  if x == nil || y == nil {
-    return false
-  }
-  return bytes.Equal(x.Raw(), y.Raw())
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return bytes.Equal(x.Raw(), y.Raw())
 }
 
 type LeanhelixContentMessage uint16
 
 const (
-	LEANHELIX_CONTENT_MESSAGE_PREPREPARE_MESSAGE LeanhelixContentMessage = 0
-	LEANHELIX_CONTENT_MESSAGE_PREPARE_MESSAGE LeanhelixContentMessage = 1
-	LEANHELIX_CONTENT_MESSAGE_COMMIT_MESSAGE LeanhelixContentMessage = 2
+	LEANHELIX_CONTENT_MESSAGE_PREPREPARE_MESSAGE  LeanhelixContentMessage = 0
+	LEANHELIX_CONTENT_MESSAGE_PREPARE_MESSAGE     LeanhelixContentMessage = 1
+	LEANHELIX_CONTENT_MESSAGE_COMMIT_MESSAGE      LeanhelixContentMessage = 2
 	LEANHELIX_CONTENT_MESSAGE_VIEW_CHANGE_MESSAGE LeanhelixContentMessage = 3
-	LEANHELIX_CONTENT_MESSAGE_NEW_VIEW_MESSAGE LeanhelixContentMessage = 4
+	LEANHELIX_CONTENT_MESSAGE_NEW_VIEW_MESSAGE    LeanhelixContentMessage = 4
 )
 
 func (x *LeanhelixContent) Message() LeanhelixContentMessage {
@@ -186,16 +186,16 @@ func (x *LeanhelixContent) StringMessage() string {
 // builder
 
 type LeanhelixContentBuilder struct {
-	Message LeanhelixContentMessage
+	Message           LeanhelixContentMessage
 	PreprepareMessage *PreprepareContentBuilder
-	PrepareMessage *PrepareContentBuilder
-	CommitMessage *CommitContentBuilder
+	PrepareMessage    *PrepareContentBuilder
+	CommitMessage     *CommitContentBuilder
 	ViewChangeMessage *ViewChangeMessageContentBuilder
-	NewViewMessage *NewViewMessageContentBuilder
+	NewViewMessage    *NewViewMessageContentBuilder
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
 	_overrideWithRawBuffer []byte
 }
 
@@ -304,7 +304,7 @@ func (x *PreprepareContent) String() string {
 	return fmt.Sprintf("{SignedHeader:%s,Sender:%s,}", x.StringSignedHeader(), x.StringSender())
 }
 
-var _PreprepareContent_Scheme = []membuffers.FieldType{membuffers.TypeMessage,membuffers.TypeMessage,}
+var _PreprepareContent_Scheme = []membuffers.FieldType{membuffers.TypeMessage, membuffers.TypeMessage}
 var _PreprepareContent_Unions = [][]membuffers.FieldType{}
 
 func PreprepareContentReader(buf []byte) *PreprepareContent {
@@ -322,13 +322,13 @@ func (x *PreprepareContent) Raw() []byte {
 }
 
 func (x *PreprepareContent) Equal(y *PreprepareContent) bool {
-  if x == nil && y == nil {
-    return true
-  }
-  if x == nil || y == nil {
-    return false
-  }
-  return bytes.Equal(x.Raw(), y.Raw())
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return bytes.Equal(x.Raw(), y.Raw())
 }
 
 func (x *PreprepareContent) SignedHeader() *BlockRef {
@@ -369,11 +369,11 @@ func (x *PreprepareContent) StringSender() string {
 
 type PreprepareContentBuilder struct {
 	SignedHeader *BlockRefBuilder
-	Sender *SenderSignatureBuilder
+	Sender       *SenderSignatureBuilder
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
 	_overrideWithRawBuffer []byte
 }
 
@@ -472,7 +472,7 @@ func (x *PrepareContent) String() string {
 	return fmt.Sprintf("{SignedHeader:%s,Sender:%s,}", x.StringSignedHeader(), x.StringSender())
 }
 
-var _PrepareContent_Scheme = []membuffers.FieldType{membuffers.TypeMessage,membuffers.TypeMessage,}
+var _PrepareContent_Scheme = []membuffers.FieldType{membuffers.TypeMessage, membuffers.TypeMessage}
 var _PrepareContent_Unions = [][]membuffers.FieldType{}
 
 func PrepareContentReader(buf []byte) *PrepareContent {
@@ -490,13 +490,13 @@ func (x *PrepareContent) Raw() []byte {
 }
 
 func (x *PrepareContent) Equal(y *PrepareContent) bool {
-  if x == nil && y == nil {
-    return true
-  }
-  if x == nil || y == nil {
-    return false
-  }
-  return bytes.Equal(x.Raw(), y.Raw())
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return bytes.Equal(x.Raw(), y.Raw())
 }
 
 func (x *PrepareContent) SignedHeader() *BlockRef {
@@ -537,11 +537,11 @@ func (x *PrepareContent) StringSender() string {
 
 type PrepareContentBuilder struct {
 	SignedHeader *BlockRefBuilder
-	Sender *SenderSignatureBuilder
+	Sender       *SenderSignatureBuilder
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
 	_overrideWithRawBuffer []byte
 }
 
@@ -641,7 +641,7 @@ func (x *CommitContent) String() string {
 	return fmt.Sprintf("{SignedHeader:%s,Sender:%s,Share:%s,}", x.StringSignedHeader(), x.StringSender(), x.StringShare())
 }
 
-var _CommitContent_Scheme = []membuffers.FieldType{membuffers.TypeMessage,membuffers.TypeMessage,membuffers.TypeBytes,}
+var _CommitContent_Scheme = []membuffers.FieldType{membuffers.TypeMessage, membuffers.TypeMessage, membuffers.TypeBytes}
 var _CommitContent_Unions = [][]membuffers.FieldType{}
 
 func CommitContentReader(buf []byte) *CommitContent {
@@ -659,13 +659,13 @@ func (x *CommitContent) Raw() []byte {
 }
 
 func (x *CommitContent) Equal(y *CommitContent) bool {
-  if x == nil && y == nil {
-    return true
-  }
-  if x == nil || y == nil {
-    return false
-  }
-  return bytes.Equal(x.Raw(), y.Raw())
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return bytes.Equal(x.Raw(), y.Raw())
 }
 
 func (x *CommitContent) SignedHeader() *BlockRef {
@@ -722,12 +722,12 @@ func (x *CommitContent) StringShare() string {
 
 type CommitContentBuilder struct {
 	SignedHeader *BlockRefBuilder
-	Sender *SenderSignatureBuilder
-	Share primitives.RandomSeedSignature
+	Sender       *SenderSignatureBuilder
+	Share        primitives.RandomSeedSignature
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
 	_overrideWithRawBuffer []byte
 }
 
@@ -828,7 +828,7 @@ func (x *ViewChangeMessageContent) String() string {
 	return fmt.Sprintf("{SignedHeader:%s,Sender:%s,}", x.StringSignedHeader(), x.StringSender())
 }
 
-var _ViewChangeMessageContent_Scheme = []membuffers.FieldType{membuffers.TypeMessage,membuffers.TypeMessage,}
+var _ViewChangeMessageContent_Scheme = []membuffers.FieldType{membuffers.TypeMessage, membuffers.TypeMessage}
 var _ViewChangeMessageContent_Unions = [][]membuffers.FieldType{}
 
 func ViewChangeMessageContentReader(buf []byte) *ViewChangeMessageContent {
@@ -846,13 +846,13 @@ func (x *ViewChangeMessageContent) Raw() []byte {
 }
 
 func (x *ViewChangeMessageContent) Equal(y *ViewChangeMessageContent) bool {
-  if x == nil && y == nil {
-    return true
-  }
-  if x == nil || y == nil {
-    return false
-  }
-  return bytes.Equal(x.Raw(), y.Raw())
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return bytes.Equal(x.Raw(), y.Raw())
 }
 
 func (x *ViewChangeMessageContent) SignedHeader() *ViewChangeHeader {
@@ -893,11 +893,11 @@ func (x *ViewChangeMessageContent) StringSender() string {
 
 type ViewChangeMessageContentBuilder struct {
 	SignedHeader *ViewChangeHeaderBuilder
-	Sender *SenderSignatureBuilder
+	Sender       *SenderSignatureBuilder
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
 	_overrideWithRawBuffer []byte
 }
 
@@ -997,7 +997,7 @@ func (x *NewViewMessageContent) String() string {
 	return fmt.Sprintf("{SignedHeader:%s,Sender:%s,Message:%s,}", x.StringSignedHeader(), x.StringSender(), x.StringMessage())
 }
 
-var _NewViewMessageContent_Scheme = []membuffers.FieldType{membuffers.TypeMessage,membuffers.TypeMessage,membuffers.TypeMessage,}
+var _NewViewMessageContent_Scheme = []membuffers.FieldType{membuffers.TypeMessage, membuffers.TypeMessage, membuffers.TypeMessage}
 var _NewViewMessageContent_Unions = [][]membuffers.FieldType{}
 
 func NewViewMessageContentReader(buf []byte) *NewViewMessageContent {
@@ -1015,13 +1015,13 @@ func (x *NewViewMessageContent) Raw() []byte {
 }
 
 func (x *NewViewMessageContent) Equal(y *NewViewMessageContent) bool {
-  if x == nil && y == nil {
-    return true
-  }
-  if x == nil || y == nil {
-    return false
-  }
-  return bytes.Equal(x.Raw(), y.Raw())
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return bytes.Equal(x.Raw(), y.Raw())
 }
 
 func (x *NewViewMessageContent) SignedHeader() *NewViewHeader {
@@ -1079,12 +1079,12 @@ func (x *NewViewMessageContent) StringMessage() string {
 
 type NewViewMessageContentBuilder struct {
 	SignedHeader *NewViewHeaderBuilder
-	Sender *SenderSignatureBuilder
-	Message *PreprepareContentBuilder
+	Sender       *SenderSignatureBuilder
+	Message      *PreprepareContentBuilder
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
 	_overrideWithRawBuffer []byte
 }
 
@@ -1191,7 +1191,7 @@ func (x *SenderSignature) String() string {
 	return fmt.Sprintf("{MemberId:%s,Signature:%s,}", x.StringMemberId(), x.StringSignature())
 }
 
-var _SenderSignature_Scheme = []membuffers.FieldType{membuffers.TypeBytes,membuffers.TypeBytes,}
+var _SenderSignature_Scheme = []membuffers.FieldType{membuffers.TypeBytes, membuffers.TypeBytes}
 var _SenderSignature_Unions = [][]membuffers.FieldType{}
 
 func SenderSignatureReader(buf []byte) *SenderSignature {
@@ -1209,13 +1209,13 @@ func (x *SenderSignature) Raw() []byte {
 }
 
 func (x *SenderSignature) Equal(y *SenderSignature) bool {
-  if x == nil && y == nil {
-    return true
-  }
-  if x == nil || y == nil {
-    return false
-  }
-  return bytes.Equal(x.Raw(), y.Raw())
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return bytes.Equal(x.Raw(), y.Raw())
 }
 
 func (x *SenderSignature) MemberId() primitives.MemberId {
@@ -1253,12 +1253,12 @@ func (x *SenderSignature) StringSignature() string {
 // builder
 
 type SenderSignatureBuilder struct {
-	MemberId primitives.MemberId
+	MemberId  primitives.MemberId
 	Signature primitives.Signature
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
 	_overrideWithRawBuffer []byte
 }
 
@@ -1334,6 +1334,7 @@ type BlockRef struct {
 	// BlockHeight primitives.BlockHeight
 	// View primitives.View
 	// BlockHash primitives.BlockHash
+	// NetworkId primitives.NetworkId
 
 	// internal
 	// implements membuffers.Message
@@ -1344,10 +1345,10 @@ func (x *BlockRef) String() string {
 	if x == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("{MessageType:%s,BlockHeight:%s,View:%s,BlockHash:%s,}", x.StringMessageType(), x.StringBlockHeight(), x.StringView(), x.StringBlockHash())
+	return fmt.Sprintf("{MessageType:%s,BlockHeight:%s,View:%s,BlockHash:%s,NetworkId:%s,}", x.StringMessageType(), x.StringBlockHeight(), x.StringView(), x.StringBlockHash(), x.StringNetworkId())
 }
 
-var _BlockRef_Scheme = []membuffers.FieldType{membuffers.TypeUint16,membuffers.TypeUint64,membuffers.TypeUint64,membuffers.TypeBytes,}
+var _BlockRef_Scheme = []membuffers.FieldType{membuffers.TypeUint16, membuffers.TypeUint64, membuffers.TypeUint64, membuffers.TypeBytes, membuffers.TypeUint64}
 var _BlockRef_Unions = [][]membuffers.FieldType{}
 
 func BlockRefReader(buf []byte) *BlockRef {
@@ -1365,13 +1366,13 @@ func (x *BlockRef) Raw() []byte {
 }
 
 func (x *BlockRef) Equal(y *BlockRef) bool {
-  if x == nil && y == nil {
-    return true
-  }
-  if x == nil || y == nil {
-    return false
-  }
-  return bytes.Equal(x.Raw(), y.Raw())
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return bytes.Equal(x.Raw(), y.Raw())
 }
 
 func (x *BlockRef) MessageType() MessageType {
@@ -1438,17 +1439,34 @@ func (x *BlockRef) StringBlockHash() string {
 	return fmt.Sprintf("%s", x.BlockHash())
 }
 
+func (x *BlockRef) NetworkId() primitives.NetworkId {
+	return primitives.NetworkId(x._message.GetUint64(4))
+}
+
+func (x *BlockRef) RawNetworkId() []byte {
+	return x._message.RawBufferForField(4, 0)
+}
+
+func (x *BlockRef) MutateNetworkId(v primitives.NetworkId) error {
+	return x._message.SetUint64(4, uint64(v))
+}
+
+func (x *BlockRef) StringNetworkId() string {
+	return fmt.Sprintf("%s", x.NetworkId())
+}
+
 // builder
 
 type BlockRefBuilder struct {
 	MessageType MessageType
 	BlockHeight primitives.BlockHeight
-	View primitives.View
-	BlockHash primitives.BlockHash
+	View        primitives.View
+	BlockHash   primitives.BlockHash
+	NetworkId   primitives.NetworkId
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
 	_overrideWithRawBuffer []byte
 }
 
@@ -1471,6 +1489,7 @@ func (w *BlockRefBuilder) Write(buf []byte) (err error) {
 	w._builder.WriteUint64(buf, uint64(w.BlockHeight))
 	w._builder.WriteUint64(buf, uint64(w.View))
 	w._builder.WriteBytes(buf, []byte(w.BlockHash))
+	w._builder.WriteUint64(buf, uint64(w.NetworkId))
 	return nil
 }
 
@@ -1488,6 +1507,7 @@ func (w *BlockRefBuilder) HexDump(prefix string, offsetFromStart membuffers.Offs
 	w._builder.HexDumpUint64(prefix, offsetFromStart, "BlockRef.BlockHeight", uint64(w.BlockHeight))
 	w._builder.HexDumpUint64(prefix, offsetFromStart, "BlockRef.View", uint64(w.View))
 	w._builder.HexDumpBytes(prefix, offsetFromStart, "BlockRef.BlockHash", []byte(w.BlockHash))
+	w._builder.HexDumpUint64(prefix, offsetFromStart, "BlockRef.NetworkId", uint64(w.NetworkId))
 	return nil
 }
 
@@ -1541,7 +1561,7 @@ func (x *ViewChangeHeader) String() string {
 	return fmt.Sprintf("{MessageType:%s,BlockHeight:%s,View:%s,PreparedProof:%s,}", x.StringMessageType(), x.StringBlockHeight(), x.StringView(), x.StringPreparedProof())
 }
 
-var _ViewChangeHeader_Scheme = []membuffers.FieldType{membuffers.TypeUint16,membuffers.TypeUint64,membuffers.TypeUint64,membuffers.TypeMessage,}
+var _ViewChangeHeader_Scheme = []membuffers.FieldType{membuffers.TypeUint16, membuffers.TypeUint64, membuffers.TypeUint64, membuffers.TypeMessage}
 var _ViewChangeHeader_Unions = [][]membuffers.FieldType{}
 
 func ViewChangeHeaderReader(buf []byte) *ViewChangeHeader {
@@ -1559,13 +1579,13 @@ func (x *ViewChangeHeader) Raw() []byte {
 }
 
 func (x *ViewChangeHeader) Equal(y *ViewChangeHeader) bool {
-  if x == nil && y == nil {
-    return true
-  }
-  if x == nil || y == nil {
-    return false
-  }
-  return bytes.Equal(x.Raw(), y.Raw())
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return bytes.Equal(x.Raw(), y.Raw())
 }
 
 func (x *ViewChangeHeader) MessageType() MessageType {
@@ -1636,14 +1656,14 @@ func (x *ViewChangeHeader) StringPreparedProof() string {
 // builder
 
 type ViewChangeHeaderBuilder struct {
-	MessageType MessageType
-	BlockHeight primitives.BlockHeight
-	View primitives.View
+	MessageType   MessageType
+	BlockHeight   primitives.BlockHeight
+	View          primitives.View
 	PreparedProof *PreparedProofBuilder
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
 	_overrideWithRawBuffer []byte
 }
 
@@ -1742,7 +1762,7 @@ func (x *PreparedProof) String() string {
 	return fmt.Sprintf("{PreprepareBlockRef:%s,PreprepareSender:%s,PrepareBlockRef:%s,PrepareSenders:%s,}", x.StringPreprepareBlockRef(), x.StringPreprepareSender(), x.StringPrepareBlockRef(), x.StringPrepareSenders())
 }
 
-var _PreparedProof_Scheme = []membuffers.FieldType{membuffers.TypeMessage,membuffers.TypeMessage,membuffers.TypeMessage,membuffers.TypeMessageArray,}
+var _PreparedProof_Scheme = []membuffers.FieldType{membuffers.TypeMessage, membuffers.TypeMessage, membuffers.TypeMessage, membuffers.TypeMessageArray}
 var _PreparedProof_Unions = [][]membuffers.FieldType{}
 
 func PreparedProofReader(buf []byte) *PreparedProof {
@@ -1760,13 +1780,13 @@ func (x *PreparedProof) Raw() []byte {
 }
 
 func (x *PreparedProof) Equal(y *PreparedProof) bool {
-  if x == nil && y == nil {
-    return true
-  }
-  if x == nil || y == nil {
-    return false
-  }
-  return bytes.Equal(x.Raw(), y.Raw())
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return bytes.Equal(x.Raw(), y.Raw())
 }
 
 func (x *PreparedProof) PreprepareBlockRef() *BlockRef {
@@ -1858,13 +1878,13 @@ func (x *PreparedProof) StringPrepareSenders() (res string) {
 
 type PreparedProofBuilder struct {
 	PreprepareBlockRef *BlockRefBuilder
-	PreprepareSender *SenderSignatureBuilder
-	PrepareBlockRef *BlockRefBuilder
-	PrepareSenders []*SenderSignatureBuilder
+	PreprepareSender   *SenderSignatureBuilder
+	PrepareBlockRef    *BlockRefBuilder
+	PrepareSenders     []*SenderSignatureBuilder
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
 	_overrideWithRawBuffer []byte
 }
 
@@ -1989,7 +2009,7 @@ func (x *NewViewHeader) String() string {
 	return fmt.Sprintf("{MessageType:%s,BlockHeight:%s,View:%s,ViewChangeConfirmations:%s,}", x.StringMessageType(), x.StringBlockHeight(), x.StringView(), x.StringViewChangeConfirmations())
 }
 
-var _NewViewHeader_Scheme = []membuffers.FieldType{membuffers.TypeUint16,membuffers.TypeUint64,membuffers.TypeUint64,membuffers.TypeMessageArray,}
+var _NewViewHeader_Scheme = []membuffers.FieldType{membuffers.TypeUint16, membuffers.TypeUint64, membuffers.TypeUint64, membuffers.TypeMessageArray}
 var _NewViewHeader_Unions = [][]membuffers.FieldType{}
 
 func NewViewHeaderReader(buf []byte) *NewViewHeader {
@@ -2007,13 +2027,13 @@ func (x *NewViewHeader) Raw() []byte {
 }
 
 func (x *NewViewHeader) Equal(y *NewViewHeader) bool {
-  if x == nil && y == nil {
-    return true
-  }
-  if x == nil || y == nil {
-    return false
-  }
-  return bytes.Equal(x.Raw(), y.Raw())
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return bytes.Equal(x.Raw(), y.Raw())
 }
 
 func (x *NewViewHeader) MessageType() MessageType {
@@ -2101,14 +2121,14 @@ func (x *NewViewHeader) StringViewChangeConfirmations() (res string) {
 // builder
 
 type NewViewHeaderBuilder struct {
-	MessageType MessageType
-	BlockHeight primitives.BlockHeight
-	View primitives.View
+	MessageType             MessageType
+	BlockHeight             primitives.BlockHeight
+	View                    primitives.View
 	ViewChangeConfirmations []*ViewChangeMessageContentBuilder
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
 	_overrideWithRawBuffer []byte
 }
 
@@ -2214,7 +2234,7 @@ func (x *BlockProof) String() string {
 	return fmt.Sprintf("{BlockRef:%s,Nodes:%s,RandomSeedSignature:%s,}", x.StringBlockRef(), x.StringNodes(), x.StringRandomSeedSignature())
 }
 
-var _BlockProof_Scheme = []membuffers.FieldType{membuffers.TypeMessage,membuffers.TypeMessageArray,membuffers.TypeBytes,}
+var _BlockProof_Scheme = []membuffers.FieldType{membuffers.TypeMessage, membuffers.TypeMessageArray, membuffers.TypeBytes}
 var _BlockProof_Unions = [][]membuffers.FieldType{}
 
 func BlockProofReader(buf []byte) *BlockProof {
@@ -2232,13 +2252,13 @@ func (x *BlockProof) Raw() []byte {
 }
 
 func (x *BlockProof) Equal(y *BlockProof) bool {
-  if x == nil && y == nil {
-    return true
-  }
-  if x == nil || y == nil {
-    return false
-  }
-  return bytes.Equal(x.Raw(), y.Raw())
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return bytes.Equal(x.Raw(), y.Raw())
 }
 
 func (x *BlockProof) BlockRef() *BlockRef {
@@ -2311,13 +2331,13 @@ func (x *BlockProof) StringRandomSeedSignature() string {
 // builder
 
 type BlockProofBuilder struct {
-	BlockRef *BlockRefBuilder
-	Nodes []*SenderSignatureBuilder
+	BlockRef            *BlockRefBuilder
+	Nodes               []*SenderSignatureBuilder
 	RandomSeedSignature primitives.RandomSeedSignature
 
 	// internal
 	// implements membuffers.Builder
-	_builder membuffers.InternalBuilder
+	_builder               membuffers.InternalBuilder
 	_overrideWithRawBuffer []byte
 }
 
@@ -2411,11 +2431,11 @@ func BlockProofBuilderFromRaw(raw []byte) *BlockProofBuilder {
 type MessageType uint16
 
 const (
-	LEAN_HELIX_RESERVED MessageType = 0
-	LEAN_HELIX_PREPREPARE MessageType = 1
-	LEAN_HELIX_PREPARE MessageType = 2
-	LEAN_HELIX_COMMIT MessageType = 3
-	LEAN_HELIX_NEW_VIEW MessageType = 4
+	LEAN_HELIX_RESERVED    MessageType = 0
+	LEAN_HELIX_PREPREPARE  MessageType = 1
+	LEAN_HELIX_PREPARE     MessageType = 2
+	LEAN_HELIX_COMMIT      MessageType = 3
+	LEAN_HELIX_NEW_VIEW    MessageType = 4
 	LEAN_HELIX_VIEW_CHANGE MessageType = 5
 )
 
@@ -2436,4 +2456,3 @@ func (n MessageType) String() string {
 	}
 	return "UNKNOWN"
 }
-

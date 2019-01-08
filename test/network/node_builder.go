@@ -9,6 +9,7 @@ import (
 )
 
 type NodeBuilder struct {
+	networkId     primitives.NetworkId
 	communication *mocks.CommunicationMock
 	membership    interfaces.Membership
 	blocksPool    *mocks.BlocksPool
@@ -41,6 +42,11 @@ func (builder *NodeBuilder) WithMemberId(memberId primitives.MemberId) *NodeBuil
 	return builder
 }
 
+func (builder *NodeBuilder) InNetwork(networkId primitives.NetworkId) *NodeBuilder {
+	builder.networkId = networkId
+	return builder
+}
+
 func (builder *NodeBuilder) WithBlocksPool(blocksPool *mocks.BlocksPool) *NodeBuilder {
 	if builder.blocksPool == nil {
 		builder.blocksPool = blocksPool
@@ -65,7 +71,7 @@ func (builder *NodeBuilder) Build() *Node {
 	if builder.logsToConsole {
 		l = logger.NewConsoleLogger(memberId.KeyForMap())
 	}
-	return NewNode(builder.membership, builder.communication, blockUtils, electionTrigger, l)
+	return NewNode(builder.networkId, builder.membership, builder.communication, blockUtils, electionTrigger, l)
 }
 
 func ADummyNode() *Node {

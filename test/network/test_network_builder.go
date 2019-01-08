@@ -5,9 +5,11 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
+	"math/rand"
 )
 
 type TestNetworkBuilder struct {
+	networkId              primitives.NetworkId
 	NodeCount              int
 	logToConsole           bool
 	customNodeBuilders     []*NodeBuilder
@@ -26,6 +28,11 @@ func (tb *TestNetworkBuilder) WithNodeCount(nodeCount int) *TestNetworkBuilder {
 func (tb *TestNetworkBuilder) WithCustomNodeBuilder(nodeBuilder *NodeBuilder) *TestNetworkBuilder {
 	tb.customNodeBuilders = append(tb.customNodeBuilders, nodeBuilder)
 	return tb
+}
+
+func (builder *TestNetworkBuilder) InNetwork(networkId primitives.NetworkId) *TestNetworkBuilder {
+	builder.networkId = networkId
+	return builder
 }
 
 func (tb *TestNetworkBuilder) WithBlocks(upcomingBlocks []interfaces.Block) *TestNetworkBuilder {
@@ -49,7 +56,7 @@ func (tb *TestNetworkBuilder) Build() *TestNetwork {
 	blocksPool := tb.buildBlocksPool()
 	discovery := mocks.NewDiscovery()
 	nodes := tb.createNodes(discovery, blocksPool, tb.logToConsole)
-	testNetwork := NewTestNetwork(discovery)
+	testNetwork := NewTestNetwork(tb.networkId, discovery)
 	testNetwork.RegisterNodes(nodes)
 	return testNetwork
 }
@@ -79,6 +86,7 @@ func (tb *TestNetworkBuilder) buildNode(
 	membership := mocks.NewMockMembership(memberId, discovery, tb.orderCommitteeByHeight)
 
 	b := nodeBuilder.
+		InNetwork(tb.networkId).
 		CommunicatesVia(communicationInstance).
 		ThatIsPartOf(membership).
 		WithBlocksPool(blocksPool).
@@ -136,5 +144,6 @@ func ABasicTestNetwork() *TestNetwork {
 }
 
 func ATestNetwork(countOfNodes int, blocksPool ...interfaces.Block) *TestNetwork {
-	return NewTestNetworkBuilder().WithNodeCount(countOfNodes).WithBlocks(blocksPool).Build()
+	networkId := primitives.NetworkId(rand.Uint64())
+	return NewTestNetworkBuilder().WithNodeCount(countOfNodes).WithBlocks(blocksPool).InNetwork(networkId).Build()
 }

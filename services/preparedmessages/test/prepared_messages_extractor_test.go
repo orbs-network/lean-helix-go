@@ -9,27 +9,27 @@ import (
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/stretchr/testify/require"
-	"math"
 	"math/rand"
 	"strconv"
 	"testing"
 )
 
 func TestPreparedMessagesExtractor(t *testing.T) {
-	blockHeight := primitives.BlockHeight(math.Floor(rand.Float64() * 1000000))
-	view := primitives.View(math.Floor(rand.Float64() * 1000000))
+	networkId := primitives.NetworkId(rand.Uint64())
+	blockHeight := primitives.BlockHeight(rand.Uint64())
+	view := primitives.View(rand.Uint64())
 	block := mocks.ABlock(interfaces.GenesisBlock)
-	leaderId := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	senderId1 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
-	senderId2 := primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000))))
+	leaderId := primitives.MemberId(strconv.Itoa(rand.Int()))
+	senderId1 := primitives.MemberId(strconv.Itoa(rand.Int()))
+	senderId2 := primitives.MemberId(strconv.Itoa(rand.Int()))
 	leaderKeyManager := mocks.NewMockKeyManager(primitives.MemberId(leaderId))
 	sender1KeyManager := mocks.NewMockKeyManager(primitives.MemberId(senderId1))
 	sender2KeyManager := mocks.NewMockKeyManager(primitives.MemberId(senderId2))
 
 	t.Run("should return the prepare proof", func(t *testing.T) {
-		ppm := builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, view, block)
-		pm1 := builders.APrepareMessage(sender1KeyManager, senderId1, blockHeight, view, block)
-		pm2 := builders.APrepareMessage(sender2KeyManager, senderId2, blockHeight, view, block)
+		ppm := builders.APreprepareMessage(networkId, leaderKeyManager, leaderId, blockHeight, view, block)
+		pm1 := builders.APrepareMessage(networkId, sender1KeyManager, senderId1, blockHeight, view, block)
+		pm2 := builders.APrepareMessage(networkId, sender2KeyManager, senderId2, blockHeight, view, block)
 		s := storage.NewInMemoryStorage()
 		s.StorePreprepare(ppm)
 		s.StorePrepare(pm1)
@@ -58,17 +58,17 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 
 	t.Run("should return the latest (highest view) Prepare Proof", func(t *testing.T) {
 		s := storage.NewInMemoryStorage()
-		ppm10 := builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, 10, block)
-		pm10a := builders.APrepareMessage(sender1KeyManager, senderId1, blockHeight, 10, block)
-		pm10b := builders.APrepareMessage(sender2KeyManager, senderId2, blockHeight, 10, block)
+		ppm10 := builders.APreprepareMessage(networkId, leaderKeyManager, leaderId, blockHeight, 10, block)
+		pm10a := builders.APrepareMessage(networkId, sender1KeyManager, senderId1, blockHeight, 10, block)
+		pm10b := builders.APrepareMessage(networkId, sender2KeyManager, senderId2, blockHeight, 10, block)
 
-		ppm20 := builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, 20, block)
-		pm20a := builders.APrepareMessage(sender1KeyManager, senderId1, blockHeight, 20, block)
-		pm20b := builders.APrepareMessage(sender2KeyManager, senderId2, blockHeight, 20, block)
+		ppm20 := builders.APreprepareMessage(networkId, leaderKeyManager, leaderId, blockHeight, 20, block)
+		pm20a := builders.APrepareMessage(networkId, sender1KeyManager, senderId1, blockHeight, 20, block)
+		pm20b := builders.APrepareMessage(networkId, sender2KeyManager, senderId2, blockHeight, 20, block)
 
-		ppm30 := builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, 30, block)
-		pm30a := builders.APrepareMessage(sender1KeyManager, senderId1, blockHeight, 30, block)
-		pm30b := builders.APrepareMessage(sender2KeyManager, senderId2, blockHeight, 30, block)
+		ppm30 := builders.APreprepareMessage(networkId, leaderKeyManager, leaderId, blockHeight, 30, block)
+		pm30a := builders.APrepareMessage(networkId, sender1KeyManager, senderId1, blockHeight, 30, block)
+		pm30b := builders.APrepareMessage(networkId, sender2KeyManager, senderId2, blockHeight, 30, block)
 
 		s.StorePreprepare(ppm10)
 		s.StorePrepare(pm10a)
@@ -103,8 +103,8 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	})
 
 	t.Run("TestReturnNothingIfNoPrePrepare", func(t *testing.T) {
-		pm1 := builders.APrepareMessage(sender1KeyManager, senderId1, blockHeight, view, block)
-		pm2 := builders.APrepareMessage(sender2KeyManager, senderId2, blockHeight, view, block)
+		pm1 := builders.APrepareMessage(networkId, sender1KeyManager, senderId1, blockHeight, view, block)
+		pm2 := builders.APrepareMessage(networkId, sender2KeyManager, senderId2, blockHeight, view, block)
 		s := storage.NewInMemoryStorage()
 		s.StorePrepare(pm1)
 		s.StorePrepare(pm2)
@@ -114,7 +114,7 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	})
 
 	t.Run("TestReturnNothingIfNoPrepares", func(t *testing.T) {
-		ppm := builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, view, block)
+		ppm := builders.APreprepareMessage(networkId, leaderKeyManager, leaderId, blockHeight, view, block)
 		s := storage.NewInMemoryStorage()
 		s.StorePreprepare(ppm)
 		q := 3
@@ -123,8 +123,8 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	})
 
 	t.Run("TestReturnNothingIfNotEnoughPrepares", func(t *testing.T) {
-		ppm := builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, view, block)
-		pm1 := builders.APrepareMessage(sender1KeyManager, senderId1, blockHeight, view, block)
+		ppm := builders.APreprepareMessage(networkId, leaderKeyManager, leaderId, blockHeight, view, block)
+		pm1 := builders.APrepareMessage(networkId, sender1KeyManager, senderId1, blockHeight, view, block)
 		s := storage.NewInMemoryStorage()
 		s.StorePreprepare(ppm)
 		s.StorePrepare(pm1)

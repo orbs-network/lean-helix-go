@@ -11,6 +11,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/orbs-network/lean-helix-go/test/network"
 	"github.com/stretchr/testify/require"
+	"math/rand"
 	"testing"
 )
 
@@ -21,6 +22,7 @@ func compareSenderSignature(commitMessage *interfaces.CommitMessage, senderSigna
 
 func TestGeneratingBlockProof(t *testing.T) {
 	block := mocks.ABlock(interfaces.GenesisBlock)
+	networkId := primitives.NetworkId(rand.Uint64())
 
 	memberId0 := primitives.MemberId("Member0")
 	memberId1 := primitives.MemberId("Member1")
@@ -32,10 +34,10 @@ func TestGeneratingBlockProof(t *testing.T) {
 	node2KeyManager := mocks.NewMockKeyManager(memberId2)
 	node3KeyManager := mocks.NewMockKeyManager(memberId3)
 
-	cm0 := builders.ACommitMessage(node0KeyManager, memberId0, 5, 6, block, 0)
-	cm1 := builders.ACommitMessage(node1KeyManager, memberId1, 5, 6, block, 0)
-	cm2 := builders.ACommitMessage(node2KeyManager, memberId2, 5, 6, block, 0)
-	cm3 := builders.ACommitMessage(node3KeyManager, memberId3, 5, 6, block, 0)
+	cm0 := builders.ACommitMessage(networkId, node0KeyManager, memberId0, 5, 6, block, 0)
+	cm1 := builders.ACommitMessage(networkId, node1KeyManager, memberId1, 5, 6, block, 0)
+	cm2 := builders.ACommitMessage(networkId, node2KeyManager, memberId2, 5, 6, block, 0)
+	cm3 := builders.ACommitMessage(networkId, node3KeyManager, memberId3, 5, 6, block, 0)
 
 	commitMessages := []*interfaces.CommitMessage{cm0, cm1, cm2, cm3}
 
@@ -128,10 +130,10 @@ func TestNodeSync(t *testing.T) {
 	})
 }
 
-func genBlockProofMessages(block interfaces.Block, view primitives.View, randomSeed uint64, nodes ...*network.Node) *protocol.BlockProof {
+func genBlockProofMessages(networkId primitives.NetworkId, block interfaces.Block, view primitives.View, randomSeed uint64, nodes ...*network.Node) *protocol.BlockProof {
 	var commitMessages []*interfaces.CommitMessage
 	for _, node := range nodes {
-		cm := builders.ACommitMessage(node.KeyManager, node.MemberId, block.Height(), view, block, randomSeed)
+		cm := builders.ACommitMessage(networkId, node.KeyManager, node.MemberId, block.Height(), view, block, randomSeed)
 		commitMessages = append(commitMessages, cm)
 	}
 
@@ -152,8 +154,8 @@ func TestAValidBlockProof(t *testing.T) {
 		node2 := net.Nodes[2]
 		node3 := net.Nodes[3]
 
-		blockProof := genBlockProofMessages(block3, 6, 0, node1, node2, node3).Raw()
-		prevBlockProof := genBlockProofMessages(block2, 3, 0, node1, node2, node3).Raw()
+		blockProof := genBlockProofMessages(net.NetworkId, block3, 6, 0, node1, node2, node3).Raw()
+		prevBlockProof := genBlockProofMessages(net.NetworkId, block2, 3, 0, node1, node2, node3).Raw()
 		require.True(t, node0.ValidateBlockConsensus(ctx, block3, blockProof, prevBlockProof))
 		require.False(t, node0.ValidateBlockConsensus(ctx, nil, blockProof, prevBlockProof))
 	})

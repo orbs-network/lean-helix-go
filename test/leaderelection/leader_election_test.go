@@ -29,9 +29,9 @@ func Test2fPlus1ViewChangeToBeElected(t *testing.T) {
 		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
 
 		// manually cause new-view with 3 view-changes
-		node0VCMessage := builders.AViewChangeMessage(node0.KeyManager, node0.MemberId, 1, 1, nil)
-		node2VCMessage := builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 1, nil)
-		node3VCMessage := builders.AViewChangeMessage(node3.KeyManager, node3.MemberId, 1, 1, nil)
+		node0VCMessage := builders.AViewChangeMessage(h.net.NetworkId, node0.KeyManager, node0.MemberId, 1, 1, nil)
+		node2VCMessage := builders.AViewChangeMessage(h.net.NetworkId, node2.KeyManager, node2.MemberId, 1, 1, nil)
+		node3VCMessage := builders.AViewChangeMessage(h.net.NetworkId, node3.KeyManager, node3.MemberId, 1, 1, nil)
 		node1.Communication.OnRemoteMessage(ctx, node0VCMessage.ToConsensusRawMessage())
 		node1.Communication.OnRemoteMessage(ctx, node2VCMessage.ToConsensusRawMessage())
 		node1.Communication.OnRemoteMessage(ctx, node3VCMessage.ToConsensusRawMessage())
@@ -130,10 +130,10 @@ func TestNotCountingViewChangeFromTheSameNode(t *testing.T) {
 		h.net.WaitForNodeToRequestNewBlock(ctx, node0)
 
 		// sending only 4 view-change from the same node
-		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
+		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(h.net.NetworkId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
+		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(h.net.NetworkId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
+		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(h.net.NetworkId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
+		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(h.net.NetworkId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
 
 		node1.Communication.CountSentMessages(protocol.LEAN_HELIX_NEW_VIEW)
 	})
@@ -154,8 +154,8 @@ func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 		h.net.WaitForNodeToRequestNewBlock(ctx, node0)
 
 		// sending only 2 view-change (not enough to be elected)
-		node0VCMessage := builders.AViewChangeMessage(node0.KeyManager, node0.MemberId, 1, 1, nil)
-		node2VCMessage := builders.AViewChangeMessage(node2.KeyManager, node2.MemberId, 1, 1, nil)
+		node0VCMessage := builders.AViewChangeMessage(h.net.NetworkId, node0.KeyManager, node0.MemberId, 1, 1, nil)
+		node2VCMessage := builders.AViewChangeMessage(h.net.NetworkId, node2.KeyManager, node2.MemberId, 1, 1, nil)
 		node1.Communication.OnRemoteMessage(ctx, node0VCMessage.ToConsensusRawMessage())
 		node1.Communication.OnRemoteMessage(ctx, node2VCMessage.ToConsensusRawMessage())
 

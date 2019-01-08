@@ -7,19 +7,19 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/stretchr/testify/require"
-	"math"
 	"math/rand"
 	"testing"
 )
 
 func TestMessageBuilderAndReader(t *testing.T) {
-	height := primitives.BlockHeight(math.Floor(rand.Float64() * 1000000000))
-	view := primitives.View(math.Floor(rand.Float64() * 1000000000))
+	networkId := primitives.NetworkId(rand.Uint64())
+	height := primitives.BlockHeight(rand.Uint64())
+	view := primitives.View(rand.Uint64())
 	block := mocks.ABlock(interfaces.GenesisBlock)
 	b1 := mocks.ABlock(interfaces.GenesisBlock)
 	memberId := primitives.MemberId("Member Id")
 	mockKeyManager := mocks.NewMockKeyManager(memberId, nil)
-	mf := messagesfactory.NewMessageFactory(mockKeyManager, memberId, 0)
+	mf := messagesfactory.NewMessageFactory(networkId, mockKeyManager, memberId, 0)
 
 	t.Run("build and read PreprepareMessage", func(t *testing.T) {
 		ppm := mf.CreatePreprepareMessage(height, view, b1, mocks.CalculateBlockHash(b1))

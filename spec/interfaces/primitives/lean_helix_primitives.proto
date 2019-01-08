@@ -40,6 +40,12 @@ message view {
     // size 8 bytes
 }
 
+message network_id {
+    option inline_type = "uint64";
+    uint64 value = 1;
+    // size 8 bytes
+}
+
 message block_hash {
     option inline_type = "bytes";
     bytes value = 1;

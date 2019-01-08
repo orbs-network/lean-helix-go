@@ -19,7 +19,7 @@ func NewLeanHelixTerm(ctx context.Context, config *interfaces.Config, onCommit i
 	prevBlockProof := protocol.BlockProofReader(prevBlockProofBytes)
 	randomSeed := randomseed.CalculateRandomSeed(prevBlockProof.RandomSeedSignature())
 	blockHeight := blockheight.GetBlockHeight(prevBlock) + 1
-	messageFactory := messagesfactory.NewMessageFactory(config.KeyManager, config.Membership.MyMemberId(), randomSeed)
+	messageFactory := messagesfactory.NewMessageFactory(config.NetworkId, config.KeyManager, config.Membership.MyMemberId(), randomSeed)
 
 	committeeMembers := config.Membership.RequestOrderedCommittee(ctx, blockHeight, randomSeed)
 	termInCommittee := termincommittee.NewTermInCommittee(ctx, config, messageFactory, committeeMembers, blockHeight, prevBlock, CommitsToProof(config.KeyManager, onCommit))

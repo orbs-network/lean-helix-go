@@ -5,7 +5,6 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/stretchr/testify/require"
-	"math"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -13,7 +12,7 @@ import (
 
 func TestDiscovery(t *testing.T) {
 	genMemberId := func() primitives.MemberId {
-		return primitives.MemberId(strconv.Itoa(int(math.Floor(rand.Float64() * 1000000000))))
+		return primitives.MemberId(strconv.Itoa(rand.Int()))
 	}
 
 	t.Run("create a Discovery instance", func(t *testing.T) {

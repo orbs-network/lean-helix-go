@@ -60,6 +60,7 @@ message BlockRef {
     primitives.block_height block_height = 2;
     primitives.view view = 3;
     primitives.block_hash block_hash = 4;
+    primitives.network_id network_id = 5;
 }
 
 message ViewChangeHeader {

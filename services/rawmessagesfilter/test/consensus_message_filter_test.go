@@ -10,6 +10,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/stretchr/testify/require"
+	"math/rand"
 	"testing"
 )
 
@@ -17,52 +18,53 @@ func testLogger() interfaces.Logger {
 	return logger.NewSilentLogger()
 }
 
-func GeneratePreprepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
+func GeneratePreprepareMessage(networkId primitives.NetworkId, blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
 	keyManager := mocks.NewMockKeyManager(senderMemberId)
 	block := mocks.ABlock(interfaces.GenesisBlock)
-	return builders.APreprepareMessage(keyManager, senderMemberId, blockHeight, view, block).ToConsensusRawMessage()
+	return builders.APreprepareMessage(networkId, keyManager, senderMemberId, blockHeight, view, block).ToConsensusRawMessage()
 }
 
-func GeneratePrepareMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
+func GeneratePrepareMessage(networkId primitives.NetworkId, blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
 	keyManager := mocks.NewMockKeyManager(senderMemberId)
 	block := mocks.ABlock(interfaces.GenesisBlock)
-	return builders.APrepareMessage(keyManager, senderMemberId, blockHeight, view, block).ToConsensusRawMessage()
+	return builders.APrepareMessage(networkId, keyManager, senderMemberId, blockHeight, view, block).ToConsensusRawMessage()
 }
 
-func GenerateCommitMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
+func GenerateCommitMessage(networkId primitives.NetworkId, blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
 	keyManager := mocks.NewMockKeyManager(senderMemberId)
 	block := mocks.ABlock(interfaces.GenesisBlock)
-	return builders.ACommitMessage(keyManager, senderMemberId, blockHeight, view, block, 0).ToConsensusRawMessage()
+	return builders.ACommitMessage(networkId, keyManager, senderMemberId, blockHeight, view, block, 0).ToConsensusRawMessage()
 }
 
-func GenerateViewChangeMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
+func GenerateViewChangeMessage(networkId primitives.NetworkId, blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
 	keyManager := mocks.NewMockKeyManager(senderMemberId)
-	return builders.AViewChangeMessage(keyManager, senderMemberId, blockHeight, view, nil).ToConsensusRawMessage()
+	return builders.AViewChangeMessage(networkId, keyManager, senderMemberId, blockHeight, view, nil).ToConsensusRawMessage()
 }
 
-func GenerateNewViewMessage(blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
+func GenerateNewViewMessage(networkId primitives.NetworkId, blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
 	senderMemberId := primitives.MemberId(senderMemberIdStr)
 	keyManager := mocks.NewMockKeyManager(senderMemberId)
 	block := mocks.ABlock(interfaces.GenesisBlock)
-	return builders.ANewViewMessage(keyManager, senderMemberId, blockHeight, view, nil, nil, block).ToConsensusRawMessage()
+	return builders.ANewViewMessage(networkId, keyManager, senderMemberId, blockHeight, view, nil, nil, block).ToConsensusRawMessage()
 
 }
 
 func TestGettingAMessage(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
+		networkId := primitives.NetworkId(rand.Uint64())
 		filter := rawmessagesfilter.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
 		messagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, messagesHandler)
 
-		ppm := GeneratePreprepareMessage(10, 20, "Sender MemberId")
-		pm := GeneratePrepareMessage(10, 20, "Sender MemberId")
-		cm := GenerateCommitMessage(10, 20, "Sender MemberId")
-		vcm := GenerateViewChangeMessage(10, 20, "Sender MemberId")
-		nvm := GenerateNewViewMessage(10, 20, "Sender MemberId")
+		ppm := GeneratePreprepareMessage(networkId, 10, 20, "Sender MemberId")
+		pm := GeneratePrepareMessage(networkId, 10, 20, "Sender MemberId")
+		cm := GenerateCommitMessage(networkId, 10, 20, "Sender MemberId")
+		vcm := GenerateViewChangeMessage(networkId, 10, 20, "Sender MemberId")
+		nvm := GenerateNewViewMessage(networkId, 10, 20, "Sender MemberId")
 
 		require.Equal(t, 0, len(messagesHandler.history))
 
@@ -78,12 +80,13 @@ func TestGettingAMessage(t *testing.T) {
 
 func TestFilterMessagesFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
+		networkId := primitives.NetworkId(rand.Uint64())
 		filter := rawmessagesfilter.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
 		messagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, messagesHandler)
 
-		messageFromThePast := GeneratePreprepareMessage(9, 20, "Sender MemberId")
-		messageFromThePresent := GeneratePreprepareMessage(10, 20, "Sender MemberId")
+		messageFromThePast := GeneratePreprepareMessage(networkId, 9, 20, "Sender MemberId")
+		messageFromThePresent := GeneratePreprepareMessage(networkId, 10, 20, "Sender MemberId")
 
 		require.Equal(t, 0, len(messagesHandler.history))
 
@@ -96,12 +99,13 @@ func TestFilterMessagesFromThePast(t *testing.T) {
 
 func TestCacheMessagesFromTheFuture(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
+		networkId := primitives.NetworkId(rand.Uint64())
 		filter := rawmessagesfilter.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
 		messagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, messagesHandler)
 
-		messageFromTheFuture := GeneratePreprepareMessage(11, 20, "Sender MemberId")
-		messageFromThePresent := GeneratePreprepareMessage(10, 20, "Sender MemberId")
+		messageFromTheFuture := GeneratePreprepareMessage(networkId, 11, 20, "Sender MemberId")
+		messageFromThePresent := GeneratePreprepareMessage(networkId, 10, 20, "Sender MemberId")
 
 		require.Equal(t, 0, len(messagesHandler.history))
 
@@ -114,12 +118,13 @@ func TestCacheMessagesFromTheFuture(t *testing.T) {
 
 func TestFilterMessagesWithMyMemberId(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
+		networkId := primitives.NetworkId(rand.Uint64())
 		filter := rawmessagesfilter.NewConsensusMessageFilter(primitives.MemberId("My MemberId"), testLogger())
 		messagesHandler := NewTermMessagesHandlerMock()
 		filter.SetBlockHeight(ctx, 10, messagesHandler)
 
-		badMessage := GeneratePreprepareMessage(11, 20, "My MemberId")
-		goodMessage := GeneratePreprepareMessage(10, 20, "Sender MemberId")
+		badMessage := GeneratePreprepareMessage(networkId, 11, 20, "My MemberId")
+		goodMessage := GeneratePreprepareMessage(networkId, 10, 20, "Sender MemberId")
 
 		require.Equal(t, 0, len(messagesHandler.history))
 

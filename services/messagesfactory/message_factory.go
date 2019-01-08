@@ -9,6 +9,7 @@ import (
 )
 
 type MessageFactory struct {
+	networkId  primitives.NetworkId
 	keyManager interfaces.KeyManager
 	memberId   primitives.MemberId
 	randomSeed uint64
@@ -237,8 +238,9 @@ func (f *MessageFactory) CreateNewViewMessage(
 	return interfaces.NewNewViewMessage(contentBuilder.Build(), block)
 }
 
-func NewMessageFactory(keyManager interfaces.KeyManager, memberId primitives.MemberId, randomSeed uint64) *MessageFactory {
+func NewMessageFactory(networkId primitives.NetworkId, keyManager interfaces.KeyManager, memberId primitives.MemberId, randomSeed uint64) *MessageFactory {
 	return &MessageFactory{
+		networkId:  networkId,
 		keyManager: keyManager,
 		memberId:   memberId,
 		randomSeed: randomSeed,

@@ -8,6 +8,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/stretchr/testify/require"
 	"math"
+	"math/rand"
 	"testing"
 )
 
@@ -147,17 +148,18 @@ func TestProofsValidator(t *testing.T) {
 
 	t.Run("TestProofsValidatorWithMismatchingContent", func(t *testing.T) {
 		// Good proof //
+		networkId := primitives.NetworkId(rand.Uint64())
 		const blockHeight = 5
 		const view = 0
 		const targetBlockHeight = blockHeight
 		const targetView = view + 1
 
 		goodPrepareProof := builders.APreparedProofByMessages(
-			builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, view, block),
+			builders.APreprepareMessage(networkId, leaderKeyManager, leaderId, blockHeight, view, block),
 			[]*interfaces.PrepareMessage{
-				builders.APrepareMessage(node1KeyManager, node1Id, blockHeight, view, block),
-				builders.APrepareMessage(node2KeyManager, node2Id, blockHeight, view, block),
-				builders.APrepareMessage(node3KeyManager, node3Id, blockHeight, view, block),
+				builders.APrepareMessage(networkId, node1KeyManager, node1Id, blockHeight, view, block),
+				builders.APrepareMessage(networkId, node2KeyManager, node2Id, blockHeight, view, block),
+				builders.APrepareMessage(networkId, node3KeyManager, node3Id, blockHeight, view, block),
 			})
 
 		actualGood := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, q, myKeyManager, membersIds, calcLeaderId)
@@ -165,11 +167,11 @@ func TestProofsValidator(t *testing.T) {
 
 		// Mismatching blockHeight //
 		badHeightProof := builders.APreparedProofByMessages(
-			builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, view, block),
+			builders.APreprepareMessage(networkId, leaderKeyManager, leaderId, blockHeight, view, block),
 			[]*interfaces.PrepareMessage{
-				builders.APrepareMessage(node1KeyManager, node1Id, blockHeight, view, block),
-				builders.APrepareMessage(node2KeyManager, node2Id, 666, view, block),
-				builders.APrepareMessage(node3KeyManager, node3Id, blockHeight, view, block),
+				builders.APrepareMessage(networkId, node1KeyManager, node1Id, blockHeight, view, block),
+				builders.APrepareMessage(networkId, node2KeyManager, node2Id, 666, view, block),
+				builders.APrepareMessage(networkId, node3KeyManager, node3Id, blockHeight, view, block),
 			})
 
 		actualBadHeight := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, badHeightProof, q, myKeyManager, membersIds, calcLeaderId)
@@ -177,11 +179,11 @@ func TestProofsValidator(t *testing.T) {
 
 		// Mismatching view //
 		badViewProof := builders.APreparedProofByMessages(
-			builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, view, block),
+			builders.APreprepareMessage(networkId, leaderKeyManager, leaderId, blockHeight, view, block),
 			[]*interfaces.PrepareMessage{
-				builders.APrepareMessage(node1KeyManager, node1Id, blockHeight, view, block),
-				builders.APrepareMessage(node2KeyManager, node2Id, blockHeight, 666, block),
-				builders.APrepareMessage(node3KeyManager, node3Id, blockHeight, view, block),
+				builders.APrepareMessage(networkId, node1KeyManager, node1Id, blockHeight, view, block),
+				builders.APrepareMessage(networkId, node2KeyManager, node2Id, blockHeight, 666, block),
+				builders.APrepareMessage(networkId, node3KeyManager, node3Id, blockHeight, view, block),
 			})
 
 		actualBadView := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, badViewProof, q, myKeyManager, membersIds, calcLeaderId)
@@ -190,11 +192,11 @@ func TestProofsValidator(t *testing.T) {
 		// Mismatching blockHash //
 		otherBlock := mocks.ABlock(interfaces.GenesisBlock)
 		badBlockHashProof := builders.APreparedProofByMessages(
-			builders.APreprepareMessage(leaderKeyManager, leaderId, blockHeight, view, block),
+			builders.APreprepareMessage(networkId, leaderKeyManager, leaderId, blockHeight, view, block),
 			[]*interfaces.PrepareMessage{
-				builders.APrepareMessage(node1KeyManager, node1Id, blockHeight, view, block),
-				builders.APrepareMessage(node2KeyManager, node2Id, blockHeight, view, otherBlock),
-				builders.APrepareMessage(node3KeyManager, node3Id, blockHeight, view, block),
+				builders.APrepareMessage(networkId, node1KeyManager, node1Id, blockHeight, view, block),
+				builders.APrepareMessage(networkId, node2KeyManager, node2Id, blockHeight, view, otherBlock),
+				builders.APrepareMessage(networkId, node3KeyManager, node3Id, blockHeight, view, block),
 			})
 
 		actualBadBlockHash := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, badBlockHashProof, q, myKeyManager, membersIds, calcLeaderId)

@@ -10,18 +10,18 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/stretchr/testify/require"
-	"math"
 	"math/rand"
 	"testing"
 )
 
 func TestMessageFactory(t *testing.T) {
+	networkId := primitives.NetworkId(rand.Uint64())
 	memberId0 := primitives.MemberId("Member Id0")
 	memberId1 := primitives.MemberId("Member Id1")
 	memberId2 := primitives.MemberId("Member Id2")
 
-	blockHeight := primitives.BlockHeight(math.Floor(rand.Float64() * 1000000000))
-	view := primitives.View(math.Floor(rand.Float64() * 1000000000))
+	blockHeight := primitives.BlockHeight(rand.Uint64())
+	view := primitives.View(rand.Uint64())
 	block := mocks.ABlock(interfaces.GenesisBlock)
 	blockHash := mocks.CalculateBlockHash(block)
 
@@ -30,9 +30,9 @@ func TestMessageFactory(t *testing.T) {
 	node2KeyManager := mocks.NewMockKeyManager(memberId2)
 
 	randomSeed := uint64(678)
-	node0Factory := messagesfactory.NewMessageFactory(node0KeyManager, memberId0, randomSeed)
-	node1Factory := messagesfactory.NewMessageFactory(node1KeyManager, memberId1, randomSeed)
-	node2Factory := messagesfactory.NewMessageFactory(node2KeyManager, memberId2, randomSeed)
+	node0Factory := messagesfactory.NewMessageFactory(networkId, node0KeyManager, memberId0, randomSeed)
+	node1Factory := messagesfactory.NewMessageFactory(networkId, node1KeyManager, memberId1, randomSeed)
+	node2Factory := messagesfactory.NewMessageFactory(networkId, node2KeyManager, memberId2, randomSeed)
 
 	t.Run("create PreprepareMessage", func(t *testing.T) {
 		signedHeader := &protocol.BlockRefBuilder{
