@@ -15,7 +15,7 @@ type RawMessageFilter struct {
 	logger                   interfaces.Logger
 }
 
-func NewConsensusMessageFilter(instanceId primitives.InstanceId, myMemberId primitives.MemberId, logger interfaces.Logger) *RawMessageFilter {
+func NewRawMessageFilter(instanceId primitives.InstanceId, myMemberId primitives.MemberId, logger interfaces.Logger) *RawMessageFilter {
 	res := &RawMessageFilter{
 		instanceId:   instanceId,
 		myMemberId:   myMemberId,
