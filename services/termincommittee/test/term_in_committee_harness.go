@@ -1,4 +1,4 @@
-package termincommittee
+package test
 
 import (
 	"context"

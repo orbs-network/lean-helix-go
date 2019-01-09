@@ -1,4 +1,4 @@
-package termincommittee
+package test
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestPreprepareSignature(t *testing.T) {
+func TestPreprepareVerification(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
 
@@ -40,7 +40,7 @@ func TestPreprepareSignature(t *testing.T) {
 	})
 }
 
-func TestPrepareSignature(t *testing.T) {
+func TestPrepareVerification(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
 
@@ -67,7 +67,7 @@ func TestPrepareSignature(t *testing.T) {
 	})
 }
 
-func TestViewChangeSignature(t *testing.T) {
+func TestViewChangeVerification(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
 
@@ -99,7 +99,7 @@ func TestViewChangeSignature(t *testing.T) {
 	})
 }
 
-func TestNewViewSignature(t *testing.T) {
+func TestNewViewVerification(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
 

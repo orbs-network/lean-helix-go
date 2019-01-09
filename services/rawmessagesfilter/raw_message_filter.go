@@ -7,6 +7,7 @@ import (
 )
 
 type RawMessageFilter struct {
+	instanceId               primitives.InstanceId
 	blockHeight              primitives.BlockHeight
 	consensusMessagesHandler ConsensusMessagesHandler
 	myMemberId               primitives.MemberId
@@ -14,8 +15,9 @@ type RawMessageFilter struct {
 	logger                   interfaces.Logger
 }
 
-func NewConsensusMessageFilter(myMemberId primitives.MemberId, logger interfaces.Logger) *RawMessageFilter {
+func NewConsensusMessageFilter(instanceId primitives.InstanceId, myMemberId primitives.MemberId, logger interfaces.Logger) *RawMessageFilter {
 	res := &RawMessageFilter{
+		instanceId:   instanceId,
 		myMemberId:   myMemberId,
 		messageCache: make(map[primitives.BlockHeight][]interfaces.ConsensusMessage),
 		logger:       logger,
@@ -31,6 +33,10 @@ func (f *RawMessageFilter) HandleConsensusRawMessage(ctx context.Context, rawMes
 	}
 
 	if message.BlockHeight() < f.blockHeight {
+		return
+	}
+
+	if message.InstanceId() != f.instanceId {
 		return
 	}
 

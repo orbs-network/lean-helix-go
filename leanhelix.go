@@ -41,7 +41,7 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 	}
 
 	config.Logger.Debug("NewLeanHelix() ID=%s", termincommittee.Str(config.Membership.MyMemberId()))
-	filter := rawmessagesfilter.NewConsensusMessageFilter(config.Membership.MyMemberId(), config.Logger)
+	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), config.Logger)
 	return &LeanHelix{
 		messagesChannel:         make(chan *interfaces.ConsensusRawMessage),
 		acknowledgeBlockChannel: make(chan *blockWithProof),
