@@ -41,7 +41,7 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 	}
 
 	config.Logger.Debug("NewLeanHelix() ID=%s", termincommittee.Str(config.Membership.MyMemberId()))
-	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), config.Logger)
+	filter := rawmessagesfilter.NewRawMessageFilter(config.InstanceId, config.Membership.MyMemberId(), config.Logger)
 	return &LeanHelix{
 		messagesChannel:         make(chan *interfaces.ConsensusRawMessage),
 		acknowledgeBlockChannel: make(chan *blockWithProof),
@@ -56,9 +56,28 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 func (lh *LeanHelix) Run(ctx context.Context) {
 	lh.logger.Info("Run() starting infinite loop")
 	for {
-		if !lh.Tick(ctx) {
-			lh.logger.Info("Run() stopped infinite loop")
+		select {
+		case <-ctx.Done():
+			lh.logger.Debug("LHFLOW Run Done")
 			return
+
+		case message := <-lh.messagesChannel:
+			lh.filter.HandleConsensusRawMessage(ctx, message)
+
+		case trigger := <-lh.config.ElectionTrigger.ElectionChannel():
+			lh.logger.Debug("LHFLOW Run Election")
+			if trigger == nil {
+				lh.logger.Debug("LHFLOW Run Election, OMG trigger is nil!")
+			}
+			trigger(ctx)
+
+		case blockWithProof := <-lh.acknowledgeBlockChannel:
+			lh.logger.Debug("LHFLOW Run Update")
+			prevHeight := blockheight.GetBlockHeight(blockWithProof.block)
+			if prevHeight >= lh.currentHeight {
+				lh.logger.Debug("Calling onNewConsensusRound() from Run() prevHeight=%d lh.currentHeight=%d", prevHeight, lh.currentHeight)
+				lh.onNewConsensusRound(ctx, blockWithProof.block, blockWithProof.prevBlockProofBytes)
+			}
 		}
 	}
 }
@@ -150,34 +169,6 @@ func (lh *LeanHelix) HandleConsensusMessage(ctx context.Context, message *interf
 
 	case lh.messagesChannel <- message:
 	}
-}
-
-func (lh *LeanHelix) Tick(ctx context.Context) bool {
-	select {
-	case <-ctx.Done():
-		lh.logger.Debug("LHFLOW Tick Done")
-		return false
-
-	case message := <-lh.messagesChannel:
-		lh.filter.HandleConsensusRawMessage(ctx, message)
-
-	case trigger := <-lh.config.ElectionTrigger.ElectionChannel():
-		lh.logger.Debug("LHFLOW Tick Election")
-		if trigger == nil {
-			lh.logger.Debug("LHFLOW Tick Election, OMG trigger is nil!")
-		}
-		trigger(ctx)
-
-	case blockWithProof := <-lh.acknowledgeBlockChannel:
-		lh.logger.Debug("LHFLOW Tick Update")
-		prevHeight := blockheight.GetBlockHeight(blockWithProof.block)
-		if prevHeight >= lh.currentHeight {
-			lh.logger.Debug("Calling onNewConsensusRound() from Tick() prevHeight=%d lh.currentHeight=%d", prevHeight, lh.currentHeight)
-			lh.onNewConsensusRound(ctx, blockWithProof.block, blockWithProof.prevBlockProofBytes)
-		}
-	}
-
-	return true
 }
 
 // ************************ Internal ***************************************

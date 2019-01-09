@@ -93,9 +93,6 @@ func (node *Node) Sync(ctx context.Context, prevBlock interfaces.Block, blockPro
 	}
 }
 
-func (node *Node) Tick(ctx context.Context) {
-	node.leanHelix.Tick(ctx)
-}
 func (node *Node) StartConsensusSync(ctx context.Context) {
 	if node.leanHelix != nil {
 		go node.leanHelix.UpdateState(ctx, node.GetLatestBlock(), nil)

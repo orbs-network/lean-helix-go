@@ -20,23 +20,6 @@ func TestHappyFlow(t *testing.T) {
 	})
 }
 
-func TestOnlyLeaderIsSendingPrePrepareOnce(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
-		net := network.ABasicTestNetwork()
-
-		net.StartConsensusSync(ctx)
-		net.Nodes[0].Tick(ctx)
-		net.Nodes[1].Tick(ctx)
-		net.Nodes[2].Tick(ctx)
-		net.Nodes[3].Tick(ctx)
-
-		require.Equal(t, 1, net.Nodes[0].Communication.CountSentMessages(protocol.LEAN_HELIX_PREPREPARE))
-		require.Equal(t, 0, net.Nodes[1].Communication.CountSentMessages(protocol.LEAN_HELIX_PREPREPARE))
-		require.Equal(t, 0, net.Nodes[2].Communication.CountSentMessages(protocol.LEAN_HELIX_PREPREPARE))
-		require.Equal(t, 0, net.Nodes[3].Communication.CountSentMessages(protocol.LEAN_HELIX_PREPREPARE))
-	})
-}
-
 func TestHappyFlowMessages(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		net := network.ABasicTestNetwork()
