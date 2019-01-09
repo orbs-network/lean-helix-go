@@ -1,12 +1,9 @@
-pushd .
+#!/bin/bash -xe
 
-echo ""
-echo "***** TESTING LIBRARY *****"
-echo ""
-echo "  Running ./go/test_lib.sh"
-echo ""
+{
+    echo ""
+    echo "***** TESTING LIBRARY *****"
+    echo ""
+} 2> /dev/null
 
-cd ./go
-./test_lib.sh
-
-popd
+go test ./...
