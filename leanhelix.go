@@ -161,7 +161,7 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 	return true
 }
 
-func (lh *LeanHelix) HandleConsensusMessage(ctx context.Context, message *interfaces.ConsensusRawMessage) {
+func (lh *LeanHelix) HandleConsensusRawMessage(ctx context.Context, message *interfaces.ConsensusRawMessage) {
 	lh.logger.Debug("HandleConsensusRawMessage() ID=%s", termincommittee.Str(lh.config.Membership.MyMemberId()))
 	select {
 	case <-ctx.Done():
