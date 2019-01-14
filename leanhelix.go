@@ -103,17 +103,21 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 	}
 
 	blockProof := protocol.BlockProofReader(blockProofBytes)
-	blockRef := blockProof.BlockRef()
-	if blockRef.MessageType() != protocol.LEAN_HELIX_COMMIT {
+	blockRefFromProof := blockProof.BlockRef()
+	if blockRefFromProof.MessageType() != protocol.LEAN_HELIX_COMMIT {
+		return false
+	}
+
+	if lh.config.InstanceId != blockRefFromProof.InstanceId() {
 		return false
 	}
 
 	blockHeight := block.Height()
-	if blockHeight != blockRef.BlockHeight() {
+	if blockHeight != blockRefFromProof.BlockHeight() {
 		return false
 	}
 
-	if !lh.config.BlockUtils.ValidateBlockCommitment(blockHeight, block, blockRef.BlockHash()) {
+	if !lh.config.BlockUtils.ValidateBlockCommitment(blockHeight, block, blockRefFromProof.BlockHash()) {
 		return false
 	}
 
@@ -128,7 +132,7 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 		}
 
 		sender := sendersIterator.NextNodes()
-		if !proofsvalidator.VerifyBlockRefMessage(blockRef, sender, lh.config.KeyManager) {
+		if !proofsvalidator.VerifyBlockRefMessage(blockRefFromProof, sender, lh.config.KeyManager) {
 			return false
 		}
 
