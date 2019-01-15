@@ -23,6 +23,9 @@ import (
 const LEAN_HELIX_HARD_MINIMUM_COMMITTEE_MEMBERS = 4
 
 func Str(memberId primitives.MemberId) string {
+	if memberId == nil {
+		return ""
+	}
 	return memberId.String()[:6]
 }
 
@@ -174,7 +177,7 @@ func (tic *TermInCommittee) sendConsensusMessage(ctx context.Context, message in
 }
 
 func (tic *TermInCommittee) HandlePrePrepare(ctx context.Context, ppm *interfaces.PreprepareMessage) {
-	tic.logger.Debug("H=%s V=%s LHFLOW HandleLeanHelixPreprepare() receiver=%s sender=%s", tic.height, tic.view, Str(tic.myMemberId), ppm.SenderMemberId())
+	tic.logger.Debug("H=%s V=%s LHFLOW HandleLeanHelixPreprepare() receiver=%s sender=%s", tic.height, tic.view, Str(tic.myMemberId), Str(ppm.SenderMemberId()))
 	if err := tic.validatePreprepare(ctx, ppm); err != nil {
 		tic.logger.Debug("H=%s V=%s HandlePrePrepare() err=%v", err)
 	} else {
@@ -207,14 +210,14 @@ func (tic *TermInCommittee) validatePreprepare(ctx context.Context, ppm *interfa
 	header := ppm.Content().SignedHeader()
 	sender := ppm.Content().Sender()
 	if !tic.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender) {
-		return fmt.Errorf("verification failed for sender %s signature on header", sender.MemberId()[:3])
+		return fmt.Errorf("verification failed for sender %s signature on header", Str(sender.MemberId()))
 	}
 
 	leaderMemberId := tic.calcLeaderMemberId(view)
 	senderMemberId := sender.MemberId()
 	if !senderMemberId.Equal(leaderMemberId) {
 		// Log
-		return fmt.Errorf("sender %s is not leader", senderMemberId[:3])
+		return fmt.Errorf("sender %s is not leader", Str(senderMemberId))
 	}
 
 	isValidBlock := tic.blockUtils.ValidateBlockProposal(ctx, blockHeight, ppm.Block(), ppm.Content().SignedHeader().BlockHash(), tic.prevBlock)
@@ -232,7 +235,7 @@ func (tic *TermInCommittee) hasPreprepare(blockHeight primitives.BlockHeight, vi
 }
 
 func (tic *TermInCommittee) HandlePrepare(ctx context.Context, pm *interfaces.PrepareMessage) {
-	tic.logger.Debug("H=%s V=%s LHFLOW HandlePrepare() receiver=%s sender=%s", tic.height, tic.view, Str(tic.myMemberId), pm.SenderMemberId())
+	tic.logger.Debug("H=%s V=%s LHFLOW HandlePrepare() receiver=%s sender=%s", tic.height, tic.view, Str(tic.myMemberId), Str(pm.SenderMemberId()))
 	header := pm.Content().SignedHeader()
 	sender := pm.Content().Sender()
 
@@ -352,7 +355,7 @@ func (tic *TermInCommittee) onPrepared(ctx context.Context, blockHeight primitiv
 }
 
 func (tic *TermInCommittee) HandleCommit(ctx context.Context, cm *interfaces.CommitMessage) {
-	tic.logger.Debug("H=%s V=%s LHFLOW HandleCommit() receiver=%s sender=%s", tic.height, tic.view, Str(tic.myMemberId), cm.SenderMemberId())
+	tic.logger.Debug("H=%s V=%s LHFLOW HandleCommit() receiver=%s sender=%s", tic.height, tic.view, Str(tic.myMemberId), Str(cm.SenderMemberId()))
 	header := cm.Content().SignedHeader()
 	sender := cm.Content().Sender()
 
@@ -433,7 +436,7 @@ func (tic *TermInCommittee) latestViewChangeVote(confirmations []*protocol.ViewC
 }
 
 func (tic *TermInCommittee) HandleNewView(ctx context.Context, nvm *interfaces.NewViewMessage) {
-	tic.logger.Debug("H=%s V=%s LHFLOW HandleNewView() receiver=%s sender=%s", tic.height, tic.view, Str(tic.myMemberId), nvm.SenderMemberId())
+	tic.logger.Debug("H=%s V=%s LHFLOW HandleNewView() receiver=%s sender=%s", tic.height, tic.view, Str(tic.myMemberId), Str(nvm.SenderMemberId()))
 	header := nvm.Content().SignedHeader()
 	sender := nvm.Content().Sender()
 	ppMessageContent := nvm.Content().Message()
