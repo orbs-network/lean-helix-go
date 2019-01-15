@@ -83,9 +83,6 @@ func (lh *LeanHelix) Run(ctx context.Context) {
 }
 
 func (lh *LeanHelix) UpdateState(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte) {
-	height := blockheight.GetBlockHeight(prevBlock)
-	lh.logger.Debug("LHFLOW UpdateState() ID=%s prevBlockHeight=%d", termincommittee.Str(lh.config.Membership.MyMemberId()), height)
-
 	select {
 	case <-ctx.Done():
 		return
