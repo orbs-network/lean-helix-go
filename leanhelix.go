@@ -96,8 +96,13 @@ func (lh *LeanHelix) UpdateState(ctx context.Context, prevBlock interfaces.Block
 
 func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProofBytes []byte, prevBlockProofBytes []byte) error {
 	lh.logger.Debug("ValidateBlockConsensus() ID=%s", termincommittee.Str(lh.config.Membership.MyMemberId()))
-	if blockProofBytes == nil || len(blockProofBytes) == 0 || block == nil {
-		return errors.Errorf("nil block or blockProof")
+
+	if block == nil {
+		return errors.Errorf("nil block")
+	}
+
+	if blockProofBytes == nil || len(blockProofBytes) == 0 {
+		return errors.Errorf("nil blockProof")
 	}
 
 	blockProof := protocol.BlockProofReader(blockProofBytes)
@@ -112,7 +117,7 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 
 	blockHeight := block.Height()
 	if blockHeight != blockRefFromProof.BlockHeight() {
-		return errors.Errorf("Mismtached block height: block=%v blockProof=%v", blockHeight, block.Height())
+		return errors.Errorf("Mismatched block height: block=%v blockProof=%v", blockHeight, block.Height())
 	}
 
 	if !lh.config.BlockUtils.ValidateBlockCommitment(blockHeight, block, blockRefFromProof.BlockHash()) {
