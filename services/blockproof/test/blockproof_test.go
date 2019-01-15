@@ -99,8 +99,8 @@ func TestAValidBlockProof(t *testing.T) {
 		block3 := mocks.ABlock(block2)
 
 		net := network.ABasicTestNetwork()
-
 		net.StartConsensus(ctx)
+
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
@@ -113,17 +113,43 @@ func TestAValidBlockProof(t *testing.T) {
 	})
 }
 
-func TestThatWeDoNotAcceptNilBlockProof(t *testing.T) {
+func TestAValidBlockProofWithNilPrevBlockProof(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := network.ABasicTestNetwork()
-
-		net.StartConsensus(ctx)
-
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
 		block3 := mocks.ABlock(block2)
-		require.Error(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, nil, nil))
-		require.Error(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, []byte{}, nil))
+
+		net := network.ABasicTestNetwork()
+		net.StartConsensus(ctx)
+
+		node0 := net.Nodes[0]
+		node1 := net.Nodes[1]
+		node2 := net.Nodes[2]
+		node3 := net.Nodes[3]
+
+		blockProof := genBlockProofMessages(net.InstanceId, block3, 6, 0, node1, node2, node3).Raw()
+		require.Nil(t, node0.ValidateBlockConsensus(ctx, block3, blockProof, nil))
+	})
+}
+
+func TestThatWeDoNotAcceptNilBlockProof(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
+		block3 := mocks.ABlock(block2)
+
+		net := network.ABasicTestNetwork()
+		net.StartConsensus(ctx)
+
+		//node0 := net.Nodes[0]
+		node1 := net.Nodes[1]
+		node2 := net.Nodes[2]
+		node3 := net.Nodes[3]
+
+		prevBlockProof := genBlockProofMessages(net.InstanceId, block2, 3, 0, node1, node2, node3).Raw()
+
+		require.Error(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, nil, prevBlockProof))
+		require.Error(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, []byte{}, prevBlockProof))
 		require.Error(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, nil, []byte{}))
 		require.Error(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, []byte{}, []byte{}))
 	})
