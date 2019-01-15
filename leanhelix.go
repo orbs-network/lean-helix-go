@@ -14,6 +14,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
+	"github.com/pkg/errors"
 )
 
 type blockWithProof struct {
@@ -93,29 +94,29 @@ func (lh *LeanHelix) UpdateState(ctx context.Context, prevBlock interfaces.Block
 
 }
 
-func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProofBytes []byte, prevBlockProofBytes []byte) bool {
+func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProofBytes []byte, prevBlockProofBytes []byte) error {
 	lh.logger.Debug("ValidateBlockConsensus() ID=%s", termincommittee.Str(lh.config.Membership.MyMemberId()))
 	if blockProofBytes == nil || len(blockProofBytes) == 0 || block == nil {
-		return false
+		return errors.Errorf("nil block or blockProof")
 	}
 
 	blockProof := protocol.BlockProofReader(blockProofBytes)
 	blockRefFromProof := blockProof.BlockRef()
 	if blockRefFromProof.MessageType() != protocol.LEAN_HELIX_COMMIT {
-		return false
+		return errors.Errorf("Message is not COMMIT, it is %v", blockRefFromProof.MessageType())
 	}
 
 	if lh.config.InstanceId != blockRefFromProof.InstanceId() {
-		return false
+		return errors.Errorf("Mismatched InstanceID: config=%v blockProof=%v", lh.config.InstanceId, blockRefFromProof.InstanceId())
 	}
 
 	blockHeight := block.Height()
 	if blockHeight != blockRefFromProof.BlockHeight() {
-		return false
+		return errors.Errorf("Mismtached block height: block=%v blockProof=%v", blockHeight, block.Height())
 	}
 
 	if !lh.config.BlockUtils.ValidateBlockCommitment(blockHeight, block, blockRefFromProof.BlockHash()) {
-		return false
+		return errors.Errorf("ValidateBlockCommitment() failed")
 	}
 
 	committeeMembers := lh.config.Membership.RequestOrderedCommittee(ctx, blockHeight, 0)
@@ -130,36 +131,37 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 
 		sender := sendersIterator.NextNodes()
 		if !proofsvalidator.VerifyBlockRefMessage(blockRefFromProof, sender, lh.config.KeyManager) {
-			return false
+			return errors.Errorf("VerifyBlockRefMessage() failed")
 		}
 
 		memberId := sender.MemberId()
 		if _, ok := set[storage.MemberIdStr(memberId)]; ok {
-			return false
+			return errors.Errorf("could not read memberId=%s from set", storage.MemberIdStr(memberId))
 		}
 
 		if !proofsvalidator.IsInMembers(committeeMembers, memberId) {
-			return false
+			return errors.Errorf("memberId=%v is not part of committee", memberId)
 		}
 
 		set[storage.MemberIdStr(memberId)] = true
 		sendersCounter++
 	}
 
-	if sendersCounter < quorum.CalcQuorumSize(len(committeeMembers)) {
-		return false
+	q := quorum.CalcQuorumSize(len(committeeMembers))
+	if sendersCounter < q {
+		return errors.Errorf("sendersCounter=%d is less that quorum=%d", sendersCounter, q)
 	}
 
 	if len(blockProof.RandomSeedSignature()) == 0 || blockProof.RandomSeedSignature() == nil {
-		return false
+		return errors.Errorf("blockProof does not contain randomSeed")
 	}
 
 	prevBlockProof := protocol.BlockProofReader(prevBlockProofBytes)
 	if !randomseed.ValidateRandomSeed(lh.config.KeyManager, blockHeight, blockProof, prevBlockProof) {
-		return false
+		return errors.Errorf("ValidateRandomSeed() failed")
 	}
 
-	return true
+	return nil
 }
 
 func (lh *LeanHelix) HandleConsensusMessage(ctx context.Context, message *interfaces.ConsensusRawMessage) {

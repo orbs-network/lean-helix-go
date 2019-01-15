@@ -81,13 +81,13 @@ func (node *Node) StartConsensus(ctx context.Context) {
 	}
 }
 
-func (node *Node) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProof []byte, prevBlockProof []byte) bool {
+func (node *Node) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProof []byte, prevBlockProof []byte) error {
 	return node.leanHelix.ValidateBlockConsensus(ctx, block, blockProof, prevBlockProof)
 }
 
 func (node *Node) Sync(ctx context.Context, prevBlock interfaces.Block, blockProofBytes []byte, prevBlockProofBytes []byte) {
 	if node.leanHelix != nil {
-		if node.leanHelix.ValidateBlockConsensus(ctx, prevBlock, blockProofBytes, prevBlockProofBytes) {
+		if err := node.leanHelix.ValidateBlockConsensus(ctx, prevBlock, blockProofBytes, prevBlockProofBytes); err == nil {
 			go node.leanHelix.UpdateState(ctx, prevBlock, prevBlockProofBytes)
 		}
 	}
