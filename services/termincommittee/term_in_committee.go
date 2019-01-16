@@ -177,7 +177,7 @@ func (tic *TermInCommittee) sendConsensusMessage(ctx context.Context, message in
 }
 
 func (tic *TermInCommittee) HandlePrePrepare(ctx context.Context, ppm *interfaces.PreprepareMessage) {
-	tic.logger.Debug("H=%s V=%s ID=%s LHFLOW HandleLeanHelixPreprepare() sender=%s", tic.height, tic.view, Str(tic.myMemberId), ppm.SenderMemberId())
+	tic.logger.Debug("H=%s V=%s ID=%s LHFLOW HandlePrePrepare() sender=%s", tic.height, tic.view, Str(tic.myMemberId), Str(ppm.SenderMemberId()))
 	if err := tic.validatePreprepare(ctx, ppm); err != nil {
 		tic.logger.Debug("H=%s V=%s ID=%s HandlePrePrepare() err=%v", tic.height, tic.view, Str(tic.myMemberId), err)
 	} else {
@@ -235,7 +235,7 @@ func (tic *TermInCommittee) hasPreprepare(blockHeight primitives.BlockHeight, vi
 }
 
 func (tic *TermInCommittee) HandlePrepare(ctx context.Context, pm *interfaces.PrepareMessage) {
-	tic.logger.Debug("H=%s V=%s ID=%s LHFLOW HandlePrepare() sender=%s", tic.height, tic.view, Str(tic.myMemberId), pm.SenderMemberId())
+	tic.logger.Debug("H=%s V=%s ID=%s LHFLOW HandlePrepare() sender=%s", tic.height, tic.view, Str(tic.myMemberId), Str(pm.SenderMemberId()))
 	header := pm.Content().SignedHeader()
 	sender := pm.Content().Sender()
 
