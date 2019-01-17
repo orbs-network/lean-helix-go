@@ -55,30 +55,31 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 }
 
 func (lh *LeanHelix) Run(ctx context.Context) {
-	lh.logger.Info("LHFLOW Run() ID=%s starting infinite loop", termincommittee.Str(lh.config.Membership.MyMemberId()))
+	lh.logger.Info("H=X V=X ID=%s LHFLOW Run() Starting infinite loop", termincommittee.Str(lh.config.Membership.MyMemberId()))
 	for {
 		select {
 		case <-ctx.Done():
-			lh.logger.Debug("LHFLOW Run() ID=%s received <Done>. Terminating Run().", termincommittee.Str(lh.config.Membership.MyMemberId()))
+			lh.logger.Debug("H=%s V=X ID=%s LHFLOW Run() Received <Done>. Terminating Run().", lh.currentHeight, termincommittee.Str(lh.config.Membership.MyMemberId()))
 			return
 
 		case message := <-lh.messagesChannel:
 			lh.filter.HandleConsensusRawMessage(ctx, message)
 
 		case trigger := <-lh.config.ElectionTrigger.ElectionChannel():
-			lh.logger.Debug("LHFLOW Run() ID=%s received <Election>", termincommittee.Str(lh.config.Membership.MyMemberId()))
 			if trigger == nil {
-				lh.logger.Info("LHFLOW Run() Election, OMG trigger is nil!")
+				// this cannot happen, ignore
+				lh.logger.Info("H=%s V=X ID=%s XXXXXX LHFLOW Run() Election, OMG trigger is nil!", lh.currentHeight, termincommittee.Str(lh.config.Membership.MyMemberId()))
 			}
+			lh.logger.Debug("H=%s V=X ID=%s LHFLOW Run() Received <Election>", lh.currentHeight, termincommittee.Str(lh.config.Membership.MyMemberId()))
 			trigger(ctx)
 
 		case receivedBlockWithProof := <-lh.acknowledgeBlockChannel:
 			receivedBlockHeight := blockheight.GetBlockHeight(receivedBlockWithProof.block)
 			if receivedBlockHeight >= lh.currentHeight {
-				lh.logger.Debug("LHFLOW Run() ID=%s received <Block> Calling onNewConsensusRound() receivedBlockHeight=%d lh.currentHeight=%d", termincommittee.Str(lh.config.Membership.MyMemberId()), receivedBlockHeight, lh.currentHeight)
+				lh.logger.Debug("H=%s V=X ID=%s LHFLOW Run() Received <Block> Calling onNewConsensusRound() receivedBlockHeight=%d", lh.currentHeight, termincommittee.Str(lh.config.Membership.MyMemberId()), receivedBlockHeight)
 				lh.onNewConsensusRound(ctx, receivedBlockWithProof.block, receivedBlockWithProof.prevBlockProofBytes)
 			} else {
-				lh.logger.Debug("LHFLOW Run() ID=%s Ignoring received block because its height=%d is less than current height=%d", termincommittee.Str(lh.config.Membership.MyMemberId()), receivedBlockHeight, lh.currentHeight)
+				lh.logger.Debug("H=%s V=X ID=%s LHFLOW Run() Ignoring received block because its height=%d is less than current height=%d", lh.currentHeight, termincommittee.Str(lh.config.Membership.MyMemberId()), receivedBlockHeight, lh.currentHeight)
 			}
 		}
 	}
