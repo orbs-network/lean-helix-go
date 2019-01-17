@@ -23,14 +23,14 @@ type blockWithProof struct {
 }
 
 type LeanHelix struct {
-	messagesChannel         chan *interfaces.ConsensusRawMessage
-	acknowledgeBlockChannel chan *blockWithProof
-	currentHeight           primitives.BlockHeight
-	config                  *interfaces.Config
-	logger                  interfaces.Logger
-	filter                  *rawmessagesfilter.RawMessageFilter
-	leanHelixTerm           *leanhelixterm.LeanHelixTerm
-	onCommitCallback        interfaces.OnCommitCallback
+	messagesChannel    chan *interfaces.ConsensusRawMessage
+	updateStateChannel chan *blockWithProof
+	currentHeight      primitives.BlockHeight
+	config             *interfaces.Config
+	logger             interfaces.Logger
+	filter             *rawmessagesfilter.RawMessageFilter
+	leanHelixTerm      *leanhelixterm.LeanHelixTerm
+	onCommitCallback   interfaces.OnCommitCallback
 }
 
 // ***********************************
@@ -44,13 +44,13 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 	config.Logger.Debug("NewLeanHelix() ID=%s", termincommittee.Str(config.Membership.MyMemberId()))
 	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), config.Logger)
 	return &LeanHelix{
-		messagesChannel:         make(chan *interfaces.ConsensusRawMessage),
-		acknowledgeBlockChannel: make(chan *blockWithProof),
-		currentHeight:           0,
-		config:                  config,
-		logger:                  config.Logger,
-		filter:                  filter,
-		onCommitCallback:        onCommitCallback,
+		messagesChannel:    make(chan *interfaces.ConsensusRawMessage),
+		updateStateChannel: make(chan *blockWithProof),
+		currentHeight:      0,
+		config:             config,
+		logger:             config.Logger,
+		filter:             filter,
+		onCommitCallback:   onCommitCallback,
 	}
 }
 
@@ -73,10 +73,10 @@ func (lh *LeanHelix) Run(ctx context.Context) {
 			lh.logger.Debug("H=%s V=X ID=%s LHFLOW Run() Received <Election>", lh.currentHeight, termincommittee.Str(lh.config.Membership.MyMemberId()))
 			trigger(ctx)
 
-		case receivedBlockWithProof := <-lh.acknowledgeBlockChannel:
+		case receivedBlockWithProof := <-lh.updateStateChannel:
 			receivedBlockHeight := blockheight.GetBlockHeight(receivedBlockWithProof.block)
 			if receivedBlockHeight >= lh.currentHeight {
-				lh.logger.Debug("H=%s V=X ID=%s LHFLOW Run() Received <Block> Calling onNewConsensusRound() receivedBlockHeight=%d", lh.currentHeight, termincommittee.Str(lh.config.Membership.MyMemberId()), receivedBlockHeight)
+				lh.logger.Debug("H=%s V=X ID=%s LHFLOW Run() Received <UpdateState> Calling onNewConsensusRound() receivedBlockHeight=%d", lh.currentHeight, termincommittee.Str(lh.config.Membership.MyMemberId()), receivedBlockHeight)
 				lh.onNewConsensusRound(ctx, receivedBlockWithProof.block, receivedBlockWithProof.prevBlockProofBytes)
 			} else {
 				lh.logger.Debug("H=%s V=X ID=%s LHFLOW Run() Ignoring received block because its height=%d is less than current height=%d", lh.currentHeight, termincommittee.Str(lh.config.Membership.MyMemberId()), receivedBlockHeight, lh.currentHeight)
@@ -90,7 +90,7 @@ func (lh *LeanHelix) UpdateState(ctx context.Context, prevBlock interfaces.Block
 	case <-ctx.Done():
 		return
 
-	case lh.acknowledgeBlockChannel <- &blockWithProof{prevBlock, prevBlockProofBytes}:
+	case lh.updateStateChannel <- &blockWithProof{prevBlock, prevBlockProofBytes}:
 		return
 	}
 
