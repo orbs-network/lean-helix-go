@@ -319,8 +319,7 @@ func (tic *TermInCommittee) checkElected(ctx context.Context, height primitives.
 func (tic *TermInCommittee) onElected(ctx context.Context, view primitives.View, viewChangeMessages []*interfaces.ViewChangeMessage) {
 	tic.newViewLocally = view
 	tic.SetView(ctx, view)
-	block := blockextractor.GetLatestBlockFromViewChangeMessages(viewChangeMessages)
-	var blockHash primitives.BlockHash
+	block, blockHash := blockextractor.GetLatestBlockFromViewChangeMessages(viewChangeMessages)
 	if block == nil {
 		block, blockHash = tic.blockUtils.RequestNewBlockProposal(ctx, tic.height, tic.prevBlock)
 	}

@@ -2,19 +2,21 @@ package blockextractor
 
 import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"sort"
 )
 
-func GetLatestBlockFromViewChangeMessages(messages []*interfaces.ViewChangeMessage) interfaces.Block {
+func GetLatestBlockFromViewChangeMessages(messages []*interfaces.ViewChangeMessage) (interfaces.Block, primitives.BlockHash) {
 	if len(messages) == 0 {
-		return nil
+		return nil, nil
 	}
 	messagesWithBlock := keepOnlyMessagesWithBlock(messages)
 	if len(messagesWithBlock) == 0 {
-		return nil
+		return nil, nil
 	}
 	sortedMessagesWithBlock := sortMessagesByDescendingViewOfPreparedProofPPM(messagesWithBlock)
-	return sortedMessagesWithBlock[0].Block()
+	latestVC := sortedMessagesWithBlock[0]
+	return latestVC.Block(), latestVC.Content().SignedHeader().PreparedProof().PrepareBlockRef().BlockHash()
 }
 
 func keepOnlyMessagesWithBlock(msgs []*interfaces.ViewChangeMessage) []*interfaces.ViewChangeMessage {
