@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/blockextractor"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
-	"github.com/orbs-network/lean-helix-go/services/logger"
+	L "github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/services/messagesfactory"
 	"github.com/orbs-network/lean-helix-go/services/preparedmessages"
 	"github.com/orbs-network/lean-helix-go/services/proofsvalidator"
@@ -48,13 +48,14 @@ type TermInCommittee struct {
 	committedBlock                 interfaces.Block
 	leaderMemberId                 primitives.MemberId
 	newViewLocally                 primitives.View
-	logger                         interfaces.Logger
+	logger                         L.LHLogger
 	prevBlock                      interfaces.Block
 	QuorumSize                     int
 }
 
 func NewTermInCommittee(
 	ctx context.Context,
+	log L.LHLogger,
 	config *interfaces.Config,
 	messageFactory *messagesfactory.MessageFactory,
 	committeeMembers []primitives.MemberId,
@@ -76,15 +77,11 @@ func NewTermInCommittee(
 			otherCommitteeMembers = append(otherCommitteeMembers, member)
 		}
 	}
-	if config.Logger == nil {
-		config.Logger = logger.NewSilentLogger()
-	}
-
 	if config.Storage == nil {
 		config.Storage = storage.NewInMemoryStorage()
 	}
 
-	config.Logger.Debug("H=%d V=0 ID=%s NewTermInCommittee: committeeMembersCount=%d", blockHeight, Str(myMemberId), len(committeeMembers))
+	log.Debug(L.LC(blockHeight, 0, myMemberId), "NewTermInCommittee: committeeMembersCount=%d", len(committeeMembers))
 
 	result := &TermInCommittee{
 		height:                         blockHeight,
@@ -99,7 +96,7 @@ func NewTermInCommittee(
 		otherCommitteeMembersMemberIds: otherCommitteeMembers,
 		messageFactory:                 messageFactory,
 		myMemberId:                     myMemberId,
-		logger:                         config.Logger,
+		logger:                         log,
 		QuorumSize:                     quorum.CalcQuorumSize(len(committeeMembers)),
 	}
 
@@ -116,12 +113,12 @@ func panicOnLessThanMinimumCommitteeMembers(committeeMembers []primitives.Member
 func (tic *TermInCommittee) startTerm(ctx context.Context) {
 	tic.initView(ctx, 0)
 	if tic.isLeader() {
-		tic.logger.Debug("H=%d V=%d ID=%s startTerm() I AM THE LEADER", tic.height, tic.view, Str(tic.myMemberId))
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "startTerm() I AM THE LEADER")
 		block, blockHash := tic.blockUtils.RequestNewBlockProposal(ctx, tic.height, tic.prevBlock)
 		ppm := tic.messageFactory.CreatePreprepareMessage(tic.height, tic.view, block, blockHash)
 
 		tic.storage.StorePreprepare(ppm)
-		tic.logger.Debug("H=%d V=%d ID=%s LHFLOW SEND PREPREPARE", tic.height, tic.view, Str(tic.myMemberId))
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW SEND PREPREPARE")
 		tic.sendConsensusMessage(ctx, ppm)
 	}
 }
@@ -141,7 +138,7 @@ func (tic *TermInCommittee) initView(ctx context.Context, view primitives.View) 
 	tic.view = view
 	tic.leaderMemberId = tic.calcLeaderMemberId(view)
 	tic.electionTrigger.RegisterOnElection(ctx, tic.height, tic.view, tic.moveToNextLeader)
-	tic.logger.Debug("H=%d V=%d ID=%s initView() set leader to %s, incremented view to %s, goroutines#=%d", tic.height, tic.view, Str(tic.myMemberId), Str(tic.leaderMemberId), tic.view, runtime.NumGoroutine())
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "initView() set leader to %s, incremented view to %s, goroutines#=%d", Str(tic.leaderMemberId), tic.view, runtime.NumGoroutine())
 }
 
 func (tic *TermInCommittee) Dispose() {
@@ -158,11 +155,11 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 		return
 	}
 	tic.SetView(ctx, tic.view+1)
-	tic.logger.Debug("H=%d V=%d ID=%s LHFLOW moveToNextLeader() newLeader=%s", tic.height, tic.view, Str(tic.myMemberId), Str(tic.leaderMemberId))
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW moveToNextLeader() newLeader=%s", Str(tic.leaderMemberId))
 	preparedMessages := preparedmessages.ExtractPreparedMessages(tic.height, tic.storage, tic.QuorumSize)
 	vcm := tic.messageFactory.CreateViewChangeMessage(tic.height, tic.view, preparedMessages)
 	if tic.isLeader() {
-		tic.logger.Debug("H=%d V=%d ID=%s moveToNextLeader() I AM THE LEADER", tic.height, tic.view, Str(tic.myMemberId))
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "moveToNextLeader() I AM THE LEADER", tic.height, tic.view, Str(tic.myMemberId))
 		tic.storage.StoreViewChange(vcm)
 		tic.checkElected(ctx, tic.height, tic.view)
 	} else {
@@ -171,15 +168,15 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 }
 
 func (tic *TermInCommittee) sendConsensusMessage(ctx context.Context, message interfaces.ConsensusMessage) {
-	tic.logger.Debug("H=%d V=%d ID=%s sendConsensusMessage() msgType=%v", tic.height, tic.view, Str(tic.myMemberId), message.MessageType())
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "sendConsensusMessage() msgType=%v", message.MessageType())
 	rawMessage := interfaces.CreateConsensusRawMessage(message)
 	tic.communication.SendConsensusMessage(ctx, tic.otherCommitteeMembersMemberIds, rawMessage)
 }
 
 func (tic *TermInCommittee) HandlePrePrepare(ctx context.Context, ppm *interfaces.PreprepareMessage) {
-	tic.logger.Debug("H=%d V=%d ID=%s LHFLOW HandlePrePrepare() sender=%s", tic.height, tic.view, Str(tic.myMemberId), Str(ppm.SenderMemberId()))
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW HandlePrePrepare() sender=%s", Str(ppm.SenderMemberId()))
 	if err := tic.validatePreprepare(ctx, ppm); err != nil {
-		tic.logger.Debug("H=%d V=%d ID=%s HandlePrePrepare() err=%v", tic.height, tic.view, Str(tic.myMemberId), err)
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "HandlePrePrepare() err=%v", err)
 	} else {
 		tic.processPreprepare(ctx, ppm)
 	}
@@ -188,14 +185,14 @@ func (tic *TermInCommittee) HandlePrePrepare(ctx context.Context, ppm *interface
 func (tic *TermInCommittee) processPreprepare(ctx context.Context, ppm *interfaces.PreprepareMessage) {
 	header := ppm.Content().SignedHeader()
 	if tic.view != header.View() {
-		tic.logger.Debug("H=%d V=%d ID=%s processPreprepare() message from incorrect view %d", tic.height, tic.view, Str(tic.myMemberId), header.View())
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "processPreprepare() message from incorrect view %d", header.View())
 		return
 	}
 
 	pm := tic.messageFactory.CreatePrepareMessage(header.BlockHeight(), header.View(), header.BlockHash())
 	tic.storage.StorePreprepare(ppm)
 	tic.storage.StorePrepare(pm)
-	tic.logger.Debug("H=%d V=%d ID=%s LHFLOW SEND PREPARE", tic.height, tic.view, Str(tic.myMemberId))
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW SEND PREPARE", tic.height, tic.view, Str(tic.myMemberId))
 	tic.sendConsensusMessage(ctx, pm)
 	tic.checkPrepared(ctx, header.BlockHeight(), header.View(), header.BlockHash())
 }
@@ -235,20 +232,20 @@ func (tic *TermInCommittee) hasPreprepare(blockHeight primitives.BlockHeight, vi
 }
 
 func (tic *TermInCommittee) HandlePrepare(ctx context.Context, pm *interfaces.PrepareMessage) {
-	tic.logger.Debug("H=%d V=%d ID=%s LHFLOW HandlePrepare() sender=%s", tic.height, tic.view, Str(tic.myMemberId), Str(pm.SenderMemberId()))
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW HandlePrepare() sender=%s", Str(pm.SenderMemberId()))
 	header := pm.Content().SignedHeader()
 	sender := pm.Content().Sender()
 
 	if !tic.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender) {
-		tic.logger.Debug("H=%d V=%d ID=%s verification failed for Prepare block-height=%v view=%d block-hash=%s", tic.height, tic.view, Str(tic.myMemberId), header.BlockHeight(), header.View(), header.BlockHash())
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "verification failed for Prepare block-height=%v view=%d block-hash=%s", header.BlockHeight(), header.View(), header.BlockHash())
 		return
 	}
 	if tic.view > header.View() {
-		tic.logger.Debug("H=%d V=%d ID=%s prepare view %v is less than current term's view %v", tic.height, tic.view, Str(tic.myMemberId), header.View(), tic.view)
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "prepare view %v is less than current term's view %v", header.View(), tic.view)
 		return
 	}
 	if tic.leaderMemberId.Equal(sender.MemberId()) {
-		tic.logger.Debug("H=%d V=%d ID=%s prepare received from leader (only preprepare can be received from leader)", tic.height, tic.view, Str(tic.myMemberId))
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "prepare received from leader (only preprepare can be received from leader)")
 		return
 	}
 	tic.storage.StorePrepare(pm)
@@ -258,7 +255,7 @@ func (tic *TermInCommittee) HandlePrepare(ctx context.Context, pm *interfaces.Pr
 }
 
 func (tic *TermInCommittee) HandleViewChange(ctx context.Context, vcm *interfaces.ViewChangeMessage) {
-	tic.logger.Debug("H=%d V=%d ID=%s LHFLOW HandleViewChange() sender=%s", tic.height, tic.view, Str(tic.myMemberId), Str(vcm.SenderMemberId()))
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW HandleViewChange() sender=%s", Str(vcm.SenderMemberId()))
 	if !tic.isViewChangeValid(tic.myMemberId, tic.view, vcm.Content()) {
 		return
 	}
@@ -267,7 +264,7 @@ func (tic *TermInCommittee) HandleViewChange(ctx context.Context, vcm *interface
 	if vcm.Block() != nil && header.PreparedProof() != nil {
 		isValidDigest := tic.blockUtils.ValidateBlockCommitment(vcm.BlockHeight(), vcm.Block(), header.PreparedProof().PreprepareBlockRef().BlockHash())
 		if !isValidDigest {
-			tic.logger.Debug("H=%d V=%d ID=%s different block hashes for block provided with message, and the block provided by the PPM in the PreparedProof of the message", tic.height, tic.view, Str(tic.myMemberId))
+			tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "different block hashes for block provided with message, and the block provided by the PPM in the PreparedProof of the message")
 			return
 		}
 	}
@@ -283,17 +280,17 @@ func (tic *TermInCommittee) isViewChangeValid(targetLeaderMemberId primitives.Me
 	preparedProof := header.PreparedProof()
 
 	if !tic.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender) {
-		tic.logger.Debug("H=%d V=%d ID=%s isViewChangeValid(): VerifyConsensusMessage() failed", tic.height, tic.view, Str(tic.myMemberId))
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "isViewChangeValid(): VerifyConsensusMessage() failed")
 		return false
 	}
 
 	if currentView > vcmView {
-		tic.logger.Debug("H=%d V=%d ID=%s isViewChangeValid(): message view %s is older than current term's view %s", tic.height, currentView, Str(tic.myMemberId), vcmView, currentView)
+		tic.logger.Debug(L.LC(tic.height, currentView, tic.myMemberId), "isViewChangeValid(): message view %s is older than current term's view %s", vcmView, currentView)
 		return false
 	}
 
 	if !proofsvalidator.ValidatePreparedProof(tic.height, vcmView, preparedProof, tic.QuorumSize, tic.keyManager, tic.committeeMembersMemberIds, func(view primitives.View) primitives.MemberId { return tic.calcLeaderMemberId(view) }) {
-		tic.logger.Debug("H=%d V=%d ID=%s isViewChangeValid(): failed ValidatePreparedProof()", tic.height, tic.view, Str(tic.myMemberId))
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "isViewChangeValid(): failed ValidatePreparedProof()")
 		return false
 	}
 
@@ -336,7 +333,7 @@ func (tic *TermInCommittee) checkPrepared(ctx context.Context, blockHeight primi
 		if tic.isPreprepared(blockHeight, view, blockHash) {
 			countPrepared := tic.countPrepared(blockHeight, view, blockHash)
 			isPrepared := countPrepared >= tic.QuorumSize-1
-			tic.logger.Debug("H=%d V=%d ID=%s PREPARED expected=%d got=%d isPrepared=%t", tic.height, tic.view, Str(tic.myMemberId), tic.QuorumSize-1, countPrepared, isPrepared)
+			tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "PREPARED expected=%d got=%d isPrepared=%t", tic.QuorumSize-1, countPrepared, isPrepared)
 			if isPrepared {
 				tic.onPrepared(ctx, blockHeight, view, blockHash)
 			}
@@ -348,18 +345,18 @@ func (tic *TermInCommittee) onPrepared(ctx context.Context, blockHeight primitiv
 	tic.preparedLocally = true
 	cm := tic.messageFactory.CreateCommitMessage(blockHeight, view, blockHash)
 	tic.storage.StoreCommit(cm)
-	tic.logger.Debug("H=%d V=%d ID=%s call checkCommitted()", tic.height, tic.view, Str(tic.myMemberId))
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "call checkCommitted()")
 	tic.sendConsensusMessage(ctx, cm)
 	tic.checkCommitted(ctx, blockHeight, view, blockHash)
 }
 
 func (tic *TermInCommittee) HandleCommit(ctx context.Context, cm *interfaces.CommitMessage) {
-	tic.logger.Debug("H=%d V=%d ID=%s LHFLOW HandleCommit() sender=%s", tic.height, tic.view, Str(tic.myMemberId), Str(cm.SenderMemberId()))
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW HandleCommit() sender=%s", Str(cm.SenderMemberId()))
 	header := cm.Content().SignedHeader()
 	sender := cm.Content().Sender()
 
 	if !tic.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender) {
-		tic.logger.Debug("H=%d V=%d ID=%s verification failed for Commit block-height=%d view=%d block-hash=%s", tic.height, tic.view, Str(tic.myMemberId), header.BlockHeight(), header.View(), header.BlockHash())
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "verification failed for Commit block-height=%d view=%d block-hash=%s", header.BlockHeight(), header.View(), header.BlockHash())
 		return
 	}
 	tic.storage.StoreCommit(cm)
@@ -367,7 +364,7 @@ func (tic *TermInCommittee) HandleCommit(ctx context.Context, cm *interfaces.Com
 }
 
 func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) {
-	tic.logger.Debug("H=%d V=%d ID=%s checkCommitted() H=%d V=%d block-hash=%s ", tic.height, tic.view, Str(tic.myMemberId), blockHeight, view, blockHash)
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkCommitted() H=%d V=%d block-hash=%s ", blockHeight, view, blockHash)
 	if tic.committedBlock != nil {
 		return
 	}
@@ -381,10 +378,10 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 	ppm, ok := tic.storage.GetPreprepareMessage(blockHeight, view)
 	if !ok {
 		// log
-		tic.logger.Info("H=%d V=%d checkCommitted() missing PPM", tic.height, tic.view)
+		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "checkCommitted() missing PPM")
 		return
 	}
-	tic.logger.Info("H=%d V=%d ID=%s checkCommitted() COMMITTED calling onCommit() with block H=%d V=%d block-hash=%s num-commit-messages=%d", tic.height, tic.view, Str(tic.myMemberId), blockHeight, view, blockHash, len(commits))
+	tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "checkCommitted() COMMITTED calling onCommit() with block H=%d V=%d block-hash=%s num-commit-messages=%d", blockHeight, view, blockHash, len(commits))
 	tic.committedBlock = ppm.Block()
 	tic.onCommit(ctx, ppm.Block(), commits)
 }
@@ -435,7 +432,7 @@ func (tic *TermInCommittee) latestViewChangeVote(confirmations []*protocol.ViewC
 }
 
 func (tic *TermInCommittee) HandleNewView(ctx context.Context, nvm *interfaces.NewViewMessage) {
-	tic.logger.Debug("H=%d V=%d ID=%s LHFLOW HandleNewView() sender=%s", tic.height, tic.view, Str(tic.myMemberId), nvm.SenderMemberId())
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW HandleNewView() sender=%s", nvm.SenderMemberId())
 	header := nvm.Content().SignedHeader()
 	sender := nvm.Content().Sender()
 	ppMessageContent := nvm.Content().Message()
@@ -450,38 +447,38 @@ func (tic *TermInCommittee) HandleNewView(ctx context.Context, nvm *interfaces.N
 
 	if !tic.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", ignored because the signature verification failed` });
-		tic.logger.Debug("H=%d V=%d ID=%s HandleNewView(): verify failed", tic.height, tic.view, Str(tic.myMemberId))
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "HandleNewView(): verify failed")
 		return
 	}
 
 	futureLeaderId := tic.calcLeaderMemberId(header.View())
 	if !sender.MemberId().Equal(futureLeaderId) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", rejected because it match the new id (${view})` });
-		tic.logger.Debug("H=%d V=%d ID=%s HandleNewView(): no match for future leader", tic.height, tic.view, Str(tic.myMemberId))
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "HandleNewView(): no match for future leader")
 		return
 	}
 
 	if !tic.validateViewChangeVotes(header.BlockHeight(), header.View(), viewChangeConfirmations) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", votes is invalid` });
-		tic.logger.Debug("H=%d V=%d ID=%s HandleNewView(): validateViewChangeVotes failed", tic.height, tic.view, Str(tic.myMemberId))
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "HandleNewView(): validateViewChangeVotes failed")
 		return
 	}
 
 	if tic.view > header.View() {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", view is from the past` });
-		tic.logger.Debug("H=%d V=%d ID=%s HandleNewView(): current view is higher than message view", tic.height, tic.view, Str(tic.myMemberId))
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "HandleNewView(): current view is higher than message view")
 		return
 	}
 
 	if !ppMessageContent.SignedHeader().View().Equal(header.View()) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", view doesn't match PP.view` });
-		tic.logger.Debug("H=%d V=%d ID=%s HandleNewView(): NewView.view and NewView.Preprepare.view do not match", tic.height, tic.view, Str(tic.myMemberId))
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "HandleNewView(): NewView.view and NewView.Preprepare.view do not match")
 		return
 	}
 
 	if !ppMessageContent.SignedHeader().BlockHeight().Equal(header.BlockHeight()) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", blockHeight doesn't match PP.Block()Height` });
-		tic.logger.Debug("H=%d V=%d ID=%s HandleNewView(): NewView.BlockHeight and NewView.Preprepare.BlockHeight do not match", tic.height, tic.view, Str(tic.myMemberId))
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "HandleNewView(): NewView.BlockHeight and NewView.Preprepare.BlockHeight do not match")
 		return
 	}
 
@@ -490,7 +487,7 @@ func (tic *TermInCommittee) HandleNewView(ctx context.Context, nvm *interfaces.N
 		viewChangeMessageValid := tic.isViewChangeValid(futureLeaderId, header.View(), latestVote)
 		if !viewChangeMessageValid {
 			//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", view change votes are invalid` });
-			tic.logger.Debug("H=%d V=%d ID=%s HandleNewView(): NewView.ViewChangeConfirmation (with latest view) is invalid", tic.height, tic.view, Str(tic.myMemberId))
+			tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "HandleNewView(): NewView.ViewChangeConfirmation (with latest view) is invalid")
 			return
 		}
 
@@ -500,7 +497,7 @@ func (tic *TermInCommittee) HandleNewView(ctx context.Context, nvm *interfaces.N
 			isValidDigest := tic.blockUtils.ValidateBlockCommitment(header.BlockHeight(), nvm.Block(), latestVoteBlockHash)
 			if !isValidDigest {
 				//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", the given _Block (PP._Block) doesn't match the best _Block from the VCProof` });
-				tic.logger.Debug("H=%d V=%d ID=%s HandleNewView(): NewView.ViewChangeConfirmation (with latest view) is invalid", tic.height, tic.view, Str(tic.myMemberId))
+				tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "HandleNewView(): NewView.ViewChangeConfirmation (with latest view) is invalid")
 				return
 			}
 		}
