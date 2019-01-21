@@ -381,7 +381,7 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "checkCommitted() missing PPM")
 		return
 	}
-	tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "checkCommitted() COMMITTED calling onCommit() with block H=%d V=%d block-hash=%s num-commit-messages=%d", blockHeight, view, blockHash, len(commits))
+	tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "checkCommitted() COMMITTED calling onCommit() with block-height=%d view=%d block-hash=%s num-commit-messages=%d", blockHeight, view, blockHash, len(commits))
 	tic.committedBlock = ppm.Block()
 	tic.onCommit(ctx, ppm.Block(), commits)
 }

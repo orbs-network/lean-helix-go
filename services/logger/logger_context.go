@@ -28,15 +28,15 @@ func (l *lhLogger) ExternalLogger() interfaces.Logger {
 }
 
 func (l *lhLogger) Debug(lc *_LC, format string, args ...interface{}) {
-	l.externalLogger.Debug(fmt.Sprintf("%s %s", lc, format), args)
+	l.externalLogger.Debug(fmt.Sprintf("%s %s", lc, format), args...)
 }
 
 func (l *lhLogger) Info(lc *_LC, format string, args ...interface{}) {
-	l.externalLogger.Info(fmt.Sprintf("%s %s", lc, format), args)
+	l.externalLogger.Info(fmt.Sprintf("%s %s", lc, format), args...)
 }
 
 func (l *lhLogger) Error(lc *_LC, format string, args ...interface{}) {
-	l.externalLogger.Error(fmt.Sprintf("%s %s", lc, format), args)
+	l.externalLogger.Error(fmt.Sprintf("%s %s", lc, format), args...)
 }
 
 func NewLhLogger(externalLogger interfaces.Logger) LHLogger {
