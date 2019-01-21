@@ -146,7 +146,7 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 		}
 
 		if !proofsvalidator.IsInMembers(committeeMembers, memberId) {
-			return errors.Errorf("ValidateBlockConsensus(): memberId=%v is not part of committee", memberId)
+			return errors.Errorf("ValidateBlockConsensus(): memberId=%s is not part of committee", storage.MemberIdStr(memberId))
 		}
 
 		set[storage.MemberIdStr(memberId)] = true

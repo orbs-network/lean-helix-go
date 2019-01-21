@@ -240,7 +240,7 @@ func (tic *TermInCommittee) HandlePrepare(ctx context.Context, pm *interfaces.Pr
 	sender := pm.Content().Sender()
 
 	if !tic.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender) {
-		tic.logger.Debug("H=%d V=%d ID=%s verification failed for Prepare blockHeight=%v view=%v blockHash=%v", tic.height, tic.view, Str(tic.myMemberId), header.BlockHeight(), header.View(), header.BlockHash())
+		tic.logger.Debug("H=%d V=%d ID=%s verification failed for Prepare block-height=%v view=%d block-hash=%s", tic.height, tic.view, Str(tic.myMemberId), header.BlockHeight(), header.View(), header.BlockHash())
 		return
 	}
 	if tic.view > header.View() {
@@ -359,7 +359,7 @@ func (tic *TermInCommittee) HandleCommit(ctx context.Context, cm *interfaces.Com
 	sender := cm.Content().Sender()
 
 	if !tic.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender) {
-		tic.logger.Debug("H=%d V=%d ID=%s verification failed for Commit blockHeight=%v view=%v blockHash=%v", tic.height, tic.view, Str(tic.myMemberId), header.BlockHeight(), header.View(), header.BlockHash())
+		tic.logger.Debug("H=%d V=%d ID=%s verification failed for Commit block-height=%d view=%d block-hash=%s", tic.height, tic.view, Str(tic.myMemberId), header.BlockHeight(), header.View(), header.BlockHash())
 		return
 	}
 	tic.storage.StoreCommit(cm)
@@ -367,7 +367,7 @@ func (tic *TermInCommittee) HandleCommit(ctx context.Context, cm *interfaces.Com
 }
 
 func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) {
-	tic.logger.Debug("H=%d V=%d ID=%s checkCommitted() H=%d V=%d BlockHash %s ", tic.height, tic.view, Str(tic.myMemberId), blockHeight, view, blockHash)
+	tic.logger.Debug("H=%d V=%d ID=%s checkCommitted() H=%d V=%d block-hash=%s ", tic.height, tic.view, Str(tic.myMemberId), blockHeight, view, blockHash)
 	if tic.committedBlock != nil {
 		return
 	}
@@ -384,7 +384,7 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 		tic.logger.Info("H=%d V=%d checkCommitted() missing PPM", tic.height, tic.view)
 		return
 	}
-	tic.logger.Info("H=%d V=%d ID=%s checkCommitted() COMMITTED calling onCommit() with block H=%d V=%d BlockHash=%s numCommitMessages=%d", tic.height, tic.view, Str(tic.myMemberId), blockHeight, view, blockHash, len(commits))
+	tic.logger.Info("H=%d V=%d ID=%s checkCommitted() COMMITTED calling onCommit() with block H=%d V=%d block-hash=%s num-commit-messages=%d", tic.height, tic.view, Str(tic.myMemberId), blockHeight, view, blockHash, len(commits))
 	tic.committedBlock = ppm.Block()
 	tic.onCommit(ctx, ppm.Block(), commits)
 }
