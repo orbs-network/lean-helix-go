@@ -99,7 +99,7 @@ func (lh *LeanHelix) UpdateState(ctx context.Context, prevBlock interfaces.Block
 
 }
 
-func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProofBytes []byte, prevBlockProofBytes []byte) error {
+func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProofBytes []byte, maybePrevBlockProofBytes []byte) error {
 
 	if block == nil {
 		return errors.Errorf("ValidateBlockConsensus(): nil block")
@@ -165,7 +165,7 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 		return errors.Errorf("ValidateBlockConsensus(): blockProof does not contain randomSeed")
 	}
 
-	prevBlockProof := protocol.BlockProofReader(prevBlockProofBytes)
+	prevBlockProof := protocol.BlockProofReader(maybePrevBlockProofBytes)
 	if err := randomseed.ValidateRandomSeed(lh.config.KeyManager, blockHeight, blockProof, prevBlockProof); err != nil {
 		return errors.Wrapf(err, "ValidateBlockConsensus(): ValidateRandomSeed() failed")
 	}
