@@ -27,8 +27,8 @@ func TestKeyManagerVerify(t *testing.T) {
 		Signature: signerKeyManager.SignConsensusMessage(1, []byte{6, 6, 6}),
 	}
 
-	require.True(t, verifierKeyManager.VerifyConsensusMessage(1, content, goodSenderSignature.Build()))
-	require.False(t, verifierKeyManager.VerifyConsensusMessage(1, content, badSenderSignature.Build()))
+	require.NoError(t, verifierKeyManager.VerifyConsensusMessage(1, content, goodSenderSignature.Build()))
+	require.Error(t, verifierKeyManager.VerifyConsensusMessage(1, content, badSenderSignature.Build()))
 }
 
 func TestKeyManagerRandomSeedVerify(t *testing.T) {

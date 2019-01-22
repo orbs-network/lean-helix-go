@@ -41,7 +41,7 @@ type BlockUtils interface {
 
 type KeyManager interface {
 	SignConsensusMessage(blockHeight primitives.BlockHeight, content []byte) primitives.Signature
-	VerifyConsensusMessage(blockHeight primitives.BlockHeight, content []byte, sender *protocol.SenderSignature) bool
+	VerifyConsensusMessage(blockHeight primitives.BlockHeight, content []byte, sender *protocol.SenderSignature) error
 	SignRandomSeed(blockHeight primitives.BlockHeight, content []byte) primitives.RandomSeedSignature
 	VerifyRandomSeed(blockHeight primitives.BlockHeight, content []byte, sender *protocol.SenderSignature) error
 	AggregateRandomSeed(blockHeight primitives.BlockHeight, randomSeedShares []*protocol.SenderSignature) primitives.RandomSeedSignature

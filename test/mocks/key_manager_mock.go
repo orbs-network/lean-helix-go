@@ -34,20 +34,23 @@ func (km *MockKeyManager) SignConsensusMessage(blockHeight primitives.BlockHeigh
 	return []byte(str)
 }
 
-func (km *MockKeyManager) VerifyConsensusMessage(blockHeight primitives.BlockHeight, content []byte, sender *protocol.SenderSignature) bool {
+func (km *MockKeyManager) VerifyConsensusMessage(blockHeight primitives.BlockHeight, content []byte, sender *protocol.SenderSignature) error {
 	if km.FailFutureVerifications {
-		return false
+		return errors.New("FailFutureVerifications=true")
 	}
 
 	for _, rejectedKey := range km.rejectedMemberIds {
 		if rejectedKey.Equal(sender.MemberId()) {
-			return false
+			return errors.New("memberId equals rejectedKey")
 		}
 	}
 
 	str := fmt.Sprintf("SIG|%s|%s|%x", blockHeight, sender.MemberId().KeyForMap(), content)
 	expected := []byte(str)
-	return bytes.Equal(expected, sender.Signature())
+	if !bytes.Equal(expected, sender.Signature()) {
+		return errors.New("expected is different from sender.Signature")
+	}
+	return nil
 }
 
 func (km *MockKeyManager) SignRandomSeed(blockHeight primitives.BlockHeight, content []byte) primitives.RandomSeedSignature {

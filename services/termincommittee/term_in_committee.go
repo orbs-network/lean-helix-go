@@ -13,6 +13,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/storage"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
+	"github.com/pkg/errors"
 	"runtime"
 	"sort"
 )
@@ -206,8 +207,8 @@ func (tic *TermInCommittee) validatePreprepare(ctx context.Context, ppm *interfa
 
 	header := ppm.Content().SignedHeader()
 	sender := ppm.Content().Sender()
-	if !tic.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender) {
-		return fmt.Errorf("verification failed for sender %s signature on header", Str(sender.MemberId()))
+	if err := tic.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender); err != nil {
+		return errors.Wrapf(err, "verification failed for sender %s signature on header", Str(sender.MemberId()))
 	}
 
 	leaderMemberId := tic.calcLeaderMemberId(view)
@@ -236,8 +237,8 @@ func (tic *TermInCommittee) HandlePrepare(ctx context.Context, pm *interfaces.Pr
 	header := pm.Content().SignedHeader()
 	sender := pm.Content().Sender()
 
-	if !tic.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender) {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "verification failed for Prepare block-height=%v view=%d block-hash=%s", header.BlockHeight(), header.View(), header.BlockHash())
+	if err := tic.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender); err != nil {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "verification failed for Prepare block-height=%v view=%d block-hash=%s err=%v", header.BlockHeight(), header.View(), header.BlockHash(), err)
 		return
 	}
 	if tic.view > header.View() {
@@ -273,14 +274,15 @@ func (tic *TermInCommittee) HandleViewChange(ctx context.Context, vcm *interface
 	tic.checkElected(ctx, header.BlockHeight(), header.View())
 }
 
+// TODO change to return error
 func (tic *TermInCommittee) isViewChangeValid(targetLeaderMemberId primitives.MemberId, currentView primitives.View, vcm *protocol.ViewChangeMessageContent) bool {
 	header := vcm.SignedHeader()
 	sender := vcm.Sender()
 	vcmView := header.View()
 	preparedProof := header.PreparedProof()
 
-	if !tic.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender) {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "isViewChangeValid(): VerifyConsensusMessage() failed")
+	if err := tic.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender); err != nil {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "isViewChangeValid(): VerifyConsensusMessage() failed. err=%v", err)
 		return false
 	}
 
@@ -355,8 +357,8 @@ func (tic *TermInCommittee) HandleCommit(ctx context.Context, cm *interfaces.Com
 	header := cm.Content().SignedHeader()
 	sender := cm.Content().Sender()
 
-	if !tic.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender) {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "verification failed for Commit block-height=%d view=%d block-hash=%s", header.BlockHeight(), header.View(), header.BlockHash())
+	if err := tic.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender); err != nil {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "verification failed for Commit block-height=%d view=%d block-hash=%s err=%v", header.BlockHeight(), header.View(), header.BlockHash(), err)
 		return
 	}
 	tic.storage.StoreCommit(cm)
@@ -445,9 +447,9 @@ func (tic *TermInCommittee) HandleNewView(ctx context.Context, nvm *interfaces.N
 		viewChangeConfirmations = append(viewChangeConfirmations, viewChangeConfirmationsIter.NextViewChangeConfirmations())
 	}
 
-	if !tic.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender) {
+	if err := tic.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender); err != nil {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", ignored because the signature verification failed` });
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "HandleNewView(): verify failed")
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "HandleNewView(): verify failed. err=%v", err)
 		return
 	}
 
