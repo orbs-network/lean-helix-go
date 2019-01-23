@@ -193,7 +193,7 @@ func (tic *TermInCommittee) processPreprepare(ctx context.Context, ppm *interfac
 	pm := tic.messageFactory.CreatePrepareMessage(header.BlockHeight(), header.View(), header.BlockHash())
 	tic.storage.StorePreprepare(ppm)
 	tic.storage.StorePrepare(pm)
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW SEND PREPARE", tic.height, tic.view, Str(tic.myMemberId))
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW SEND PREPARE")
 	tic.sendConsensusMessage(ctx, pm)
 	tic.checkPrepared(ctx, header.BlockHeight(), header.View(), header.BlockHash())
 }
