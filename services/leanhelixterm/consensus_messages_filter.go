@@ -38,7 +38,7 @@ func (mp *ConsensusMessagesFilter) HandleConsensusMessage(ctx context.Context, m
 		}).Build()
 
 		randomSeedBytes := randomseed.RandomSeedToBytes(mp.randomSeed)
-		if !mp.keyManager.VerifyRandomSeed(message.BlockHeight(), randomSeedBytes, senderSignature) {
+		if err := mp.keyManager.VerifyRandomSeed(message.BlockHeight(), randomSeedBytes, senderSignature); err != nil {
 			//fmt.Println("Filter VerifyRandomSeed Failed")
 			return
 		}

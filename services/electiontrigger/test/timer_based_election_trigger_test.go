@@ -26,15 +26,16 @@ func buildElectionTrigger(ctx context.Context, timeout time.Duration) *electiont
 	return et
 }
 
+// TODO Consider removing this test entirely - sleeps in tests are bad
 func TestCallbackTrigger(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		et := buildElectionTrigger(ctx, 20*time.Millisecond)
+		et := buildElectionTrigger(ctx, 50*time.Millisecond)
 
 		wasCalled := false
 		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View) { wasCalled = true }
 		et.RegisterOnElection(ctx, 20, 0, cb)
 
-		time.Sleep(time.Duration(30) * time.Millisecond)
+		time.Sleep(time.Duration(80) * time.Millisecond)
 
 		require.True(t, wasCalled, "Did not call the timer callback")
 	})

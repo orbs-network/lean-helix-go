@@ -14,8 +14,9 @@ import (
 )
 
 func TestNoViewChangeMessages(t *testing.T) {
-	actual := blockextractor.GetLatestBlockFromViewChangeMessages([]*interfaces.ViewChangeMessage{})
-	require.Nil(t, actual, "Should have returned Nil for no ViewChange Messages")
+	actualBlock, actualBlockHash := blockextractor.GetLatestBlockFromViewChangeMessages([]*interfaces.ViewChangeMessage{})
+	require.Nil(t, actualBlock, "Should have returned Nil for no ViewChange Messages")
+	require.Nil(t, actualBlockHash, "Should have returned Nil for no ViewChange Messages")
 }
 
 func TestReturnNilWhenNoViewChangeMessages(t *testing.T) {
@@ -24,8 +25,9 @@ func TestReturnNilWhenNoViewChangeMessages(t *testing.T) {
 	instanceId := primitives.InstanceId(rand.Uint64())
 	VCMessage := builders.AViewChangeMessage(instanceId, keyManager, memberId, 1, 2, nil)
 
-	actual := blockextractor.GetLatestBlockFromViewChangeMessages([]*interfaces.ViewChangeMessage{VCMessage})
-	require.Nil(t, actual, "Should have returned Nil for ViewChange Messages without prepared messages")
+	actualBlock, actualBlockHash := blockextractor.GetLatestBlockFromViewChangeMessages([]*interfaces.ViewChangeMessage{VCMessage})
+	require.Nil(t, actualBlock, "Should have returned Nil for ViewChange Messages without prepared messages")
+	require.Nil(t, actualBlockHash, "Should have returned Nil for ViewChange Messages without prepared messages")
 }
 
 func TestKeepOnlyMessagesWithBlock(t *testing.T) {
@@ -49,8 +51,9 @@ func TestKeepOnlyMessagesWithBlock(t *testing.T) {
 
 	VCMessage := builders.AViewChangeMessage(instanceId, keyManager3, memberId3, 1, 2, preparedMessages)
 
-	actual := blockextractor.GetLatestBlockFromViewChangeMessages([]*interfaces.ViewChangeMessage{VCMessage})
-	require.Nil(t, actual, "A block returned from View Change messages without block")
+	actualBlock, actualBlockHash := blockextractor.GetLatestBlockFromViewChangeMessages([]*interfaces.ViewChangeMessage{VCMessage})
+	require.Nil(t, actualBlock, "A block returned from View Change messages without block")
+	require.Nil(t, actualBlockHash, "A block returned from View Change messages without block")
 }
 
 func TestReturnBlockFromPPMWithHighestView(t *testing.T) {
@@ -69,6 +72,7 @@ func TestReturnBlockFromPPMWithHighestView(t *testing.T) {
 
 	// view on view 8
 	blockOnView8 := mocks.ABlock(interfaces.GenesisBlock)
+	blockHashOnView8 := mocks.CalculateBlockHash(blockOnView8)
 	preparedOnView8 := builders.CreatePreparedMessages(instanceId, node0, []builders.Sender{node1, node2}, 1, 8, blockOnView8)
 	VCMessageOnView8 := builders.AViewChangeMessage(instanceId, node2.KeyManager, node2.MemberId, 1, 5, preparedOnView8)
 
@@ -77,6 +81,7 @@ func TestReturnBlockFromPPMWithHighestView(t *testing.T) {
 	preparedOnView4 := builders.CreatePreparedMessages(instanceId, node0, []builders.Sender{node1, node2}, 1, 4, blockOnView4)
 	VCMessageOnView4 := builders.AViewChangeMessage(instanceId, node2.KeyManager, node2.MemberId, 1, 5, preparedOnView4)
 
-	actual := blockextractor.GetLatestBlockFromViewChangeMessages([]*interfaces.ViewChangeMessage{VCMessageOnView3, VCMessageOnView8, VCMessageOnView4})
-	require.Equal(t, blockOnView8, actual, "Returned block is not from the latest view")
+	actualBlock, actualBlockHash := blockextractor.GetLatestBlockFromViewChangeMessages([]*interfaces.ViewChangeMessage{VCMessageOnView3, VCMessageOnView8, VCMessageOnView4})
+	require.Equal(t, blockOnView8, actualBlock, "Returned block is not from the latest view")
+	require.Equal(t, blockHashOnView8, actualBlockHash, "Returned block is not from the latest view")
 }

@@ -2,7 +2,8 @@
   <configuration default="false" name="LH-All uncached" type="GoTestRunConfiguration" factoryName="Go Test">
     <module name="lean-helix-go" />
     <working_directory value="$PROJECT_DIR$/" />
-    <go_parameters value="-i -count=1" />
+    <go_parameters value="-i" />
+    <parameters value="-test.count 1" />
     <framework value="gotest" />
     <kind value="DIRECTORY" />
     <package value="github.com/orbs-network/lean-helix-go" />

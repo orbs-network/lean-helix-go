@@ -6,6 +6,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
+	"github.com/pkg/errors"
 	"strconv"
 )
 
@@ -19,7 +20,7 @@ func CalculateRandomSeed(signature []byte) uint64 {
 	return binary.LittleEndian.Uint64(array)
 }
 
-func ValidateRandomSeed(keyManager interfaces.KeyManager, blockHeight primitives.BlockHeight, blockProof *protocol.BlockProof, prevBlockProof *protocol.BlockProof) bool {
+func ValidateRandomSeed(keyManager interfaces.KeyManager, blockHeight primitives.BlockHeight, blockProof *protocol.BlockProof, prevBlockProof *protocol.BlockProof) error {
 	randomSeedSignature := blockProof.RandomSeedSignature()
 	prevRandomSeedSignature := prevBlockProof.RandomSeedSignature()
 
@@ -31,9 +32,9 @@ func ValidateRandomSeed(keyManager interfaces.KeyManager, blockHeight primitives
 		MemberId:  nil, // master
 	}).Build()
 
-	if !keyManager.VerifyRandomSeed(blockHeight, RandomSeedToBytes(randomSeed), masterRandomSeed) {
-		return false
+	if err := keyManager.VerifyRandomSeed(blockHeight, RandomSeedToBytes(randomSeed), masterRandomSeed); err != nil {
+		return errors.Wrap(err, "VerifyRandomSeed() failed")
 	}
 
-	return true
+	return nil
 }

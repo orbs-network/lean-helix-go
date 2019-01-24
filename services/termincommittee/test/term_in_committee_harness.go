@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/blockheight"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/services/messagesfactory"
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
@@ -33,13 +34,14 @@ type harness struct {
 func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Block) *harness {
 	net := network.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).Build()
 	myNode := net.Nodes[0]
-	termConfig := myNode.BuildConfig(nil)
+	termConfig := myNode.BuildConfig(logger.NewConsoleLogger(myNode.MemberId.String()))
+	log := logger.NewLhLogger(termConfig.Logger)
 
 	prevBlock := myNode.GetLatestBlock()
 	blockHeight := blockheight.GetBlockHeight(prevBlock) + 1
 	committeeMembers := termConfig.Membership.RequestOrderedCommittee(ctx, blockHeight, uint64(12345))
 	messageFactory := messagesfactory.NewMessageFactory(termConfig.InstanceId, termConfig.KeyManager, termConfig.Membership.MyMemberId(), 0)
-	termInCommittee := termincommittee.NewTermInCommittee(ctx, termConfig, messageFactory, committeeMembers, blockHeight, prevBlock, nil)
+	termInCommittee := termincommittee.NewTermInCommittee(ctx, log, termConfig, messageFactory, committeeMembers, blockHeight, prevBlock, nil)
 
 	return &harness{
 		t:                 t,

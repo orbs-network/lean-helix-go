@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
+	"github.com/pkg/errors"
 )
 
 type VerifyRandomSeedCallParams struct {
@@ -33,20 +34,23 @@ func (km *MockKeyManager) SignConsensusMessage(blockHeight primitives.BlockHeigh
 	return []byte(str)
 }
 
-func (km *MockKeyManager) VerifyConsensusMessage(blockHeight primitives.BlockHeight, content []byte, sender *protocol.SenderSignature) bool {
+func (km *MockKeyManager) VerifyConsensusMessage(blockHeight primitives.BlockHeight, content []byte, sender *protocol.SenderSignature) error {
 	if km.FailFutureVerifications {
-		return false
+		return errors.New("FailFutureVerifications=true")
 	}
 
 	for _, rejectedKey := range km.rejectedMemberIds {
 		if rejectedKey.Equal(sender.MemberId()) {
-			return false
+			return errors.New("memberId equals rejectedKey")
 		}
 	}
 
 	str := fmt.Sprintf("SIG|%s|%s|%x", blockHeight, sender.MemberId().KeyForMap(), content)
 	expected := []byte(str)
-	return bytes.Equal(expected, sender.Signature())
+	if !bytes.Equal(expected, sender.Signature()) {
+		return errors.New("expected is different from sender.Signature")
+	}
+	return nil
 }
 
 func (km *MockKeyManager) SignRandomSeed(blockHeight primitives.BlockHeight, content []byte) primitives.RandomSeedSignature {
@@ -54,7 +58,7 @@ func (km *MockKeyManager) SignRandomSeed(blockHeight primitives.BlockHeight, con
 	return []byte(str)
 }
 
-func (km *MockKeyManager) VerifyRandomSeed(blockHeight primitives.BlockHeight, content []byte, sender *protocol.SenderSignature) bool {
+func (km *MockKeyManager) VerifyRandomSeed(blockHeight primitives.BlockHeight, content []byte, sender *protocol.SenderSignature) error {
 	km.VerifyRandomSeedHistory = append(km.VerifyRandomSeedHistory, &VerifyRandomSeedCallParams{blockHeight, content, sender})
 
 	str := fmt.Sprintf("RND_SIG|%s|%s|%x", blockHeight, sender.MemberId().KeyForMap(), content)
@@ -62,7 +66,10 @@ func (km *MockKeyManager) VerifyRandomSeed(blockHeight primitives.BlockHeight, c
 
 	aggStr := fmt.Sprintf("AGG_RND_SIG|%s", blockHeight)
 	aggExpected := []byte(aggStr)
-	return bytes.Equal(expected, sender.Signature()) || bytes.Equal(aggExpected, sender.Signature())
+	if !bytes.Equal(expected, sender.Signature()) && !bytes.Equal(aggExpected, sender.Signature()) {
+		return errors.Errorf("Mismatch in expected and actual signatures")
+	}
+	return nil
 }
 
 func (km *MockKeyManager) AggregateRandomSeed(blockHeight primitives.BlockHeight, randomSeedShares []*protocol.SenderSignature) primitives.RandomSeedSignature {

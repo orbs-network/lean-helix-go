@@ -99,8 +99,8 @@ func TestAValidBlockProof(t *testing.T) {
 		block3 := mocks.ABlock(block2)
 
 		net := network.ABasicTestNetwork()
-
 		net.StartConsensus(ctx)
+
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
@@ -108,24 +108,50 @@ func TestAValidBlockProof(t *testing.T) {
 
 		blockProof := genBlockProofMessages(net.InstanceId, block3, 6, 0, node1, node2, node3).Raw()
 		prevBlockProof := genBlockProofMessages(net.InstanceId, block2, 3, 0, node1, node2, node3).Raw()
-		require.True(t, node0.ValidateBlockConsensus(ctx, block3, blockProof, prevBlockProof))
-		require.False(t, node0.ValidateBlockConsensus(ctx, nil, blockProof, prevBlockProof))
+		require.Nil(t, node0.ValidateBlockConsensus(ctx, block3, blockProof, prevBlockProof))
+		require.Error(t, node0.ValidateBlockConsensus(ctx, nil, blockProof, prevBlockProof))
+	})
+}
+
+func TestAValidBlockProofWithNilPrevBlockProof(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
+		block3 := mocks.ABlock(block2)
+
+		net := network.ABasicTestNetwork()
+		net.StartConsensus(ctx)
+
+		node0 := net.Nodes[0]
+		node1 := net.Nodes[1]
+		node2 := net.Nodes[2]
+		node3 := net.Nodes[3]
+
+		blockProof := genBlockProofMessages(net.InstanceId, block3, 6, 0, node1, node2, node3).Raw()
+		require.Nil(t, node0.ValidateBlockConsensus(ctx, block3, blockProof, nil))
 	})
 }
 
 func TestThatWeDoNotAcceptNilBlockProof(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := network.ABasicTestNetwork()
-
-		net.StartConsensus(ctx)
-
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
 		block3 := mocks.ABlock(block2)
-		require.False(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, nil, nil))
-		require.False(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, []byte{}, nil))
-		require.False(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, nil, []byte{}))
-		require.False(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, []byte{}, []byte{}))
+
+		net := network.ABasicTestNetwork()
+		net.StartConsensus(ctx)
+
+		//node0 := net.Nodes[0]
+		node1 := net.Nodes[1]
+		node2 := net.Nodes[2]
+		node3 := net.Nodes[3]
+
+		prevBlockProof := genBlockProofMessages(net.InstanceId, block2, 3, 0, node1, node2, node3).Raw()
+
+		require.Error(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, nil, prevBlockProof))
+		require.Error(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, []byte{}, prevBlockProof))
+		require.Error(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, nil, []byte{}))
+		require.Error(t, net.Nodes[0].ValidateBlockConsensus(ctx, block3, []byte{}, []byte{}))
 	})
 }
 
@@ -201,11 +227,11 @@ func TestThatBlockRefInsideProofValidation(t *testing.T) {
 			RandomSeedSignature: goodRSS,
 		}).Build()
 
-		require.True(t, node0.ValidateBlockConsensus(ctx, block3, goodProof.Raw(), goodPrevProof.Raw()))
-		require.False(t, node0.ValidateBlockConsensus(ctx, block3, nilBlockRefProof.Raw(), goodPrevProof.Raw()))
-		require.False(t, node0.ValidateBlockConsensus(ctx, block3, badBlockHeightProof.Raw(), goodPrevProof.Raw()))
-		require.False(t, node0.ValidateBlockConsensus(ctx, block3, badMessageTypeProof.Raw(), goodPrevProof.Raw()))
-		require.False(t, node0.ValidateBlockConsensus(ctx, block3, badBlockHash.Raw(), goodPrevProof.Raw()))
+		require.Nil(t, node0.ValidateBlockConsensus(ctx, block3, goodProof.Raw(), goodPrevProof.Raw()))
+		require.Error(t, node0.ValidateBlockConsensus(ctx, block3, nilBlockRefProof.Raw(), goodPrevProof.Raw()))
+		require.Error(t, node0.ValidateBlockConsensus(ctx, block3, badBlockHeightProof.Raw(), goodPrevProof.Raw()))
+		require.Error(t, node0.ValidateBlockConsensus(ctx, block3, badMessageTypeProof.Raw(), goodPrevProof.Raw()))
+		require.Error(t, node0.ValidateBlockConsensus(ctx, block3, badBlockHash.Raw(), goodPrevProof.Raw()))
 	})
 }
 
@@ -246,12 +272,15 @@ func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 
 		blockHeight := block3.Height()
 		goodBlockRef := generateACommitBlockRefBuilder(net.InstanceId, blockHeight, block3)
+
 		goodRSS := node0.KeyManager.AggregateRandomSeed(blockHeight, nil)
 
 		// good prev proof
 		goodPrevProof := &protocol.BlockProofBuilder{
 			RandomSeedSignature: []byte{1, 2, 3},
 		}
+
+		badInstanceId := primitives.InstanceId(888888)
 
 		// good proof
 		goodProof := &protocol.BlockProofBuilder{
@@ -260,10 +289,19 @@ func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 			RandomSeedSignature: goodRSS,
 		}
 
+		// proof with bad instance ID
+		blockRefWithBadBlock := generateACommitBlockRefBuilder(badInstanceId, blockHeight, block3)
+		badBlockRefInstanceIdProof := &protocol.BlockProofBuilder{
+			BlockRef:            blockRefWithBadBlock,
+			Nodes:               generateSignatures(blockHeight, blockRefWithBadBlock.Build(), node0, node1, node2),
+			RandomSeedSignature: goodRSS,
+		}
+
 		// proof with bad block height
+		blockRefWithBadInstanceId := generateACommitBlockRefBuilder(net.InstanceId, 666, block3)
 		badBlockRefBlockHeightProof := &protocol.BlockProofBuilder{
-			BlockRef:            generateACommitBlockRefBuilder(net.InstanceId, 666, block3),
-			Nodes:               generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node2),
+			BlockRef:            blockRefWithBadInstanceId,
+			Nodes:               generateSignatures(blockHeight, blockRefWithBadInstanceId.Build(), node0, node1, node2),
 			RandomSeedSignature: goodRSS,
 		}
 
@@ -288,11 +326,12 @@ func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 			RandomSeedSignature: goodRSS,
 		}
 
-		require.True(t, node0.ValidateBlockConsensus(ctx, block3, goodProof.Build().Raw(), goodPrevProof.Build().Raw()))
-		require.False(t, node0.ValidateBlockConsensus(ctx, block3, noQuorumProof.Build().Raw(), goodPrevProof.Build().Raw()))
-		require.False(t, node0.ValidateBlockConsensus(ctx, block3, badBlockRefBlockHeightProof.Build().Raw(), goodPrevProof.Build().Raw()))
-		require.False(t, node0.ValidateBlockConsensus(ctx, block3, duplicateNodesProof.Build().Raw(), goodPrevProof.Build().Raw()))
-		require.False(t, node0.ValidateBlockConsensus(ctx, block3, unknownNodeProof.Build().Raw(), goodPrevProof.Build().Raw()))
+		require.Nil(t, node0.ValidateBlockConsensus(ctx, block3, goodProof.Build().Raw(), goodPrevProof.Build().Raw()), "should succeed with good proof")
+		require.Error(t, node0.ValidateBlockConsensus(ctx, block3, noQuorumProof.Build().Raw(), goodPrevProof.Build().Raw()), "should fail on not enough nodes in proof")
+		require.Error(t, node0.ValidateBlockConsensus(ctx, block3, badBlockRefBlockHeightProof.Build().Raw(), goodPrevProof.Build().Raw()), "should fail on bad block height in proof")
+		require.Error(t, node0.ValidateBlockConsensus(ctx, block3, badBlockRefInstanceIdProof.Build().Raw(), goodPrevProof.Build().Raw()), "should fail on bad instance ID")
+		require.Error(t, node0.ValidateBlockConsensus(ctx, block3, duplicateNodesProof.Build().Raw(), goodPrevProof.Build().Raw()), "should fail on duplicate nodes in proof")
+		require.Error(t, node0.ValidateBlockConsensus(ctx, block3, unknownNodeProof.Build().Raw(), goodPrevProof.Build().Raw()), "should fail on unknown node in proof")
 	})
 }
 
@@ -331,7 +370,7 @@ func TestRandomSeedSignatureValidation(t *testing.T) {
 			Nodes:    generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node2),
 		}
 
-		require.True(t, node0.ValidateBlockConsensus(ctx, block3, goodProof.Build().Raw(), goodPrevProof.Build().Raw()))
-		require.False(t, node0.ValidateBlockConsensus(ctx, block3, noRSSProof.Build().Raw(), goodPrevProof.Build().Raw()))
+		require.Nil(t, node0.ValidateBlockConsensus(ctx, block3, goodProof.Build().Raw(), goodPrevProof.Build().Raw()))
+		require.Error(t, node0.ValidateBlockConsensus(ctx, block3, noRSSProof.Build().Raw(), goodPrevProof.Build().Raw()))
 	})
 }

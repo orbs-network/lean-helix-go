@@ -16,6 +16,10 @@ func TestRandomSeedToBytes(t *testing.T) {
 	require.Equal(t, []byte{49, 50, 51, 52}, randomseed.RandomSeedToBytes(1234))
 }
 
+func TestCalculateNilRandomSeed(t *testing.T) {
+	require.Equal(t, uint64(0x1b4ce424c81442e3), randomseed.CalculateRandomSeed(nil))
+}
+
 func TestCalculateRandomSeed(t *testing.T) {
 	require.Equal(t, uint64(0xa228ab770a49c603), randomseed.CalculateRandomSeed([]byte{1, 2, 3}))
 	require.Equal(t, uint64(0xbd0c0c86df41c870), randomseed.CalculateRandomSeed([]byte{0, 0, 0}))
