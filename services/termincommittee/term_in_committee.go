@@ -119,7 +119,7 @@ func (tic *TermInCommittee) startTerm(ctx context.Context) {
 		ppm := tic.messageFactory.CreatePreprepareMessage(tic.height, tic.view, block, blockHash)
 
 		tic.storage.StorePreprepare(ppm)
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW SEND PREPREPARE")
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND PREPREPARE")
 		tic.sendConsensusMessage(ctx, ppm)
 	}
 }
@@ -164,6 +164,7 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 		tic.storage.StoreViewChange(vcm)
 		tic.checkElected(ctx, tic.height, tic.view)
 	} else {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND VIEW_CHANGE")
 		tic.sendConsensusMessage(ctx, vcm)
 	}
 }
@@ -175,7 +176,7 @@ func (tic *TermInCommittee) sendConsensusMessage(ctx context.Context, message in
 }
 
 func (tic *TermInCommittee) HandlePrePrepare(ctx context.Context, ppm *interfaces.PreprepareMessage) {
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW HandlePrePrepare() sender=%s", Str(ppm.SenderMemberId()))
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED PREPREPARE sender=%s", Str(ppm.SenderMemberId()))
 	if err := tic.validatePreprepare(ctx, ppm); err != nil {
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "HandlePrePrepare() err=%v", err)
 	} else {
@@ -193,7 +194,7 @@ func (tic *TermInCommittee) processPreprepare(ctx context.Context, ppm *interfac
 	pm := tic.messageFactory.CreatePrepareMessage(header.BlockHeight(), header.View(), header.BlockHash())
 	tic.storage.StorePreprepare(ppm)
 	tic.storage.StorePrepare(pm)
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW SEND PREPARE")
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND PREPARE")
 	tic.sendConsensusMessage(ctx, pm)
 	tic.checkPrepared(ctx, header.BlockHeight(), header.View(), header.BlockHash())
 }
@@ -233,7 +234,7 @@ func (tic *TermInCommittee) hasPreprepare(blockHeight primitives.BlockHeight, vi
 }
 
 func (tic *TermInCommittee) HandlePrepare(ctx context.Context, pm *interfaces.PrepareMessage) {
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW HandlePrepare() sender=%s", Str(pm.SenderMemberId()))
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED PREPARE sender=%s", Str(pm.SenderMemberId()))
 	header := pm.Content().SignedHeader()
 	sender := pm.Content().Sender()
 
@@ -256,7 +257,7 @@ func (tic *TermInCommittee) HandlePrepare(ctx context.Context, pm *interfaces.Pr
 }
 
 func (tic *TermInCommittee) HandleViewChange(ctx context.Context, vcm *interfaces.ViewChangeMessage) {
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW HandleViewChange() sender=%s", Str(vcm.SenderMemberId()))
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED VIEW_CHANGE sender=%s", Str(vcm.SenderMemberId()))
 	if !tic.isViewChangeValid(tic.myMemberId, tic.view, vcm.Content()) {
 		return
 	}
@@ -327,6 +328,7 @@ func (tic *TermInCommittee) onElected(ctx context.Context, view primitives.View,
 	confirmations := interfaces.ExtractConfirmationsFromViewChangeMessages(viewChangeMessages)
 	nvm := tic.messageFactory.CreateNewViewMessage(tic.height, view, ppmContentBuilder, confirmations, block)
 	tic.storage.StorePreprepare(ppm)
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND NEW_VIEW")
 	tic.sendConsensusMessage(ctx, nvm)
 }
 
@@ -347,13 +349,13 @@ func (tic *TermInCommittee) onPrepared(ctx context.Context, blockHeight primitiv
 	tic.preparedLocally = true
 	cm := tic.messageFactory.CreateCommitMessage(blockHeight, view, blockHash)
 	tic.storage.StoreCommit(cm)
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "call checkCommitted()")
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND COMMIT")
 	tic.sendConsensusMessage(ctx, cm)
 	tic.checkCommitted(ctx, blockHeight, view, blockHash)
 }
 
 func (tic *TermInCommittee) HandleCommit(ctx context.Context, cm *interfaces.CommitMessage) {
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW HandleCommit() sender=%s", Str(cm.SenderMemberId()))
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED COMMIT sender=%s", Str(cm.SenderMemberId()))
 	header := cm.Content().SignedHeader()
 	sender := cm.Content().Sender()
 
@@ -434,7 +436,7 @@ func (tic *TermInCommittee) latestViewChangeVote(confirmations []*protocol.ViewC
 }
 
 func (tic *TermInCommittee) HandleNewView(ctx context.Context, nvm *interfaces.NewViewMessage) {
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW HandleNewView() sender=%s", nvm.SenderMemberId())
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED NEW_VIEW sender=%s", Str(nvm.SenderMemberId()))
 	header := nvm.Content().SignedHeader()
 	sender := nvm.Content().Sender()
 	ppMessageContent := nvm.Content().Message()
