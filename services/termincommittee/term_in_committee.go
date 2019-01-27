@@ -3,6 +3,7 @@ package termincommittee
 import (
 	"context"
 	"fmt"
+	"github.com/orbs-network/lean-helix-go/instrumentation/metrics"
 	"github.com/orbs-network/lean-helix-go/services/blockextractor"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	L "github.com/orbs-network/lean-helix-go/services/logger"
@@ -151,7 +152,7 @@ func (tic *TermInCommittee) calcLeaderMemberId(view primitives.View) primitives.
 	return tic.committeeMembersMemberIds[index]
 }
 
-func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primitives.BlockHeight, view primitives.View) {
+func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics)) {
 	if view != tic.view || height != tic.height {
 		return
 	}
@@ -166,6 +167,9 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 	} else {
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND VIEW_CHANGE")
 		tic.sendConsensusMessage(ctx, vcm)
+	}
+	if onElectionCB != nil {
+		onElectionCB(metrics.NewElectionMetrics(tic.leaderMemberId, tic.view))
 	}
 }
 
