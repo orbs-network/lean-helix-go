@@ -85,7 +85,9 @@ func (f *RawMessageFilter) consumeCacheMessages(ctx context.Context, blockHeight
 	f.clearCacheHistory(blockHeight)
 
 	messages := f.messageCache[blockHeight]
-	f.logger.Debug(L.LC(f.blockHeight, 0, f.myMemberId), "LHFILTER consuming %d messages from height=%d", len(messages), blockHeight)
+	if len(messages) > 0 {
+		f.logger.Debug(L.LC(f.blockHeight, 0, f.myMemberId), "LHFILTER consuming %d messages from height=%d", len(messages), blockHeight)
+	}
 	for _, message := range messages {
 		f.processConsensusMessage(ctx, message)
 	}
