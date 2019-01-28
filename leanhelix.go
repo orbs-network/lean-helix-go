@@ -45,7 +45,7 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 	}
 
 	lhLog.Debug(L.LC(0, 0, config.Membership.MyMemberId()), "NewLeanHelix() ID=%s")
-	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), config.Logger)
+	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), lhLog)
 	return &LeanHelix{
 		messagesChannel:    make(chan *interfaces.ConsensusRawMessage),
 		updateStateChannel: make(chan *blockWithProof),
@@ -59,10 +59,12 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 
 func (lh *LeanHelix) Run(ctx context.Context) {
 	lh.logger.Info(L.LC(0, 0, lh.config.Membership.MyMemberId()), "LHFLOW Run() Starting infinite loop")
+	lh.logger.Info(L.LC(0, 0, lh.config.Membership.MyMemberId()), "LHMSG START LISTENING NOW")
 	for {
 		select {
 		case <-ctx.Done():
 			lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "LHFLOW Run() Received <Done>. Terminating Run().")
+			lh.logger.Info(L.LC(0, 0, lh.config.Membership.MyMemberId()), "LHMSG STOPPED LISTENING")
 			return
 
 		case message := <-lh.messagesChannel:
@@ -177,6 +179,7 @@ func (lh *LeanHelix) HandleConsensusMessage(ctx context.Context, message *interf
 	lh.logger.Debug(nil, "HandleConsensusRawMessage() ID=%s", termincommittee.Str(lh.config.Membership.MyMemberId()))
 	select {
 	case <-ctx.Done():
+		lh.logger.Debug(nil, "HandleConsensusRawMessage() ID=%s CONTEXT TERMINATED", termincommittee.Str(lh.config.Membership.MyMemberId()))
 		return
 
 	case lh.messagesChannel <- message:

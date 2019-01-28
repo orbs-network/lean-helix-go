@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/logger"
+	L "github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/services/rawmessagesfilter"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
@@ -14,8 +15,8 @@ import (
 	"testing"
 )
 
-func testLogger() interfaces.Logger {
-	return logger.NewSilentLogger()
+func testLogger() L.LHLogger {
+	return L.NewLhLogger(logger.NewSilentLogger())
 }
 
 func GeneratePreprepareMessage(instanceId primitives.InstanceId, blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
