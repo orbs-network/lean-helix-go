@@ -115,7 +115,7 @@ func panicOnLessThanMinimumCommitteeMembers(committeeMembers []primitives.Member
 func (tic *TermInCommittee) startTerm(ctx context.Context) {
 	tic.initView(ctx, 0)
 	if tic.isLeader() {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "startTerm() I AM THE LEADER")
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "startTerm() I AM THE LEADER OF FIRST VIEW")
 		block, blockHash := tic.blockUtils.RequestNewBlockProposal(ctx, tic.height, tic.prevBlock)
 		ppm := tic.messageFactory.CreatePreprepareMessage(tic.height, tic.view, block, blockHash)
 
@@ -161,7 +161,7 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 	preparedMessages := preparedmessages.ExtractPreparedMessages(tic.height, tic.storage, tic.QuorumSize)
 	vcm := tic.messageFactory.CreateViewChangeMessage(tic.height, tic.view, preparedMessages)
 	if tic.isLeader() {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "moveToNextLeader() I AM THE LEADER", tic.height, tic.view, Str(tic.myMemberId))
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "moveToNextLeader() I AM THE LEADER BY VIEW CHANGE")
 		tic.storage.StoreViewChange(vcm)
 		tic.checkElected(ctx, tic.height, tic.view)
 	} else {
@@ -374,22 +374,25 @@ func (tic *TermInCommittee) HandleCommit(ctx context.Context, cm *interfaces.Com
 func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) {
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkCommitted() H=%d V=%d block-hash=%s ", blockHeight, view, blockHash)
 	if tic.committedBlock != nil {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED COMMIT IGNORE - already committed")
 		return
 	}
 	if !tic.isPreprepared(blockHeight, view, blockHash) {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED COMMIT IGNORE - is not preprepared")
 		return
 	}
 	commits, ok := tic.storage.GetCommitMessages(blockHeight, view, blockHash)
 	if !ok || len(commits) < tic.QuorumSize {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED COMMIT IGNORE - received %d of %d required quorum commits", len(commits), tic.QuorumSize)
 		return
 	}
 	ppm, ok := tic.storage.GetPreprepareMessage(blockHeight, view)
 	if !ok {
 		// log
-		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "checkCommitted() missing PPM")
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED COMMIT IGNORE - missing PPM in Commit message")
 		return
 	}
-	tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "checkCommitted() COMMITTED calling onCommit() with block-height=%d view=%d block-hash=%s num-commit-messages=%d", blockHeight, view, blockHash, len(commits))
+	tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW COMMITTED calling onCommit() with block-height=%d view=%d block-hash=%s num-commit-messages=%d", blockHeight, view, blockHash, len(commits))
 	tic.committedBlock = ppm.Block()
 	tic.onCommit(ctx, ppm.Block(), commits)
 }
