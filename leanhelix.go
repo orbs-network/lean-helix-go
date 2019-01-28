@@ -44,7 +44,7 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 		lhLog = L.NewLhLogger(config.Logger)
 	}
 
-	lhLog.Debug(L.LC(0, 0, config.Membership.MyMemberId()), "NewLeanHelix() ID=%s")
+	lhLog.Debug(L.LC(0, 0, config.Membership.MyMemberId()), "LHFLOW NewLeanHelix()")
 	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), lhLog)
 	return &LeanHelix{
 		messagesChannel:    make(chan *interfaces.ConsensusRawMessage),
