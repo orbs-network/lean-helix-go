@@ -73,18 +73,18 @@ func (lh *LeanHelix) Run(ctx context.Context) {
 		case trigger := <-lh.config.ElectionTrigger.ElectionChannel():
 			if trigger == nil {
 				// this cannot happen, ignore
-				lh.logger.Info(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "XXXXXX LHFLOW Run() Election, OMG trigger is nil!")
+				lh.logger.Info(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "XXXXXX LHFLOW MAINLOOP ELECTION, OMG trigger is nil!")
 			}
-			lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "LHFLOW Run() Received <Election>")
+			lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP ELECTION")
 			trigger(ctx)
 
 		case receivedBlockWithProof := <-lh.updateStateChannel:
 			receivedBlockHeight := blockheight.GetBlockHeight(receivedBlockWithProof.block)
 			if receivedBlockHeight >= lh.currentHeight {
-				lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "LHFLOW Run() Received <UpdateState> Calling onNewConsensusRound() receivedBlockHeight=%d", receivedBlockHeight)
+				lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE Accepted block with height=%d, calling onNewConsensusRound()", receivedBlockHeight)
 				lh.onNewConsensusRound(ctx, receivedBlockWithProof.block, receivedBlockWithProof.prevBlockProofBytes)
 			} else {
-				lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "LHFLOW Run() Ignoring received block because its height=%d is less than current height=%d", receivedBlockHeight, lh.currentHeight)
+				lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE IGNORE - Received block ignored because its height=%d is less than current height=%d", receivedBlockHeight, lh.currentHeight)
 			}
 		}
 	}
