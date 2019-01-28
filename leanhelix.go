@@ -58,12 +58,12 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 }
 
 func (lh *LeanHelix) Run(ctx context.Context) {
-	lh.logger.Info(L.LC(0, 0, lh.config.Membership.MyMemberId()), "LHFLOW Run() Starting infinite loop")
+	lh.logger.Info(L.LC(0, 0, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP START")
 	lh.logger.Info(L.LC(0, 0, lh.config.Membership.MyMemberId()), "LHMSG START LISTENING NOW")
 	for {
 		select {
 		case <-ctx.Done():
-			lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "LHFLOW Run() Received <Done>. Terminating Run().")
+			lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP DONE, Terminating Run().")
 			lh.logger.Info(L.LC(0, 0, lh.config.Membership.MyMemberId()), "LHMSG STOPPED LISTENING")
 			return
 
