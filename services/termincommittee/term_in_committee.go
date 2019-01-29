@@ -269,7 +269,9 @@ func (tic *TermInCommittee) processPreprepare(ctx context.Context, ppm *interfac
 	tic.storage.StorePrepare(pm)
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND PREPARE")
 	tic.sendConsensusMessage(ctx, pm)
-	tic.checkPrepared(ctx, header.BlockHeight(), header.View(), header.BlockHash())
+	if err := tic.checkPrepared(ctx, header.BlockHeight(), header.View(), header.BlockHash()); err != nil {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkPrepared: err=%v", err)
+	}
 }
 
 func (tic *TermInCommittee) HandlePrepare(ctx context.Context, pm *interfaces.PrepareMessage) {
@@ -290,18 +292,21 @@ func (tic *TermInCommittee) HandlePrepare(ctx context.Context, pm *interfaces.Pr
 		return
 	}
 	tic.storage.StorePrepare(pm)
-	if header.View() == tic.view {
-		tic.checkPrepared(ctx, header.BlockHeight(), header.View(), header.BlockHash())
+	if header.View() != tic.view {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED PREPARE STORE - from future view %d", header.View())
+	}
+	if err := tic.checkPrepared(ctx, header.BlockHeight(), header.View(), header.BlockHash()); err != nil {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkPrepared: err=%v", err)
 	}
 }
 
-func (tic *TermInCommittee) checkPrepared(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) {
+func (tic *TermInCommittee) checkPrepared(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) error {
 	if tic.preparedLocally {
-		return
+		return errors.New("already in PHASE PREPARED")
 	}
 
-	if !tic.isPreprepared(blockHeight, view, blockHash) {
-		return
+	if err := tic.isPreprepared(blockHeight, view, blockHash); err != nil {
+		return errors.Wrap(err, "isPreprepared failed")
 	}
 
 	countPrepared := tic.countPrepared(blockHeight, view, blockHash)
@@ -310,20 +315,24 @@ func (tic *TermInCommittee) checkPrepared(ctx context.Context, blockHeight primi
 	if isPrepared {
 		tic.onPrepared(ctx, blockHeight, view, blockHash)
 	}
+	return nil
 }
 
-func (tic *TermInCommittee) isPreprepared(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) bool {
+func (tic *TermInCommittee) isPreprepared(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) error {
 	ppm, ok := tic.storage.GetPreprepareMessage(blockHeight, view)
 	if !ok {
-		return false
+		return errors.New("PREPREPARE is not stored")
 	}
 	ppmBlock := ppm.Block()
 	if ppmBlock == nil {
-		return false
+		return errors.New("Stored PREPREPARE does not contain a block")
 	}
 
 	ppmBlockHash := ppm.Content().SignedHeader().BlockHash()
-	return ppmBlockHash.Equal(blockHash)
+	if !ppmBlockHash.Equal(blockHash) {
+		return errors.New("Stored PREPREPARE blockHash is different from provided")
+	}
+	return nil
 }
 
 func (tic *TermInCommittee) countPrepared(height primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) int {
@@ -358,13 +367,13 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED COMMIT IGNORE - already committed")
 		return
 	}
-	if !tic.isPreprepared(blockHeight, view, blockHash) {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED COMMIT IGNORE - is not preprepared")
+	if err := tic.isPreprepared(blockHeight, view, blockHash); err != nil {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED COMMIT IGNORE - is not preprepared, err=%v", err)
 		return
 	}
 	commits, ok := tic.storage.GetCommitMessages(blockHeight, view, blockHash)
 	if !ok || len(commits) < tic.QuorumSize {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED COMMIT IGNORE - received %d of %d required quorum commits", len(commits), tic.QuorumSize)
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED COMMIT STORE - received %d of %d required quorum commits", len(commits), tic.QuorumSize)
 		return
 	}
 	ppm, ok := tic.storage.GetPreprepareMessage(blockHeight, view)
