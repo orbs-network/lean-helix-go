@@ -73,7 +73,7 @@ func (lh *LeanHelix) Run(ctx context.Context) {
 		case trigger := <-lh.config.ElectionTrigger.ElectionChannel():
 			if trigger == nil {
 				// this cannot happen, ignore
-				lh.logger.Info(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "XXXXXX LHFLOW MAINLOOP ELECTION, OMG trigger is nil!")
+				lh.logger.Info(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "XXXXXX LHFLOW MAINLOOP ELECTION, OMG trigger is nil, not triggering election!")
 			}
 			lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP ELECTION")
 			trigger(ctx)
@@ -106,7 +106,7 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 	if block == nil {
 		return errors.Errorf("ValidateBlockConsensus(): nil block")
 	}
-	lh.logger.Debug(nil, "ValidateBlockConsensus() ID=%s HEIGHT=%s", termincommittee.Str(lh.config.Membership.MyMemberId()), block.Height())
+	lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "ValidateBlockConsensus() for blockHeight=%s", termincommittee.Str(lh.config.Membership.MyMemberId()), block.Height())
 	if blockProofBytes == nil || len(blockProofBytes) == 0 {
 		return errors.Errorf("ValidateBlockConsensus(): nil blockProof")
 	}
@@ -178,14 +178,12 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 func (lh *LeanHelix) HandleConsensusMessage(ctx context.Context, message *interfaces.ConsensusRawMessage) {
 	select {
 	case <-ctx.Done():
-		lh.logger.Debug(nil, "HandleConsensusRawMessage() ID=%s CONTEXT TERMINATED", termincommittee.Str(lh.config.Membership.MyMemberId()))
+		lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "HandleConsensusRawMessage() ID=%s CONTEXT TERMINATED", termincommittee.Str(lh.config.Membership.MyMemberId()))
 		return
 
 	case lh.messagesChannel <- message:
 	}
 }
-
-// ************************ Internal ***************************************
 
 func (lh *LeanHelix) onCommit(ctx context.Context, block interfaces.Block, blockProofBytes []byte) {
 	lh.onCommitCallback(ctx, block, blockProofBytes)
