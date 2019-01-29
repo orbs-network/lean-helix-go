@@ -207,7 +207,9 @@ func (tic *TermInCommittee) validatePreprepare(ctx context.Context, ppm *interfa
 	blockHeight := ppm.BlockHeight()
 	view := ppm.View()
 	if tic.hasPreprepare(blockHeight, view) {
-		return fmt.Errorf("already received Preprepare for H=%d V=%d", blockHeight, view)
+		errMsg := fmt.Sprintf("already received Preprepare for H=%d V=%d", blockHeight, view)
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED PREPREPARE IGNORE - %s", errMsg)
+		return errors.New(errMsg)
 	}
 
 	header := ppm.Content().SignedHeader()
