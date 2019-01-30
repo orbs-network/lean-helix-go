@@ -141,7 +141,7 @@ func (tic *TermInCommittee) initView(ctx context.Context, view primitives.View) 
 	tic.view = view
 	tic.leaderMemberId = tic.calcLeaderMemberId(view)
 	tic.electionTrigger.RegisterOnElection(ctx, tic.height, tic.view, tic.moveToNextLeader)
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW initView() set leader to %s, incremented view to %s, goroutines#=%d", Str(tic.leaderMemberId), tic.view, runtime.NumGoroutine())
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW initView() set leader to %s, incremented view to %s, timeout=%s, goroutines#=%d", Str(tic.leaderMemberId), tic.view, tic.electionTrigger.CalcTimeout(view), runtime.NumGoroutine())
 }
 
 func (tic *TermInCommittee) Dispose() {
