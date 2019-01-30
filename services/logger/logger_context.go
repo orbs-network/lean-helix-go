@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"math"
 )
 
 type _LC struct {
@@ -16,7 +17,22 @@ func (lc *_LC) String() string {
 	if lc == nil {
 		return ""
 	}
-	return fmt.Sprintf("H=%d V=%d ID=%s", lc.h, lc.v, MemberIdToStr(lc.id))
+
+	var hStr string
+	if lc.h == math.MaxUint64 {
+		hStr = "X"
+	} else {
+		hStr = fmt.Sprintf("%d", lc.h)
+	}
+
+	var vStr string
+	if lc.v == math.MaxUint64 {
+		vStr = "X"
+	} else {
+		vStr = fmt.Sprintf("%d", lc.v)
+	}
+
+	return fmt.Sprintf("H=%s V=%s ID=%s", hStr, vStr, MemberIdToStr(lc.id))
 }
 
 type lhLogger struct {

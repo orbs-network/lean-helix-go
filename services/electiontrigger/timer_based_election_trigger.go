@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var TIMEOUT_EXP_BASE = float64(2.0)
+var TIMEOUT_EXP_BASE = float64(1.1)
 
 func setTimeout(ctx context.Context, cb func(ctx context.Context), timeout time.Duration) chan bool {
 	timer := time.NewTimer(timeout)
