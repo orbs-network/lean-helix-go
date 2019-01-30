@@ -2,22 +2,27 @@ package network
 
 import (
 	"fmt"
+	"github.com/orbs-network/lean-helix-go/services/electiontrigger"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"math/rand"
+	"time"
 )
 
 type TestNetworkBuilder struct {
-	instanceId             primitives.InstanceId
-	NodeCount              int
-	logToConsole           bool
-	customNodeBuilders     []*NodeBuilder
-	upcomingBlocks         []interfaces.Block
-	keyManager             interfaces.KeyManager
-	blockUtils             interfaces.BlockUtils
-	communication          interfaces.Communication
-	orderCommitteeByHeight bool
+	instanceId                  primitives.InstanceId
+	NodeCount                   int
+	logToConsole                bool
+	customNodeBuilders          []*NodeBuilder
+	upcomingBlocks              []interfaces.Block
+	keyManager                  interfaces.KeyManager
+	blockUtils                  interfaces.BlockUtils
+	communication               interfaces.Communication
+	orderCommitteeByHeight      bool
+	communicationMaxDelay       time.Duration
+	electionTriggerTimeout      time.Duration
+	useTimeBasedElectionTrigger bool
 }
 
 func (tb *TestNetworkBuilder) WithNodeCount(nodeCount int) *TestNetworkBuilder {
@@ -39,6 +44,17 @@ func (tb *TestNetworkBuilder) WithBlocks(upcomingBlocks []interfaces.Block) *Tes
 	if tb.upcomingBlocks == nil {
 		tb.upcomingBlocks = upcomingBlocks
 	}
+	return tb
+}
+
+func (tb *TestNetworkBuilder) WithTimeBasedElectionTrigger(timeout time.Duration) *TestNetworkBuilder {
+	tb.useTimeBasedElectionTrigger = true
+	tb.electionTriggerTimeout = timeout
+	return tb
+}
+
+func (tb *TestNetworkBuilder) GossipMessagesMaxDelay(duration time.Duration) *TestNetworkBuilder {
+	tb.communicationMaxDelay = duration
 	return tb
 }
 
@@ -82,6 +98,9 @@ func (tb *TestNetworkBuilder) buildNode(
 	logToConsole bool) *Node {
 
 	communicationInstance := mocks.NewCommunication(discovery)
+	if tb.communicationMaxDelay > time.Duration(0) {
+		communicationInstance.SetMessagesMaxDelay(tb.communicationMaxDelay)
+	}
 	discovery.RegisterCommunication(memberId, communicationInstance)
 	membership := mocks.NewMockMembership(memberId, discovery, tb.orderCommitteeByHeight)
 
@@ -94,6 +113,11 @@ func (tb *TestNetworkBuilder) buildNode(
 
 	if logToConsole {
 		b.ThatLogsToConsole()
+	}
+
+	if tb.useTimeBasedElectionTrigger {
+		et := electiontrigger.NewTimerBasedElectionTrigger(tb.electionTriggerTimeout, nil)
+		b.WithElectionTrigger(et)
 	}
 	return b.Build()
 }

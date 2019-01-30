@@ -5,6 +5,8 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
+	"math/rand"
+	"time"
 )
 
 type SubscriptionValue struct {
@@ -24,6 +26,7 @@ type CommunicationMock struct {
 	outgoingWhitelist          []primitives.MemberId
 	incomingWhiteListMemberIds []primitives.MemberId
 	statsSentMessages          []*interfaces.ConsensusRawMessage
+	maxDelayDuration           time.Duration
 }
 
 func NewCommunication(discovery *Discovery) *CommunicationMock {
@@ -35,7 +38,12 @@ func NewCommunication(discovery *Discovery) *CommunicationMock {
 		outgoingWhitelist:          nil,
 		incomingWhiteListMemberIds: nil,
 		statsSentMessages:          []*interfaces.ConsensusRawMessage{},
+		maxDelayDuration:           time.Duration(0),
 	}
+}
+
+func (g *CommunicationMock) SetMessagesMaxDelay(duration time.Duration) {
+	g.maxDelayDuration = duration
 }
 
 func (g *CommunicationMock) messageSenderLoop(ctx context.Context, channel chan *outgoingMessage) {
@@ -91,7 +99,13 @@ func (g *CommunicationMock) OnRemoteMessage(ctx context.Context, rawMessage *int
 				continue
 			}
 		}
-		s.cb(ctx, rawMessage)
+
+		go func() {
+			if g.maxDelayDuration > 0 {
+				time.Sleep(time.Duration(rand.Int63n(int64(g.maxDelayDuration))))
+			}
+			s.cb(ctx, rawMessage)
+		}()
 	}
 }
 

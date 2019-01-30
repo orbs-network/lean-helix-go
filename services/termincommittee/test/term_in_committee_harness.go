@@ -27,14 +27,14 @@ type harness struct {
 	net               *network.TestNetwork
 	termInCommittee   *termincommittee.TermInCommittee
 	storage           interfaces.Storage
-	electionTrigger   *mocks.ElectionTriggerMock
+	electionTrigger   interfaces.ElectionTrigger
 	failVerifications bool
 }
 
 func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Block) *harness {
 	net := network.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).Build()
 	myNode := net.Nodes[0]
-	termConfig := myNode.BuildConfig(logger.NewConsoleLogger(myNode.MemberId.String()))
+	termConfig := myNode.BuildConfig(logger.NewConsoleLogger())
 	log := logger.NewLhLogger(termConfig.Logger)
 
 	prevBlock := myNode.GetLatestBlock()
@@ -67,7 +67,14 @@ func (h *harness) checkView(expectedView primitives.View) {
 }
 
 func (h *harness) triggerElection(ctx context.Context) {
-	h.electionTrigger.ManualTriggerSync(ctx)
+	electionTriggerMock, ok := h.electionTrigger.(*mocks.ElectionTriggerMock)
+	if ok {
+		electionTriggerMock.ManualTrigger(ctx)
+	} else {
+		panic("You are trying to trigger election with an election trigger that is not the ElectionTriggerMock")
+	}
+
+	electionTriggerMock.ManualTriggerSync(ctx)
 }
 
 func (h *harness) getMyNodeMemberId() primitives.MemberId {
