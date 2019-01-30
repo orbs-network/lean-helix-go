@@ -3,6 +3,7 @@ package rawmessagesfilter
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	L "github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
@@ -12,10 +13,10 @@ type RawMessageFilter struct {
 	consensusMessagesHandler ConsensusMessagesHandler
 	myMemberId               primitives.MemberId
 	messageCache             map[primitives.BlockHeight][]interfaces.ConsensusMessage
-	logger                   interfaces.Logger
+	logger                   L.LHLogger
 }
 
-func NewRawMessageFilter(instanceId primitives.InstanceId, myMemberId primitives.MemberId, logger interfaces.Logger) *RawMessageFilter {
+func NewConsensusMessageFilter(instanceId primitives.InstanceId, myMemberId primitives.MemberId, logger L.LHLogger) *RawMessageFilter {
 	res := &RawMessageFilter{
 		instanceId:   instanceId,
 		myMemberId:   myMemberId,
@@ -29,19 +30,23 @@ func NewRawMessageFilter(instanceId primitives.InstanceId, myMemberId primitives
 func (f *RawMessageFilter) HandleConsensusRawMessage(ctx context.Context, rawMessage *interfaces.ConsensusRawMessage) {
 	message := interfaces.ToConsensusMessage(rawMessage)
 	if f.isMyMessage(message) {
+		f.logger.Debug(L.LC(f.blockHeight, 0, f.myMemberId), "LHFILTER ignoring message I sent")
 		return
 	}
 
 	if message.BlockHeight() < f.blockHeight {
+		f.logger.Debug(L.LC(f.blockHeight, 0, f.myMemberId), "LHFILTER ignoring message with height=%d because filter height=%d", message.BlockHeight(), f.blockHeight)
 		return
 	}
 
 	if message.InstanceId() != f.instanceId {
+		f.logger.Debug(L.LC(f.blockHeight, 0, f.myMemberId), "LHFILTER ignoring message with instanceID=%s because my instanceID==%s", message.InstanceId(), f.instanceId)
 		return
 	}
 
 	if message.BlockHeight() > f.blockHeight {
 		f.pushToCache(message.BlockHeight(), message)
+		f.logger.Debug(L.LC(f.blockHeight, 0, f.myMemberId), "LHFILTER pushed to cache message from future block height=%d where filter height=%d", message.BlockHeight(), f.blockHeight)
 		return
 	}
 
@@ -80,6 +85,9 @@ func (f *RawMessageFilter) consumeCacheMessages(ctx context.Context, blockHeight
 	f.clearCacheHistory(blockHeight)
 
 	messages := f.messageCache[blockHeight]
+	if len(messages) > 0 {
+		f.logger.Debug(L.LC(f.blockHeight, 0, f.myMemberId), "LHFILTER consuming %d messages from height=%d", len(messages), blockHeight)
+	}
 	for _, message := range messages {
 		f.processConsensusMessage(ctx, message)
 	}

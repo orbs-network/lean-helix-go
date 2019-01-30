@@ -132,10 +132,6 @@ func (h *harness) receivePreprepare(ctx context.Context, fromNode int, blockHeig
 	h.termInCommittee.HandlePrePrepare(ctx, ppm)
 }
 
-func (h *harness) receivePreprepareMessage(ctx context.Context, ppm *interfaces.PreprepareMessage) {
-	h.termInCommittee.HandlePrePrepare(ctx, ppm)
-}
-
 func (h *harness) receivePrepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	sender := h.net.Nodes[fromNode]
 	pm := builders.APrepareMessage(h.instanceId, sender.KeyManager, sender.MemberId, blockHeight, view, block)

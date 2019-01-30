@@ -136,7 +136,7 @@ func NewNode(
 	}
 
 	leanHelix := leanhelix.NewLeanHelix(node.BuildConfig(logger), node.onCommittedBlock)
-	communication.RegisterOnMessage(leanHelix.HandleConsensusRawMessage)
+	communication.RegisterOnMessage(leanHelix.HandleConsensusMessage)
 
 	node.leanHelix = leanHelix
 	return node
