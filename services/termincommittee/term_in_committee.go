@@ -162,7 +162,7 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 	preparedMessages := preparedmessages.ExtractPreparedMessages(tic.height, tic.storage, tic.QuorumSize)
 	vcm := tic.messageFactory.CreateViewChangeMessage(tic.height, tic.view, preparedMessages)
 	if tic.isLeader() {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "moveToNextLeader() I AM THE LEADER BY VIEW CHANGE")
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "moveToNextLeader() I AM THE LEADER BY VIEW CHANGE. My leadership will time out in %s", tic.electionTrigger.CalcTimeout(view))
 		tic.storage.StoreViewChange(vcm)
 		tic.checkElected(ctx, tic.height, tic.view)
 	} else {

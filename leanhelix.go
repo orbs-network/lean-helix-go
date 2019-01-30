@@ -2,6 +2,7 @@ package leanhelix
 
 import (
 	"context"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/blockheight"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/leanhelixterm"
@@ -176,6 +177,7 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 }
 
 func (lh *LeanHelix) HandleConsensusMessage(ctx context.Context, message *interfaces.ConsensusRawMessage) {
+	fmt.Printf("LH EXTERNAL(): MAIN RECEIVED %d\n", len(message.Content))
 	select {
 	case <-ctx.Done():
 		lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "HandleConsensusRawMessage() ID=%s CONTEXT TERMINATED", termincommittee.Str(lh.config.Membership.MyMemberId()))

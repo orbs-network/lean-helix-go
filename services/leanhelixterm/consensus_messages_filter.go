@@ -24,6 +24,7 @@ func (mp *ConsensusMessagesFilter) HandleConsensusMessage(ctx context.Context, m
 		return
 	}
 
+	fmt.Printf("HandleConsensusMessage(): Type=%s\n", message.MessageType())
 	switch message := message.(type) {
 	case *interfaces.PreprepareMessage:
 		mp.handler.HandlePrePrepare(ctx, message)
