@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+var TIMEOUT_EXP_BASE = float64(1.1) // By default it is 2.0
+
 func setTimeout(ctx context.Context, cb func(ctx context.Context), timeout time.Duration) chan bool {
 	timer := time.NewTimer(timeout)
 	clear := make(chan bool)
@@ -93,6 +95,6 @@ func (t *TimerBasedElectionTrigger) onTimeout(ctx context.Context) {
 }
 
 func (t *TimerBasedElectionTrigger) calcTimeout(view primitives.View) time.Duration {
-	timeoutMultiplier := time.Duration(int64(math.Pow(2, float64(view))))
+	timeoutMultiplier := time.Duration(int64(math.Pow(TIMEOUT_EXP_BASE, float64(view))))
 	return timeoutMultiplier * t.minTimeout
 }
