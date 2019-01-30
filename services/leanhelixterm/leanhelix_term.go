@@ -25,7 +25,7 @@ func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfac
 	messageFactory := messagesfactory.NewMessageFactory(config.InstanceId, config.KeyManager, config.Membership.MyMemberId(), randomSeed)
 
 	committeeMembers := config.Membership.RequestOrderedCommittee(ctx, blockHeight, randomSeed)
-	log.Info(L.LC(blockHeight, math.MaxUint64, config.Membership.MyMemberId()), "RECEIVED COMMITTEE: randomSeed=%s, members=%s", randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers))
+	log.Info(L.LC(blockHeight, math.MaxUint64, config.Membership.MyMemberId()), "RECEIVED COMMITTEE: randomSeed=%d, members=%s", randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers))
 	termInCommittee := termincommittee.NewTermInCommittee(ctx, log, config, messageFactory, committeeMembers, blockHeight, prevBlock, CommitsToProof(config.KeyManager, onCommit))
 
 	return &LeanHelixTerm{
