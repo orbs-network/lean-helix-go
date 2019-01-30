@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-var TIMEOUT_EXP_BASE = float64(1.5) // By default it is 2.0
+var TIMEOUT_EXP_BASE = float64(2.0)
 
 func setTimeout(ctx context.Context, cb func(ctx context.Context), timeout time.Duration) chan bool {
 	timer := time.NewTimer(timeout)
