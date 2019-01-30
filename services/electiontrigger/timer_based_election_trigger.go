@@ -2,7 +2,6 @@ package electiontrigger
 
 import (
 	"context"
-	"fmt"
 	"github.com/orbs-network/lean-helix-go/instrumentation/metrics"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"math"
@@ -61,9 +60,7 @@ func (t *TimerBasedElectionTrigger) RegisterOnElection(ctx context.Context, bloc
 		t.view = view
 		t.blockHeight = blockHeight
 		t.stop(ctx)
-		timeout := t.CalcTimeout(view)
-		fmt.Println(timeout)
-		t.clearTimer = setTimeout(ctx, t.onTimeout, timeout)
+		t.clearTimer = setTimeout(ctx, t.onTimeout, t.CalcTimeout(view))
 	}
 }
 
