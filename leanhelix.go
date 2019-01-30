@@ -2,7 +2,6 @@ package leanhelix
 
 import (
 	"context"
-	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/blockheight"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/leanhelixterm"
@@ -16,6 +15,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/pkg/errors"
+	"math"
 )
 
 type blockWithProof struct {
@@ -45,7 +45,7 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 		lhLog = L.NewLhLogger(config.Logger)
 	}
 
-	lhLog.Debug(L.LC(0, 0, config.Membership.MyMemberId()), "LHFLOW NewLeanHelix()")
+	lhLog.Debug(L.LC(math.MaxUint64, math.MaxUint64, config.Membership.MyMemberId()), "LHFLOW NewLeanHelix()")
 	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), lhLog)
 	return &LeanHelix{
 		messagesChannel:    make(chan *interfaces.ConsensusRawMessage),
@@ -59,13 +59,13 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 }
 
 func (lh *LeanHelix) Run(ctx context.Context) {
-	lh.logger.Info(L.LC(0, 0, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP START")
-	lh.logger.Info(L.LC(0, 0, lh.config.Membership.MyMemberId()), "LHMSG START LISTENING NOW")
+	lh.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP START")
+	lh.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHMSG START LISTENING NOW")
 	for {
 		select {
 		case <-ctx.Done():
-			lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP DONE, Terminating Run().")
-			lh.logger.Info(L.LC(0, 0, lh.config.Membership.MyMemberId()), "LHMSG STOPPED LISTENING")
+			lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP DONE, Terminating Run().")
+			lh.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHMSG STOPPED LISTENING")
 			return
 
 		case message := <-lh.messagesChannel:
@@ -74,18 +74,18 @@ func (lh *LeanHelix) Run(ctx context.Context) {
 		case trigger := <-lh.config.ElectionTrigger.ElectionChannel():
 			if trigger == nil {
 				// this cannot happen, ignore
-				lh.logger.Info(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "XXXXXX LHFLOW MAINLOOP ELECTION, OMG trigger is nil, not triggering election!")
+				lh.logger.Info(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "XXXXXX LHFLOW MAINLOOP ELECTION, OMG trigger is nil, not triggering election!")
 			}
-			lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP ELECTION")
+			lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP ELECTION")
 			trigger(ctx)
 
 		case receivedBlockWithProof := <-lh.updateStateChannel:
 			receivedBlockHeight := blockheight.GetBlockHeight(receivedBlockWithProof.block)
 			if receivedBlockHeight >= lh.currentHeight {
-				lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE Accepted block with height=%d, calling onNewConsensusRound()", receivedBlockHeight)
+				lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE Accepted block with height=%d, calling onNewConsensusRound()", receivedBlockHeight)
 				lh.onNewConsensusRound(ctx, receivedBlockWithProof.block, receivedBlockWithProof.prevBlockProofBytes)
 			} else {
-				lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE IGNORE - Received block ignored because its height=%d is less than current height=%d", receivedBlockHeight, lh.currentHeight)
+				lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE IGNORE - Received block ignored because its height=%d is less than current height=%d", receivedBlockHeight, lh.currentHeight)
 			}
 		}
 	}
@@ -107,7 +107,7 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 	if block == nil {
 		return errors.Errorf("ValidateBlockConsensus(): nil block")
 	}
-	lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "ValidateBlockConsensus() for blockHeight=%s", termincommittee.Str(lh.config.Membership.MyMemberId()), block.Height())
+	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "ValidateBlockConsensus() for blockHeight=%s", termincommittee.Str(lh.config.Membership.MyMemberId()), block.Height())
 	if blockProofBytes == nil || len(blockProofBytes) == 0 {
 		return errors.Errorf("ValidateBlockConsensus(): nil blockProof")
 	}
@@ -177,10 +177,9 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 }
 
 func (lh *LeanHelix) HandleConsensusMessage(ctx context.Context, message *interfaces.ConsensusRawMessage) {
-	fmt.Printf("LH EXTERNAL(): MAIN RECEIVED %d\n", len(message.Content))
 	select {
 	case <-ctx.Done():
-		lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "HandleConsensusRawMessage() ID=%s CONTEXT TERMINATED", termincommittee.Str(lh.config.Membership.MyMemberId()))
+		lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "HandleConsensusRawMessage() ID=%s CONTEXT TERMINATED", termincommittee.Str(lh.config.Membership.MyMemberId()))
 		return
 
 	case lh.messagesChannel <- message:
@@ -189,7 +188,7 @@ func (lh *LeanHelix) HandleConsensusMessage(ctx context.Context, message *interf
 
 func (lh *LeanHelix) onCommit(ctx context.Context, block interfaces.Block, blockProofBytes []byte) {
 	lh.onCommitCallback(ctx, block, blockProofBytes)
-	lh.logger.Debug(L.LC(lh.currentHeight, 0, lh.config.Membership.MyMemberId()), "Calling onNewConsensusRound() from onCommit()")
+	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "Calling onNewConsensusRound() from onCommit()")
 	lh.onNewConsensusRound(ctx, block, blockProofBytes)
 }
 
