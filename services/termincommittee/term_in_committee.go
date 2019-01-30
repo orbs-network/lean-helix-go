@@ -84,7 +84,7 @@ func NewTermInCommittee(
 		config.Storage = storage.NewInMemoryStorage()
 	}
 
-	log.Debug(L.LC(blockHeight, 0, myMemberId), "NewTermInCommittee: committeeMembersCount=%d members=%s", len(committeeMembers), toCommitteeMembersStr(committeeMembers))
+	log.Debug(L.LC(blockHeight, 0, myMemberId), "NewTermInCommittee: committeeMembersCount=%d members=%s", len(committeeMembers), ToCommitteeMembersStr(committeeMembers))
 
 	result := &TermInCommittee{
 		height:                         blockHeight,
@@ -107,7 +107,7 @@ func NewTermInCommittee(
 	return result
 }
 
-func toCommitteeMembersStr(members []primitives.MemberId) string {
+func ToCommitteeMembersStr(members []primitives.MemberId) string {
 
 	strs := make([]string, 1)
 	for _, member := range members {
@@ -151,7 +151,7 @@ func (tic *TermInCommittee) initView(ctx context.Context, view primitives.View) 
 	tic.view = view
 	tic.leaderMemberId = tic.calcLeaderMemberId(view)
 	tic.electionTrigger.RegisterOnElection(ctx, tic.height, tic.view, tic.moveToNextLeader)
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW initView() set leader to %s, incremented view to %d, election-timeout=%s, goroutines#=%d", Str(tic.leaderMemberId), tic.view, tic.electionTrigger.CalcTimeout(view), runtime.NumGoroutine())
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW initView() set leader to %s, incremented view to %d, election-timeout=%s, members=%s, goroutines#=%d", Str(tic.leaderMemberId), tic.view, tic.electionTrigger.CalcTimeout(view), ToCommitteeMembersStr(tic.committeeMembersMemberIds), runtime.NumGoroutine())
 }
 
 func (tic *TermInCommittee) Dispose() {
@@ -405,8 +405,7 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 
 func (tic *TermInCommittee) HandleViewChange(ctx context.Context, vcm *interfaces.ViewChangeMessage) {
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED VIEW_CHANGE (H=%d V=%d sender=%s)", vcm.BlockHeight(), vcm.View(), Str(vcm.SenderMemberId()))
-	if !tic.isViewChangeValid(tic.myMemberId, tic.view, vcm.Content()) {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED VIEW_CHANGE IGNORE - invalid")
+	if !tic.isViewChangeValid(tic.myMemberId, tic.view, vcm.Content()) { // errors logged inside this func
 		return
 	}
 
