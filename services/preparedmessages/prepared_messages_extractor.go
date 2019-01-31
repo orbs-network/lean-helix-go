@@ -10,20 +10,27 @@ type PreparedMessages struct {
 	PrepareMessages   []*interfaces.PrepareMessage
 }
 
-func ExtractPreparedMessages(blockHeight primitives.BlockHeight, storage interfaces.Storage, q int) *PreparedMessages {
-	ppm, ok := storage.GetLatestPreprepare(blockHeight)
-	if !ok {
-		return nil
-	}
-	lastView := ppm.View()
-	prepareMessages, ok := storage.GetPrepareMessages(blockHeight, lastView, ppm.Content().SignedHeader().BlockHash())
-	if !ok {
-		return nil
-	}
-	if len(prepareMessages) >= q-1 {
-		return &PreparedMessages{
-			PreprepareMessage: ppm,
-			PrepareMessages:   prepareMessages,
+func ExtractPreparedMessages(blockHeight primitives.BlockHeight, lastView primitives.View, storage interfaces.Storage, q int) *PreparedMessages {
+
+	// TODO Change impl - loop from view-1 -> 0 and find a view which was PREPARED (P+PPs) and return that
+	for v := lastView; v >= 0; v-- {
+		if v == 0 { // SHITTY GO
+			break
+		}
+		ppm, ok := storage.GetPreprepareFromView(blockHeight, v)
+		if !ok {
+			continue
+		}
+
+		prepareMessages, ok := storage.GetPrepareMessages(blockHeight, v, ppm.Content().SignedHeader().BlockHash())
+		if !ok {
+			continue
+		}
+		if len(prepareMessages) >= q-1 {
+			return &PreparedMessages{
+				PreprepareMessage: ppm,
+				PrepareMessages:   prepareMessages,
+			}
 		}
 	}
 	return nil
