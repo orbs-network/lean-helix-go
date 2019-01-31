@@ -172,7 +172,7 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 	preparedMessages := preparedmessages.ExtractPreparedMessages(tic.height, tic.storage, tic.QuorumSize)
 	vcm := tic.messageFactory.CreateViewChangeMessage(tic.height, tic.view, preparedMessages)
 	if tic.isLeader() {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "moveToNextLeader() I AM THE LEADER BY VIEW CHANGE. My leadership will time out in %s", tic.electionTrigger.CalcTimeout(view))
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW moveToNextLeader() I AM THE LEADER BY VIEW CHANGE. My leadership will time out in %s", tic.electionTrigger.CalcTimeout(view))
 		tic.storage.StoreViewChange(vcm)
 		tic.checkElected(ctx, tic.height, tic.view)
 	} else {
@@ -190,13 +190,23 @@ func (tic *TermInCommittee) isLeader() bool {
 
 // TODO v1 breakdown to separate if's and log each
 func (tic *TermInCommittee) checkElected(ctx context.Context, height primitives.BlockHeight, view primitives.View) {
-	if tic.newViewLocally < view {
-		vcms, ok := tic.storage.GetViewChangeMessages(height, view)
-		minimumNodes := tic.QuorumSize
-		if ok && len(vcms) >= minimumNodes {
-			tic.onElected(ctx, view, vcms[:minimumNodes])
-		}
+	if tic.newViewLocally >= view {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkElected() already newViewLocally=%d is greater or equal to received view=%d, skipping", tic.newViewLocally, view)
+		return
 	}
+	vcms, ok := tic.storage.GetViewChangeMessages(height, view)
+	minimumNodes := tic.QuorumSize
+	if !ok {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkElected() could not get stored VIEW_CHANGE messages, skipping")
+		return
+	}
+
+	if len(vcms) < minimumNodes {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkElected() only %d VIEW_CHANGE are stored, need %d", len(vcms), minimumNodes)
+		return
+	}
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkElected() proceeding to onElected()")
+	tic.onElected(ctx, view, vcms[:minimumNodes])
 }
 
 func (tic *TermInCommittee) onElected(ctx context.Context, view primitives.View, viewChangeMessages []*interfaces.ViewChangeMessage) {
