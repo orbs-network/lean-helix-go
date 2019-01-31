@@ -92,7 +92,7 @@ func (lh *LeanHelix) Run(ctx context.Context) {
 }
 
 func (lh *LeanHelix) UpdateState(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte) {
-	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE Writing to update state channel")
+	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE Writing to UPDATESTATE channel")
 	select {
 	case <-ctx.Done():
 		lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE DONE")
@@ -190,9 +190,10 @@ func (lh *LeanHelix) HandleConsensusMessage(ctx context.Context, message *interf
 }
 
 func (lh *LeanHelix) onCommit(ctx context.Context, block interfaces.Block, blockProofBytes []byte) {
-	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "Calling onCommitCallback() from leanhelix.onCommit()")
+	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW onCommitCallback START from leanhelix.onCommit()")
 	lh.onCommitCallback(ctx, block, blockProofBytes)
-	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "Calling onNewConsensusRound() from leanhelix.onCommit()")
+	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW onCommitCallback RETURNED from leanhelix.onCommit()")
+	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "Calling onNewConsensusRound from leanhelix.onCommit()")
 	lh.onNewConsensusRound(ctx, block, blockProofBytes)
 }
 
