@@ -2,7 +2,6 @@ package rawmessagesfilter
 
 import (
 	"context"
-	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	L "github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
@@ -32,7 +31,6 @@ func NewConsensusMessageFilter(instanceId primitives.InstanceId, myMemberId prim
 
 func (f *RawMessageFilter) HandleConsensusRawMessage(ctx context.Context, rawMessage *interfaces.ConsensusRawMessage) {
 	message := interfaces.ToConsensusMessage(rawMessage)
-	fmt.Printf("HandleConsensusRawMessage(): LHFILTER RECEIVED %s\n", message.MessageType())
 	//f.logger.Debug(L.LC(f.blockHeight, 0, f.myMemberId), "LHFILTER RECEIVED %s with H=%d V=%d sender=%s", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
 	if f.isMyMessage(message) {
 		f.logger.Debug(L.LC(f.blockHeight, math.MaxUint64, f.myMemberId), "LHFILTER RECEIVED %s with H=%d V=%d sender=%s IGNORING message I sent", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
