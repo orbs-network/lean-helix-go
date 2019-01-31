@@ -15,17 +15,18 @@ type NodeState struct {
 }
 
 type Node struct {
-	instanceId       primitives.InstanceId
-	leanHelix        *leanhelix.LeanHelix
-	blockChain       *mocks.InMemoryBlockChain
-	ElectionTrigger  *mocks.ElectionTriggerMock
-	BlockUtils       *mocks.MockBlockUtils
-	KeyManager       *mocks.MockKeyManager
-	Storage          interfaces.Storage
-	Communication    *mocks.CommunicationMock
-	Membership       interfaces.Membership
-	MemberId         primitives.MemberId
-	NodeStateChannel chan *NodeState
+	instanceId          primitives.InstanceId
+	leanHelix           *leanhelix.LeanHelix
+	blockChain          *mocks.InMemoryBlockChain
+	ElectionTrigger     interfaces.ElectionTrigger
+	BlockUtils          *mocks.MockBlockUtils
+	KeyManager          *mocks.MockKeyManager
+	Storage             interfaces.Storage
+	Communication       *mocks.CommunicationMock
+	Membership          interfaces.Membership
+	MemberId            primitives.MemberId
+	NodeStateChannel    chan *NodeState
+	WriteToStateChannel bool
 }
 
 func (node *Node) GetKeyManager() interfaces.KeyManager {
@@ -49,29 +50,31 @@ func (node *Node) GetBlockProofAt(height primitives.BlockHeight) []byte {
 }
 
 func (node *Node) TriggerElection(ctx context.Context) {
-	node.ElectionTrigger.ManualTrigger(ctx)
-}
-
-func (node *Node) TriggerElectionSync(ctx context.Context) {
-	node.ElectionTrigger.ManualTriggerSync(ctx)
+	electionTriggerMock, ok := node.ElectionTrigger.(*mocks.ElectionTriggerMock)
+	if ok {
+		electionTriggerMock.ManualTrigger(ctx)
+	} else {
+		panic("You are trying to trigger election with an election trigger that is not the ElectionTriggerMock")
+	}
 }
 
 func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, blockProof []byte) {
 	node.blockChain.AppendBlockToChain(block, blockProof)
 
-	nodeState := &NodeState{
-		block:           block,
-		validationCount: node.BlockUtils.ValidationCounter,
+	if node.WriteToStateChannel {
+		nodeState := &NodeState{
+			block:           block,
+			validationCount: node.BlockUtils.ValidationCounter,
+		}
+
+		select {
+		case <-ctx.Done():
+			return
+
+		case node.NodeStateChannel <- nodeState:
+			return
+		}
 	}
-
-	select {
-	case <-ctx.Done():
-		return
-
-	case node.NodeStateChannel <- nodeState:
-		return
-	}
-
 }
 
 func (node *Node) StartConsensus(ctx context.Context) {
@@ -118,21 +121,22 @@ func NewNode(
 	membership interfaces.Membership,
 	communication *mocks.CommunicationMock,
 	blockUtils *mocks.MockBlockUtils,
-	electionTrigger *mocks.ElectionTriggerMock,
+	electionTrigger interfaces.ElectionTrigger,
 	logger interfaces.Logger) *Node {
 
 	memberId := membership.MyMemberId()
 	node := &Node{
-		instanceId:       instanceId,
-		blockChain:       mocks.NewInMemoryBlockChain(),
-		ElectionTrigger:  electionTrigger,
-		BlockUtils:       blockUtils,
-		KeyManager:       mocks.NewMockKeyManager(memberId),
-		Storage:          storage.NewInMemoryStorage(),
-		Communication:    communication,
-		Membership:       membership,
-		MemberId:         memberId,
-		NodeStateChannel: make(chan *NodeState),
+		instanceId:          instanceId,
+		blockChain:          mocks.NewInMemoryBlockChain(),
+		ElectionTrigger:     electionTrigger,
+		BlockUtils:          blockUtils,
+		KeyManager:          mocks.NewMockKeyManager(memberId),
+		Storage:             storage.NewInMemoryStorage(),
+		Communication:       communication,
+		Membership:          membership,
+		MemberId:            memberId,
+		NodeStateChannel:    make(chan *NodeState),
+		WriteToStateChannel: true,
 	}
 
 	leanHelix := leanhelix.NewLeanHelix(node.BuildConfig(logger), node.onCommittedBlock)

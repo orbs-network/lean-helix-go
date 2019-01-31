@@ -50,7 +50,7 @@ func (b *MockBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeigh
 		b.RequestNewBlockSns.SignalAndStop(ctx)
 	}
 
-	block := b.blocksPool.PopBlock()
+	block := b.blocksPool.PopBlock(prevBlock)
 	blockHash := CalculateBlockHash(block)
 	return block, blockHash
 }

@@ -6,7 +6,6 @@ import (
 )
 
 type ConsoleLogger struct {
-	id    string
 	level LogLevel
 }
 
@@ -35,9 +34,8 @@ func stdout(format string, args ...interface{}) {
 	fmt.Printf(format, args...)
 }
 
-func NewConsoleLogger(id string) interfaces.Logger {
+func NewConsoleLogger() interfaces.Logger {
 	return &ConsoleLogger{
-		id:    id,
 		level: LEVEL_DEBUG,
 	}
 }
