@@ -10,21 +10,24 @@ type PreparedMessages struct {
 	PrepareMessages   []*interfaces.PrepareMessage
 }
 
-func ExtractPreparedMessages(blockHeight primitives.BlockHeight, storage interfaces.Storage, q int) *PreparedMessages {
-	ppm, ok := storage.GetLatestPreprepare(blockHeight)
+func ExtractPreparedMessages(blockHeight primitives.BlockHeight, latestPreparedView primitives.View, storage interfaces.Storage, q int) *PreparedMessages {
+
+	ppm, ok := storage.GetPreprepareFromView(blockHeight, latestPreparedView)
 	if !ok {
 		return nil
 	}
-	lastView := ppm.View()
-	prepareMessages, ok := storage.GetPrepareMessages(blockHeight, lastView, ppm.Content().SignedHeader().BlockHash())
+
+	prepareMessages, ok := storage.GetPrepareMessages(blockHeight, latestPreparedView, ppm.Content().SignedHeader().BlockHash())
 	if !ok {
 		return nil
 	}
-	if len(prepareMessages) >= q-1 {
-		return &PreparedMessages{
-			PreprepareMessage: ppm,
-			PrepareMessages:   prepareMessages,
-		}
+
+	if len(prepareMessages) < q-1 {
+		return nil
 	}
-	return nil
+
+	return &PreparedMessages{
+		PreprepareMessage: ppm,
+		PrepareMessages:   prepareMessages,
+	}
 }

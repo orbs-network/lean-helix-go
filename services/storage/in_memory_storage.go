@@ -70,6 +70,22 @@ func (storage *InMemoryStorage) GetPreprepareBlock(blockHeight primitives.BlockH
 	return result.Block(), ok
 }
 
+func (storage *InMemoryStorage) GetPreprepareFromView(blockHeight primitives.BlockHeight, view primitives.View) (*interfaces.PreprepareMessage, bool) {
+	storage.mutext.Lock()
+	defer storage.mutext.Unlock()
+
+	views, ok := storage.preprepareStorage[blockHeight]
+	if !ok {
+		return nil, false
+	}
+	ppm, ok := views[view]
+	if !ok {
+		return nil, false
+	}
+
+	return ppm, true
+}
+
 func (storage *InMemoryStorage) GetLatestPreprepare(blockHeight primitives.BlockHeight) (*interfaces.PreprepareMessage, bool) {
 	storage.mutext.Lock()
 	defer storage.mutext.Unlock()

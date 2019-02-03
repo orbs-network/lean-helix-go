@@ -33,23 +33,23 @@ func (f *RawMessageFilter) HandleConsensusRawMessage(ctx context.Context, rawMes
 	message := interfaces.ToConsensusMessage(rawMessage)
 	//f.logger.Debug(L.LC(f.blockHeight, 0, f.myMemberId), "LHFILTER RECEIVED %s with H=%d V=%d sender=%s", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
 	if f.isMyMessage(message) {
-		f.logger.Debug(L.LC(f.blockHeight, math.MaxUint64, f.myMemberId), "LHFILTER RECEIVED %s with H=%d V=%d sender=%s IGNORING message I sent", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
+		f.logger.Debug(L.LC(f.blockHeight, math.MaxUint64, f.myMemberId), "LHFILTER IGNORING RECEIVED %s with H=%d V=%d sender=%s IGNORING message I sent", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
 		return
 	}
 
 	if message.BlockHeight() < f.blockHeight {
-		f.logger.Debug(L.LC(f.blockHeight, math.MaxUint64, f.myMemberId), "LHFILTER RECEIVED %s with H=%d V=%d sender=%s IGNORING message from the past", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
+		f.logger.Debug(L.LC(f.blockHeight, math.MaxUint64, f.myMemberId), "LHFILTER IGNORING RECEIVED %s with H=%d V=%d sender=%s IGNORING message from the past", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
 		return
 	}
 
 	if message.InstanceId() != f.instanceId {
-		f.logger.Debug(L.LC(f.blockHeight, math.MaxUint64, f.myMemberId), "LHFILTER RECEIVED %s with H=%d V=%d sender=%s IGNORING message from different instanceID=%s because my instanceID==%s", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()), message.InstanceId(), f.instanceId)
+		f.logger.Debug(L.LC(f.blockHeight, math.MaxUint64, f.myMemberId), "LHFILTER IGNORING RECEIVED %s with H=%d V=%d sender=%s IGNORING message from different instanceID=%s because my instanceID==%s", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()), message.InstanceId(), f.instanceId)
 		return
 	}
 
 	if message.BlockHeight() > f.blockHeight {
 		f.pushToCache(message.BlockHeight(), message)
-		f.logger.Debug(L.LC(f.blockHeight, math.MaxUint64, f.myMemberId), "LHFILTER RECEIVED %s with H=%d V=%d sender=%s STORING message from future height", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
+		f.logger.Debug(L.LC(f.blockHeight, math.MaxUint64, f.myMemberId), "LHFILTER STORING RECEIVED %s with H=%d V=%d sender=%s STORING message from future height", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
 		return
 	}
 	f.logger.Debug(L.LC(f.blockHeight, math.MaxUint64, f.myMemberId), "LHFILTER RECEIVED %s with H=%d V=%d sender=%s OK PROCESSING", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))

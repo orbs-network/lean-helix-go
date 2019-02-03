@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/preparedmessages"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
@@ -567,6 +568,7 @@ func TestAValidPreparedProofIsSentOnViewChange(t *testing.T) {
 		pBlockRef := preparedProof.PrepareBlockRef()
 
 		var pSendersIds []primitives.MemberId
+		fmt.Printf("preparedProof: %+v\n", preparedProof)
 		pSendersIter := preparedProof.PrepareSendersIterator()
 		for {
 			if !pSendersIter.HasNext() {
@@ -574,9 +576,11 @@ func TestAValidPreparedProofIsSentOnViewChange(t *testing.T) {
 			}
 			pSendersIds = append(pSendersIds, pSendersIter.NextPrepareSenders().MemberId())
 		}
+		require.Equal(t, 2, len(pSendersIds), "expected 2 senders of Prepare messages")
 
 		member1Id := h.getNodeMemberId(1)
 		member2Id := h.getNodeMemberId(2)
+
 		pSendersEqual := (member1Id.Equal(pSendersIds[0]) && member2Id.Equal(pSendersIds[1])) ||
 			(member1Id.Equal(pSendersIds[1]) && member2Id.Equal(pSendersIds[0]))
 

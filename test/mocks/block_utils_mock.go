@@ -3,6 +3,7 @@ package mocks
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
@@ -63,11 +64,14 @@ func (b *MockBlockUtils) CounterOfValidation() int {
 	return b.ValidationCounter
 }
 
-func (b *MockBlockUtils) ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, block interfaces.Block, blockHash primitives.BlockHash, prevBlock interfaces.Block) bool {
+func (b *MockBlockUtils) ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, block interfaces.Block, blockHash primitives.BlockHash, prevBlock interfaces.Block) error {
 	b.ValidationCounter++
 	if b.PauseOnValidation {
 		b.ValidationSns.SignalAndStop(ctx)
 	}
 
-	return b.ValidationResult
+	if !b.ValidationResult {
+		return errors.New("some errors")
+	}
+	return nil
 }

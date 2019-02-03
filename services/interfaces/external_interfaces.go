@@ -37,7 +37,7 @@ type Membership interface {
 
 type BlockUtils interface {
 	RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock Block) (Block, primitives.BlockHash)
-	ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, block Block, blockHash primitives.BlockHash, prevBlock Block) bool
+	ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, block Block, blockHash primitives.BlockHash, prevBlock Block) error
 	ValidateBlockCommitment(blockHeight primitives.BlockHeight, block Block, blockHash primitives.BlockHash) bool
 }
 
@@ -60,6 +60,7 @@ type Storage interface {
 	GetPreprepareMessage(blockHeight primitives.BlockHeight, view primitives.View) (*PreprepareMessage, bool)
 	GetPreprepareBlock(blockHeight primitives.BlockHeight, view primitives.View) (Block, bool)
 	GetLatestPreprepare(blockHeight primitives.BlockHeight) (*PreprepareMessage, bool)
+	GetPreprepareFromView(blockHeight primitives.BlockHeight, view primitives.View) (*PreprepareMessage, bool)
 
 	StorePrepare(pp *PrepareMessage) bool
 	GetPrepareMessages(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) ([]*PrepareMessage, bool)
