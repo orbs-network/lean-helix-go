@@ -1,0 +1,14 @@
+version: 2
+jobs:
+  build:
+    machine: true
+    steps:
+      - checkout
+      - run: ./git-submodule-checkout.sh
+      - run: ./.circleci/main.sh
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build
