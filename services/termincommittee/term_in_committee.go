@@ -34,6 +34,29 @@ func Str(memberId primitives.MemberId) string {
 
 type OnInCommitteeCommitCallback func(ctx context.Context, block interfaces.Block, commitMessages []*interfaces.CommitMessage)
 
+type preparedLocallyProps struct {
+	isPreparedLocally bool
+	latestView        primitives.View
+}
+
+func (tic *TermInCommittee) getPreparedLocally() (v primitives.View, ok bool) {
+	if tic.preparedLocally == nil || !tic.preparedLocally.isPreparedLocally {
+		return 0, false
+	}
+	return tic.preparedLocally.latestView, true
+}
+
+func (tic *TermInCommittee) setNotPreparedLocally() {
+	tic.preparedLocally = nil
+}
+
+func (tic *TermInCommittee) setPreparedLocally(v primitives.View) {
+	tic.preparedLocally = &preparedLocallyProps{
+		isPreparedLocally: true,
+		latestView:        v,
+	}
+}
+
 type TermInCommittee struct {
 	keyManager                     interfaces.KeyManager
 	communication                  interfaces.Communication
@@ -47,7 +70,7 @@ type TermInCommittee struct {
 	otherCommitteeMembersMemberIds []primitives.MemberId
 	height                         primitives.BlockHeight
 	view                           primitives.View
-	preparedLocally                bool
+	preparedLocally                *preparedLocallyProps
 	committedBlock                 interfaces.Block
 	leaderMemberId                 primitives.MemberId
 	newViewLocally                 primitives.View
@@ -123,6 +146,7 @@ func panicOnLessThanMinimumCommitteeMembers(committeeMembers []primitives.Member
 }
 
 func (tic *TermInCommittee) startTerm(ctx context.Context) {
+	tic.setNotPreparedLocally()
 	tic.initView(ctx, 0)
 	if tic.isLeader() {
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW startTerm() I AM THE LEADER OF FIRST VIEW, requesting new block")
@@ -146,7 +170,6 @@ func (tic *TermInCommittee) SetView(ctx context.Context, view primitives.View) {
 }
 
 func (tic *TermInCommittee) initView(ctx context.Context, view primitives.View) {
-	tic.preparedLocally = false
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW PreparedLocally set to false")
 	tic.view = view
 	tic.leaderMemberId = tic.calcLeaderMemberId(view)
@@ -167,10 +190,13 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 	if view != tic.view || height != tic.height {
 		return
 	}
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW moveToNextLeader() calling SetView() with V=%d", tic.view+1)
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW moveToNextLeader() calling SetView(), incrementing view to V=%d", tic.view+1)
 	tic.SetView(ctx, tic.view+1)
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW moveToNextLeader() newLeader=%s", Str(tic.leaderMemberId))
-	preparedMessages := preparedmessages.ExtractPreparedMessages(tic.height, tic.view, tic.storage, tic.QuorumSize)
+	var preparedMessages *preparedmessages.PreparedMessages
+	if tic.preparedLocally != nil && tic.preparedLocally.isPreparedLocally {
+		preparedMessages = preparedmessages.ExtractPreparedMessages(tic.height, tic.preparedLocally.latestView, tic.storage, tic.QuorumSize)
+	}
 	vcm := tic.messageFactory.CreateViewChangeMessage(tic.height, tic.view, preparedMessages)
 	if tic.isLeader() {
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW moveToNextLeader() I AM THE LEADER BY VIEW CHANGE. My leadership will time out in %s", tic.electionTrigger.CalcTimeout(view))
@@ -250,7 +276,7 @@ func (tic *TermInCommittee) validatePreprepare(ctx context.Context, ppm *interfa
 	blockHeight := ppm.BlockHeight()
 	view := ppm.View()
 	if tic.hasPreprepare(blockHeight, view) {
-		errMsg := fmt.Sprintf("already received Preprepare for H=%d V=%d", blockHeight, view)
+		errMsg := fmt.Sprintf("already stored Preprepare for H=%d V=%d", blockHeight, view)
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED PREPREPARE IGNORE - %s", errMsg)
 		return errors.New(errMsg)
 	}
@@ -283,6 +309,7 @@ func (tic *TermInCommittee) hasPreprepare(blockHeight primitives.BlockHeight, vi
 }
 
 func (tic *TermInCommittee) processPreprepare(ctx context.Context, ppm *interfaces.PreprepareMessage) {
+	// TODO per spec move this to validatePreprepare()
 	header := ppm.Content().SignedHeader()
 	if tic.view != header.View() {
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "processPreprepare() message from incorrect view %d", header.View())
@@ -294,8 +321,9 @@ func (tic *TermInCommittee) processPreprepare(ctx context.Context, ppm *interfac
 	tic.storage.StorePrepare(pm)
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND PREPARE")
 	tic.sendConsensusMessage(ctx, pm)
-	if err := tic.checkPrepared(ctx, header.BlockHeight(), header.View(), header.BlockHash()); err != nil {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkPrepared: err=%v", err)
+
+	if err := tic.checkPreparedLocally(ctx, header.BlockHeight(), header.View(), header.BlockHash()); err != nil {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkPreparedLocally: err=%v", err)
 	}
 }
 
@@ -320,14 +348,15 @@ func (tic *TermInCommittee) HandlePrepare(ctx context.Context, pm *interfaces.Pr
 	if header.View() > tic.view {
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED PREPARE STORE in future view %d", header.View())
 	}
-	if err := tic.checkPrepared(ctx, header.BlockHeight(), header.View(), header.BlockHash()); err != nil {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkPrepared: err=%v", err)
+	if err := tic.checkPreparedLocally(ctx, header.BlockHeight(), header.View(), header.BlockHash()); err != nil {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkPreparedLocally: err=%v", err)
 	}
 }
 
-func (tic *TermInCommittee) checkPrepared(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) error {
-	if tic.preparedLocally {
-		return errors.New("already in PHASE PREPARED")
+func (tic *TermInCommittee) checkPreparedLocally(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) error {
+	v, ok := tic.getPreparedLocally()
+	if ok && v == view {
+		return errors.Errorf("already in PHASE PREPARED for V=%d", view)
 	}
 
 	if err := tic.isPreprepared(blockHeight, view, blockHash); err != nil {
@@ -338,7 +367,7 @@ func (tic *TermInCommittee) checkPrepared(ctx context.Context, blockHeight primi
 	isPrepared := countPrepared >= tic.QuorumSize-1
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW Check if in PHASE PREPARED: stored=%d out of expected=%d isPrepared=%t", countPrepared, tic.QuorumSize-1, isPrepared)
 	if isPrepared {
-		tic.onPrepared(ctx, blockHeight, view, blockHash)
+		tic.onPreparedLocally(ctx, blockHeight, view, blockHash)
 	}
 	return nil
 }
@@ -364,8 +393,8 @@ func (tic *TermInCommittee) countPrepared(height primitives.BlockHeight, view pr
 	return len(tic.storage.GetPrepareSendersIds(height, view, blockHash))
 }
 
-func (tic *TermInCommittee) onPrepared(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) {
-	tic.preparedLocally = true
+func (tic *TermInCommittee) onPreparedLocally(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) {
+	tic.setPreparedLocally(view)
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW PHASE PREPARED, PreparedLocally set to true")
 	cm := tic.messageFactory.CreateCommitMessage(blockHeight, view, blockHash)
 	tic.storage.StoreCommit(cm)
