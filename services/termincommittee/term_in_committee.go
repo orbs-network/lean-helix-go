@@ -294,10 +294,10 @@ func (tic *TermInCommittee) validatePreprepare(ctx context.Context, ppm *interfa
 		return fmt.Errorf("sender %s is not leader. ExpectedLeader=%s", Str(senderMemberId), Str(leaderMemberId))
 	}
 
-	isValidBlock := tic.blockUtils.ValidateBlockProposal(ctx, blockHeight, ppm.Block(), ppm.Content().SignedHeader().BlockHash(), tic.prevBlock)
+	err := tic.blockUtils.ValidateBlockProposal(ctx, blockHeight, ppm.Block(), ppm.Content().SignedHeader().BlockHash(), tic.prevBlock)
 
-	if !isValidBlock {
-		return fmt.Errorf("block validation failed")
+	if err != nil {
+		return fmt.Errorf("block validation failed: %v", err)
 	}
 
 	return nil
