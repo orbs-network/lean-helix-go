@@ -1,5 +1,6 @@
 # lean-helix-go
 
+[![CircleCI](https://circleci.com/gh/orbs-network/lean-helix-go.svg?style=svg)](https://circleci.com/gh/orbs-network/lean-helix-go)
 
 **--Work in progress - not yet functional--**
 
