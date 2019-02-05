@@ -3,6 +3,7 @@ package leanhelixterm
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/blockheight"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/logger"
@@ -26,11 +27,19 @@ func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfac
 	messageFactory := messagesfactory.NewMessageFactory(config.InstanceId, config.KeyManager, config.Membership.MyMemberId(), randomSeed)
 
 	committeeMembers := config.Membership.RequestOrderedCommittee(ctx, blockHeight, randomSeed)
-	log.Info(L.LC(blockHeight, math.MaxUint64, config.Membership.MyMemberId()), "RECEIVED COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s", blockHeight, hex.EncodeToString(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers))
+	log.Info(L.LC(blockHeight, math.MaxUint64, config.Membership.MyMemberId()), "RECEIVED COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers))
+	log.Debug(L.LC(blockHeight, math.MaxUint64, config.Membership.MyMemberId()), "RECEIVED COMMITTEE: fullPrevBlockProof=%s", hex.EncodeToString(prevBlockProofBytes))
 	termInCommittee := termincommittee.NewTermInCommittee(ctx, log, config, messageFactory, committeeMembers, blockHeight, prevBlock, CommitsToProof(config.KeyManager, onCommit))
 
 	return &LeanHelixTerm{
 		ConsensusMessagesFilter: NewConsensusMessagesFilter(termInCommittee, config.KeyManager, randomSeed),
 		termInCommittee:         termInCommittee,
 	}
+}
+
+func printShortBlockProofBytes(b []byte) string {
+	if len(b) < 6 {
+		return ""
+	}
+	return fmt.Sprintf("%s..%s", hex.EncodeToString(b[:6]), hex.EncodeToString(b[len(b)-6:]))
 }

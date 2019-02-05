@@ -149,7 +149,7 @@ func (tic *TermInCommittee) startTerm(ctx context.Context) {
 	tic.setNotPreparedLocally()
 	tic.initView(ctx, 0)
 	if tic.isLeader() {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW startTerm() I AM THE LEADER OF FIRST VIEW, requesting new block")
+		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW startTerm() I AM THE LEADER OF FIRST VIEW, requesting new block")
 		block, blockHash := tic.blockUtils.RequestNewBlockProposal(ctx, tic.height, tic.prevBlock)
 		ppm := tic.messageFactory.CreatePreprepareMessage(tic.height, tic.view, block, blockHash)
 
@@ -199,7 +199,7 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 	}
 	vcm := tic.messageFactory.CreateViewChangeMessage(tic.height, tic.view, preparedMessages)
 	if tic.isLeader() {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW moveToNextLeader() I AM THE LEADER BY VIEW CHANGE. My leadership will time out in %s", tic.electionTrigger.CalcTimeout(view))
+		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW moveToNextLeader() I AM THE LEADER BY VIEW CHANGE. My leadership will time out in %s", tic.electionTrigger.CalcTimeout(view))
 		tic.storage.StoreViewChange(vcm)
 		tic.checkElected(ctx, tic.height, tic.view)
 	} else {
@@ -395,7 +395,7 @@ func (tic *TermInCommittee) countPrepared(height primitives.BlockHeight, view pr
 
 func (tic *TermInCommittee) onPreparedLocally(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) {
 	tic.setPreparedLocally(view)
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW PHASE PREPARED, PreparedLocally set to true")
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW PHASE PREPARED, PreparedLocally set to V=%d", view)
 	cm := tic.messageFactory.CreateCommitMessage(blockHeight, view, blockHash)
 	tic.storage.StoreCommit(cm)
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND COMMIT")
