@@ -28,7 +28,6 @@ func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfac
 
 	committeeMembers := config.Membership.RequestOrderedCommittee(ctx, blockHeight, randomSeed)
 	log.Info(L.LC(blockHeight, math.MaxUint64, config.Membership.MyMemberId()), "RECEIVED COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers))
-	log.Debug(L.LC(blockHeight, math.MaxUint64, config.Membership.MyMemberId()), "RECEIVED COMMITTEE: fullPrevBlockProof=%s", hex.EncodeToString(prevBlockProofBytes))
 	termInCommittee := termincommittee.NewTermInCommittee(ctx, log, config, messageFactory, committeeMembers, blockHeight, prevBlock, CommitsToProof(config.KeyManager, onCommit))
 
 	return &LeanHelixTerm{
