@@ -20,7 +20,7 @@
 * BlockProof is serialized by the library _(passed as byte_array)_ 
 * Block is serialized by the Consumer service. 
 * Genesis Block and BlockProof are both nil. Thus, on boot the system comes to an agreement on initial context such as timestamp. 
-* To provide for VirtualChain sharding each such blockchain is augmented with an `instanceId` which is provided to the lean-helix library and used\propogated to all critical agreement signed messages (e.g. ViewChange message contains `instanceId`) to prevent byzantine exploits.  
+* To accomodate for VirtualChain sharding each such blockchain is augmented with an `instanceId` which is provided to the lean-helix library and used\propogated to all critical agreement signed messages (e.g. ViewChange message contains `instanceId`) to prevent byzantine exploits.  
 
 
 ## Architecture - components and interfaces
