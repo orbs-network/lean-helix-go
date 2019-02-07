@@ -92,7 +92,11 @@ func (lh *LeanHelix) Run(ctx context.Context) {
 }
 
 func (lh *LeanHelix) UpdateState(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte) {
-	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE Writing to UPDATESTATE channel")
+	var prevBlockHeight primitives.BlockHeight
+	if prevBlock != nil {
+		prevBlockHeight = prevBlock.Height()
+	}
+	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE Writing to UPDATESTATE channel, prevBlockHeight=%d", prevBlockHeight)
 	select {
 	case <-ctx.Done():
 		lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE DONE")
