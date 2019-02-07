@@ -29,7 +29,7 @@
 * `NewLeanHelix(config, onCommitCallback)`
 * `Run(ctx)`
 Initiates lean-helix library infinite listening loop.
-* `UpdateState(block, blockProof)`
+* `UpdateState(ctx, block, blockProof)`
   Called upon node sync.  Assumes the matching pair _(block,blockProof)_ are validated!\
   Conditional update: If given block->height is at least as on-going round, terminate participation in an on-going round and initiate participation in the subsequent consensus round.
 * `ValidateBlockConsensus(ctx, block, blockProof, prevBlockProof): isValid`
