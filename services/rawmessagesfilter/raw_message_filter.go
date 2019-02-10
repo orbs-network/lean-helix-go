@@ -31,7 +31,6 @@ func NewConsensusMessageFilter(instanceId primitives.InstanceId, myMemberId prim
 
 func (f *RawMessageFilter) HandleConsensusRawMessage(ctx context.Context, rawMessage *interfaces.ConsensusRawMessage) {
 	message := interfaces.ToConsensusMessage(rawMessage)
-	//f.logger.Debug(L.LC(f.blockHeight, 0, f.myMemberId), "LHFILTER RECEIVED %s with H=%d V=%d sender=%s", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
 	if f.isMyMessage(message) {
 		f.logger.Debug(L.LC(f.blockHeight, math.MaxUint64, f.myMemberId), "LHFILTER IGNORING RECEIVED %s with H=%d V=%d sender=%s IGNORING message I sent", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
 		return
