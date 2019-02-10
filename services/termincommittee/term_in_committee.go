@@ -72,7 +72,6 @@ type TermInCommittee struct {
 	view                           primitives.View
 	preparedLocally                *preparedLocallyProps
 	committedBlock                 interfaces.Block
-	leaderMemberId                 primitives.MemberId
 	newViewLocally                 primitives.View
 	logger                         L.LHLogger
 	prevBlock                      interfaces.Block
@@ -148,7 +147,7 @@ func panicOnLessThanMinimumCommitteeMembers(committeeMembers []primitives.Member
 func (tic *TermInCommittee) startTerm(ctx context.Context) {
 	tic.setNotPreparedLocally()
 	tic.initView(ctx, 0)
-	if tic.isLeader() {
+	if tic.isLeader(tic.myMemberId, tic.view) {
 		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW startTerm() I AM THE LEADER OF FIRST VIEW, requesting new block")
 		block, blockHash := tic.blockUtils.RequestNewBlockProposal(ctx, tic.height, tic.prevBlock)
 		ppm := tic.messageFactory.CreatePreprepareMessage(tic.height, tic.view, block, blockHash)
@@ -172,9 +171,8 @@ func (tic *TermInCommittee) SetView(ctx context.Context, view primitives.View) {
 func (tic *TermInCommittee) initView(ctx context.Context, view primitives.View) {
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW PreparedLocally set to false")
 	tic.view = view
-	tic.leaderMemberId = tic.calcLeaderMemberId(view)
 	tic.electionTrigger.RegisterOnElection(ctx, tic.height, tic.view, tic.moveToNextLeader)
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW initView() set leader to %s, incremented view to %d, election-timeout=%s, members=%s, goroutines#=%d", Str(tic.leaderMemberId), tic.view, tic.electionTrigger.CalcTimeout(view), ToCommitteeMembersStr(tic.committeeMembersMemberIds), runtime.NumGoroutine())
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW initView() set leader to %s, incremented view to %d, election-timeout=%s, members=%s, goroutines#=%d", Str(tic.calcLeaderMemberId(view)), tic.view, tic.electionTrigger.CalcTimeout(view), ToCommitteeMembersStr(tic.committeeMembersMemberIds), runtime.NumGoroutine())
 }
 
 func (tic *TermInCommittee) Dispose() {
@@ -192,27 +190,28 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 	}
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW moveToNextLeader() calling SetView(), incrementing view to V=%d", tic.view+1)
 	tic.SetView(ctx, tic.view+1)
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW moveToNextLeader() newLeader=%s", Str(tic.leaderMemberId))
+	newLeader := tic.calcLeaderMemberId(tic.view)
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW moveToNextLeader() newLeader=%s", Str(newLeader))
 	var preparedMessages *preparedmessages.PreparedMessages
 	if tic.preparedLocally != nil && tic.preparedLocally.isPreparedLocally {
 		preparedMessages = preparedmessages.ExtractPreparedMessages(tic.height, tic.preparedLocally.latestView, tic.storage, tic.QuorumSize)
 	}
 	vcm := tic.messageFactory.CreateViewChangeMessage(tic.height, tic.view, preparedMessages)
-	if tic.isLeader() {
+	if tic.isLeader(tic.myMemberId, tic.view) {
 		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW moveToNextLeader() I AM THE LEADER BY VIEW CHANGE. My leadership will time out in %s", tic.electionTrigger.CalcTimeout(view))
 		tic.storage.StoreViewChange(vcm)
 		tic.checkElected(ctx, tic.height, tic.view)
 	} else {
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND VIEW_CHANGE (I'm not leader) moveToNextLeader()")
-		tic.sendConsensusMessage(ctx, vcm)
+		tic.sendConsensusMessageToSpecificMember(ctx, newLeader, vcm)
 	}
 	if onElectionCB != nil {
-		onElectionCB(metrics.NewElectionMetrics(tic.leaderMemberId, tic.view))
+		onElectionCB(metrics.NewElectionMetrics(newLeader, tic.view))
 	}
 }
 
-func (tic *TermInCommittee) isLeader() bool {
-	return tic.myMemberId.Equal(tic.leaderMemberId)
+func (tic *TermInCommittee) isLeader(memberId primitives.MemberId, v primitives.View) bool {
+	return memberId.Equal(tic.calcLeaderMemberId(v))
 }
 
 // TODO v1 breakdown to separate if's and log each
@@ -260,6 +259,12 @@ func (tic *TermInCommittee) sendConsensusMessage(ctx context.Context, message in
 	tic.communication.SendConsensusMessage(ctx, tic.otherCommitteeMembersMemberIds, rawMessage)
 }
 
+func (tic *TermInCommittee) sendConsensusMessageToSpecificMember(ctx context.Context, targetMemberId primitives.MemberId, message interfaces.ConsensusMessage) {
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "sendConsensusMessageToSpecificMember() target=%s, msgType=%v", Str(targetMemberId), message.MessageType())
+	rawMessage := interfaces.CreateConsensusRawMessage(message)
+	tic.communication.SendConsensusMessage(ctx, []primitives.MemberId{targetMemberId}, rawMessage)
+}
+
 func (tic *TermInCommittee) HandlePrePrepare(ctx context.Context, ppm *interfaces.PreprepareMessage) {
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED PREPREPARE (H=%d V=%d sender=%s)", ppm.BlockHeight(), ppm.View(), Str(ppm.SenderMemberId()))
 
@@ -274,9 +279,8 @@ func (tic *TermInCommittee) HandlePrePrepare(ctx context.Context, ppm *interface
 
 func (tic *TermInCommittee) validatePreprepare(ctx context.Context, ppm *interfaces.PreprepareMessage) error {
 	blockHeight := ppm.BlockHeight()
-	view := ppm.View()
-	if tic.hasPreprepare(blockHeight, view) {
-		errMsg := fmt.Sprintf("already stored Preprepare for H=%d V=%d", blockHeight, view)
+	if tic.hasPreprepare(blockHeight, ppm.View()) {
+		errMsg := fmt.Sprintf("already stored Preprepare for H=%d V=%d", blockHeight, ppm.View())
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED PREPREPARE IGNORE - %s", errMsg)
 		return errors.New(errMsg)
 	}
@@ -287,11 +291,9 @@ func (tic *TermInCommittee) validatePreprepare(ctx context.Context, ppm *interfa
 		return errors.Wrapf(err, "verification failed for sender %s signature on header", Str(sender.MemberId()))
 	}
 
-	leaderMemberId := tic.calcLeaderMemberId(view)
-	senderMemberId := sender.MemberId()
-	if !senderMemberId.Equal(leaderMemberId) {
+	if !tic.isLeader(sender.MemberId(), ppm.View()) {
 		// Log
-		return fmt.Errorf("sender %s is not leader. ExpectedLeader=%s", Str(senderMemberId), Str(leaderMemberId))
+		return fmt.Errorf("sender %s is not leader. ExpectedLeader=%s", Str(sender.MemberId()), Str(tic.calcLeaderMemberId(ppm.View())))
 	}
 
 	err := tic.blockUtils.ValidateBlockProposal(ctx, blockHeight, ppm.Block(), ppm.Content().SignedHeader().BlockHash(), tic.prevBlock)
@@ -340,7 +342,7 @@ func (tic *TermInCommittee) HandlePrepare(ctx context.Context, pm *interfaces.Pr
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED PREPARE IGNORE - prepare view %v is less than current term's view %v", header.View(), tic.view)
 		return
 	}
-	if tic.leaderMemberId.Equal(sender.MemberId()) {
+	if tic.isLeader(sender.MemberId(), header.View()) {
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED PREPARE IGNORE - prepare received from leader (only preprepare can be received from leader)")
 		return
 	}
@@ -436,6 +438,18 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED COMMIT IGNORE - missing PPM in Commit message")
 		return
 	}
+	var iSentCommitMessage bool
+	for _, msg := range commits {
+		if msg.SenderMemberId().Equal(tic.myMemberId) {
+			iSentCommitMessage = true
+			break
+		}
+	}
+	if !iSentCommitMessage {
+		cm := tic.messageFactory.CreateCommitMessage(blockHeight, view, blockHash)
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND COMMIT because I did not send it during onPreparedLocally")
+		tic.sendConsensusMessage(ctx, cm)
+	}
 	tic.committedBlock = ppm.Block()
 	tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW PHASE COMMITTED CommittedBlock set to H=%d, calling onCommit() with H=%d V=%d block-hash=%s num-commit-messages=%d", ppm.Block().Height(), blockHeight, view, blockHash, len(commits))
 	tic.onCommit(ctx, ppm.Block(), commits)
@@ -461,7 +475,7 @@ func (tic *TermInCommittee) HandleViewChange(ctx context.Context, vcm *interface
 }
 
 // TODO change to return error
-func (tic *TermInCommittee) isViewChangeValid(expectedLeaderFromMessageView primitives.MemberId, currentView primitives.View, vcm *protocol.ViewChangeMessageContent) bool {
+func (tic *TermInCommittee) isViewChangeValid(expectedLeaderFromNewView primitives.MemberId, currentView primitives.View, vcm *protocol.ViewChangeMessageContent) bool {
 	header := vcm.SignedHeader()
 	sender := vcm.Sender()
 	vcmView := header.View()
@@ -482,9 +496,9 @@ func (tic *TermInCommittee) isViewChangeValid(expectedLeaderFromMessageView prim
 		return false
 	}
 
-	calculatedLeaderFromMessageView := tic.calcLeaderMemberId(vcmView)
-	if !expectedLeaderFromMessageView.Equal(calculatedLeaderFromMessageView) {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED VIEW_CHANGE IGNORE - targetLeaderMemberId=%s different from calculatedLeaderFromMessageView=%s", Str(expectedLeaderFromMessageView), Str(calculatedLeaderFromMessageView))
+	calculatedLeaderFromViewChange := tic.calcLeaderMemberId(vcmView)
+	if !expectedLeaderFromNewView.Equal(calculatedLeaderFromViewChange) {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED VIEW_CHANGE IGNORE - targetLeaderMemberId=%s different from calculatedLeaderFromViewChange=%s", Str(expectedLeaderFromNewView), Str(calculatedLeaderFromViewChange))
 		return false
 	}
 
@@ -538,8 +552,8 @@ func (tic *TermInCommittee) HandleNewView(ctx context.Context, nvm *interfaces.N
 		return
 	}
 
-	calculatedLeaderFromMessage := tic.calcLeaderMemberId(nvmHeader.View())
-	if !nvmSender.MemberId().Equal(calculatedLeaderFromMessage) {
+	calculatedLeaderFromNewView := tic.calcLeaderMemberId(nvmHeader.View())
+	if !tic.isLeader(nvmSender.MemberId(), nvmHeader.View()) {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", rejected because it match the new id (${view})` });
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED NEW_VIEW IGNORE - no match for future leader")
 		return
@@ -571,7 +585,7 @@ func (tic *TermInCommittee) HandleNewView(ctx context.Context, nvm *interfaces.N
 
 	latestVote := tic.latestViewChangeVote(viewChangeConfirmations)
 	if latestVote != nil {
-		viewChangeMessageValid := tic.isViewChangeValid(calculatedLeaderFromMessage, nvmHeader.View(), latestVote)
+		viewChangeMessageValid := tic.isViewChangeValid(calculatedLeaderFromNewView, nvmHeader.View(), latestVote)
 		if !viewChangeMessageValid {
 			//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", view change votes are invalid` });
 			tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED NEW_VIEW IGNORE - NewView.ViewChangeConfirmation (with latest view) is invalid")
