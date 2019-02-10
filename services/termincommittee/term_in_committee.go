@@ -232,13 +232,13 @@ func (tic *TermInCommittee) checkElected(ctx context.Context, height primitives.
 		return
 	}
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkElected() stored %d of %d VIEW_CHANGE messages", len(vcms), minimumNodes)
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkElected() has enough VIEW_CHANGE messages, proceeding to onElected()")
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkElected() has enough VIEW_CHANGE messages, proceeding to onElected()", view)
 	tic.onElected(ctx, view, vcms[:minimumNodes])
 }
 
 func (tic *TermInCommittee) onElected(ctx context.Context, view primitives.View, viewChangeMessages []*interfaces.ViewChangeMessage) {
 	tic.newViewLocally = view
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW NewViewLocally set to V=%d (onElected), calling SetView()", tic.newViewLocally)
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW I AM ELECTED for NewViewLocally=%d (onElected), now calling SetView()", tic.newViewLocally)
 	tic.SetView(ctx, view)
 	block, blockHash := blockextractor.GetLatestBlockFromViewChangeMessages(viewChangeMessages)
 	if block == nil {
@@ -274,6 +274,11 @@ func (tic *TermInCommittee) HandlePrePrepare(ctx context.Context, ppm *interface
 		return
 	}
 
+	err := tic.blockUtils.ValidateBlockProposal(ctx, ppm.BlockHeight(), ppm.Block(), ppm.Content().SignedHeader().BlockHash(), tic.prevBlock)
+	if err != nil {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED PREPREPARE IGNORE - err=%v", err)
+	}
+
 	tic.processPreprepare(ctx, ppm)
 
 }
@@ -295,12 +300,6 @@ func (tic *TermInCommittee) validatePreprepare(ctx context.Context, ppm *interfa
 	if !tic.isLeader(sender.MemberId(), ppm.View()) {
 		// Log
 		return fmt.Errorf("sender %s is not leader. ExpectedLeader=%s", Str(sender.MemberId()), Str(tic.calcLeaderMemberId(ppm.View())))
-	}
-
-	err := tic.blockUtils.ValidateBlockProposal(ctx, blockHeight, ppm.Block(), ppm.Content().SignedHeader().BlockHash(), tic.prevBlock)
-
-	if err != nil {
-		return fmt.Errorf("block validation failed: %v", err)
 	}
 
 	return nil
@@ -608,11 +607,22 @@ func (tic *TermInCommittee) HandleNewView(ctx context.Context, nvm *interfaces.N
 
 	ppm := interfaces.NewPreprepareMessage(ppMessageContent, nvm.Block())
 
+	// leader proposed a new block in this view, checking its proposal
+	if latestVote == nil {
+		err := tic.blockUtils.ValidateBlockProposal(ctx, ppm.BlockHeight(), ppm.Block(), ppm.Content().SignedHeader().BlockHash(), tic.prevBlock)
+		if err != nil {
+			tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "Proposed block failed ValidateBlockProposal - err=%v", err)
+			return
+		}
+	}
+
 	if err := tic.validatePreprepare(ctx, ppm); err == nil {
 		tic.newViewLocally = nvmHeader.View()
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW NewViewLocally set to V=%d (HandleNewView), calling SetView()", tic.newViewLocally)
 		tic.SetView(ctx, nvmHeader.View())
 		tic.processPreprepare(ctx, ppm)
+	} else {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW LHMSG RECEIVED NEW_VIEW FAILED validation of PPM: %s", err.Error())
 	}
 }
 
