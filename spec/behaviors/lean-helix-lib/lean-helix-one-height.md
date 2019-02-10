@@ -66,7 +66,7 @@
 * State variables:
   * My_ID - read only! _(E.g., Node public key)_
   * Block_height - read only! _(Term, current round of consensus indicating a single slot in blockchain)_
-  * Prev_block_hash - read only! _(ref to previous block at Block_height-1, relayed to stateless BlockUtils in RequestNewBlock)_
+  * Prev_block - read only! _(previous block at Block_height-1, relayed to stateless BlockUtils in RequestNewBlock)_
   * View _(Derive leader based on members[view mod memebers.length])_
   * PreparedLocally _(Indicating a preparedProof construction is possible at set view. Triggered at most once per view)_
   * NewViewLocally _(Indicating a new leader has been elected and accepted. Triggered at most once per view)_
@@ -79,13 +79,13 @@
 
 
 &nbsp;
-## `NewConsensusRound(block_height, prev_block_hash, id, ordered_members, Config)`
+## `NewConsensusRound(block_height, prev_block, id, ordered_members, Config)`
 > Performed upon a new consensus round
 
 #### `Init my_state`
 * my_state.My_ID = id
 * my_state.Block_height = block_height
-* my_state.Prev_block_hash = prev_block_hash
+* my_state.Prev_block = prev_block
 * my_state.Members = ordered_members
 * my_state.View = -1
 * my_state.PreparedLocally = -1
