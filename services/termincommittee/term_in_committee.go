@@ -231,6 +231,7 @@ func (tic *TermInCommittee) checkElected(ctx context.Context, height primitives.
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkElected() stored %d of %d VIEW_CHANGE messages", len(vcms), minimumNodes)
 		return
 	}
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkElected() stored %d of %d VIEW_CHANGE messages", len(vcms), minimumNodes)
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkElected() has enough VIEW_CHANGE messages, proceeding to onElected()")
 	tic.onElected(ctx, view, vcms[:minimumNodes])
 }
@@ -432,6 +433,7 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED COMMIT STORE - received %d of %d required quorum commits", len(commits), tic.QuorumSize)
 		return
 	}
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED COMMIT STORE - received %d of %d required quorum commits", len(commits), tic.QuorumSize)
 	ppm, ok := tic.storage.GetPreprepareMessage(blockHeight, view)
 	if !ok {
 		// log
