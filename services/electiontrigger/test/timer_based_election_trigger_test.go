@@ -44,6 +44,7 @@ func TestCallbackTrigger(t *testing.T) {
 	})
 }
 
+// TODO v1 this is sometimes flaky
 func TestCallbackTriggerOnce(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		et := buildElectionTrigger(ctx, 10*time.Millisecond)

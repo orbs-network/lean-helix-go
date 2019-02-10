@@ -10,29 +10,6 @@ import (
 
 var TIMEOUT_EXP_BASE = float64(2.0)
 
-func setTimeout(ctx context.Context, cb func(ctx context.Context), timeout time.Duration) chan bool {
-	timer := time.NewTimer(timeout)
-	clear := make(chan bool)
-
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-timer.C:
-				cb(ctx)
-				return
-			case <-clear:
-				timer.Stop()
-				return
-			}
-
-		}
-	}()
-
-	return clear
-}
-
 type TimerBasedElectionTrigger struct {
 	electionChannel chan func(ctx context.Context)
 	minTimeout      time.Duration
@@ -41,7 +18,7 @@ type TimerBasedElectionTrigger struct {
 	firstTime       bool
 	electionHandler func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics))
 	onElectionCB    func(m metrics.ElectionMetrics)
-	clearTimer      chan bool
+	timer           *time.Timer
 }
 
 func NewTimerBasedElectionTrigger(minTimeout time.Duration, onElectionCB func(m metrics.ElectionMetrics)) *TimerBasedElectionTrigger {
@@ -59,8 +36,7 @@ func (t *TimerBasedElectionTrigger) RegisterOnElection(ctx context.Context, bloc
 		t.firstTime = false
 		t.view = view
 		t.blockHeight = blockHeight
-		t.stop(ctx)
-		t.clearTimer = setTimeout(ctx, t.onTimeout, t.CalcTimeout(view))
+		t.restartTimer(ctx, t.onTimeout, t.CalcTimeout(view))
 	}
 }
 
@@ -68,14 +44,9 @@ func (t *TimerBasedElectionTrigger) ElectionChannel() chan func(ctx context.Cont
 	return t.electionChannel
 }
 
-func (t *TimerBasedElectionTrigger) stop(ctx context.Context) {
-	if t.clearTimer != nil {
-		select {
-		case <-ctx.Done():
-			return
-		case t.clearTimer <- true:
-			t.clearTimer = nil
-		}
+func (t *TimerBasedElectionTrigger) tryStop() {
+	if t.timer != nil {
+		t.timer.Stop()
 	}
 }
 
@@ -86,12 +57,29 @@ func (t *TimerBasedElectionTrigger) trigger(ctx context.Context) {
 }
 
 func (t *TimerBasedElectionTrigger) onTimeout(ctx context.Context) {
-	t.clearTimer = nil
 	select {
 	case <-ctx.Done():
 		return
 	case t.electionChannel <- t.trigger:
 	}
+}
+
+func (t *TimerBasedElectionTrigger) restartTimer(ctx context.Context, cb func(ctx context.Context), timeout time.Duration) {
+
+	t.tryStop()
+	t.timer = time.NewTimer(timeout)
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-t.timer.C:
+				cb(ctx)
+				return
+			}
+		}
+	}()
 }
 
 func (t *TimerBasedElectionTrigger) CalcTimeout(view primitives.View) time.Duration {
