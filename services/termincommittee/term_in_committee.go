@@ -86,6 +86,7 @@ func NewTermInCommittee(
 	committeeMembers []primitives.MemberId,
 	blockHeight primitives.BlockHeight,
 	prevBlock interfaces.Block,
+	canBeFirstLeader bool,
 	onCommit OnInCommitteeCommitCallback) *TermInCommittee {
 
 	keyManager := config.KeyManager
@@ -125,7 +126,7 @@ func NewTermInCommittee(
 		QuorumSize:                     quorum.CalcQuorumSize(len(committeeMembers)),
 	}
 
-	result.startTerm(ctx)
+	result.startTerm(ctx, canBeFirstLeader)
 	return result
 }
 
@@ -144,9 +145,13 @@ func panicOnLessThanMinimumCommitteeMembers(committeeMembers []primitives.Member
 	}
 }
 
-func (tic *TermInCommittee) startTerm(ctx context.Context) {
+func (tic *TermInCommittee) startTerm(ctx context.Context, canBeFirstLeader bool) {
 	tic.setNotPreparedLocally()
 	tic.initView(ctx, 0)
+	if tic.height > 1 && !canBeFirstLeader {
+		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW startTerm() I CANNOT BE LEADER OF FIRST VIEW, skipping view")
+		return
+	}
 	if tic.isLeader(tic.myMemberId, tic.view) {
 		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW startTerm() I AM THE LEADER OF FIRST VIEW, requesting new block")
 		block, blockHash := tic.blockUtils.RequestNewBlockProposal(ctx, tic.height, tic.prevBlock)
