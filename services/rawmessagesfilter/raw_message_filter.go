@@ -16,6 +16,7 @@ type RawMessageFilter struct {
 	myMemberId               primitives.MemberId
 	messageCache             map[primitives.BlockHeight][]interfaces.ConsensusMessage
 	logger                   L.LHLogger
+	latestFutureBlockHeight  primitives.BlockHeight // needed for limiting future cache to 1 term (potential memory leak)
 }
 
 func NewConsensusMessageFilter(instanceId primitives.InstanceId, myMemberId primitives.MemberId, logger L.LHLogger) *RawMessageFilter {
@@ -59,15 +60,25 @@ func (f *RawMessageFilter) isMyMessage(message interfaces.ConsensusMessage) bool
 	return f.myMemberId.Equal(message.SenderMemberId())
 }
 
-func (f *RawMessageFilter) clearCacheHistory(height primitives.BlockHeight) {
+func (f *RawMessageFilter) clearCacheHistory(upToHeight primitives.BlockHeight) {
 	for messageHeight := range f.messageCache {
-		if messageHeight < height {
+		if messageHeight < upToHeight {
 			delete(f.messageCache, messageHeight)
 		}
 	}
 }
 
 func (f *RawMessageFilter) pushToCache(height primitives.BlockHeight, message interfaces.ConsensusMessage) {
+	// limit future cache to 1 term (potential memory leak)
+	if height < f.latestFutureBlockHeight {
+		return
+	}
+	if height > f.latestFutureBlockHeight {
+		f.clearCacheHistory(height)
+		f.latestFutureBlockHeight = height
+	}
+
+	// add to future cache
 	if f.messageCache[height] == nil {
 		f.messageCache[height] = []interfaces.ConsensusMessage{message}
 	} else {
