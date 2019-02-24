@@ -14,17 +14,17 @@ type RawMessageFilter struct {
 	blockHeight              primitives.BlockHeight
 	consensusMessagesHandler ConsensusMessagesHandler
 	myMemberId               primitives.MemberId
-	messageCache             map[primitives.BlockHeight][]interfaces.ConsensusMessage
+	futureCache              map[primitives.BlockHeight][]interfaces.ConsensusMessage
 	logger                   L.LHLogger
 	latestFutureBlockHeight  primitives.BlockHeight // needed for limiting future cache to 1 term (potential memory leak)
 }
 
 func NewConsensusMessageFilter(instanceId primitives.InstanceId, myMemberId primitives.MemberId, logger L.LHLogger) *RawMessageFilter {
 	res := &RawMessageFilter{
-		instanceId:   instanceId,
-		myMemberId:   myMemberId,
-		messageCache: make(map[primitives.BlockHeight][]interfaces.ConsensusMessage),
-		logger:       logger,
+		instanceId:  instanceId,
+		myMemberId:  myMemberId,
+		futureCache: make(map[primitives.BlockHeight][]interfaces.ConsensusMessage),
+		logger:      logger,
 	}
 
 	return res
@@ -60,29 +60,30 @@ func (f *RawMessageFilter) isMyMessage(message interfaces.ConsensusMessage) bool
 	return f.myMemberId.Equal(message.SenderMemberId())
 }
 
-func (f *RawMessageFilter) clearCacheHistory(upToHeight primitives.BlockHeight) {
-	for messageHeight := range f.messageCache {
-		if messageHeight < upToHeight {
-			delete(f.messageCache, messageHeight)
+func (f *RawMessageFilter) clearCacheEarlierThan(height primitives.BlockHeight) {
+	for messageHeight := range f.futureCache {
+		if messageHeight < height {
+			delete(f.futureCache, messageHeight)
 		}
 	}
 }
 
 func (f *RawMessageFilter) pushToCache(height primitives.BlockHeight, message interfaces.ConsensusMessage) {
-	// limit future cache to 1 term (potential memory leak)
+	// limit future cache to 1 term - potential increased memory hogging linear to distance in block height between this node and currentBlockHeight (the "front")
+	// TODO This requires testing https://github.com/orbs-network/lean-helix-go/issues/35
 	if height < f.latestFutureBlockHeight {
 		return
 	}
 	if height > f.latestFutureBlockHeight {
-		f.clearCacheHistory(height)
+		f.clearCacheEarlierThan(height)
 		f.latestFutureBlockHeight = height
 	}
 
 	// add to future cache
-	if f.messageCache[height] == nil {
-		f.messageCache[height] = []interfaces.ConsensusMessage{message}
+	if f.futureCache[height] == nil {
+		f.futureCache[height] = []interfaces.ConsensusMessage{message}
 	} else {
-		f.messageCache[height] = append(f.messageCache[height], message)
+		f.futureCache[height] = append(f.futureCache[height], message)
 	}
 }
 
@@ -95,16 +96,16 @@ func (f *RawMessageFilter) processConsensusMessage(ctx context.Context, message 
 }
 
 func (f *RawMessageFilter) consumeCacheMessages(ctx context.Context, blockHeight primitives.BlockHeight) {
-	f.clearCacheHistory(blockHeight)
+	f.clearCacheEarlierThan(blockHeight)
 
-	messages := f.messageCache[blockHeight]
+	messages := f.futureCache[blockHeight]
 	if len(messages) > 0 {
 		f.logger.Debug(L.LC(f.blockHeight, math.MaxUint64, f.myMemberId), "LHFILTER consuming %d messages from height=%d", len(messages), blockHeight)
 	}
 	for _, message := range messages {
 		f.processConsensusMessage(ctx, message)
 	}
-	delete(f.messageCache, blockHeight)
+	delete(f.futureCache, blockHeight)
 }
 
 func (f *RawMessageFilter) SetBlockHeight(ctx context.Context, blockHeight primitives.BlockHeight, consensusMessagesHandler ConsensusMessagesHandler) {
