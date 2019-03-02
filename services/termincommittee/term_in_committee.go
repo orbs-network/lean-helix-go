@@ -95,14 +95,15 @@ func NewTermInCommittee(
 	myMemberId := membership.MyMemberId()
 	comm := config.Communication
 
+	// due to elections, I'm not necessarily part of this committee (may have been voted out)
+	participating, otherCommitteeMembers := isParticipatingInCommittee(myMemberId, committeeMembers)
+	if !participating {
+		log.Debug(L.LC(blockHeight, 0, myMemberId), "NewTermInCommittee: NOT PART OF COMMITTEE! committeeMembersCount=%d members=%s", len(committeeMembers), ToCommitteeMembersStr(committeeMembers))
+		return nil
+	}
+
 	panicOnLessThanMinimumCommitteeMembers(committeeMembers)
 
-	otherCommitteeMembers := make([]primitives.MemberId, 0)
-	for _, member := range committeeMembers {
-		if !member.Equal(myMemberId) {
-			otherCommitteeMembers = append(otherCommitteeMembers, member)
-		}
-	}
 	if config.Storage == nil {
 		config.Storage = storage.NewInMemoryStorage()
 	}
@@ -131,12 +132,22 @@ func NewTermInCommittee(
 }
 
 func ToCommitteeMembersStr(members []primitives.MemberId) string {
-
 	strs := make([]string, 1)
 	for _, member := range members {
 		strs = append(strs, Str(member))
 	}
 	return strings.Join(strs, ",")
+}
+
+func isParticipatingInCommittee(myMemberId primitives.MemberId, committeeMembers []primitives.MemberId) (participating bool, otherCommitteeMembers []primitives.MemberId) {
+	for _, committeeMember := range committeeMembers {
+		if myMemberId.Equal(committeeMember) {
+			participating = true
+		} else {
+			otherCommitteeMembers = append(otherCommitteeMembers, committeeMember)
+		}
+	}
+	return
 }
 
 func panicOnLessThanMinimumCommitteeMembers(committeeMembers []primitives.MemberId) {
