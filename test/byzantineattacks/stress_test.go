@@ -19,7 +19,7 @@ func TestThatWeReachConsensusEventIfWeDelayAllTheGossipMessages(t *testing.T) {
 			WithTimeBasedElectionTrigger(time.Duration(200) * time.Millisecond).
 			GossipMessagesMaxDelay(time.Duration(100) * time.Millisecond).
 			WithNodeCount(4).
-			LogToConsole().
+			//LogToConsole().
 			Build()
 
 		net.Nodes[0].WriteToStateChannel = false
