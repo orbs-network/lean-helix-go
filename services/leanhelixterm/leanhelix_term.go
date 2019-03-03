@@ -25,11 +25,12 @@ func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfac
 	prevBlockProof := protocol.BlockProofReader(prevBlockProofBytes)
 	randomSeed := randomseed.CalculateRandomSeed(prevBlockProof.RandomSeedSignature())
 	blockHeight := blockheight.GetBlockHeight(prevBlock) + 1
-	messageFactory := messagesfactory.NewMessageFactory(config.InstanceId, config.KeyManager, config.Membership.MyMemberId(), randomSeed)
+	myMemberId := config.Membership.MyMemberId()
+	messageFactory := messagesfactory.NewMessageFactory(config.InstanceId, config.KeyManager, myMemberId, randomSeed)
 
 	committeeMembers := config.Membership.RequestOrderedCommittee(ctx, blockHeight, randomSeed)
-	isParticipating := isParticipatingInCommittee(config.Membership.MyMemberId(), committeeMembers)
-	log.Info(L.LC(blockHeight, math.MaxUint64, config.Membership.MyMemberId()), "RECEIVED COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s, isParticipating=%b", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers), isParticipating)
+	isParticipating := isParticipatingInCommittee(myMemberId, committeeMembers)
+	log.Info(L.LC(blockHeight, math.MaxUint64, myMemberId), "RECEIVED COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s, isParticipating=%b", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers), isParticipating)
 	var termInCommittee *termincommittee.TermInCommittee
 	if isParticipating {
 		termInCommittee = termincommittee.NewTermInCommittee(ctx, log, config, messageFactory, committeeMembers, blockHeight, prevBlock, canBeFirstLeader, CommitsToProof(config.KeyManager, onCommit))
