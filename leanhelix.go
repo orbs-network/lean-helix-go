@@ -204,6 +204,10 @@ func (lh *LeanHelix) onCommit(ctx context.Context, block interfaces.Block, block
 func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) {
 	lh.currentHeight = blockheight.GetBlockHeight(prevBlock) + 1
 	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "onNewConsensusRound() INCREMENTED HEIGHT TO %d", lh.currentHeight)
+	if lh.leanHelixTerm != nil {
+		lh.leanHelixTerm.Dispose()
+		lh.leanHelixTerm = nil
+	}
 	lh.leanHelixTerm = leanhelixterm.NewLeanHelixTerm(ctx, lh.logger, lh.config, lh.onCommit, prevBlock, prevBlockProofBytes, canBeFirstLeader)
 	lh.filter.SetBlockHeight(ctx, lh.currentHeight, lh.leanHelixTerm)
 }
