@@ -181,6 +181,7 @@ func (tic *TermInCommittee) initView(ctx context.Context, view primitives.View) 
 }
 
 func (tic *TermInCommittee) Dispose() {
+	tic.electionTrigger.Stop()
 	tic.storage.ClearBlockHeightLogs(tic.height)
 }
 

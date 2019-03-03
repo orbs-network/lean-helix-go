@@ -519,6 +519,27 @@ func TestPrepare2fPlus1ForACommit(t *testing.T) {
 	})
 }
 
+func TestDisposingATermInCommitteeStopsTheElectionTrigger(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		block := mocks.ABlock(interfaces.GenesisBlock)
+
+		h := NewHarness(ctx, t, block)
+
+		// view was changed because of election
+		h.checkView(0)
+		h.triggerElection(ctx)
+		h.checkView(1)
+
+		// dispose the termInCommittee
+		h.disposeTerm()
+
+		// view was not changed
+		h.checkView(1)
+		h.triggerElection(ctx)
+		h.checkView(1)
+	})
+}
+
 func TestDisposingATermInCommitteeClearTheStorage(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block := mocks.ABlock(interfaces.GenesisBlock)
@@ -528,11 +549,6 @@ func TestDisposingATermInCommitteeClearTheStorage(t *testing.T) {
 		// good consensus on block
 		h.receivePrepare(ctx, 1, 1, 0, block)
 		h.receivePrepare(ctx, 2, 1, 0, block)
-
-		// make sure we have all the messages in the storage
-		require.True(t, h.hasPreprepare(1, 0, block), "There should be a preprepare in the storage")
-		require.Equal(t, 2, h.countPrepare(1, 0, block), "There should be 3 prepares in the storage")
-		require.Equal(t, 1, h.countCommits(1, 0, block), "There should be 1 commit in the storage")
 
 		// dispose the termInCommittee
 		h.disposeTerm()
