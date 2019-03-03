@@ -51,6 +51,7 @@ type KeyManager interface {
 
 type ElectionTrigger interface {
 	RegisterOnElection(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, cb func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics)))
+	Stop()
 	ElectionChannel() chan func(ctx context.Context)
 	CalcTimeout(view primitives.View) time.Duration
 }

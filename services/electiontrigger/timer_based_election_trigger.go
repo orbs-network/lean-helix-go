@@ -29,12 +29,11 @@ func NewTimerBasedElectionTrigger(minTimeout time.Duration, onElectionCB func(m 
 }
 
 func (t *TimerBasedElectionTrigger) RegisterOnElection(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, electionHandler func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics))) {
-	t.electionHandler = electionHandler
 	if t.electionHandler == nil || t.view != view || t.blockHeight != blockHeight {
 		timeout := t.CalcTimeout(view)
 		t.view = view
 		t.blockHeight = blockHeight
-		t.safeTimerStop()
+		t.Stop()
 		t.triggerTimer = time.AfterFunc(timeout, t.sendTrigger)
 	}
 	t.electionHandler = electionHandler
@@ -44,7 +43,8 @@ func (t *TimerBasedElectionTrigger) ElectionChannel() chan func(ctx context.Cont
 	return t.electionChannel
 }
 
-func (t *TimerBasedElectionTrigger) safeTimerStop() {
+func (t *TimerBasedElectionTrigger) Stop() {
+	t.electionHandler = nil
 	if t.triggerTimer != nil {
 		active := t.triggerTimer.Stop()
 		if !active {
@@ -53,6 +53,7 @@ func (t *TimerBasedElectionTrigger) safeTimerStop() {
 			default:
 			}
 		}
+		t.triggerTimer = nil
 	}
 }
 

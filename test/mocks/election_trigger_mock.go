@@ -30,6 +30,10 @@ func (et *ElectionTriggerMock) RegisterOnElection(ctx context.Context, blockHeig
 	et.electionHandler = electionHandler
 }
 
+func (et *ElectionTriggerMock) Stop() {
+	et.electionHandler = nil
+}
+
 func (et *ElectionTriggerMock) ElectionChannel() chan func(ctx context.Context) {
 	return et.electionChannel
 }
