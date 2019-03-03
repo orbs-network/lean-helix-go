@@ -11,6 +11,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/messagesfactory"
 	"github.com/orbs-network/lean-helix-go/services/randomseed"
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"math"
 )
@@ -27,13 +28,26 @@ func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfac
 	messageFactory := messagesfactory.NewMessageFactory(config.InstanceId, config.KeyManager, config.Membership.MyMemberId(), randomSeed)
 
 	committeeMembers := config.Membership.RequestOrderedCommittee(ctx, blockHeight, randomSeed)
-	log.Info(L.LC(blockHeight, math.MaxUint64, config.Membership.MyMemberId()), "RECEIVED COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers))
-	termInCommittee := termincommittee.NewTermInCommittee(ctx, log, config, messageFactory, committeeMembers, blockHeight, prevBlock, canBeFirstLeader, CommitsToProof(config.KeyManager, onCommit))
+	isParticipating := isParticipatingInCommittee(config.Membership.MyMemberId(), committeeMembers)
+	log.Info(L.LC(blockHeight, math.MaxUint64, config.Membership.MyMemberId()), "RECEIVED COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s, isParticipating=%b", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers), isParticipating)
+	var termInCommittee *termincommittee.TermInCommittee
+	if isParticipating {
+		termInCommittee = termincommittee.NewTermInCommittee(ctx, log, config, messageFactory, committeeMembers, blockHeight, prevBlock, canBeFirstLeader, CommitsToProof(config.KeyManager, onCommit))
+	}
 
 	return &LeanHelixTerm{
 		ConsensusMessagesFilter: NewConsensusMessagesFilter(termInCommittee, config.KeyManager, randomSeed),
 		termInCommittee:         termInCommittee,
 	}
+}
+
+func isParticipatingInCommittee(myMemberId primitives.MemberId, committeeMembers []primitives.MemberId) bool {
+	for _, committeeMember := range committeeMembers {
+		if myMemberId.Equal(committeeMember) {
+			return true
+		}
+	}
+	return false
 }
 
 func printShortBlockProofBytes(b []byte) string {
