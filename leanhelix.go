@@ -137,8 +137,9 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 		return errors.Errorf("ValidateBlockConsensus: ValidateBlockCommitment() failed")
 	}
 
+	// note: it is ok to disregard the order of committee here (hence randomSeed is not calculated) - the blockProof only checks for set of quorum COMMITS
 	committeeMembers, err := lh.config.Membership.RequestOrderedCommittee(ctx, blockHeight, 0)
-	if err != nil {
+	if err != nil { // support for failure in committee calculation
 		return err
 	}
 
