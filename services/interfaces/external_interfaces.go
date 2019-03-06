@@ -32,7 +32,7 @@ type Communication interface {
 
 type Membership interface {
 	MyMemberId() primitives.MemberId
-	RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64) []primitives.MemberId
+	RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64) ([]primitives.MemberId, error)
 }
 
 type BlockUtils interface {

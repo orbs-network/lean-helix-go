@@ -28,7 +28,12 @@ func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfac
 	myMemberId := config.Membership.MyMemberId()
 	messageFactory := messagesfactory.NewMessageFactory(config.InstanceId, config.KeyManager, myMemberId, randomSeed)
 
-	committeeMembers := config.Membership.RequestOrderedCommittee(ctx, blockHeight, randomSeed)
+	committeeMembers, err := config.Membership.RequestOrderedCommittee(ctx, blockHeight, randomSeed)
+	if err != nil {
+		committeeMembers = nil // this will make sure isParticipating will be false (should be happening on system shutdown only)
+		log.Info(L.LC(blockHeight, math.MaxUint64, myMemberId), "ERROR RECEIVING COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers))
+	}
+
 	isParticipating := isParticipatingInCommittee(myMemberId, committeeMembers)
 	log.Info(L.LC(blockHeight, math.MaxUint64, myMemberId), "RECEIVED COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s, isParticipating=%b", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers), isParticipating)
 	if isParticipating {
