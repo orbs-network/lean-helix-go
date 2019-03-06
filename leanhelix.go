@@ -137,7 +137,10 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 		return errors.Errorf("ValidateBlockConsensus: ValidateBlockCommitment() failed")
 	}
 
-	committeeMembers := lh.config.Membership.RequestOrderedCommittee(ctx, blockHeight, 0)
+	committeeMembers, err := lh.config.Membership.RequestOrderedCommittee(ctx, blockHeight, 0)
+	if err != nil {
+		return err
+	}
 
 	sendersIterator := blockProof.NodesIterator()
 	set := make(map[storage.MemberIdStr]bool)
