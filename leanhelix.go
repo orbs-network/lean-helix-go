@@ -142,6 +142,7 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 	if err != nil { // support for failure in committee calculation
 		return err
 	}
+	lh.logger.Info(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "ValidateBlockConsensus: RECEIVED COMMITTEE for H=%d, members=%s", blockHeight, termincommittee.ToCommitteeMembersStr(committeeMembers))
 
 	sendersIterator := blockProof.NodesIterator()
 	set := make(map[storage.MemberIdStr]bool)

@@ -35,7 +35,7 @@ func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfac
 	}
 
 	isParticipating := isParticipatingInCommittee(myMemberId, committeeMembers)
-	log.Info(L.LC(blockHeight, math.MaxUint64, myMemberId), "RECEIVED COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s, isParticipating=%b", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers), isParticipating)
+	log.Info(L.LC(blockHeight, math.MaxUint64, myMemberId), "NewLeanHelixTerm: RECEIVED COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s, isParticipating=%b", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers), isParticipating)
 	if isParticipating {
 		termInCommittee := termincommittee.NewTermInCommittee(ctx, log, config, messageFactory, committeeMembers, blockHeight, prevBlock, canBeFirstLeader, CommitsToProof(config.KeyManager, onCommit))
 		return &LeanHelixTerm{
