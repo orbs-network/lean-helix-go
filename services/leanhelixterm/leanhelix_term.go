@@ -31,14 +31,17 @@ func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfac
 	committeeMembers := config.Membership.RequestOrderedCommittee(ctx, blockHeight, randomSeed)
 	isParticipating := isParticipatingInCommittee(myMemberId, committeeMembers)
 	log.Info(L.LC(blockHeight, math.MaxUint64, myMemberId), "RECEIVED COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s, isParticipating=%b", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers), isParticipating)
-	var termInCommittee TermMessagesHandler
 	if isParticipating {
-		termInCommittee = termincommittee.NewTermInCommittee(ctx, log, config, messageFactory, committeeMembers, blockHeight, prevBlock, canBeFirstLeader, CommitsToProof(config.KeyManager, onCommit))
-	}
-
-	return &LeanHelixTerm{
-		ConsensusMessagesFilter: NewConsensusMessagesFilter(termInCommittee, config.KeyManager, randomSeed),
-		termInCommittee:         termInCommittee.(*termincommittee.TermInCommittee),
+		termInCommittee := termincommittee.NewTermInCommittee(ctx, log, config, messageFactory, committeeMembers, blockHeight, prevBlock, canBeFirstLeader, CommitsToProof(config.KeyManager, onCommit))
+		return &LeanHelixTerm{
+			ConsensusMessagesFilter: NewConsensusMessagesFilter(termInCommittee, config.KeyManager, randomSeed),
+			termInCommittee:         termInCommittee,
+		}
+	} else {
+		return &LeanHelixTerm{
+			ConsensusMessagesFilter: NewConsensusMessagesFilter(nil, config.KeyManager, randomSeed),
+			termInCommittee:         nil,
+		}
 	}
 }
 
