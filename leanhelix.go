@@ -108,6 +108,22 @@ func (lh *LeanHelix) UpdateState(ctx context.Context, prevBlock interfaces.Block
 
 }
 
+func GetMemberIdsFromBlockProof(blockProofBytes []byte) ([]primitives.MemberId, error) {
+	if blockProofBytes == nil || len(blockProofBytes) == 0 {
+		return nil, errors.Errorf("GetMemberIdsFromBlockProof: nil blockProof - cannot deduce members locally")
+	}
+	blockProof := protocol.BlockProofReader(blockProofBytes)
+	sendersIterator := blockProof.NodesIterator()
+	committeeMembers := make([]primitives.MemberId, 0)
+	for {
+		if !sendersIterator.HasNext() {
+			break
+		}
+		committeeMembers = append(committeeMembers, sendersIterator.NextNodes().MemberId())
+	}
+	return committeeMembers, nil
+}
+
 func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProofBytes []byte, maybePrevBlockProofBytes []byte) error {
 
 	if block == nil {
