@@ -2,7 +2,6 @@ package leanhelix
 
 import (
 	"context"
-	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/blockheight"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/leanhelixterm"
@@ -217,8 +216,6 @@ func (lh *LeanHelix) onCommit(ctx context.Context, block interfaces.Block, block
 	lh.onCommitCallback(ctx, block, blockProofBytes)
 	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW onCommitCallback RETURNED from leanhelix.onCommit()")
 	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "Calling onNewConsensusRound from leanhelix.onCommit()")
-	members, _ := GetMemberIdsFromBlockProof(blockProofBytes)
-	fmt.Printf("on blockHeight: %v the mebers were %v", block.Height(), members)
 	lh.onNewConsensusRound(ctx, block, blockProofBytes, true)
 }
 
