@@ -16,7 +16,7 @@ func CommitsToProof(log logger.LHLogger, blockHeight primitives.BlockHeight, myM
 	return func(ctx context.Context, block interfaces.Block, commitMessages []*interfaces.CommitMessage) {
 		proof := blockproof.GenerateLeanHelixBlockProof(keyManager, commitMessages)
 		committeeStr := commitMessagesToMemberIdsStr(commitMessages)
-		log.Info(L.LC(blockHeight, math.MaxUint64, myMemberId), "Generated block proof with committee=%s", committeeStr)
+		log.Info(L.LC(blockHeight, math.MaxUint64, myMemberId), "Generated block proof with committee-size=%d, committee-members=%s", len(commitMessages), committeeStr)
 		onCommit(ctx, block, proof.Raw())
 	}
 }
