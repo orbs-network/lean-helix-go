@@ -185,7 +185,7 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 
 	q := quorum.CalcQuorumSize(len(committeeMembers))
 	if sendersCounter < q {
-		return errors.Errorf("ValidateBlockConsensus: sendersCounter=%d is less that quorum=%d", sendersCounter, q)
+		return errors.Errorf("ValidateBlockConsensus: sendersCounter=%d is less than quorum=%d (committeeMembersCount=%d)", sendersCounter, q, len(committeeMembers))
 	}
 
 	if len(blockProof.RandomSeedSignature()) == 0 || blockProof.RandomSeedSignature() == nil {
