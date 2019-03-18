@@ -126,7 +126,7 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 	if block == nil {
 		return errors.Errorf("ValidateBlockConsensus: nil block")
 	}
-	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "ValidateBlockConsensus START for blockHeight=%s", block.Height())
+	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "ValidateBlockConsensus START for blockHeight=%d", block.Height())
 	if blockProofBytes == nil || len(blockProofBytes) == 0 {
 		return errors.Errorf("ValidateBlockConsensus: nil blockProof")
 	}
