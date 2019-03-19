@@ -172,11 +172,11 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 
 		memberId := sender.MemberId()
 		if _, ok := set[storage.MemberIdStr(memberId)]; ok {
-			return errors.Errorf("ValidateBlockConsensus: Could not read memberId=%s from set", storage.MemberIdStr(memberId))
+			return errors.Errorf("ValidateBlockConsensus: Could not read memberId=%s from set", termincommittee.Str(memberId))
 		}
 
 		if !proofsvalidator.IsInMembers(committeeMembers, memberId) {
-			return errors.Errorf("ValidateBlockConsensus: memberId=%s is not part of committee", storage.MemberIdStr(memberId))
+			return errors.Errorf("ValidateBlockConsensus: Id=%s which signed block with H=%d is not part of committee of that block height. Committee=%s", termincommittee.Str(memberId), blockHeight, termincommittee.ToCommitteeMembersStr(committeeMembers))
 		}
 
 		set[storage.MemberIdStr(memberId)] = true
