@@ -172,8 +172,8 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 		}
 
 		sender := sendersIterator.NextNodes()
-		if !proofsvalidator.VerifyBlockRefMessage(blockRefFromProof, sender, lh.config.KeyManager) {
-			return errors.Errorf("ValidateBlockConsensus: VerifyBlockRefMessage() failed")
+		if err := proofsvalidator.VerifyBlockRefMessage(blockRefFromProof, sender, lh.config.KeyManager); err != nil {
+			return errors.Wrapf(err, "ValidateBlockConsensus: VerifyBlockRefMessage() failed")
 		}
 
 		memberId := sender.MemberId()

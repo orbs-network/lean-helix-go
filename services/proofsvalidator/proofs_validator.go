@@ -22,12 +22,8 @@ func IsInMembers(membersIds []primitives.MemberId, memberId primitives.MemberId)
 	return false
 }
 
-// TODO Should return error
-func VerifyBlockRefMessage(blockRef *protocol.BlockRef, sender *protocol.SenderSignature, keyManager interfaces.KeyManager) bool {
-	if err := keyManager.VerifyConsensusMessage(blockRef.BlockHeight(), blockRef.Raw(), sender); err != nil {
-		return false
-	}
-	return true
+func VerifyBlockRefMessage(blockRef *protocol.BlockRef, sender *protocol.SenderSignature, keyManager interfaces.KeyManager) error {
+	return keyManager.VerifyConsensusMessage(blockRef.BlockHeight(), blockRef.Raw(), sender)
 }
 
 type CalcLeaderId = func(view primitives.View) primitives.MemberId
@@ -76,7 +72,7 @@ func ValidatePreparedProof(
 		return false
 	}
 
-	if !VerifyBlockRefMessage(ppBlockRef, ppSender, keyManager) {
+	if err := VerifyBlockRefMessage(ppBlockRef, ppSender, keyManager); err != nil {
 		return false
 	}
 
