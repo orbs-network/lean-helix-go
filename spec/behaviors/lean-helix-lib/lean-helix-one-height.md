@@ -622,12 +622,6 @@
 * ViewChangeMessage = ElectedProof.first()   _(highest View, without Block)_
 * Return ViewChangeMessage _(None if no PreparedProof)_
 
-
-
-
-
-
-
 ## Example Flows
 > The last part further elaborates on possible logical flows to accommodate for test driven dev.
 

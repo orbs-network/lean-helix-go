@@ -5,18 +5,18 @@
 ## Design Notes
 * Consensus is performed in an infinite loop triggered at a given context state. A sync scenario flow, e.g. might shift the consensus loop to a different height.
 * This library is dependent on "consumer service" with several context provided functionalities, detailed below (which could alter its behaviour).
-* The proposed design involves another partition into an inner constrained module - "LeanHelixOneHeight" - explicitly devoted to a single round PBFT consensus, further detailed in a seperated file.
+* The proposed design involves another partition into an inner constrained module - "LeanHelixOneHeight" - explicitly devoted to a single round PBFT consensus, further detailed in a separated file.
   * The "multi-height" library is responsible for looping through the correct term _(height)_, setting the relevant context
   * Including filtering old messages and subsequently relaying future messages at appropriate times.
   * Including, generating the BlockProof and new random_seed
-* Configuration related queries are goverened by height - e.g. all known federation members at given height.
-* The committee memebers are derived at each block height using an aggregated threshold (set to QuorumSize) signature on previous height's random seed.
-* The threshold signatrues are passed as part of the COMMIT messaage.
+* Configuration related queries are governed by height - e.g. all known federation members at given height.
+* The committee members are derived at each block height using an aggregated threshold (set to QuorumSize) signature on previous height's random seed.
+* The threshold signatures are passed as part of the COMMIT message.
 * COMMIT message is passed to one-height after signature on random seed is verified and signer matches COMMIT signer _(committee member of current height handled at one-height members and discarded + reported )
 * COMMIT message holds only one Signer - for both COMMIT BlockRef signature and random seed signature.
 * When a block is committed the aggregated signature is comprised matching the QuorumSize COMMIT signed messages _(same members)
-* Syncing is perfromed by the consuming service (e.g. BlockStorage), but its validity is justified on BlockProof being verified by LeanHelix library.
-* The consensus algo doesn't keep PBFT logs of past block_height (erased on commit). A sync of the blockchain history is perfromed by block sync.
+* Syncing is performed by the consuming service (e.g. BlockStorage), but its validity is justified on BlockProof being verified by LeanHelix library.
+* The consensus algo doesn't keep PBFT logs of past block_height (erased on commit). A sync of the blockchain history is performed by block sync.
 
 ## Databases
 
@@ -27,7 +27,7 @@
 * Accessed by (Block_height, View, Signer)
 * Not Persistent _(TBD)_. 
 * Stores only one valid message per {Block_height, MessageType, Signer, View}
-  _(avoid storing duplciates which may be sent as part of an attack)_
+  _(avoid storing duplicates which may be sent as part of an attack)_
 
 <!-- #### Random Seed Cache
 > Stores random seed signatures for current consensus round.
@@ -180,8 +180,8 @@
 
 &nbsp;
 ## `CommitBlock(block, commits_list)`
-> called by the OneHieght. \
-> Generates a block_proof, propagates the commit, broadcasts block and starts new consesnus round.
+> called by the OneHeight. \
+> Generates a block_proof, propagates the commit, broadcasts block and starts new consensus round.
 * LeanHelixBlockProof = Get by Calling `GenerateLeanHelixBlockProof(commits_list)`
 * Commit the BlockPair to consuming service by calling `Config.ConsensusService.Commit(block, LeanHelixBlockProof)`
 * Broadcast to all nodes message with block by calling `Config.Communication.SendConsensusMessage(height, message(block))`
@@ -205,7 +205,7 @@
 #### Generate random seed with proof
 <!-- * From random_seed_data extract list of pairs (Signers, Random_seed_share)
     * RandomSeedShare_list, Signers_list = Get from random_seed_data(Block_height, Signers_(use Signers from the commits_list)_) -->
-* Aggregate the threshold signatrue
+* Aggregate the threshold signature
     * RandomSeed_signature = Get by calling `KeyManager.Aggregate(Block_height, RandomSeedShare_pair_list)`
 #### Generate LeanHelixBlockProof
 * Generate a LeanHelixBlockProof
@@ -216,17 +216,17 @@
 
 
 &nbsp;
-## `QuoromSize(numMemebers)`
+## `QuoromSize(numMembers)`
 > Calculate the quorum size based on number of participating members.
-* f = Floor[(numMemebers-1)/3]
-* QuorumSize = numMemebers - f
+* f = Floor[(numMembers-1)/3]
+* QuorumSize = numMembers - f
 * Return QuorumSize
 
 
 
 &nbsp;
 ## `ValidateBlockConsensus(block, blockProof, prevBlockProof)`
-> Called by the ConsensusService - e.g. by blockstorage as part of block sync. \
+> Called by the ConsensusService - e.g. by block storage as part of block sync. \
 > Assumes block content valid , verifies the blockProof is valid.
 * From blockProof Extract (Block_height, View, Block_hash, SignaturesPairs)
 * If block.Block_height does not match Block_height Return False.
