@@ -7,6 +7,7 @@
 package logger
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
@@ -71,7 +72,11 @@ func MemberIdToStr(memberId primitives.MemberId) string {
 	if memberId == nil {
 		return ""
 	}
-	return memberId.String()[:6]
+	memberIdStr := hex.EncodeToString(memberId)
+	if len(memberIdStr) < 6 {
+		return memberIdStr
+	}
+	return memberIdStr[:6]
 }
 
 type LHLogger interface {
