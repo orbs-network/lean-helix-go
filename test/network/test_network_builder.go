@@ -132,13 +132,13 @@ func (tb *TestNetworkBuilder) createNodes(discovery *mocks.Discovery, blocksPool
 	var nodes []*Node
 	for i := 0; i < tb.NodeCount; i++ {
 		nodeBuilder := NewNodeBuilder()
-		memberId := primitives.MemberId(fmt.Sprintf("Node %d", i))
+		memberId := primitives.MemberId(fmt.Sprintf("%d", i))
 		node := tb.buildNode(nodeBuilder, memberId, discovery, blocksPool, logToConsole)
 		nodes = append(nodes, node)
 	}
 
 	for i, customBuilder := range tb.customNodeBuilders {
-		memberId := primitives.MemberId(fmt.Sprintf("Custom-Node %d", i))
+		memberId := primitives.MemberId(fmt.Sprintf("%d", i))
 		node := tb.buildNode(customBuilder, memberId, discovery, blocksPool, logToConsole)
 		nodes = append(nodes, node)
 	}
