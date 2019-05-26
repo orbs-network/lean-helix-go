@@ -47,6 +47,7 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 	blockHeight := blockheight.GetBlockHeight(prevBlock) + 1
 	committeeMembers, _ := termConfig.Membership.RequestOrderedCommittee(ctx, blockHeight, uint64(12345))
 	messageFactory := messagesfactory.NewMessageFactory(termConfig.InstanceId, termConfig.KeyManager, termConfig.Membership.MyMemberId(), 0)
+	log.Info(nil, "NewHarness calling NewTermInCommittee with H=%d", blockHeight)
 	termInCommittee := termincommittee.NewTermInCommittee(ctx, log, termConfig, messageFactory, committeeMembers, blockHeight, prevBlock, true, nil)
 
 	return &harness{
@@ -67,7 +68,7 @@ func (h *harness) failValidations() {
 	h.myNode.BlockUtils.ValidationResult = false
 }
 
-func (h *harness) checkView(expectedView primitives.View) {
+func (h *harness) assertView(expectedView primitives.View) {
 	view := h.termInCommittee.GetView()
 	require.Equal(h.t, expectedView, view, fmt.Sprintf("TermInCommittee should have view=%d, but got %d", expectedView, view))
 }
@@ -122,14 +123,14 @@ func (h *harness) electionTillView(ctx context.Context, view primitives.View) {
 }
 
 func (h *harness) setNode1AsTheLeader(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
-	h.receiveNewView(ctx, 1, blockHeight, view, block)
+	h.receiveAndHandleNewView(ctx, 1, blockHeight, view, block)
 }
 
 func (h *harness) setMeAsTheLeader(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
-	h.receiveNewView(ctx, 0, blockHeight, view, block)
+	h.receiveAndHandleNewView(ctx, 0, blockHeight, view, block)
 }
 
-func (h *harness) receiveViewChange(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
+func (h *harness) receiveAndHandleViewChange(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	sender := h.net.Nodes[fromNodeIdx]
 	vc := builders.AViewChangeMessage(h.instanceId, sender.KeyManager, sender.MemberId, blockHeight, view, nil)
 	h.termInCommittee.HandleViewChange(ctx, vc)
@@ -139,13 +140,13 @@ func (h *harness) receiveViewChangeMessage(ctx context.Context, msg *interfaces.
 	h.termInCommittee.HandleViewChange(ctx, msg)
 }
 
-func (h *harness) receivePreprepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
+func (h *harness) receiveAndHandlePreprepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	leader := h.net.Nodes[fromNode]
 	ppm := builders.APreprepareMessage(h.instanceId, leader.KeyManager, leader.MemberId, blockHeight, view, block)
 	h.termInCommittee.HandlePrePrepare(ctx, ppm)
 }
 
-func (h *harness) receivePrepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
+func (h *harness) receiveAndHandlePrepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	sender := h.net.Nodes[fromNode]
 	pm := builders.APrepareMessage(h.instanceId, sender.KeyManager, sender.MemberId, blockHeight, view, block)
 	h.termInCommittee.HandlePrepare(ctx, pm)
@@ -161,7 +162,7 @@ func (h *harness) HandleNewView(ctx context.Context, nvm *interfaces.NewViewMess
 	h.termInCommittee.HandleNewView(ctx, nvm)
 }
 
-func (h *harness) receiveNewView(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
+func (h *harness) receiveAndHandleNewView(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	leaderKeyManager := h.getMemberKeyManager(fromNodeIdx)
 	leaderMemberId := h.getNodeMemberId(fromNodeIdx)
 
