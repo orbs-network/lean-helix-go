@@ -130,9 +130,9 @@ func (h *harness) setMeAsTheLeader(ctx context.Context, blockHeight primitives.B
 	h.receiveAndHandleNewView(ctx, 0, blockHeight, view, block)
 }
 
-func (h *harness) receiveAndHandleViewChange(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
-	sender := h.net.Nodes[fromNodeIdx]
-	vc := builders.AViewChangeMessage(h.instanceId, sender.KeyManager, sender.MemberId, blockHeight, view, nil)
+func (h *harness) receiveAndHandleViewChange(ctx context.Context, senderNodeIdx int, vcmBlockHeight primitives.BlockHeight, vcmView primitives.View) {
+	sender := h.net.Nodes[senderNodeIdx]
+	vc := builders.AViewChangeMessage(h.instanceId, sender.KeyManager, sender.MemberId, vcmBlockHeight, vcmView, nil)
 	h.termInCommittee.HandleViewChange(ctx, vc)
 }
 

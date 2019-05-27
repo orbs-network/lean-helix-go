@@ -353,16 +353,15 @@ func TestNewViewNotAcceptedWithBadVotes(t *testing.T) {
 
 func TestViewChangeIgnoreViewsFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		sendViewChange := func(startView primitives.View, endView primitives.View, messageView primitives.View) {
+		sendViewChange := func(startView primitives.View, expectedEndView primitives.View, vcmView primitives.View) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, startView)
 
-			block := mocks.ABlock(interfaces.GenesisBlock)
 			h.assertView(startView)
-			h.receiveAndHandleViewChange(ctx, 1, 1, messageView, block)
-			h.receiveAndHandleViewChange(ctx, 2, 1, messageView, block)
-			h.receiveAndHandleViewChange(ctx, 3, 1, messageView, block)
-			h.assertView(endView)
+			h.receiveAndHandleViewChange(ctx, 1, 1, vcmView)
+			h.receiveAndHandleViewChange(ctx, 2, 1, vcmView)
+			h.receiveAndHandleViewChange(ctx, 3, 1, vcmView)
+			h.assertView(expectedEndView)
 		}
 
 		// re-voting me (node0, view=12 -> future) as the leader
@@ -385,11 +384,8 @@ func TestViewChangeIsRejectedIfTargetIsNotTheNewLeader(t *testing.T) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, view)
 
-			block1 := mocks.ABlock(interfaces.GenesisBlock)
-			block2 := mocks.ABlock(block1)
-
 			viewChangeCountBefore := h.countViewChange(1, view)
-			h.receiveAndHandleViewChange(ctx, 3, 1, view, block2)
+			h.receiveAndHandleViewChange(ctx, 3, 1, view)
 			viewChangeCountAfter := h.countViewChange(1, view)
 
 			isMessageAccepted := viewChangeCountAfter == viewChangeCountBefore+1
