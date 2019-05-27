@@ -196,6 +196,11 @@ func (tic *TermInCommittee) calcLeaderMemberId(view primitives.View) primitives.
 	return tic.committeeMembersMemberIds[index]
 }
 
+func calcLeaderOfViewAndCommittee(view primitives.View, committeeMembersMemberIds []primitives.MemberId) primitives.MemberId {
+	index := int(view) % len(committeeMembersMemberIds)
+	return committeeMembersMemberIds[index]
+}
+
 func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics)) {
 	if view != tic.view || height != tic.height {
 		return
@@ -225,6 +230,15 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 // TODO Consider returning error with who is the expected leader (tic.calcLeaderMemberId(v)), to help caller debug this
 func (tic *TermInCommittee) isLeader(memberId primitives.MemberId, v primitives.View) bool {
 	return memberId.Equal(tic.calcLeaderMemberId(v))
+}
+
+func isLeaderOfViewForThisCommittee(leaderCandidate primitives.MemberId, v primitives.View, committeeMembersMemberIds []primitives.MemberId) error {
+
+	calculatedLeader := calcLeaderOfViewAndCommittee(v, committeeMembersMemberIds)
+	if !leaderCandidate.Equal(calculatedLeader) {
+		return errors.Errorf("candidate leader is %s but calculated leader for V=%s is %s", Str(leaderCandidate), v, Str(calculatedLeader))
+	}
+	return nil
 }
 
 func (tic *TermInCommittee) checkElected(ctx context.Context, height primitives.BlockHeight, view primitives.View) {
