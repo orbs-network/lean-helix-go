@@ -474,9 +474,8 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 func (tic *TermInCommittee) HandleViewChange(ctx context.Context, vcm *interfaces.ViewChangeMessage) {
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED VIEW_CHANGE with H=%d V=%d sender=%s", vcm.BlockHeight(), vcm.View(), Str(vcm.SenderMemberId()))
 
-	calculatedLeaderFromViewChange := tic.calcLeaderMemberId(vcm.Content().SignedHeader().View())
-	if !tic.myMemberId.Equal(calculatedLeaderFromViewChange) {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED VIEW_CHANGE IGNORE - I am not the calculated leader %s who should collect these messages", Str(calculatedLeaderFromViewChange))
+	if err := tic.isViewChangeAccepted(tic.myMemberId, tic.view, vcm.Content()); err != nil {
+		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED VIEW_CHANGE IGNORE - %s", err)
 		return
 	}
 
@@ -498,7 +497,19 @@ func (tic *TermInCommittee) HandleViewChange(ctx context.Context, vcm *interface
 	tic.checkElected(ctx, header.BlockHeight(), header.View())
 }
 
-// We do not return an error if ignoring the VIEW_CHANGE message is part of normal flow (e.g. message is too old so we don't need to process it - this can happen and it's ok)
+func (tic *TermInCommittee) isViewChangeAccepted(expectedLeaderForView primitives.MemberId, view primitives.View, vcmContent *protocol.ViewChangeMessageContent) error {
+	vcmView := vcmContent.SignedHeader().View()
+	calculatedLeaderForView := tic.calcLeaderMemberId(vcmView)
+	if !expectedLeaderForView.Equal(calculatedLeaderForView) {
+		return errors.Errorf("I am not the calculated leader %s who should collect these messages - I am %s", Str(calculatedLeaderForView), Str(expectedLeaderForView))
+	}
+
+	if view > vcmView {
+		return errors.Errorf("message view %s is older than current term's view %s", vcmView, view)
+	}
+	return nil
+}
+
 func (tic *TermInCommittee) isViewChangeValid(expectedLeaderFromNewView primitives.MemberId, currentView primitives.View, vcm *protocol.ViewChangeMessageContent) error {
 	header := vcm.SignedHeader()
 	sender := vcm.Sender()
@@ -509,23 +520,10 @@ func (tic *TermInCommittee) isViewChangeValid(expectedLeaderFromNewView primitiv
 		return errors.Wrapf(err, "keyManager.VerifyConsensusMessage failed")
 	}
 
-	if currentView > vcmView {
-		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "message view %s is older than current term's view %s", vcmView, currentView)
-		return nil
-	}
-
 	if !proofsvalidator.ValidatePreparedProof(tic.height, vcmView, preparedProof, tic.QuorumSize, tic.keyManager, tic.committeeMembersMemberIds, func(view primitives.View) primitives.MemberId { return tic.calcLeaderMemberId(view) }) {
 		return fmt.Errorf("failed ValidatePreparedProof()")
 	}
-
-	//calculatedLeaderFromViewChange := tic.calcLeaderMemberId(vcmView)
-	//if !expectedLeaderFromNewView.Equal(calculatedLeaderFromViewChange) {
-	//	tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "expectedLeaderFromNewView=%s different from calculatedLeaderFromViewChange=%s vcmView=%d currentView=%d", Str(expectedLeaderFromNewView), Str(calculatedLeaderFromViewChange), vcmView, currentView)
-	//	return nil
-	//}
-
 	return nil
-
 }
 
 func (tic *TermInCommittee) validateViewChangeVotes(targetBlockHeight primitives.BlockHeight, targetView primitives.View, confirmations []*protocol.ViewChangeMessageContent) error {
