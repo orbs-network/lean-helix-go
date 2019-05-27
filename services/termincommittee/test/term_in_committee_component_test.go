@@ -8,7 +8,6 @@ package test
 
 import (
 	"context"
-	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/preparedmessages"
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
@@ -124,7 +123,7 @@ func TestNewViewIsSentWithTheHighestBlockFromTheViewChangeProofs(t *testing.T) {
 			OnView(5).
 			Build()
 
-		h.HandleNewView(ctx, nvm)
+		h.handleNewViewMessage(ctx, nvm)
 
 		h.assertView(5)
 		require.True(t, h.hasPreprepare(1, 5, blockOnView4))
@@ -171,7 +170,7 @@ func TestNewViewWithOlderBlockIsRejected(t *testing.T) {
 			OnView(5).
 			Build()
 
-		h.HandleNewView(ctx, nvm)
+		h.handleNewViewMessage(ctx, nvm)
 
 		h.assertView(0)
 		require.False(t, h.hasPreprepare(1, 5, blockOnView3))
@@ -234,7 +233,7 @@ func TestNewViewNotAcceptedWithWrongPPDetails(t *testing.T) {
 				WithViewChangeVotes(votes).
 				Build()
 
-			h.HandleNewView(ctx, nvm)
+			h.handleNewViewMessage(ctx, nvm)
 
 			if shouldAcceptMessage {
 				h.assertView(1)
@@ -280,7 +279,7 @@ func TestNewViewNotAcceptedWithWrongViewChangeDetails(t *testing.T) {
 				WithViewChangeVotes(votes).
 				Build()
 
-			h.HandleNewView(ctx, nvm)
+			h.handleNewViewMessage(ctx, nvm)
 
 			if shouldAcceptMessage {
 				h.assertView(1)
@@ -328,7 +327,7 @@ func TestNewViewNotAcceptedWithBadVotes(t *testing.T) {
 				OnBlockHeight(10).
 				OnView(1).
 				Build()
-			h.HandleNewView(ctx, nvm)
+			h.handleNewViewMessage(ctx, nvm)
 
 			if shouldAcceptMessage {
 				h.assertView(1)
@@ -584,7 +583,7 @@ func TestAValidPreparedProofIsSentOnViewChange(t *testing.T) {
 		pBlockRef := preparedProof.PrepareBlockRef()
 
 		var pSendersIds []primitives.MemberId
-		fmt.Printf("preparedProof: %+v\n", preparedProof)
+		t.Logf("preparedProof: %+v\n", preparedProof)
 		pSendersIter := preparedProof.PrepareSendersIterator()
 		for {
 			if !pSendersIter.HasNext() {
@@ -592,7 +591,7 @@ func TestAValidPreparedProofIsSentOnViewChange(t *testing.T) {
 			}
 			pSendersIds = append(pSendersIds, pSendersIter.NextPrepareSenders().MemberId())
 		}
-		require.Equal(t, 2, len(pSendersIds), "expected 2 senders of Prepare messages")
+		require.Equal(t, 2, len(pSendersIds), "expected 2 senders of Prepare messages but got %d", len(pSendersIds))
 
 		member1Id := h.getNodeMemberId(1)
 		member2Id := h.getNodeMemberId(2)
@@ -630,7 +629,7 @@ func TestAValidViewChangeMessageWithPreparedProof(t *testing.T) {
 		}
 
 		msg := builders.AViewChangeMessage(h.instanceId, h.getMyKeyManager(), h.myMemberId, 10, 4, preparedMessages)
-		h.receiveViewChangeMessage(ctx, msg)
+		h.handleViewChangeMessage(ctx, msg)
 
 		require.Exactly(t, 1, h.countViewChange(10, 4))
 	})
@@ -653,7 +652,7 @@ func TestViewChangeMessageWithoutQuorumInThePreparedProof(t *testing.T) {
 		}
 
 		msg := builders.AViewChangeMessage(h.instanceId, h.getMyKeyManager(), h.myMemberId, 10, 4, preparedMessages)
-		h.receiveViewChangeMessage(ctx, msg)
+		h.handleViewChangeMessage(ctx, msg)
 
 		require.Exactly(t, 0, h.countViewChange(10, 4))
 	})
@@ -674,7 +673,7 @@ func TestViewChangeMessageWithAnInvalidPreparedProof(t *testing.T) {
 		}
 
 		msg := builders.AViewChangeMessage(h.instanceId, h.getMyKeyManager(), h.myMemberId, 10, 4, preparedMessages)
-		h.receiveViewChangeMessage(ctx, msg)
+		h.handleViewChangeMessage(ctx, msg)
 
 		require.Exactly(t, 0, h.countViewChange(10, 4))
 	})

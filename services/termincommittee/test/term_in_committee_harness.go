@@ -70,7 +70,7 @@ func (h *harness) failValidations() {
 
 func (h *harness) assertView(expectedView primitives.View) {
 	view := h.termInCommittee.GetView()
-	require.Equal(h.t, expectedView, view, fmt.Sprintf("TermInCommittee should have view=%d, but got %d", expectedView, view))
+	require.Equal(h.t, expectedView, view, fmt.Sprintf("TermInCommittee should have view=%d, but got %d", uint64(expectedView), uint64(view)))
 }
 
 func (h *harness) triggerElection(ctx context.Context) {
@@ -130,16 +130,6 @@ func (h *harness) setMeAsTheLeader(ctx context.Context, blockHeight primitives.B
 	h.receiveAndHandleNewView(ctx, 0, blockHeight, view, block)
 }
 
-func (h *harness) receiveAndHandleViewChange(ctx context.Context, senderNodeIdx int, vcmBlockHeight primitives.BlockHeight, vcmView primitives.View) {
-	sender := h.net.Nodes[senderNodeIdx]
-	vc := builders.AViewChangeMessage(h.instanceId, sender.KeyManager, sender.MemberId, vcmBlockHeight, vcmView, nil)
-	h.termInCommittee.HandleViewChange(ctx, vc)
-}
-
-func (h *harness) receiveViewChangeMessage(ctx context.Context, msg *interfaces.ViewChangeMessage) {
-	h.termInCommittee.HandleViewChange(ctx, msg)
-}
-
 func (h *harness) receiveAndHandlePreprepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	leader := h.net.Nodes[fromNode]
 	ppm := builders.APreprepareMessage(h.instanceId, leader.KeyManager, leader.MemberId, blockHeight, view, block)
@@ -152,14 +142,10 @@ func (h *harness) receiveAndHandlePrepare(ctx context.Context, fromNode int, blo
 	h.termInCommittee.HandlePrepare(ctx, pm)
 }
 
-func (h *harness) createPreprepareMessage(fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block, blockHash primitives.BlockHash) *interfaces.PreprepareMessage {
-	leader := h.net.Nodes[fromNode]
-	messageFactory := messagesfactory.NewMessageFactory(h.instanceId, leader.KeyManager, leader.MemberId, 0)
-	return messageFactory.CreatePreprepareMessage(blockHeight, view, block, blockHash)
-}
-
-func (h *harness) HandleNewView(ctx context.Context, nvm *interfaces.NewViewMessage) {
-	h.termInCommittee.HandleNewView(ctx, nvm)
+func (h *harness) receiveAndHandleViewChange(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View) {
+	sender := h.net.Nodes[fromNodeIdx]
+	vc := builders.AViewChangeMessage(h.instanceId, sender.KeyManager, sender.MemberId, blockHeight, view, nil)
+	h.termInCommittee.HandleViewChange(ctx, vc)
 }
 
 func (h *harness) receiveAndHandleNewView(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
@@ -185,19 +171,38 @@ func (h *harness) receiveAndHandleNewView(ctx context.Context, fromNodeIdx int, 
 	h.termInCommittee.HandleNewView(ctx, nvm)
 }
 
+func (h *harness) handleViewChangeMessage(ctx context.Context, msg *interfaces.ViewChangeMessage) {
+	h.termInCommittee.HandleViewChange(ctx, msg)
+}
+
+func (h *harness) handleNewViewMessage(ctx context.Context, nvm *interfaces.NewViewMessage) {
+	h.termInCommittee.HandleNewView(ctx, nvm)
+}
+
+func (h *harness) createPreprepareMessage(fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block, blockHash primitives.BlockHash) *interfaces.PreprepareMessage {
+	leader := h.net.Nodes[fromNode]
+	messageFactory := messagesfactory.NewMessageFactory(h.instanceId, leader.KeyManager, leader.MemberId, 0)
+	return messageFactory.CreatePreprepareMessage(blockHeight, view, block, blockHash)
+}
+
 func (h *harness) getLastSentViewChangeMessage() *interfaces.ViewChangeMessage {
 	messages := h.myNode.Communication.GetSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE)
 	lastMessage := interfaces.ToConsensusMessage(messages[len(messages)-1])
 	return lastMessage.(*interfaces.ViewChangeMessage)
 }
 
-func (h *harness) countViewChange(blockHeight primitives.BlockHeight, view primitives.View) int {
-	messages, _ := h.storage.GetViewChangeMessages(blockHeight, view)
+func (h *harness) countPrepare(blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) int {
+	messages, _ := h.storage.GetPrepareMessages(blockHeight, view, mocks.CalculateBlockHash(block))
 	return len(messages)
 }
 
 func (h *harness) countCommits(blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) int {
 	messages, _ := h.storage.GetCommitMessages(blockHeight, view, mocks.CalculateBlockHash(block))
+	return len(messages)
+}
+
+func (h *harness) countViewChange(blockHeight primitives.BlockHeight, view primitives.View) int {
+	messages, _ := h.storage.GetViewChangeMessages(blockHeight, view)
 	return len(messages)
 }
 
@@ -209,11 +214,6 @@ func (h *harness) hasPreprepare(blockHeight primitives.BlockHeight, view primiti
 	}
 
 	return matchers.BlocksAreEqual(message.Block(), block)
-}
-
-func (h *harness) countPrepare(blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) int {
-	messages, _ := h.storage.GetPrepareMessages(blockHeight, view, mocks.CalculateBlockHash(block))
-	return len(messages)
 }
 
 func (h *harness) failFutureVerifications() {
