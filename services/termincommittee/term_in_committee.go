@@ -31,38 +31,6 @@ import (
 // The only reason to set this manually in config below this limit is for internal tests
 const LEAN_HELIX_HARD_MINIMUM_COMMITTEE_MEMBERS = 4
 
-func Str(memberId primitives.MemberId) string {
-	if memberId == nil {
-		return ""
-	}
-	return memberId.String()[:6]
-}
-
-type OnInCommitteeCommitCallback func(ctx context.Context, block interfaces.Block, commitMessages []*interfaces.CommitMessage)
-
-type preparedLocallyProps struct {
-	isPreparedLocally bool
-	latestView        primitives.View
-}
-
-func (tic *TermInCommittee) getPreparedLocally() (v primitives.View, ok bool) {
-	if tic.preparedLocally == nil || !tic.preparedLocally.isPreparedLocally {
-		return 0, false
-	}
-	return tic.preparedLocally.latestView, true
-}
-
-func (tic *TermInCommittee) setNotPreparedLocally() {
-	tic.preparedLocally = nil
-}
-
-func (tic *TermInCommittee) setPreparedLocally(v primitives.View) {
-	tic.preparedLocally = &preparedLocallyProps{
-		isPreparedLocally: true,
-		latestView:        v,
-	}
-}
-
 type TermInCommittee struct {
 	keyManager                     interfaces.KeyManager
 	communication                  interfaces.Communication
@@ -134,6 +102,35 @@ func NewTermInCommittee(
 
 	result.startTerm(ctx, canBeFirstLeader)
 	return result
+}
+
+func Str(memberId primitives.MemberId) string {
+	return L.MemberIdToStr(memberId)
+}
+
+type OnInCommitteeCommitCallback func(ctx context.Context, block interfaces.Block, commitMessages []*interfaces.CommitMessage)
+
+type preparedLocallyProps struct {
+	isPreparedLocally bool
+	latestView        primitives.View
+}
+
+func (tic *TermInCommittee) getPreparedLocally() (v primitives.View, ok bool) {
+	if tic.preparedLocally == nil || !tic.preparedLocally.isPreparedLocally {
+		return 0, false
+	}
+	return tic.preparedLocally.latestView, true
+}
+
+func (tic *TermInCommittee) setNotPreparedLocally() {
+	tic.preparedLocally = nil
+}
+
+func (tic *TermInCommittee) setPreparedLocally(v primitives.View) {
+	tic.preparedLocally = &preparedLocallyProps{
+		isPreparedLocally: true,
+		latestView:        v,
+	}
 }
 
 func ToCommitteeMembersStr(members []primitives.MemberId) string {
