@@ -135,11 +135,11 @@ func (tic *TermInCommittee) setPreparedLocally(v primitives.View) {
 
 func ToCommitteeMembersStr(members []primitives.MemberId) string {
 
-	strs := make([]string, 1)
+	var strs []string
 	for _, member := range members {
 		strs = append(strs, Str(member))
 	}
-	return strings.Join(strs, ",")
+	return strings.Join(strs, ", ")
 }
 
 func panicOnLessThanMinimumCommitteeMembers(committeeMembers []primitives.MemberId) {
@@ -189,8 +189,7 @@ func (tic *TermInCommittee) Dispose() {
 }
 
 func (tic *TermInCommittee) calcLeaderMemberId(view primitives.View) primitives.MemberId {
-	index := int(view) % len(tic.committeeMembersMemberIds)
-	return tic.committeeMembersMemberIds[index]
+	return calcLeaderOfViewAndCommittee(view, tic.committeeMembersMemberIds)
 }
 
 func calcLeaderOfViewAndCommittee(view primitives.View, committeeMembersMemberIds []primitives.MemberId) primitives.MemberId {

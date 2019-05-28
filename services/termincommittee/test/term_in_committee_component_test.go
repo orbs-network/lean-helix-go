@@ -10,7 +10,6 @@ import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/preparedmessages"
-	"github.com/orbs-network/lean-helix-go/services/termincommittee"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
@@ -677,14 +676,4 @@ func TestViewChangeMessageWithAnInvalidPreparedProof(t *testing.T) {
 
 		require.Exactly(t, 0, h.countViewChange(10, 4))
 	})
-}
-
-func TestStrFunc(t *testing.T) {
-	var memberId primitives.MemberId
-	memberId = []byte{16, 32, 48, 64, 80, 96}
-	memberIdStr := termincommittee.Str(memberId)
-	require.Equal(t, "102030", memberIdStr, "bad translation of memberId to string")
-
-	require.Equal(t, "", termincommittee.Str(nil), "bad translation of memberId to string")
-
 }
