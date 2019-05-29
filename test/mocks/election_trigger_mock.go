@@ -46,7 +46,7 @@ func (et *ElectionTriggerMock) ElectionChannel() chan func(ctx context.Context) 
 }
 
 func (et *ElectionTriggerMock) ManualTrigger(ctx context.Context) {
-	fmt.Println("Manual Trigger")
+	fmt.Println("Manual Trigger - write to election channel in a new goroutine")
 	go func() {
 		select {
 		case <-ctx.Done():

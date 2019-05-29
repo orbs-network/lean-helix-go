@@ -228,6 +228,21 @@ func (tic *TermInCommittee) isLeader(memberId primitives.MemberId, v primitives.
 	return memberId.Equal(tic.calcLeaderMemberId(v))
 }
 
+func isLeaderOfViewForThisCommittee(candidateLeader primitives.MemberId, v primitives.View, committeeMembersMemberIds []primitives.MemberId) error {
+
+	calculatedLeader := calcLeaderOfViewAndCommittee(v, committeeMembersMemberIds)
+	if !candidateLeader.Equal(calculatedLeader) {
+		return errors.Errorf("for V=%s the candidate leader is %s but calculated leader is %s", v, Str(candidateLeader), Str(calculatedLeader))
+	}
+	return nil
+}
+
+/*
+FROM MASTER:
+func (tic *TermInCommittee) isLeader(memberId primitives.MemberId, v primitives.View) error {
+	return isLeaderOfViewForThisCommittee(memberId, v, tic.committeeMembersMemberIds)
+}
+
 func isLeaderOfViewForThisCommittee(leaderCandidate primitives.MemberId, v primitives.View, committeeMembersMemberIds []primitives.MemberId) error {
 
 	calculatedLeader := calcLeaderOfViewAndCommittee(v, committeeMembersMemberIds)
@@ -236,6 +251,8 @@ func isLeaderOfViewForThisCommittee(leaderCandidate primitives.MemberId, v primi
 	}
 	return nil
 }
+
+*/
 
 func (tic *TermInCommittee) checkElected(ctx context.Context, height primitives.BlockHeight, view primitives.View) {
 	if tic.newViewLocally >= view {
