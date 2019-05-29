@@ -351,33 +351,28 @@ func TestNewViewNotAcceptedWithBadVotes(t *testing.T) {
 
 func TestViewChangeIgnoreViewsFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		sendViewChange := func(startView primitives.View, view primitives.View, shouldIncrementView bool) {
+		sendViewChange := func(startView primitives.View, expectedEndView primitives.View, vcmView primitives.View) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, startView)
 
-			block := mocks.ABlock(interfaces.GenesisBlock)
-			var viewAfter primitives.View
-			if shouldIncrementView {
-				viewAfter = view
-			} else {
-				viewAfter = startView
-			}
-
 			h.assertView(startView)
-			h.receiveAndHandleViewChange(ctx, 1, 1, view, block)
-			h.receiveAndHandleViewChange(ctx, 2, 1, view, block)
-			h.receiveAndHandleViewChange(ctx, 3, 1, view, block)
-			h.assertView(viewAfter)
+			h.receiveAndHandleViewChange(ctx, 1, 1, vcmView)
+			h.receiveAndHandleViewChange(ctx, 2, 1, vcmView)
+			h.receiveAndHandleViewChange(ctx, 3, 1, vcmView)
+			h.assertView(expectedEndView)
 		}
 
 		// re-voting me (node0, view=12 -> future) as the leader
-		sendViewChange(8, 12, true)
+		t.Logf("startView=%d endView=%d messageView=%d", 8, 12, 12)
+		sendViewChange(8, 12, 12)
 
+		t.Logf("startView=%d endView=%d messageView=%d", 8, 8, 8)
 		// re-voting me (node0, view=8 -> present) as the leader
-		sendViewChange(8, 8, true)
+		sendViewChange(8, 8, 8)
 
 		// re-voting me (node0, view=4 -> past) as the leader
-		sendViewChange(8, 4, false)
+		t.Logf("startView=%d endView=%d messageView=%d", 8, 8, 4)
+		sendViewChange(8, 8, 4)
 	})
 }
 
@@ -387,11 +382,8 @@ func TestViewChangeIsRejectedIfTargetIsNotTheNewLeader(t *testing.T) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, view)
 
-			block1 := mocks.ABlock(interfaces.GenesisBlock)
-			block2 := mocks.ABlock(block1)
-
 			viewChangeCountBefore := h.countViewChange(1, view)
-			h.receiveAndHandleViewChange(ctx, 3, 1, view, block2)
+			h.receiveAndHandleViewChange(ctx, 3, 1, view)
 			viewChangeCountAfter := h.countViewChange(1, view)
 
 			isMessageAccepted := viewChangeCountAfter == viewChangeCountBefore+1

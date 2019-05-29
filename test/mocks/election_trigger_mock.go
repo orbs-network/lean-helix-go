@@ -8,6 +8,7 @@ package mocks
 
 import (
 	"context"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/instrumentation/metrics"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"time"
@@ -45,6 +46,7 @@ func (et *ElectionTriggerMock) ElectionChannel() chan func(ctx context.Context) 
 }
 
 func (et *ElectionTriggerMock) ManualTrigger(ctx context.Context) {
+	fmt.Println("Manual Trigger - write to election channel in a new goroutine")
 	go func() {
 		select {
 		case <-ctx.Done():

@@ -173,6 +173,7 @@ func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 	})
 }
 
+// TODO: This is sometimes stuck!!! Remove this comment if doesnt happen by end of June 2019
 func TestLeaderCircularOrdering(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)

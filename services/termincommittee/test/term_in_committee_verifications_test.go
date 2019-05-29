@@ -77,8 +77,6 @@ func TestViewChangeVerification(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
 
-		block := mocks.ABlock(interfaces.GenesisBlock)
-
 		// start with 0 view-change
 		viewChangeCountOnView4 := h.countViewChange(1, 4)
 		viewChangeCountOnView8 := h.countViewChange(1, 8)
@@ -86,7 +84,7 @@ func TestViewChangeVerification(t *testing.T) {
 		require.Equal(t, 0, viewChangeCountOnView8, "No view-change should exist in the storage, on view 8")
 
 		// sending a view-change
-		h.receiveAndHandleViewChange(ctx, 3, 1, 4, block)
+		h.receiveAndHandleViewChange(ctx, 3, 1, 4)
 
 		// Expect the storage to have it
 		viewChangeCountOnView4 = h.countViewChange(1, 4)
@@ -95,7 +93,7 @@ func TestViewChangeVerification(t *testing.T) {
 
 		// sending another (Bad) view-change
 		h.failFutureVerifications()
-		h.receiveAndHandleViewChange(ctx, 3, 2, 8, block)
+		h.receiveAndHandleViewChange(ctx, 3, 2, 8)
 
 		// Expect the storage NOT to store it
 		viewChangeCountOnView4 = h.countViewChange(1, 4)

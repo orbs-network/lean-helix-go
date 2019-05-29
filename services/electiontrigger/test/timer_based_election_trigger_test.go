@@ -107,6 +107,7 @@ func TestIgnoreSameViewOrHeight(t *testing.T) {
 	})
 }
 
+// TODO: Flaky
 func TestNotTriggerIfSameViewButDifferentHeight(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		et := buildElectionTrigger(ctx, 30*time.Millisecond)

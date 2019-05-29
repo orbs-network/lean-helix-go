@@ -47,6 +47,7 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 	blockHeight := blockheight.GetBlockHeight(prevBlock) + 1
 	committeeMembers, _ := termConfig.Membership.RequestOrderedCommittee(ctx, blockHeight, uint64(12345))
 	messageFactory := messagesfactory.NewMessageFactory(termConfig.InstanceId, termConfig.KeyManager, termConfig.Membership.MyMemberId(), 0)
+	log.Info(nil, "NewHarness calling NewTermInCommittee with H=%d", blockHeight)
 	termInCommittee := termincommittee.NewTermInCommittee(ctx, log, termConfig, messageFactory, committeeMembers, blockHeight, prevBlock, true, nil)
 
 	return &harness{
@@ -141,7 +142,7 @@ func (h *harness) receiveAndHandlePrepare(ctx context.Context, fromNode int, blo
 	h.termInCommittee.HandlePrepare(ctx, pm)
 }
 
-func (h *harness) receiveAndHandleViewChange(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
+func (h *harness) receiveAndHandleViewChange(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View) {
 	sender := h.net.Nodes[fromNodeIdx]
 	vc := builders.AViewChangeMessage(h.instanceId, sender.KeyManager, sender.MemberId, blockHeight, view, nil)
 	h.termInCommittee.HandleViewChange(ctx, vc)

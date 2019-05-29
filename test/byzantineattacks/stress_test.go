@@ -35,7 +35,7 @@ func TestThatWeReachConsensusEventIfWeDelayAllTheGossipMessages(t *testing.T) {
 
 		net.StartConsensus(ctx)
 
-		time.Sleep(time.Duration(5) * time.Second)
+		time.Sleep(time.Duration(1) * time.Second)
 		// todo add a watch to the nods blockchain, and wait for 100 blocks
 	})
 }
