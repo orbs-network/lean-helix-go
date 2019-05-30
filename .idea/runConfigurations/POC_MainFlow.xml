@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="POC MainFlow" type="GoTestRunConfiguration" factoryName="Go Test">
+    <module name="lean-helix-go" />
+    <working_directory value="$PROJECT_DIR$/test_poc/poc" />
+    <framework value="gotest" />
+    <kind value="PACKAGE" />
+    <package value="github.com/orbs-network/orbs-network-go/vendor/github.com/orbs-network/lean-helix-go/test_poc/poc" />
+    <directory value="$PROJECT_DIR$/" />
+    <filePath value="$PROJECT_DIR$/" />
+    <pattern value="^TestMainFlow$" />
+    <method v="2" />
+  </configuration>
+</component>

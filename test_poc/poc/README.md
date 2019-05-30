@@ -1,12 +1,7 @@
-package poc
+# New threading model POC
 
-import (
-	"testing"
-)
+## Questions
 
-/*
-
-Questions to test:
 1. What happens when trying to read from a garbage collected channel
    (maybe irrelevant question if channel is not collected till no readers remain)
 2. What to do with channels waiting for CreateBlock and ValidateBlock when closing the term?
@@ -23,13 +18,5 @@ Questions to test:
 9. Test Garbage collection of buffered channel (similar to #1)
 10. Decide which channels are unbuffered (those who must wait for incoming/outgoing message), o/w all should be buffered
 
+## Conclusions
 
-*/
-
-func TestMainFlow(t *testing.T) {
-	Run()
-}
-
-func TestGarbageCollectedChan(t *testing.T) {
-
-}
