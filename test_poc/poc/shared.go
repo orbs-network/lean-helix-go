@@ -23,15 +23,22 @@ type Block struct {
 	h int
 }
 
-func Run() {
-	timeToCancel := 2 * time.Second
-	Log("Run() start timeToCancel=%s", timeToCancel)
+type durations struct {
+	cancelTestAfter     time.Duration
+	waitAfterCancelTest time.Duration
+	createBlock         time.Duration
+	validateBlock       time.Duration
+}
+
+func Run(d *durations) {
+	timeToCancel := d.cancelTestAfter
 	ctx, cancel := context.WithCancel(context.Background())
-	go runOrbs(ctx)
+	Log("Run() start timeToCancel=%s starting *ORBS* goroutine", timeToCancel)
+	go runOrbs(ctx, d)
 	time.Sleep(timeToCancel)
-	Log("Run() CANCELLING")
+	Log("Run() CANCELLING TEST ON TIMEOUT")
 	cancel()
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(d.waitAfterCancelTest)
 	Log("Run() end")
 }
 
@@ -42,5 +49,12 @@ func NewBlock(h int) *Block {
 }
 
 func Log(format string, a ...interface{}) {
-	fmt.Printf(time.Now().Format("03:04:05.000000")+" "+format+"\n", a...)
+	fmt.Printf(time.Now().Format("03:04:05.000")+" "+format+"\n", a...)
+}
+
+func NewPPM(block *Block) *Message {
+	return &Message{
+		msgType: PREPREPARE,
+		block:   block,
+	}
 }
