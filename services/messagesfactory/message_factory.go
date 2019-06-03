@@ -6,6 +6,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/randomseed"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
+	"github.com/pkg/errors"
 )
 
 type MessageFactory struct {
@@ -19,7 +20,7 @@ func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
 	block interfaces.Block,
-	blockHash primitives.BlockHash) *protocol.PreprepareContentBuilder {
+	blockHash primitives.BlockHash) (*protocol.PreprepareContentBuilder, error) {
 
 	signedHeader := &protocol.BlockRefBuilder{
 		MessageType: protocol.LEAN_HELIX_PREPREPARE,
@@ -29,27 +30,33 @@ func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
 		BlockHash:   blockHash,
 	}
 
-	dataToSign := signedHeader.Build().Raw()
+	sig, err := f.keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw())
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create preprepare message")
+	}
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(blockHeight, dataToSign)),
+		Signature: primitives.Signature(sig),
 	}
 
 	return &protocol.PreprepareContentBuilder{
 		SignedHeader: signedHeader,
 		Sender:       sender,
-	}
+	}, nil
 }
 
 func (f *MessageFactory) CreatePreprepareMessage(
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
 	block interfaces.Block,
-	blockHash primitives.BlockHash) *interfaces.PreprepareMessage {
+	blockHash primitives.BlockHash) (*interfaces.PreprepareMessage, error) {
 
-	content := f.CreatePreprepareMessageContentBuilder(blockHeight, view, block, blockHash)
+	content, err := f.CreatePreprepareMessageContentBuilder(blockHeight, view, block, blockHash)
+	if err != nil {
+		return nil, err
+	}
 
-	return interfaces.NewPreprepareMessage(content.Build(), block)
+	return interfaces.NewPreprepareMessage(content.Build(), block), nil
 }
 
 func (f *MessageFactory) CreatePreprepareMessageFromContentBuilder(ppmc *protocol.PreprepareContentBuilder, block interfaces.Block) *interfaces.PreprepareMessage {
@@ -59,7 +66,7 @@ func (f *MessageFactory) CreatePreprepareMessageFromContentBuilder(ppmc *protoco
 func (f *MessageFactory) CreatePrepareMessage(
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
-	blockHash primitives.BlockHash) *interfaces.PrepareMessage {
+	blockHash primitives.BlockHash) (*interfaces.PrepareMessage, error) {
 
 	signedHeader := &protocol.BlockRefBuilder{
 		MessageType: protocol.LEAN_HELIX_PREPARE,
@@ -69,9 +76,13 @@ func (f *MessageFactory) CreatePrepareMessage(
 		BlockHash:   blockHash,
 	}
 
+	sig, err := f.keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw())
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create prepare message")
+	}
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw())),
+		Signature: primitives.Signature(sig),
 	}
 
 	contentBuilder := protocol.PrepareContentBuilder{
@@ -79,13 +90,13 @@ func (f *MessageFactory) CreatePrepareMessage(
 		Sender:       sender,
 	}
 
-	return interfaces.NewPrepareMessage(contentBuilder.Build())
+	return interfaces.NewPrepareMessage(contentBuilder.Build()), nil
 }
 
 func (f *MessageFactory) CreateCommitMessage(
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
-	blockHash primitives.BlockHash) *interfaces.CommitMessage {
+	blockHash primitives.BlockHash) (*interfaces.CommitMessage, error) {
 
 	signedHeader := &protocol.BlockRefBuilder{
 		MessageType: protocol.LEAN_HELIX_COMMIT,
@@ -95,9 +106,14 @@ func (f *MessageFactory) CreateCommitMessage(
 		BlockHash:   blockHash,
 	}
 
+	sig, err := f.keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw())
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create commit message")
+	}
+
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw())),
+		Signature: primitives.Signature(sig),
 	}
 
 	randomSeedBytes := randomseed.RandomSeedToBytes(f.randomSeed)
@@ -108,7 +124,7 @@ func (f *MessageFactory) CreateCommitMessage(
 		Share:        share,
 	}
 
-	return interfaces.NewCommitMessage(contentBuilder.Build())
+	return interfaces.NewCommitMessage(contentBuilder.Build()), nil
 }
 
 func CreatePreparedProofBuilderFromPreparedMessages(preparedMessages *preparedmessages.PreparedMessages) *protocol.PreparedProofBuilder {
@@ -171,7 +187,7 @@ func CreatePreparedProofBuilderFromPreparedMessages(preparedMessages *preparedme
 func (f *MessageFactory) CreateViewChangeMessageContentBuilder(
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
-	preparedMessages *preparedmessages.PreparedMessages) *protocol.ViewChangeMessageContentBuilder {
+	preparedMessages *preparedmessages.PreparedMessages) (*protocol.ViewChangeMessageContentBuilder, error) {
 
 	preparedProofBuilder := CreatePreparedProofBuilderFromPreparedMessages(preparedMessages)
 	signedHeader := &protocol.ViewChangeHeaderBuilder{
@@ -182,37 +198,44 @@ func (f *MessageFactory) CreateViewChangeMessageContentBuilder(
 		PreparedProof: preparedProofBuilder,
 	}
 
+	sig, err := f.keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw())
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create view change message")
+	}
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw())),
+		Signature: primitives.Signature(sig),
 	}
 
 	return &protocol.ViewChangeMessageContentBuilder{
 		SignedHeader: signedHeader,
 		Sender:       sender,
-	}
+	}, nil
 }
 
 func (f *MessageFactory) CreateViewChangeMessage(
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
-	preparedMessages *preparedmessages.PreparedMessages) *interfaces.ViewChangeMessage {
+	preparedMessages *preparedmessages.PreparedMessages) (*interfaces.ViewChangeMessage, error) {
 
 	var block interfaces.Block
 	if preparedMessages != nil && preparedMessages.PreprepareMessage != nil {
 		block = preparedMessages.PreprepareMessage.Block()
 	}
 
-	contentBuilder := f.CreateViewChangeMessageContentBuilder(blockHeight, view, preparedMessages)
+	contentBuilder, err := f.CreateViewChangeMessageContentBuilder(blockHeight, view, preparedMessages)
+	if err != nil {
+		return nil, err
+	}
 
-	return interfaces.NewViewChangeMessage(contentBuilder.Build(), block)
+	return interfaces.NewViewChangeMessage(contentBuilder.Build(), block), err
 }
 
 func (f *MessageFactory) CreateNewViewMessageContentBuilder(
 	blockHeight primitives.BlockHeight,
 	view primitives.View,
 	ppContentBuilder *protocol.PreprepareContentBuilder,
-	confirmations []*protocol.ViewChangeMessageContentBuilder) *protocol.NewViewMessageContentBuilder {
+	confirmations []*protocol.ViewChangeMessageContentBuilder) (*protocol.NewViewMessageContentBuilder, error) {
 
 	signedHeader := &protocol.NewViewHeaderBuilder{
 		MessageType:             protocol.LEAN_HELIX_NEW_VIEW,
@@ -222,16 +245,20 @@ func (f *MessageFactory) CreateNewViewMessageContentBuilder(
 		ViewChangeConfirmations: confirmations,
 	}
 
+	sig, err := f.keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw())
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create new view")
+	}
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw())),
+		Signature: primitives.Signature(sig),
 	}
 
 	return &protocol.NewViewMessageContentBuilder{
 		SignedHeader: signedHeader,
 		Sender:       sender,
 		Message:      ppContentBuilder,
-	}
+	}, nil
 }
 
 func (f *MessageFactory) CreateNewViewMessage(
@@ -239,10 +266,13 @@ func (f *MessageFactory) CreateNewViewMessage(
 	view primitives.View,
 	ppContentBuilder *protocol.PreprepareContentBuilder,
 	confirmations []*protocol.ViewChangeMessageContentBuilder,
-	block interfaces.Block) *interfaces.NewViewMessage {
+	block interfaces.Block) (*interfaces.NewViewMessage, error) {
 
-	contentBuilder := f.CreateNewViewMessageContentBuilder(blockHeight, view, ppContentBuilder, confirmations)
-	return interfaces.NewNewViewMessage(contentBuilder.Build(), block)
+	contentBuilder, err := f.CreateNewViewMessageContentBuilder(blockHeight, view, ppContentBuilder, confirmations)
+	if err != nil {
+		return nil, err
+	}
+	return interfaces.NewNewViewMessage(contentBuilder.Build(), block), nil
 }
 
 func NewMessageFactory(instanceId primitives.InstanceId, keyManager interfaces.KeyManager, memberId primitives.MemberId, randomSeed uint64) *MessageFactory {

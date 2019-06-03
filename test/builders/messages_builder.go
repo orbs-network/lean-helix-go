@@ -18,7 +18,8 @@ func APreprepareMessage(
 	block interfaces.Block) *interfaces.PreprepareMessage {
 
 	messageFactory := messagesfactory.NewMessageFactory(instanceId, keyManager, senderMemberId, 0)
-	return messageFactory.CreatePreprepareMessage(blockHeight, view, block, mocks.CalculateBlockHash(block))
+	result, _ := messageFactory.CreatePreprepareMessage(blockHeight, view, block, mocks.CalculateBlockHash(block))
+	return result
 }
 
 func APrepareMessage(
@@ -30,7 +31,8 @@ func APrepareMessage(
 	block interfaces.Block) *interfaces.PrepareMessage {
 
 	messageFactory := messagesfactory.NewMessageFactory(instanceId, keyManager, senderMemberId, 0)
-	return messageFactory.CreatePrepareMessage(blockHeight, view, mocks.CalculateBlockHash(block))
+	result, _ := messageFactory.CreatePrepareMessage(blockHeight, view, mocks.CalculateBlockHash(block))
+	return result
 }
 
 func ACommitMessage(
@@ -43,7 +45,8 @@ func ACommitMessage(
 	randomSeed uint64) *interfaces.CommitMessage {
 
 	messageFactory := messagesfactory.NewMessageFactory(instanceId, keyManager, senderMemberId, randomSeed)
-	return messageFactory.CreateCommitMessage(blockHeight, view, mocks.CalculateBlockHash(block))
+	result, _ := messageFactory.CreateCommitMessage(blockHeight, view, mocks.CalculateBlockHash(block))
+	return result
 }
 
 func AViewChangeMessage(
@@ -55,7 +58,8 @@ func AViewChangeMessage(
 	preparedMessages *preparedmessages.PreparedMessages) *interfaces.ViewChangeMessage {
 
 	messageFactory := messagesfactory.NewMessageFactory(instanceId, keyManager, senderMemberId, 0)
-	return messageFactory.CreateViewChangeMessage(blockHeight, view, preparedMessages)
+	result, _ := messageFactory.CreateViewChangeMessage(blockHeight, view, preparedMessages)
+	return result
 }
 
 func ANewViewMessage(
@@ -69,5 +73,6 @@ func ANewViewMessage(
 	block interfaces.Block) *interfaces.NewViewMessage {
 
 	messageFactory := messagesfactory.NewMessageFactory(instanceId, keyManager, senderMemberId, 0)
-	return messageFactory.CreateNewViewMessage(blockHeight, view, ppContentBuilder, confirmations, block)
+	result, _ := messageFactory.CreateNewViewMessage(blockHeight, view, ppContentBuilder, confirmations, block)
+	return result
 }

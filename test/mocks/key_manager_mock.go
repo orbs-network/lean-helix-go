@@ -29,9 +29,9 @@ func NewMockKeyManager(memberId primitives.MemberId, rejectedMemberIds ...primit
 	}
 }
 
-func (km *MockKeyManager) SignConsensusMessage(blockHeight primitives.BlockHeight, content []byte) primitives.Signature {
+func (km *MockKeyManager) SignConsensusMessage(blockHeight primitives.BlockHeight, content []byte) (primitives.Signature, error) {
 	str := fmt.Sprintf("SIG|%s|%s|%x", blockHeight, km.myMemberId.KeyForMap(), content)
-	return []byte(str)
+	return []byte(str), nil
 }
 
 func (km *MockKeyManager) VerifyConsensusMessage(blockHeight primitives.BlockHeight, content []byte, sender *protocol.SenderSignature) error {
