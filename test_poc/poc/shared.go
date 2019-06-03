@@ -3,6 +3,8 @@ package poc
 import (
 	"context"
 	"fmt"
+	"runtime"
+	"sync"
 	"time"
 )
 
@@ -30,16 +32,22 @@ type durations struct {
 	validateBlock       time.Duration
 }
 
+// Using WaitGroups
+// See https://nathanleclaire.com/blog/2014/02/15/how-to-wait-for-all-goroutines-to-finish-executing-before-continuing/
 func Run(d *durations) {
 	timeToCancel := d.cancelTestAfter
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.WithValue(context.Background(), "ID", "ROOT"))
 	Log("Run() start timeToCancel=%s starting *ORBS* goroutine", timeToCancel)
-	go runOrbs(ctx, d)
+	var wg sync.WaitGroup
+	go runOrbs(ctx, &wg, d)
 	time.Sleep(timeToCancel)
 	Log("Run() CANCELLING TEST ON TIMEOUT")
 	cancel()
 	time.Sleep(d.waitAfterCancelTest)
-	Log("Run() end")
+	numGoroutineAfter := runtime.NumGoroutine()
+	Log("Goroutines=%d WAIT FOR WG", numGoroutineAfter)
+	wg.Wait()
+	Log("********** Run() end. Goroutines=%d", numGoroutineAfter)
 }
 
 func NewBlock(h int) *Block {

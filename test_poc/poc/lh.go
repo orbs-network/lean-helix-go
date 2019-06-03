@@ -2,6 +2,8 @@ package poc
 
 import (
 	"context"
+	"fmt"
+	"sync"
 )
 
 type LH struct {
@@ -35,13 +37,21 @@ func NewLeanHelix(d *durations) *LH {
 	}
 }
 
-func (lh *LH) StartLeanHelix(ctx context.Context) {
+func (lh *LH) StartLeanHelix(ctx context.Context, wg *sync.WaitGroup) {
 	Log("lh.MainLoop StartLeanHelix starting *MAINLOOP* goroutine")
-	go lh.MainLoop(ctx)
+
+	id := ctx.Value("ID")
+	newID := fmt.Sprintf("%s|MainLoop", id)
+	// TODO Do something with cancel func?
+	mainLoopCtx, _ := context.WithCancel(context.WithValue(ctx, "ID", newID))
+	go lh.MainLoop(mainLoopCtx, wg)
 }
 
-func (lh *LH) MainLoop(ctx context.Context) {
-	Log("lh.MainLoop start")
+func (lh *LH) MainLoop(ctx context.Context, wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
+
+	Log("lh.MainLoop start ctx.ID=%s", ctx.Value("ID"))
 	for {
 		Log("lh.MainLoop IDLE")
 		select {
@@ -53,10 +63,10 @@ func (lh *LH) MainLoop(ctx context.Context) {
 			lh.filter(message)
 
 		case block := <-lh.updateStateChannel:
-			lh.resetTerm(ctx, block)
+			lh.resetTerm(ctx, wg, block)
 
 		case block := <-lh.committedChannel:
-			lh.resetTerm(ctx, block)
+			lh.resetTerm(ctx, wg, block)
 
 		}
 	}
@@ -66,7 +76,7 @@ func (lh *LH) shutdown() {
 	Log("lh.shutdown")
 
 	// TODO: CAREFUL: DO NOT CALL cancel(), it is already dead by the time it is called. Let term_ctx be cancelled automatically
-	// lh.term.cancel()
+	lh.term.cancel()
 }
 
 func (lh *LH) filter(message *Message) {
@@ -74,10 +84,10 @@ func (lh *LH) filter(message *Message) {
 	lh.term.messagesChannel <- message
 }
 
-func (lh *LH) resetTerm(ctx context.Context, block *Block) {
+func (lh *LH) resetTerm(ctx context.Context, wg *sync.WaitGroup, block *Block) {
 	Log("lh.resetTerm()")
 	lh.cancelTerm()
-	lh.startNewTerm(ctx, block)
+	lh.startNewTerm(ctx, wg, block)
 }
 
 func (lh *LH) cancelTerm() {
@@ -87,13 +97,12 @@ func (lh *LH) cancelTerm() {
 	}
 }
 
-func (lh *LH) startNewTerm(parentCtx context.Context, block *Block) {
+func (lh *LH) startNewTerm(parentCtx context.Context, wg *sync.WaitGroup, block *Block) {
 	Log("lh.startNewTerm() start - block with H=%d", block.h)
 	termMessagesChannel := make(chan *Message, 0)
 	term := NewTerm(0, lh, block.h, termMessagesChannel, lh.committedChannel, lh.d.createBlock, lh.d.validateBlock)
-	ctx, cancel := context.WithCancel(parentCtx)
-	term.cancel = cancel
+
 	lh.term = term
-	term.startTerm(ctx)
+	term.startTerm(parentCtx, wg)
 	Log("lh.startNewTerm() end")
 }

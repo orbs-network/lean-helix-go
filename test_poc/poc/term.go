@@ -2,7 +2,9 @@ package poc
 
 import (
 	"context"
+	"fmt"
 	"math"
+	"sync"
 	"time"
 )
 
@@ -36,9 +38,14 @@ func NewTerm(id int, sender SPISender, height int, ch chan *Message, commitCh ch
 	newTerm := &Term{
 		id:                    id,
 		sender:                sender,
+		cancel:                nil,
+		messagesChannel:       ch,
 		height:                height,
 		view:                  0,
-		messagesChannel:       ch,
+		electionChannel:       make(chan interface{}),
+		electionTimer:         nil,
+		createBlockChannel:    make(chan *Block),
+		validateBlockChannel:  make(chan bool),
 		committedChannel:      commitCh,
 		createBlockDuration:   timeToCreateBlock,
 		validateBlockDuration: timeToValidateBlock,
@@ -51,8 +58,11 @@ func (term *Term) isLeader() bool {
 }
 
 // This assumes this is always leader
-func (term *Term) TermLoop(ctx context.Context) {
-	Log("H=%d term.TermLoop start", term.height)
+func (term *Term) TermLoop(ctx context.Context, wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
+
+	Log("H=%d term.TermLoop start. Ctx.ID=%s", term.height, ctx.Value("ID"))
 	term.setView(0)
 
 	// Sync version
@@ -60,13 +70,18 @@ func (term *Term) TermLoop(ctx context.Context) {
 	//term.sendMessage(NewPPM(block))
 
 	// Async version
-	go term.CreateBlock(ctx, term.createBlockChannel)
+	id := ctx.Value("ID")
+	newID := fmt.Sprintf("%s|CreateBlock", id)
+	// TODO Do something with cancel func?
+	createBlockCtx, cancelCreateBlock := context.WithCancel(context.WithValue(ctx, "ID", newID))
+	go CreateBlock(createBlockCtx, wg, term.createBlockChannel, term.height, term.createBlockDuration)
 
 	for {
 		Log("H=%d term.TermLoop IDLE", term.height)
 		select {
 		case <-ctx.Done():
 			Log("H=%d term.TermLoop ctx.Done BYE", term.height)
+			cancelCreateBlock()
 			return
 
 		case message := <-term.messagesChannel:
@@ -123,10 +138,16 @@ func (term *Term) setView(view int) {
 	Log("H=%d term.setView(V=%d) new electionTimer timeout=%s", term.height, view, timeout)
 }
 
-func (term *Term) startTerm(ctx context.Context) {
+func (term *Term) startTerm(parentCtx context.Context, wg *sync.WaitGroup) {
 
 	Log("H=%d term.startTerm() starting *TERMLOOP* goroutine", term.height)
-	go term.TermLoop(ctx)
+	id := parentCtx.Value("ID")
+	newID := fmt.Sprintf("%s|TermLoop_H=%d", id, term.height)
+	// TODO Do something with cancel func?
+	mainLoopCtx, cancel := context.WithCancel(context.WithValue(parentCtx, "ID", newID))
+	term.cancel = cancel
+
+	go term.TermLoop(mainLoopCtx, wg)
 }
 
 func (term *Term) onEndedCreateBlock(block *Block) {
@@ -134,17 +155,7 @@ func (term *Term) onEndedCreateBlock(block *Block) {
 }
 
 func (term *Term) onEndedValidateBlock(b bool) {
-	Log("H=%d term.onEndedCreateBlock", term.height)
-}
-
-// Let's assume this can't be interrupted during execution
-// (in reality it can, but this assumes worst case behavior of external service)
-func (term *Term) CreateBlock(ctx context.Context, responseChannel chan *Block) {
-	Log("H=%d CREATE_BLOCK term.CreateBlock() duration=%s start", term.height, term.createBlockDuration)
-	time.Sleep(term.createBlockDuration)
-	Log("H=%d CREATE_BLOCK term.CreateBlock() duration=%s end, pushing to response channel", term.height, term.createBlockDuration)
-	responseChannel <- NewBlock(term.height)
-	Log("H=%d CREATE_BLOCK term.CreateBlock() duration=%s end, pushed to response channel", term.height, term.createBlockDuration)
+	Log("H=%d term.onEndedValidateBlock", term.height)
 }
 
 func (term *Term) sendMessage(m *Message) {
