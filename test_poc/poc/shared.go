@@ -66,3 +66,10 @@ func NewPPM(block *Block) *Message {
 		block:   block,
 	}
 }
+
+func NewCM(block *Block) *Message {
+	return &Message{
+		msgType: COMMIT,
+		block:   block,
+	}
+}

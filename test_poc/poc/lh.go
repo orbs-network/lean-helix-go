@@ -53,7 +53,7 @@ func (lh *LH) MainLoop(ctx context.Context, wg *sync.WaitGroup) {
 
 	Log("lh.MainLoop start ctx.ID=%s", ctx.Value("ID"))
 	for {
-		Log("lh.MainLoop IDLE")
+		//Log("lh.MainLoop IDLE")
 		select {
 		case <-ctx.Done():
 			lh.shutdown()
@@ -63,10 +63,10 @@ func (lh *LH) MainLoop(ctx context.Context, wg *sync.WaitGroup) {
 			lh.filter(message)
 
 		case block := <-lh.updateStateChannel:
-			lh.resetTerm(ctx, wg, block)
+			lh.resetTerm(ctx, wg, block, false)
 
 		case block := <-lh.committedChannel:
-			lh.resetTerm(ctx, wg, block)
+			lh.resetTerm(ctx, wg, block, true)
 
 		}
 	}
@@ -84,10 +84,10 @@ func (lh *LH) filter(message *Message) {
 	lh.term.messagesChannel <- message
 }
 
-func (lh *LH) resetTerm(ctx context.Context, wg *sync.WaitGroup, block *Block) {
+func (lh *LH) resetTerm(ctx context.Context, wg *sync.WaitGroup, block *Block, fromCommit bool) {
 	Log("lh.resetTerm()")
 	lh.cancelTerm()
-	lh.startNewTerm(ctx, wg, block)
+	lh.startNewTerm(ctx, wg, block, fromCommit)
 }
 
 func (lh *LH) cancelTerm() {
@@ -97,12 +97,18 @@ func (lh *LH) cancelTerm() {
 	}
 }
 
-func (lh *LH) startNewTerm(parentCtx context.Context, wg *sync.WaitGroup, block *Block) {
-	Log("lh.startNewTerm() start - block with H=%d", block.h)
+func (lh *LH) startNewTerm(parentCtx context.Context, wg *sync.WaitGroup, block *Block, fromCommit bool) {
+	Log("lh.startNewTerm() start - block with H=%d fromCommit=%t", block.h, fromCommit)
 	termMessagesChannel := make(chan *Message, 0)
 	term := NewTerm(0, lh, block.h, termMessagesChannel, lh.committedChannel, lh.d.createBlock, lh.d.validateBlock)
 
 	lh.term = term
 	term.startTerm(parentCtx, wg)
 	Log("lh.startNewTerm() end")
+}
+
+func (lh *LH) electionNow() {
+	if lh.term != nil {
+		lh.term.ElectionNow()
+	}
 }

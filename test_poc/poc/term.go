@@ -27,6 +27,7 @@ type Term struct {
 	committedChannel      chan *Block
 	createBlockDuration   time.Duration
 	validateBlockDuration time.Duration
+	cancelCreateBlock     context.CancelFunc
 }
 
 type ElectionTrigger struct {
@@ -42,10 +43,10 @@ func NewTerm(id int, sender SPISender, height int, ch chan *Message, commitCh ch
 		messagesChannel:       ch,
 		height:                height,
 		view:                  0,
-		electionChannel:       make(chan interface{}),
+		electionChannel:       nil,
 		electionTimer:         nil,
-		createBlockChannel:    make(chan *Block),
-		validateBlockChannel:  make(chan bool),
+		createBlockChannel:    nil,
+		validateBlockChannel:  nil,
 		committedChannel:      commitCh,
 		createBlockDuration:   timeToCreateBlock,
 		validateBlockDuration: timeToValidateBlock,
@@ -63,25 +64,20 @@ func (term *Term) TermLoop(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	Log("H=%d term.TermLoop start. Ctx.ID=%s", term.height, ctx.Value("ID"))
-	term.setView(0)
+	term.setView(ctx, wg, 0)
 
 	// Sync version
 	//block := term.CreateBlock()
 	//term.sendMessage(NewPPM(block))
 
 	// Async version
-	id := ctx.Value("ID")
-	newID := fmt.Sprintf("%s|CreateBlock", id)
-	// TODO Do something with cancel func?
-	createBlockCtx, cancelCreateBlock := context.WithCancel(context.WithValue(ctx, "ID", newID))
-	go CreateBlock(createBlockCtx, wg, term.createBlockChannel, term.height, term.createBlockDuration)
 
 	for {
-		Log("H=%d term.TermLoop IDLE", term.height)
+		Log("H=%d V=%d term.TermLoop IDLE", term.height, term.view)
 		select {
 		case <-ctx.Done():
-			Log("H=%d term.TermLoop ctx.Done BYE", term.height)
-			cancelCreateBlock()
+			Log("H=%d V=%d term.TermLoop ctx.Done BYE", term.height, term.view)
+			//cancelCreateBlock()
 			return
 
 		case message := <-term.messagesChannel:
@@ -89,7 +85,10 @@ func (term *Term) TermLoop(ctx context.Context, wg *sync.WaitGroup) {
 
 		// TODO: What happens if this pops just after closing the term?
 		case <-term.electionTimer.C:
-			term.onElection()
+			term.onElection(ctx, wg, false)
+
+		case <-term.electionChannel: // for testing
+			term.onElection(ctx, wg, true)
 
 		case block := <-term.createBlockChannel:
 			term.onEndedCreateBlock(block)
@@ -102,7 +101,7 @@ func (term *Term) TermLoop(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (term *Term) onMessage(message *Message) {
-	Log("term.onMessage %s", message)
+	Log(">>> H=%d V=%d term.onMessage %s", term.height, term.view, message)
 
 	switch message.msgType {
 	case COMMIT:
@@ -110,14 +109,14 @@ func (term *Term) onMessage(message *Message) {
 	}
 }
 
-func (term *Term) onElection() {
-	Log("H=%d term.onElection V=%d", term.height, term.view)
-	term.setView(term.view + 1)
+func (term *Term) onElection(ctx context.Context, wg *sync.WaitGroup, manualTrigger bool) {
+	Log("H=%d V=%d term.onElection manualTrigger=%t", term.height, term.view, manualTrigger)
+	term.setView(ctx, wg, term.view+1)
 
 }
 
 func (term *Term) onCommit(blockToCommit *Block) {
-	Log("H=%d term.onCommit", term.height)
+	Log("H=%d V=%d term.onCommit", term.height, term.view)
 	term.committedChannel <- blockToCommit
 }
 
@@ -126,8 +125,11 @@ func calcElectionTimeout(view int) time.Duration {
 	return timeoutMultiplier * time.Millisecond * 100
 }
 
-func (term *Term) setView(view int) {
-	Log("H=%d term.setView(V=%d)", term.height, view)
+func (term *Term) setView(ctx context.Context, wg *sync.WaitGroup, view int) {
+	//Log("H=%d term.setView(V=%d)", term.height, view)
+	if term.cancelCreateBlock != nil {
+		term.cancelCreateBlock()
+	}
 	term.view = view
 	if term.electionTimer != nil {
 		Log("H=%d term.setView(V=%d) electionTimer.stop", term.height, view)
@@ -135,7 +137,24 @@ func (term *Term) setView(view int) {
 	}
 	timeout := calcElectionTimeout(view)
 	term.electionTimer = time.NewTimer(timeout)
+	term.electionChannel = make(chan interface{})
 	Log("H=%d term.setView(V=%d) new electionTimer timeout=%s", term.height, view, timeout)
+
+	term.maybeCreateBlock(ctx, wg)
+}
+
+func (term *Term) maybeCreateBlock(ctx context.Context, wg *sync.WaitGroup) {
+	if !term.isLeader() {
+		return
+	}
+	ctxId := ctx.Value("ID")
+	newCtxID := fmt.Sprintf("%s|V=%d|CreateBlock", ctxId, term.view)
+	// TODO Do something with cancel func?
+	createBlockCtx, cancelCreateBlock := context.WithCancel(context.WithValue(ctx, "ID", newCtxID))
+	term.createBlockChannel = make(chan *Block)
+	term.cancelCreateBlock = cancelCreateBlock
+	go CreateBlock(createBlockCtx, wg, term.createBlockChannel, term.height, term.view, term.createBlockDuration)
+
 }
 
 func (term *Term) startTerm(parentCtx context.Context, wg *sync.WaitGroup) {
@@ -151,13 +170,19 @@ func (term *Term) startTerm(parentCtx context.Context, wg *sync.WaitGroup) {
 }
 
 func (term *Term) onEndedCreateBlock(block *Block) {
-	Log("H=%d term.onEndedCreateBlock %s", term.height, block)
+	Log("H=%d V=%d term.onEndedCreateBlock %s", term.height, block, term.view)
 }
 
 func (term *Term) onEndedValidateBlock(b bool) {
-	Log("H=%d term.onEndedValidateBlock", term.height)
+	Log("H=%d V=%d term.onEndedValidateBlock", term.height, term.view)
 }
 
 func (term *Term) sendMessage(m *Message) {
 	term.sender.sendMessage(m)
+}
+
+func (term *Term) ElectionNow() {
+	Log("++++++ H=%d V=%d term.ElectionNow() closing channel", term.height, term.view)
+	close(term.electionChannel)
+	Log("++++++ H=%d V=%d term.ElectionNow() closed channel", term.height, term.view)
 }
