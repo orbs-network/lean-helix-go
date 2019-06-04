@@ -116,8 +116,9 @@ func (term *Term) onElection(ctx context.Context, wg *sync.WaitGroup, manualTrig
 }
 
 func (term *Term) onCommit(blockToCommit *Block) {
-	Log("H=%d V=%d term.onCommit", term.height, term.view)
+	Log("H=%d V=%d term.onCommit sending", term.height, term.view)
 	term.committedChannel <- blockToCommit
+	Log("H=%d V=%d term.onCommit sent", term.height, term.view)
 }
 
 func calcElectionTimeout(view int) time.Duration {

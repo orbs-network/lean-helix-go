@@ -10,10 +10,10 @@ import (
 func TestMainFlow(t *testing.T) {
 
 	d := &durations{
-		cancelTestAfter:     3000 * time.Millisecond,
-		waitAfterCancelTest: 1500 * time.Millisecond,
-		createBlock:         1000 * time.Millisecond,
-		validateBlock:       1000 * time.Millisecond,
+		cancelTestAfter:     1000 * time.Millisecond,
+		waitAfterCancelTest: 500 * time.Millisecond,
+		createBlock:         500 * time.Millisecond,
+		validateBlock:       500 * time.Millisecond,
 	}
 
 	Run(d)

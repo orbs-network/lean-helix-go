@@ -18,7 +18,8 @@ Currently created once on NewLeanHelix()
 	iii. NewTermLoop() creates and returns it to mainloop
 6. Decide: Who creates the CreateBlock channel?
 	i. Same i,ii,iii points as previous question
-7. Test potential Deadlock with unbuffered channels: mainloop wants to write to termloop.message chan, and termloop wants to write to mainloop.commit_chan
+7. DEADLOCK: (write a test to demonstrate):
+With unbuffered channels, mainloop wants to write to termloop.message chan, and termloop wants to write to mainloop.commit_chan
 
 8. Should the Committed channel also be buffered? (in addition to other channels)
 Same as #7

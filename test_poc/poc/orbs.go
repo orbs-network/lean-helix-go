@@ -14,22 +14,25 @@ func runOrbs(ctx context.Context, wg *sync.WaitGroup, d *durations) {
 	lh := NewLeanHelix(d)
 	lh.StartLeanHelix(ctx, wg)
 
-	time.Sleep(150 * time.Millisecond)
+	//time.Sleep(150 * time.Millisecond)
 	Log("TTTT TEST runOrbs() UpdateState 1")
 	updateFromNodeSync(lh, 1)
+	//
+	//time.Sleep(150 * time.Millisecond)
+	//Log("TTTT TEST runOrbs() UpdateState 2")
+	//updateFromNodeSync(lh, 2)
 
-	time.Sleep(150 * time.Millisecond)
-	Log("TTTT TEST runOrbs() UpdateState 2")
-	updateFromNodeSync(lh, 2)
-
-	time.Sleep(150 * time.Millisecond)
-	Log("TTTT TEST runOrbs() COMMIT 3")
-	go sendMessage(lh, NewCM(NewBlock(3)))
+	//time.Sleep(150 * time.Millisecond)
+	Log("TTTT TEST runOrbs() COMMIT 1")
+	go sendMessage(lh, NewPPM(NewBlock(2))) // Trigger send message
+	time.Sleep(5 * time.Millisecond)
+	go sendMessage(lh, NewCM(NewBlock(2))) // Trigger write on committedChannel
+	time.Sleep(5 * time.Millisecond)
 	Log("TTTT TEST runOrbs() sent commit")
 	time.Sleep(5 * time.Millisecond)
 
-	go electionNow(lh)
-	Log("TTTT TEST runOrbs() sent election")
+	//go electionNow(lh)
+	//Log("TTTT TEST runOrbs() sent election")
 
 }
 
