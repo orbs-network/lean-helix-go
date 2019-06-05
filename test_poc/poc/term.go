@@ -9,7 +9,7 @@ import (
 )
 
 type Term struct {
-	id              int
+	instanceId      int
 	sender          SPISender
 	cancel          context.CancelFunc
 	messagesChannel chan *Message
@@ -34,10 +34,10 @@ type ElectionTrigger struct {
 	notificationChannel chan interface{}
 }
 
-func NewTerm(id int, sender SPISender, height int, ch chan *Message, commitCh chan *Block, timeToCreateBlock time.Duration, timeToValidateBlock time.Duration) *Term {
+func NewTerm(instanceId int, sender SPISender, height int, ch chan *Message, commitCh chan *Block, timeToCreateBlock time.Duration, timeToValidateBlock time.Duration) *Term {
 	Log("NewTerm H=%d", height)
 	newTerm := &Term{
-		id:                    id,
+		instanceId:            instanceId,
 		sender:                sender,
 		cancel:                nil,
 		messagesChannel:       ch,
@@ -77,7 +77,6 @@ func (term *Term) TermLoop(ctx context.Context, wg *sync.WaitGroup) {
 		select {
 		case <-ctx.Done():
 			Log("H=%d V=%d term.TermLoop ctx.Done BYE", term.height, term.view)
-			//cancelCreateBlock()
 			return
 
 		case message := <-term.messagesChannel:
@@ -101,7 +100,7 @@ func (term *Term) TermLoop(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (term *Term) onMessage(message *Message) {
-	Log(">>> H=%d V=%d term.onMessage %s", term.height, term.view, message)
+	Log("H=%d V=%d  >>> MSG: %s", term.height, term.view, message)
 
 	switch message.msgType {
 	case COMMIT:

@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func runOrbs(ctx context.Context, wg *sync.WaitGroup, d *durations) {
+func runOrbs(ctx context.Context, wg *sync.WaitGroup, d *Config) {
 
 	wg.Add(1)
 	defer wg.Done()
@@ -16,19 +16,21 @@ func runOrbs(ctx context.Context, wg *sync.WaitGroup, d *durations) {
 
 	//time.Sleep(150 * time.Millisecond)
 	Log("TTTT TEST runOrbs() UpdateState 1")
-	updateFromNodeSync(lh, 1)
+	doNodeSync(lh, 1)
 	//
 	//time.Sleep(150 * time.Millisecond)
 	//Log("TTTT TEST runOrbs() UpdateState 2")
-	//updateFromNodeSync(lh, 2)
+	//doNodeSync(lh, 2)
 
 	//time.Sleep(150 * time.Millisecond)
-	Log("TTTT TEST runOrbs() COMMIT 1")
+	Log("TTTT TEST runOrbs() Sending PREPREPARE")
 	go sendMessage(lh, NewPPM(NewBlock(2))) // Trigger send message
+	Log("TTTT TEST runOrbs() Sent PREPREPARE")
 	time.Sleep(5 * time.Millisecond)
+	Log("TTTT TEST runOrbs() Sending COMMIT")
 	go sendMessage(lh, NewCM(NewBlock(2))) // Trigger write on committedChannel
 	time.Sleep(5 * time.Millisecond)
-	Log("TTTT TEST runOrbs() sent commit")
+	Log("TTTT TEST runOrbs() Sent COMMIT")
 	time.Sleep(5 * time.Millisecond)
 
 	//go electionNow(lh)
@@ -40,12 +42,12 @@ func electionNow(lh *LH) {
 	lh.electionNow()
 }
 
-func updateFromNodeSync(lh *LH, height int) {
+func doNodeSync(lh *LH, height int) {
 	b := NewBlock(height)
 	timer := time.AfterFunc(1000*time.Millisecond, myPanic)
-	Log("ORBS updateFromNodeSync() H=%d sending to updateChannel", height)
+	Log("ORBS doNodeSync() H=%d sending to updateChannel", height)
 	lh.updateStateChannel <- b
-	Log("ORBS updateFromNodeSync() H=%d sent to updateChannel", height)
+	Log("ORBS doNodeSync() H=%d sent to updateChannel", height)
 	timer.Stop()
 }
 
@@ -69,7 +71,9 @@ func CreateBlock(ctx context.Context, wg *sync.WaitGroup, responseChannel chan *
 }
 
 func sendMessage(lh *LH, m *Message) {
+	Log("ORBS sendMessage sending %s", m)
 	lh.messagesChannel <- m
+	Log("ORBS sendMessage sent %s", m)
 }
 
 func myPanic() {

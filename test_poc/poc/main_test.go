@@ -9,11 +9,12 @@ import (
 
 func TestMainFlow(t *testing.T) {
 
-	d := &durations{
-		cancelTestAfter:     1000 * time.Millisecond,
-		waitAfterCancelTest: 500 * time.Millisecond,
-		createBlock:         500 * time.Millisecond,
-		validateBlock:       500 * time.Millisecond,
+	d := &Config{
+		CancelTestAfter:      2000 * time.Millisecond,
+		WaitAfterCancelTest:  500 * time.Millisecond,
+		CreateBlock:          500 * time.Millisecond,
+		ValidateBlock:        500 * time.Millisecond,
+		MessageChannelBufLen: 10,
 	}
 
 	Run(d)
