@@ -45,7 +45,21 @@ Should `termloop` hold a ref to the SPI?
 
 > Currently using Option 1
 
+
+
 ## Conclusions
+### June 5 2019 (w/Shai)
+* Get rid of channels for long running processes - let `termloop` wait for long-running completion.
+* Write `termloop` component tests (they don't exist today as there is no `termloop` component)
+* Consider a Commit/Termination callback instead of passing a commitChannel from `mainloop` into `termloop` 
+This is because commitChannel is an implementation detail of `mainloop` and is more difficult to test.
+A commit handler can be mocked and can be tested whether it was called or not.
+* Acceptance tests: e.g. send PPM, n * PM, n * CM and expect Commit callback to be called.
+* Confirm with OdedW: (i) there is no problem with 2 x term alive at the same time (of which only one is the active term)
+* Confirm with OdedW: (ii) check for flaws in general, talk about testability.
+
+OdedW
+
 
 
 ## References

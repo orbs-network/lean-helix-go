@@ -1,4 +1,4 @@
-package poc
+package poc_3thr
 
 import (
 	"testing"

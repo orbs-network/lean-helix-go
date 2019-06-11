@@ -1,4 +1,4 @@
-package poc
+package poc_3thr
 
 import (
 	"context"
@@ -77,6 +77,10 @@ func (lh *LH) onMessage(message *Message) {
 	lh.filter(message)
 }
 
+func (lh *LH) onCommitCallback(b *Block) {
+	lh.committedChannel <- b
+}
+
 func (lh *LH) onCommit(ctx context.Context, wg *sync.WaitGroup, block *Block) {
 	lh.resetTerm(ctx, wg, block, true)
 }
@@ -118,7 +122,7 @@ func (lh *LH) cancelTerm() {
 func (lh *LH) startNewTerm(parentCtx context.Context, wg *sync.WaitGroup, block *Block, fromCommit bool) {
 	Log("lh.startNewTerm() start - block with H=%d fromCommit=%t", block.h, fromCommit)
 	termMessagesChannel := make(chan *Message, 0)
-	term := NewTerm(0, lh, block.h, termMessagesChannel, lh.committedChannel, lh.d.CreateBlock, lh.d.ValidateBlock)
+	term := NewTerm(0, lh, block.h, termMessagesChannel, lh.onCommitCallback, lh.d.CreateBlock, lh.d.ValidateBlock)
 
 	lh.term = term
 	term.startTerm(parentCtx, wg)

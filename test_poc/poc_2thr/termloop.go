@@ -1,4 +1,4 @@
-package poc
+package poc_2thr
 
 import (
 	"context"
@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 )
+
+type OnCommitCallback func(*Block)
 
 type Term struct {
 	instanceId      int
@@ -20,11 +22,11 @@ type Term struct {
 	electionTimer *time.Timer
 	// TODO: What to do with it when closing term?
 	// TODO: Who creates this channel?
-	createBlockChannel chan *Block
+	asyncOpChannel chan *Block
 	// TODO: What to do with it when closing term?
 	// TODO: Who creates this channel?
 	validateBlockChannel  chan bool
-	committedChannel      chan *Block
+	onCommitCallback      OnCommitCallback
 	createBlockDuration   time.Duration
 	validateBlockDuration time.Duration
 	cancelCreateBlock     context.CancelFunc
@@ -34,7 +36,7 @@ type ElectionTrigger struct {
 	notificationChannel chan interface{}
 }
 
-func NewTerm(instanceId int, sender SPISender, height int, ch chan *Message, commitCh chan *Block, timeToCreateBlock time.Duration, timeToValidateBlock time.Duration) *Term {
+func NewTerm(instanceId int, sender SPISender, height int, ch chan *Message, onCommitCallback OnCommitCallback, timeToCreateBlock time.Duration, timeToValidateBlock time.Duration) *Term {
 	Log("NewTerm H=%d", height)
 	newTerm := &Term{
 		instanceId:            instanceId,
@@ -45,9 +47,9 @@ func NewTerm(instanceId int, sender SPISender, height int, ch chan *Message, com
 		view:                  0,
 		electionChannel:       nil,
 		electionTimer:         nil,
-		createBlockChannel:    nil,
+		asyncOpChannel:        nil,
 		validateBlockChannel:  nil,
-		committedChannel:      commitCh,
+		onCommitCallback:      onCommitCallback,
 		createBlockDuration:   timeToCreateBlock,
 		validateBlockDuration: timeToValidateBlock,
 	}
@@ -89,7 +91,7 @@ func (term *Term) TermLoop(ctx context.Context, wg *sync.WaitGroup) {
 		case <-term.electionChannel: // for testing
 			term.onElection(ctx, wg, true)
 
-		case block := <-term.createBlockChannel:
+		case block := <-term.asyncOpChannel:
 			term.onEndedCreateBlock(block)
 
 		case validationResult := <-term.validateBlockChannel:
@@ -116,7 +118,7 @@ func (term *Term) onElection(ctx context.Context, wg *sync.WaitGroup, manualTrig
 
 func (term *Term) onCommit(blockToCommit *Block) {
 	Log("H=%d V=%d term.onCommit sending", term.height, term.view)
-	term.committedChannel <- blockToCommit
+	term.onCommitCallback(blockToCommit)
 	Log("H=%d V=%d term.onCommit sent", term.height, term.view)
 }
 
@@ -151,9 +153,9 @@ func (term *Term) maybeCreateBlock(ctx context.Context, wg *sync.WaitGroup) {
 	newCtxID := fmt.Sprintf("%s|V=%d|CreateBlock", ctxId, term.view)
 	// TODO Do something with cancel func?
 	createBlockCtx, cancelCreateBlock := context.WithCancel(context.WithValue(ctx, "ID", newCtxID))
-	term.createBlockChannel = make(chan *Block)
+	term.asyncOpChannel = make(chan *Block)
 	term.cancelCreateBlock = cancelCreateBlock
-	go CreateBlock(createBlockCtx, wg, term.createBlockChannel, term.height, term.view, term.createBlockDuration)
+	go CreateBlock(createBlockCtx, wg, term.asyncOpChannel, term.height, term.view, term.createBlockDuration)
 
 }
 

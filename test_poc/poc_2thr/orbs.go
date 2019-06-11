@@ -1,4 +1,4 @@
-package poc
+package poc_2thr
 
 import (
 	"context"
