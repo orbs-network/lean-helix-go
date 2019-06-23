@@ -8,6 +8,7 @@ package mocks
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
@@ -35,7 +36,7 @@ func NewMockKeyManager(memberId primitives.MemberId, rejectedMemberIds ...primit
 	}
 }
 
-func (km *MockKeyManager) SignConsensusMessage(blockHeight primitives.BlockHeight, content []byte) primitives.Signature {
+func (km *MockKeyManager) SignConsensusMessage(ctx context.Context, blockHeight primitives.BlockHeight, content []byte) primitives.Signature {
 	str := fmt.Sprintf("SIG|%s|%s|%x", blockHeight, km.myMemberId.KeyForMap(), content)
 	return []byte(str)
 }

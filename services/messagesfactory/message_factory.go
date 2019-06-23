@@ -7,6 +7,7 @@
 package messagesfactory
 
 import (
+	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/preparedmessages"
 	"github.com/orbs-network/lean-helix-go/services/randomseed"
@@ -38,7 +39,7 @@ func (f *MessageFactory) CreatePreprepareMessageContentBuilder(
 	dataToSign := signedHeader.Build().Raw()
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(blockHeight, dataToSign)),
+		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(context.Background(), blockHeight, dataToSign)),
 	}
 
 	return &protocol.PreprepareContentBuilder{
@@ -77,7 +78,7 @@ func (f *MessageFactory) CreatePrepareMessage(
 
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw())),
+		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(context.Background(), blockHeight, signedHeader.Build().Raw())),
 	}
 
 	contentBuilder := protocol.PrepareContentBuilder{
@@ -103,7 +104,7 @@ func (f *MessageFactory) CreateCommitMessage(
 
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw())),
+		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(context.Background(), blockHeight, signedHeader.Build().Raw())),
 	}
 
 	randomSeedBytes := randomseed.RandomSeedToBytes(f.randomSeed)
@@ -190,7 +191,7 @@ func (f *MessageFactory) CreateViewChangeMessageContentBuilder(
 
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw())),
+		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(context.Background(), blockHeight, signedHeader.Build().Raw())),
 	}
 
 	return &protocol.ViewChangeMessageContentBuilder{
@@ -230,7 +231,7 @@ func (f *MessageFactory) CreateNewViewMessageContentBuilder(
 
 	sender := &protocol.SenderSignatureBuilder{
 		MemberId:  f.memberId,
-		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw())),
+		Signature: primitives.Signature(f.keyManager.SignConsensusMessage(context.Background(), blockHeight, signedHeader.Build().Raw())),
 	}
 
 	return &protocol.NewViewMessageContentBuilder{
