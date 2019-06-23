@@ -1,26 +1,82 @@
 # New threading model POC
 
 ## Problems
-1. NodeSync goroutine in Orbs is blocked on writing to Lean Helix updateState channel until the channel is read from.
-This can take a long time if the LH goroutine is busy with a long op such as CreateBlock/ValidateBlock.
-This violates liveness requirement of LH and can lead to 
+### General
+Lean Helix (LH) calls external SPIs for some of its required functionality.
+Some of those are long operations (`RequestNewBlockProposal`, `ValidateBlockProposal`, `Sign`)
+and none of them are under the control of Lean Helix, meaning others can still become long operations.
+This leads to the following phenomena:
 
-2. Election is not triggered while the LH goroutine is busy with a long op such as CreateBlock/ValidateBlock.
+### NodeSync goroutine blocked
+During tests we identified that `RequestNewBlockProposal` which can take up to 9 seconds in the 
+current configuration, causes the Orbs BlockSync goroutine to block for that amount of time, 
+because the BlockSync goroutine writes to LH's UpdateState channel which cannot be read while LH is
+blocking on waiting for  `RequestNewBlockProposal`. 
+Similar issue can occur waiting for `ValidateBlockProposal`. 
+This also opens LH to a liveness attack by having a byzantine 
+leader create a block with infinite-loop transaction. Every node that will try to validate the block
+will be blocked indefinitely and will not be unblocked without restart 
+(because no node sync, no election, no commit). 
 
-3. 
+### Gossip
+....
+
+##
+IDEA: Keep mainloop with AsyncOpChannel, no TermLoop
+
+### Election not triggered
+While a long operation is running, LH is kept out of the main loop 
+so Election timeout is not handled on time.
+
+## Potential solutions
+
+### Make updateState channel buffered
+* BlockSync goroutine will not be blocked, but LH mainloop can still be blocked 
+by running `RequestNewBlockProposal` (for example).
  
 
-## 2-goroutine with Worker threads
-PREFERRED due to simpler engineering.
-Work out the worker thread thing.
+### Make LH a state machine similar to BlockSync
+~~TBD Think if this is relevant to the problems above.~~  
 
-## 3-goroutine: mainloop, termloop, viewloop
-* Functionally similar to 2-thr with Worker solution.
-* Much more difficult to develop, needs to tear out View functionality from Term, and there are naming problems.
-* Cleaner than "Worker for long running ops" solution, it keeps the View synchronous, letting the View simply shutdown if election timeout triggered.
-* Election timeout is the context cancellation signal for the View.
+### Add TermLoop goroutine and for long-running ops
+MainLoop, TermLoop and some Worker goroutine with AsyncOpChannel to signal end of operation.
+* [-] A single AsyncOp channel with some general return values (such as `interface{}`) 
+would reduce type safety.
+* [-] Multiple AsyncOp channels, one per long op, would open the door to 
+a bad practice of mindlessly adding a channel per op. `Normalization of deviance`
+* [+] Simpler dev effort as most of the code is under a `Term` struct already. 
 
-## Questions
+### Add goroutines for TermLoop and ViewLoop
+* [-] More difficult to develop than previous solution, as need to refactor
+a new `View` struct out of existing `Term` struct.
+needs to tear out View functionality from Term, and there are naming problems.
+* [+] Cleaner than creating the AsyncOpChannel for long running ops. 
+It keeps the View synchronous, letting the View simply shutdown if election timeout triggered.
+* [+] Easier to test in isolation, Term and View are more coherent semantically 
+(i.e. Term and View are different entities, so they get different structs and different goroutines)
+* [+] Election timeout is the context cancellation signal for the View -- cleaner design
+
+### Goroutine from mainloop for election and nodesync
+* Move channels of NodeSync and Election to a separate goroutine.
+* Create separate context for each Term so that long running ops will be cancellable per term.
+
+* [+] 
+
+This will solve the NodeSync
+ 
+
+
+## Design Questions
+1. Do we intend to change how `Shyness` works?
+`Shyness` is the informal name we gave to the feature where a Node that receives 
+a block by NodeSync and then starts a new term and also becomes leader 
+of first view (V=0), will refuse to be leader and let the next Node in line 
+become leader of V=1. This prevents Node that receives 
+multiple blocks by NodeSync to become leader every n blocks (where `n` is number of
+committee members) and pollute the network with `RequestNewBlockProposal` and 
+subsequent PREPREPARE messages.
+
+## Engineering Questions
 
 1. What happens when trying to read from a garbage collected channel
 > Not garbage collected till we release all references.
@@ -56,31 +112,25 @@ With unbuffered channels, mainloop wants to write to termloop.message chan, and 
 Should `termloop` hold a ref to the SPI?
 > Selected solution: lh is holding the SPI ref and passes it to each term.
 
-## Possible Models
-
-1. Termloop goroutine with separate goroutine for long-running like CreateBlock
-2. Termloop goroutine without separate goroutine for long-running like CreateBlock 
-    (send them ctx.cancel() on election / setView)
-3. Termloop goroutine and viewloop goroutine. The viewloop calls CreateBlock synchronously.
-
-> Currently using Option 1
-
 
 
 ## Conclusions
 ### June 5 2019 (w/Shai)
 * Get rid of channels for long running processes - let `termloop` wait for long-running completion.
+> This is problematic because election will be blocked.
 * Write `termloop` component tests (they don't exist today as there is no `termloop` component)
+> Good idea, and if ViewLoop goroutine is created, write components tests for it too.
 * Consider a Commit/Termination callback instead of passing a commitChannel from `mainloop` into `termloop` 
 This is because commitChannel is an implementation detail of `mainloop` and is more difficult to test.
 A commit handler can be mocked and can be tested whether it was called or not.
-* Acceptance tests: e.g. send PPM, n * PM, n * CM and expect Commit callback to be called.
-* Confirm with OdedW: (i) there is no problem with 2 x term alive at the same time (of which only one is the active term)
-* Confirm with OdedW: (ii) check for flaws in general, talk about testability.
+This will wrap a channel, it does not replace a channel.
+* Write Acceptance tests: e.g. send PREPREPARE, n * PREPARE, n * COMMIT 
+and expect Commit callback to be called.
+* Confirm there is no problem with 2 x term alive at the same time (of which only one is the active term)
+> No problem, as only one is active, and any other is stale and will be shutdown by context, 
+and even it manages to reach consensus on a block, it will be ignored.
 
-OdedW
 
-
-## References
+## Golang References
 * https://go101.org/article/channel-closing.html
 * https://blog.golang.org/advanced-go-concurrency-patterns
