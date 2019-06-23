@@ -1,3 +1,9 @@
+// Copyright 2019 the lean-helix-go authors
+// This file is part of the lean-helix-go library in the Orbs project.
+//
+// This source code is licensed under the MIT license found in the LICENSE file in the root directory of this source tree.
+// The above notice should be included in all copies or substantial portions of the software.
+
 package byzantineattacks
 
 import (
@@ -19,7 +25,7 @@ func TestThatWeReachConsensusEventIfWeDelayAllTheGossipMessages(t *testing.T) {
 			WithTimeBasedElectionTrigger(time.Duration(200) * time.Millisecond).
 			GossipMessagesMaxDelay(time.Duration(100) * time.Millisecond).
 			WithNodeCount(4).
-			LogToConsole().
+			//LogToConsole().
 			Build()
 
 		net.Nodes[0].WriteToStateChannel = false
@@ -29,7 +35,7 @@ func TestThatWeReachConsensusEventIfWeDelayAllTheGossipMessages(t *testing.T) {
 
 		net.StartConsensus(ctx)
 
-		time.Sleep(time.Duration(5) * time.Second)
+		time.Sleep(time.Duration(1) * time.Second)
 		// todo add a watch to the nods blockchain, and wait for 100 blocks
 	})
 }

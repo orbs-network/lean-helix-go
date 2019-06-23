@@ -1,13 +1,13 @@
 # LeanHelixOneHeight
 > This document describes the inner module of LeanHelix plug-in, for one height block consensus.
-> Devided into three parts: Happy Flow, Leader Change, Example Flows.
+> Divided into three parts: Happy Flow, Leader Change, Example Flows.
 
 
 ## Design notes
 * This module strictly exists _(instantiated and disposed)_ only during a single block_height consensus process - i.e. does not persist to next block_height consensus round.
 * The consensus process is based on signed messages, where the signature is verified and assumed to be unforgible _(Counting a Quorum certificate of QuorumSize is based on unique signatures - indicating QuorumSize creators\\signers amongst the known member list)_.
 * Assume all incoming messages hold the same block_height as defined in OneHeight state _(Guaranteed by multi-height filter)_.
-* PREPARE and COMMIT messages are broadcasted to all member nodes.
+* PREPARE and COMMIT messages are broadcast to all member nodes.
 * COMMIT messages of earlier\future views are accepted and processed against message Log.
     * A block can be committed (Commit_locally) even if not in Prepared state (The block was received in PRE_PREPARE or NV_PRE_PREPARE)
 * The state conditions are checked against MessageLog.
@@ -66,8 +66,8 @@
 * State variables:
   * My_ID - read only! _(E.g., Node public key)_
   * Block_height - read only! _(Term, current round of consensus indicating a single slot in blockchain)_
-  * Prev_block_hash - read only! _(ref to previous block at Block_height-1, relayed to stateless BlockUtils in RequestNewBlock)_
-  * View _(Derive leader based on members[view mod memebers.length])_
+  * Prev_block - read only! _(previous block at Block_height-1, relayed to stateless BlockUtils in RequestNewBlock)_
+  * View _(Derive leader based on members[view mod members.length])_
   * PreparedLocally _(Indicating a preparedProof construction is possible at set view. Triggered at most once per view)_
   * NewViewLocally _(Indicating a new leader has been elected and accepted. Triggered at most once per view)_
   * CommittedLocally _(Indicating node obtained members agreement on a Block for current block_height - safe to write to ledger. Triggered once)_
@@ -79,13 +79,13 @@
 
 
 &nbsp;
-## `NewConsensusRound(block_height, prev_block_hash, id, ordered_members, Config)`
+## `NewConsensusRound(block_height, prev_block, id, ordered_members, Config)`
 > Performed upon a new consensus round
 
 #### `Init my_state`
 * my_state.My_ID = id
 * my_state.Block_height = block_height
-* my_state.Prev_block_hash = prev_block_hash
+* my_state.Prev_block = prev_block
 * my_state.Members = ordered_members
 * my_state.View = -1
 * my_state.PreparedLocally = -1
@@ -116,7 +116,7 @@
 &nbsp;
 ## `InitView(View)`
 > Trigger once per view.
-* If my_state.View >= View Return. _(i.e. view was already intialized in at least as updated state)_
+* If my_state.View >= View Return. _(i.e. view was already initialized in at least as updated state)_
 * my_state.View = View
 * Config.ElectionTrigger <- Reset(View)  _(set a new ElectionTrigger - leader change, based on view - Call `OnElectionTriggered(View)`)_
 
@@ -137,7 +137,7 @@
 
 &nbsp;
 ## `GetLeaderID(View)`
-> Deduce leader based on view and memebers
+> Deduce leader based on view and members
 * LeaderIndex = View Modulo my_state.Members.Length
 * LeaderID = my_state.Memebers[LeaderIndex]
 * Return LeaderID
@@ -287,7 +287,7 @@
 
 &nbsp;
 ## `ValidateCommit(Message)`
-> Validate a COMMIT message. Make sure state match. Assume block_height wsas filtered.\
+> Validate a COMMIT message. Make sure state match. Assume block_height was filtered.\
 > Report failed validation.\
 > Note: node receives COMMIT message even if View does not match _(i.e., future and old)_
 * If Disposed Return False
@@ -458,7 +458,7 @@
 * If signer is not valid node member _(`IsMember(Message.Signer)`) Return False.
 * If signature mismatch Return False.
 * If VIEW_CHANGE message already in MessagesLog matching Message(View, Signer, Message_type, Block_hash) Return False.
-* Block_hash = None _(Block_hash sould be None if PreparedProof is None)_
+* Block_hash = None _(Block_hash should be None if PreparedProof is None)_
 * If Message has PreparedProof:
     * If Mode == MSG _(Leader received VIEW_CHANGE)_
         * Block_hash = Get Block_hash by calling `Config.BlockUtils.CalcBlockHash(Message.Block)`
@@ -559,7 +559,7 @@
 #### Validate and Log message
 * If `ValidateNewView(Message)` Continue
 * my_state.NewViewLocally = Message.View;
-* Call `InitView(Message.View)` _(Resets Election trigger - trigger once is checked inside InitView. i.e., if timedout, the ElecetionTrigger was already Reset)_
+* Call `InitView(Message.View)` _(Resets Election trigger - trigger once is checked inside InitView. i.e., if timed out, the ElectionTrigger was already Reset)_
 #### Continue Process NewViewPrePrepare
 * Call `ProcessPrePrepare(Message.PrePrepare)`
 
@@ -567,7 +567,7 @@
 
 &nbsp;
 ## `ValidateNewView(Message)`
-> Validates NewView message and its embeded messages - PrePrepare and ViewChange. \
+> Validates NewView message and its embedded messages - PrePrepare and ViewChange. \
 > Check ElectedProof is Valid - QuorumSize VIEW_CHANGE messages. \
 > Check Block proposed matches ElectedProof higest View.
 * If Disposed Return False
@@ -606,7 +606,7 @@
 * If ViewChangeMessage is not None _(Found PreparedProof in votes: Leader should propose matching Block)_
     * If ViewChangeMessage.PreparedProof.PrePrepare.Block_hash does not match Block_hash
         * Return False. _(Leader proposed a Block which does not match ElectedProof)_
-* Else _(The leader proposed aits "own" Block - no preparedProof in ElectedProof - i.e., no locked node. Need to validate content.)_:
+* Else _(The leader proposed its "own" Block - no preparedProof in ElectedProof - i.e., no locked node. Need to validate content.)_:
    * If Block is not Valid by calling `Config.BlockUtils.ValidateBlock(Block)` Return False.
 * Passed validation Return True.
 
@@ -622,14 +622,8 @@
 * ViewChangeMessage = ElectedProof.first()   _(highest View, without Block)_
 * Return ViewChangeMessage _(None if no PreparedProof)_
 
-
-
-
-
-
-
 ## Example Flows
-> The last part further elaborates on possible logical flows to accomodate for test driven dev.
+> The last part further elaborates on possible logical flows to accommodate for test driven dev.
 
 
 

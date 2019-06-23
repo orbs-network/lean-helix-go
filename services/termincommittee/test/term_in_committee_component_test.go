@@ -1,8 +1,13 @@
+// Copyright 2019 the lean-helix-go authors
+// This file is part of the lean-helix-go library in the Orbs project.
+//
+// This source code is licensed under the MIT license found in the LICENSE file in the root directory of this source tree.
+// The above notice should be included in all copies or substantial portions of the software.
+
 package test
 
 import (
 	"context"
-	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/preparedmessages"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
@@ -18,9 +23,9 @@ func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
 
-		h.checkView(0)
+		h.assertView(0)
 		h.triggerElection(ctx)
-		h.checkView(1)
+		h.assertView(1)
 	})
 }
 
@@ -32,15 +37,15 @@ func TestNewViewNotAcceptedIfDidNotPassValidation(t *testing.T) {
 
 			block := mocks.ABlock(interfaces.GenesisBlock)
 
-			h.checkView(startView)
+			h.assertView(startView)
 			if failValidations {
 				h.failValidations()
 			}
-			h.receiveNewView(ctx, 2, 1, view, block)
+			h.receiveAndHandleNewView(ctx, 2, 1, view, block)
 			if shouldAcceptMessage {
-				h.checkView(view)
+				h.assertView(view)
 			} else {
-				h.checkView(startView)
+				h.assertView(startView)
 			}
 		}
 
@@ -60,12 +65,12 @@ func TestNewViewNotAcceptViewsFromThePast(t *testing.T) {
 
 			block := mocks.ABlock(interfaces.GenesisBlock)
 
-			h.receiveNewView(ctx, 2, 1, view, block)
+			h.receiveAndHandleNewView(ctx, 2, 1, view, block)
 
 			if shouldAcceptMessage {
-				h.checkView(view)
+				h.assertView(view)
 			} else {
-				h.checkView(startView)
+				h.assertView(startView)
 			}
 		}
 
@@ -106,7 +111,7 @@ func TestNewViewIsSentWithTheHighestBlockFromTheViewChangeProofs(t *testing.T) {
 			WithVote(h.getMemberKeyManager(3), h.getNodeMemberId(3), 1, 5, nil).
 			Build()
 
-		h.checkView(0)
+		h.assertView(0)
 
 		nvm := builders.
 			NewNewViewBuilder().
@@ -117,9 +122,9 @@ func TestNewViewIsSentWithTheHighestBlockFromTheViewChangeProofs(t *testing.T) {
 			OnView(5).
 			Build()
 
-		h.HandleNewView(ctx, nvm)
+		h.handleNewViewMessage(ctx, nvm)
 
-		h.checkView(5)
+		h.assertView(5)
 		require.True(t, h.hasPreprepare(1, 5, blockOnView4))
 	})
 }
@@ -153,7 +158,7 @@ func TestNewViewWithOlderBlockIsRejected(t *testing.T) {
 			WithVote(h.getMemberKeyManager(3), h.getNodeMemberId(3), 1, 5, nil).
 			Build()
 
-		h.checkView(0)
+		h.assertView(0)
 
 		nvm := builders.
 			NewNewViewBuilder().
@@ -164,9 +169,9 @@ func TestNewViewWithOlderBlockIsRejected(t *testing.T) {
 			OnView(5).
 			Build()
 
-		h.HandleNewView(ctx, nvm)
+		h.handleNewViewMessage(ctx, nvm)
 
-		h.checkView(0)
+		h.assertView(0)
 		require.False(t, h.hasPreprepare(1, 5, blockOnView3))
 		require.False(t, h.hasPreprepare(1, 5, blockOnView4))
 	})
@@ -178,11 +183,11 @@ func TestNewViewNotAcceptMessageIfNotFromTheLeader(t *testing.T) {
 			h := NewHarness(ctx, t)
 			block := mocks.ABlock(interfaces.GenesisBlock)
 
-			h.receiveNewView(ctx, fromNodeIdx, 1, 1, block)
+			h.receiveAndHandleNewView(ctx, fromNodeIdx, 1, 1, block)
 			if shouldAcceptMessage {
-				h.checkView(1)
+				h.assertView(1)
 			} else {
-				h.checkView(0)
+				h.assertView(0)
 			}
 		}
 
@@ -207,7 +212,7 @@ func TestNewViewNotAcceptedWithWrongPPDetails(t *testing.T) {
 		) {
 			h := NewHarness(ctx, t)
 
-			h.checkView(0)
+			h.assertView(0)
 
 			voters := []*builders.Voter{
 				{KeyManager: h.getMemberKeyManager(0), MemberId: h.getNodeMemberId(0)},
@@ -227,12 +232,12 @@ func TestNewViewNotAcceptedWithWrongPPDetails(t *testing.T) {
 				WithViewChangeVotes(votes).
 				Build()
 
-			h.HandleNewView(ctx, nvm)
+			h.handleNewViewMessage(ctx, nvm)
 
 			if shouldAcceptMessage {
-				h.checkView(1)
+				h.assertView(1)
 			} else {
-				h.checkView(0)
+				h.assertView(0)
 			}
 		}
 
@@ -255,7 +260,7 @@ func TestNewViewNotAcceptedWithWrongViewChangeDetails(t *testing.T) {
 			h := NewHarness(ctx, t)
 			block := mocks.ABlock(interfaces.GenesisBlock)
 
-			h.checkView(0)
+			h.assertView(0)
 
 			votesBuilder := builders.NewVotesBuilder(h.instanceId)
 			votesBuilder.WithVote(h.getMemberKeyManager(0), h.getNodeMemberId(0), vcsBlockHeight[0], vcsView[0], nil)
@@ -273,12 +278,12 @@ func TestNewViewNotAcceptedWithWrongViewChangeDetails(t *testing.T) {
 				WithViewChangeVotes(votes).
 				Build()
 
-			h.HandleNewView(ctx, nvm)
+			h.handleNewViewMessage(ctx, nvm)
 
 			if shouldAcceptMessage {
-				h.checkView(1)
+				h.assertView(1)
 			} else {
-				h.checkView(0)
+				h.assertView(0)
 			}
 		}
 
@@ -303,7 +308,7 @@ func TestNewViewNotAcceptedWithBadVotes(t *testing.T) {
 			h := NewHarness(ctx, t)
 			block := mocks.ABlock(interfaces.GenesisBlock)
 
-			h.checkView(0)
+			h.assertView(0)
 
 			leaderKeyManager := h.getMemberKeyManager(leaderNodeIdx)
 			leaderMemberId := h.getNodeMemberId(leaderNodeIdx)
@@ -321,12 +326,12 @@ func TestNewViewNotAcceptedWithBadVotes(t *testing.T) {
 				OnBlockHeight(10).
 				OnView(1).
 				Build()
-			h.HandleNewView(ctx, nvm)
+			h.handleNewViewMessage(ctx, nvm)
 
 			if shouldAcceptMessage {
-				h.checkView(1)
+				h.assertView(1)
 			} else {
-				h.checkView(0)
+				h.assertView(0)
 			}
 		}
 
@@ -344,34 +349,30 @@ func TestNewViewNotAcceptedWithBadVotes(t *testing.T) {
 	})
 }
 
-func TestViewChangeNotAcceptViewsFromThePast(t *testing.T) {
+func TestViewChangeIgnoreViewsFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		sendViewChange := func(startView primitives.View, view primitives.View, shouldAcceptMessage bool) {
+		sendViewChange := func(startView primitives.View, expectedEndView primitives.View, vcmView primitives.View) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, startView)
 
-			block := mocks.ABlock(interfaces.GenesisBlock)
-
-			viewChangeCountBefore := h.countViewChange(1, view)
-			h.receiveViewChange(ctx, 3, 1, view, block)
-			viewChangeCountAfter := h.countViewChange(1, view)
-
-			isMessageAccepted := viewChangeCountAfter == viewChangeCountBefore+1
-			if shouldAcceptMessage {
-				require.True(t, isMessageAccepted)
-			} else {
-				require.False(t, isMessageAccepted)
-			}
+			h.assertView(startView)
+			h.receiveAndHandleViewChange(ctx, 1, 1, vcmView)
+			h.receiveAndHandleViewChange(ctx, 2, 1, vcmView)
+			h.receiveAndHandleViewChange(ctx, 3, 1, vcmView)
+			h.assertView(expectedEndView)
 		}
 
 		// re-voting me (node0, view=12 -> future) as the leader
-		sendViewChange(8, 12, true)
+		t.Logf("startView=%d endView=%d messageView=%d", 8, 12, 12)
+		sendViewChange(8, 12, 12)
 
+		t.Logf("startView=%d endView=%d messageView=%d", 8, 8, 8)
 		// re-voting me (node0, view=8 -> present) as the leader
-		sendViewChange(8, 8, true)
+		sendViewChange(8, 8, 8)
 
 		// re-voting me (node0, view=4 -> past) as the leader
-		sendViewChange(8, 4, false)
+		t.Logf("startView=%d endView=%d messageView=%d", 8, 8, 4)
+		sendViewChange(8, 8, 4)
 	})
 }
 
@@ -381,11 +382,8 @@ func TestViewChangeIsRejectedIfTargetIsNotTheNewLeader(t *testing.T) {
 			h := NewHarness(ctx, t)
 			h.electionTillView(ctx, view)
 
-			block1 := mocks.ABlock(interfaces.GenesisBlock)
-			block2 := mocks.ABlock(block1)
-
 			viewChangeCountBefore := h.countViewChange(1, view)
-			h.receiveViewChange(ctx, 3, 1, view, block2)
+			h.receiveAndHandleViewChange(ctx, 3, 1, view)
 			viewChangeCountAfter := h.countViewChange(1, view)
 
 			isMessageAccepted := viewChangeCountAfter == viewChangeCountBefore+1
@@ -413,7 +411,7 @@ func TestPrepareNotAcceptViewsFromThePast(t *testing.T) {
 			block := mocks.ABlock(interfaces.GenesisBlock)
 
 			prepareCountBefore := h.countPrepare(1, view, block)
-			h.receivePrepare(ctx, 1, 1, view, block)
+			h.receiveAndHandlePrepare(ctx, 1, 1, view, block)
 			prepareCountAfter := h.countPrepare(1, view, block)
 
 			isMessageAccepted := prepareCountAfter == prepareCountBefore+1
@@ -444,7 +442,7 @@ func TestPrepareNotAcceptingMessagesFromTheLeader(t *testing.T) {
 			block := mocks.ABlock(interfaces.GenesisBlock)
 
 			prepareCountBefore := h.countPrepare(1, view, block)
-			h.receivePrepare(ctx, fromNode, 1, view, block)
+			h.receiveAndHandlePrepare(ctx, fromNode, 1, view, block)
 			prepareCountAfter := h.countPrepare(1, view, block)
 
 			isMessageAccepted := prepareCountAfter == prepareCountBefore+1
@@ -454,7 +452,7 @@ func TestPrepareNotAcceptingMessagesFromTheLeader(t *testing.T) {
 				require.False(t, isMessageAccepted)
 			}
 
-			h.receivePrepare(ctx, 2, 2, 1, block)
+			h.receiveAndHandlePrepare(ctx, 2, 2, 1, block)
 			prepareCount := h.countPrepare(2, 1, block)
 			require.Equal(t, 1, prepareCount, "TermInCommittee should not ignore Prepare message from node2")
 		}
@@ -479,7 +477,7 @@ func TestPreprepareAcceptOnlyMatchingViews(t *testing.T) {
 			require.False(t, hasPreprepare, "No preprepare should exist in the storage")
 
 			// current view (5) => valid
-			h.receivePreprepare(ctx, 1, 1, view, block)
+			h.receiveAndHandlePreprepare(ctx, 1, 1, view, block)
 			hasPreprepare = h.hasPreprepare(1, view, block)
 			if shouldAcceptMessage {
 				require.True(t, hasPreprepare, "TermInCommittee should not ignore the Preprepare message")
@@ -507,15 +505,36 @@ func TestPrepare2fPlus1ForACommit(t *testing.T) {
 		h.setNode1AsTheLeader(ctx, 1, 1, block)
 
 		require.Equal(t, 0, h.countCommits(1, 1, block), "No commits should exist in the storage")
-		h.receivePreprepare(ctx, 1, 1, 1, block)
+		h.receiveAndHandlePreprepare(ctx, 1, 1, 1, block)
 
 		require.Equal(t, 0, h.countCommits(1, 1, block), "No commits should exist in the storage")
-		h.receivePrepare(ctx, 2, 1, 1, block)
+		h.receiveAndHandlePrepare(ctx, 2, 1, 1, block)
 
 		require.Equal(t, 1, h.countCommits(1, 1, block), "There should be 1 commit in the storage")
-		h.receivePrepare(ctx, 3, 1, 1, block)
+		h.receiveAndHandlePrepare(ctx, 3, 1, 1, block)
 
 		require.Equal(t, 1, h.countCommits(1, 1, block), "There should be 1 commit in the storage")
+	})
+}
+
+func TestDisposingATermInCommitteeStopsTheElectionTrigger(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		block := mocks.ABlock(interfaces.GenesisBlock)
+
+		h := NewHarness(ctx, t, block)
+
+		// view was changed because of election
+		h.assertView(0)
+		h.triggerElection(ctx)
+		h.assertView(1)
+
+		// dispose the termInCommittee
+		h.disposeTerm()
+
+		// view was not changed
+		h.assertView(1)
+		h.triggerElection(ctx)
+		h.assertView(1)
 	})
 }
 
@@ -526,13 +545,8 @@ func TestDisposingATermInCommitteeClearTheStorage(t *testing.T) {
 		h := NewHarness(ctx, t, block)
 
 		// good consensus on block
-		h.receivePrepare(ctx, 1, 1, 0, block)
-		h.receivePrepare(ctx, 2, 1, 0, block)
-
-		// make sure we have all the messages in the storage
-		require.True(t, h.hasPreprepare(1, 0, block), "There should be a preprepare in the storage")
-		require.Equal(t, 2, h.countPrepare(1, 0, block), "There should be 3 prepares in the storage")
-		require.Equal(t, 1, h.countCommits(1, 0, block), "There should be 1 commit in the storage")
+		h.receiveAndHandlePrepare(ctx, 1, 1, 0, block)
+		h.receiveAndHandlePrepare(ctx, 2, 1, 0, block)
 
 		// dispose the termInCommittee
 		h.disposeTerm()
@@ -551,8 +565,8 @@ func TestAValidPreparedProofIsSentOnViewChange(t *testing.T) {
 		h := NewHarness(ctx, t, block)
 
 		// Get prepared on block
-		h.receivePrepare(ctx, 1, 1, 0, block)
-		h.receivePrepare(ctx, 2, 1, 0, block)
+		h.receiveAndHandlePrepare(ctx, 1, 1, 0, block)
+		h.receiveAndHandlePrepare(ctx, 2, 1, 0, block)
 
 		h.triggerElection(ctx)
 
@@ -568,7 +582,7 @@ func TestAValidPreparedProofIsSentOnViewChange(t *testing.T) {
 		pBlockRef := preparedProof.PrepareBlockRef()
 
 		var pSendersIds []primitives.MemberId
-		fmt.Printf("preparedProof: %+v\n", preparedProof)
+		t.Logf("preparedProof: %+v\n", preparedProof)
 		pSendersIter := preparedProof.PrepareSendersIterator()
 		for {
 			if !pSendersIter.HasNext() {
@@ -576,7 +590,7 @@ func TestAValidPreparedProofIsSentOnViewChange(t *testing.T) {
 			}
 			pSendersIds = append(pSendersIds, pSendersIter.NextPrepareSenders().MemberId())
 		}
-		require.Equal(t, 2, len(pSendersIds), "expected 2 senders of Prepare messages")
+		require.Equal(t, 2, len(pSendersIds), "expected 2 senders of Prepare messages but got %d", len(pSendersIds))
 
 		member1Id := h.getNodeMemberId(1)
 		member2Id := h.getNodeMemberId(2)
@@ -614,7 +628,7 @@ func TestAValidViewChangeMessageWithPreparedProof(t *testing.T) {
 		}
 
 		msg := builders.AViewChangeMessage(h.instanceId, h.getMyKeyManager(), h.myMemberId, 10, 4, preparedMessages)
-		h.receiveViewChangeMessage(ctx, msg)
+		h.handleViewChangeMessage(ctx, msg)
 
 		require.Exactly(t, 1, h.countViewChange(10, 4))
 	})
@@ -637,7 +651,7 @@ func TestViewChangeMessageWithoutQuorumInThePreparedProof(t *testing.T) {
 		}
 
 		msg := builders.AViewChangeMessage(h.instanceId, h.getMyKeyManager(), h.myMemberId, 10, 4, preparedMessages)
-		h.receiveViewChangeMessage(ctx, msg)
+		h.handleViewChangeMessage(ctx, msg)
 
 		require.Exactly(t, 0, h.countViewChange(10, 4))
 	})
@@ -658,7 +672,7 @@ func TestViewChangeMessageWithAnInvalidPreparedProof(t *testing.T) {
 		}
 
 		msg := builders.AViewChangeMessage(h.instanceId, h.getMyKeyManager(), h.myMemberId, 10, 4, preparedMessages)
-		h.receiveViewChangeMessage(ctx, msg)
+		h.handleViewChangeMessage(ctx, msg)
 
 		require.Exactly(t, 0, h.countViewChange(10, 4))
 	})

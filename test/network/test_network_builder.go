@@ -1,3 +1,9 @@
+// Copyright 2019 the lean-helix-go authors
+// This file is part of the lean-helix-go library in the Orbs project.
+//
+// This source code is licensed under the MIT license found in the LICENSE file in the root directory of this source tree.
+// The above notice should be included in all copies or substantial portions of the software.
+
 package network
 
 import (
@@ -126,13 +132,13 @@ func (tb *TestNetworkBuilder) createNodes(discovery *mocks.Discovery, blocksPool
 	var nodes []*Node
 	for i := 0; i < tb.NodeCount; i++ {
 		nodeBuilder := NewNodeBuilder()
-		memberId := primitives.MemberId(fmt.Sprintf("Node %d", i))
+		memberId := primitives.MemberId(fmt.Sprintf("%03d", i))
 		node := tb.buildNode(nodeBuilder, memberId, discovery, blocksPool, logToConsole)
 		nodes = append(nodes, node)
 	}
 
 	for i, customBuilder := range tb.customNodeBuilders {
-		memberId := primitives.MemberId(fmt.Sprintf("Custom-Node %d", i))
+		memberId := primitives.MemberId(fmt.Sprintf("C02%d", i))
 		node := tb.buildNode(customBuilder, memberId, discovery, blocksPool, logToConsole)
 		nodes = append(nodes, node)
 	}
@@ -169,5 +175,10 @@ func ABasicTestNetwork() *TestNetwork {
 
 func ATestNetwork(countOfNodes int, blocksPool ...interfaces.Block) *TestNetwork {
 	instanceId := primitives.InstanceId(rand.Uint64())
-	return NewTestNetworkBuilder().WithNodeCount(countOfNodes).WithBlocks(blocksPool).InNetwork(instanceId).Build()
+	return NewTestNetworkBuilder().
+		WithNodeCount(countOfNodes).
+		WithBlocks(blocksPool).
+		InNetwork(instanceId).
+		//LogToConsole().
+		Build()
 }

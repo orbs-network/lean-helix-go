@@ -1,3 +1,9 @@
+// Copyright 2019 the lean-helix-go authors
+// This file is part of the lean-helix-go library in the Orbs project.
+//
+// This source code is licensed under the MIT license found in the LICENSE file in the root directory of this source tree.
+// The above notice should be included in all copies or substantial portions of the software.
+
 package leanhelix
 
 import (
@@ -83,7 +89,9 @@ func (lh *LeanHelix) Run(ctx context.Context) {
 			receivedBlockHeight := blockheight.GetBlockHeight(receivedBlockWithProof.block)
 			if receivedBlockHeight >= lh.currentHeight {
 				lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE ACCEPTED block with height=%d, calling onNewConsensusRound()", receivedBlockHeight)
-				lh.onNewConsensusRound(ctx, receivedBlockWithProof.block, receivedBlockWithProof.prevBlockProofBytes)
+				// This block is received from external source
+				// Refuse to be leader on V=0 for a block received from block sync, because this block will usually be not be the latest block.
+				lh.onNewConsensusRound(ctx, receivedBlockWithProof.block, receivedBlockWithProof.prevBlockProofBytes, false)
 			} else {
 				lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE IGNORE - Received block ignored because its height=%d is less than current height=%d", receivedBlockHeight, lh.currentHeight)
 			}
@@ -92,7 +100,11 @@ func (lh *LeanHelix) Run(ctx context.Context) {
 }
 
 func (lh *LeanHelix) UpdateState(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte) {
-	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE Writing to UPDATESTATE channel")
+	var prevBlockHeight primitives.BlockHeight
+	if prevBlock != nil {
+		prevBlockHeight = prevBlock.Height()
+	}
+	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE Writing to UPDATESTATE channel, prevBlockHeight=%d", prevBlockHeight)
 	select {
 	case <-ctx.Done():
 		lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE DONE")
@@ -104,12 +116,25 @@ func (lh *LeanHelix) UpdateState(ctx context.Context, prevBlock interfaces.Block
 
 }
 
+func GetMemberIdsFromBlockProof(blockProofBytes []byte) ([]primitives.MemberId, error) {
+	if blockProofBytes == nil || len(blockProofBytes) == 0 {
+		return nil, errors.Errorf("GetMemberIdsFromBlockProof: nil blockProof - cannot deduce members locally")
+	}
+	blockProof := protocol.BlockProofReader(blockProofBytes)
+	sendersIterator := blockProof.NodesIterator()
+	committeeMembers := make([]primitives.MemberId, 0)
+	for sendersIterator.HasNext() {
+		committeeMembers = append(committeeMembers, sendersIterator.NextNodes().MemberId())
+	}
+	return committeeMembers, nil
+}
+
 func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProofBytes []byte, maybePrevBlockProofBytes []byte) error {
 
 	if block == nil {
 		return errors.Errorf("ValidateBlockConsensus: nil block")
 	}
-	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "ValidateBlockConsensus START for blockHeight=%s", block.Height())
+	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "ValidateBlockConsensus START for blockHeight=%d", block.Height())
 	if blockProofBytes == nil || len(blockProofBytes) == 0 {
 		return errors.Errorf("ValidateBlockConsensus: nil blockProof")
 	}
@@ -133,7 +158,12 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 		return errors.Errorf("ValidateBlockConsensus: ValidateBlockCommitment() failed")
 	}
 
-	committeeMembers := lh.config.Membership.RequestOrderedCommittee(ctx, blockHeight, 0)
+	// note: it is ok to disregard the order of committee here (hence randomSeed is not calculated) - the blockProof only checks for set of quorum COMMITS
+	committeeMembers, err := lh.config.Membership.RequestOrderedCommittee(ctx, blockHeight, 0)
+	if err != nil { // support for failure in committee calculation
+		return err
+	}
+	lh.logger.Info(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "ValidateBlockConsensus: RECEIVED COMMITTEE for H=%d, members=%s", blockHeight, termincommittee.ToCommitteeMembersStr(committeeMembers))
 
 	sendersIterator := blockProof.NodesIterator()
 	set := make(map[storage.MemberIdStr]bool)
@@ -144,17 +174,17 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 		}
 
 		sender := sendersIterator.NextNodes()
-		if !proofsvalidator.VerifyBlockRefMessage(blockRefFromProof, sender, lh.config.KeyManager) {
-			return errors.Errorf("ValidateBlockConsensus: VerifyBlockRefMessage() failed")
+		if err := proofsvalidator.VerifyBlockRefMessage(blockRefFromProof, sender, lh.config.KeyManager); err != nil {
+			return errors.Wrapf(err, "ValidateBlockConsensus: VerifyBlockRefMessage() failed")
 		}
 
 		memberId := sender.MemberId()
 		if _, ok := set[storage.MemberIdStr(memberId)]; ok {
-			return errors.Errorf("ValidateBlockConsensus: Could not read memberId=%s from set", storage.MemberIdStr(memberId))
+			return errors.Errorf("ValidateBlockConsensus: Could not read memberId=%s from set", termincommittee.Str(memberId))
 		}
 
 		if !proofsvalidator.IsInMembers(committeeMembers, memberId) {
-			return errors.Errorf("ValidateBlockConsensus: memberId=%s is not part of committee", storage.MemberIdStr(memberId))
+			return errors.Errorf("ValidateBlockConsensus: Id=%s which signed block with H=%d is not part of committee of that block height. Committee=%s", termincommittee.Str(memberId), blockHeight, termincommittee.ToCommitteeMembersStr(committeeMembers))
 		}
 
 		set[storage.MemberIdStr(memberId)] = true
@@ -163,7 +193,7 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 
 	q := quorum.CalcQuorumSize(len(committeeMembers))
 	if sendersCounter < q {
-		return errors.Errorf("ValidateBlockConsensus: sendersCounter=%d is less that quorum=%d", sendersCounter, q)
+		return errors.Errorf("ValidateBlockConsensus: sendersCounter=%d is less than quorum=%d (committeeMembersCount=%d)", sendersCounter, q, len(committeeMembers))
 	}
 
 	if len(blockProof.RandomSeedSignature()) == 0 || blockProof.RandomSeedSignature() == nil {
@@ -194,12 +224,16 @@ func (lh *LeanHelix) onCommit(ctx context.Context, block interfaces.Block, block
 	lh.onCommitCallback(ctx, block, blockProofBytes)
 	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW onCommitCallback RETURNED from leanhelix.onCommit()")
 	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "Calling onNewConsensusRound from leanhelix.onCommit()")
-	lh.onNewConsensusRound(ctx, block, blockProofBytes)
+	lh.onNewConsensusRound(ctx, block, blockProofBytes, true)
 }
 
-func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte) {
+func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) {
 	lh.currentHeight = blockheight.GetBlockHeight(prevBlock) + 1
 	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "onNewConsensusRound() INCREMENTED HEIGHT TO %d", lh.currentHeight)
-	lh.leanHelixTerm = leanhelixterm.NewLeanHelixTerm(ctx, lh.logger, lh.config, lh.onCommit, prevBlock, prevBlockProofBytes)
+	if lh.leanHelixTerm != nil {
+		lh.leanHelixTerm.Dispose()
+		lh.leanHelixTerm = nil
+	}
+	lh.leanHelixTerm = leanhelixterm.NewLeanHelixTerm(ctx, lh.logger, lh.config, lh.onCommit, prevBlock, prevBlockProofBytes, canBeFirstLeader)
 	lh.filter.SetBlockHeight(ctx, lh.currentHeight, lh.leanHelixTerm)
 }

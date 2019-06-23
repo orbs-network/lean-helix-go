@@ -1,7 +1,14 @@
+// Copyright 2019 the lean-helix-go authors
+// This file is part of the lean-helix-go library in the Orbs project.
+//
+// This source code is licensed under the MIT license found in the LICENSE file in the root directory of this source tree.
+// The above notice should be included in all copies or substantial portions of the software.
+
 package mocks
 
 import (
 	"context"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/instrumentation/metrics"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"time"
@@ -30,11 +37,16 @@ func (et *ElectionTriggerMock) RegisterOnElection(ctx context.Context, blockHeig
 	et.electionHandler = electionHandler
 }
 
+func (et *ElectionTriggerMock) Stop() {
+	et.electionHandler = nil
+}
+
 func (et *ElectionTriggerMock) ElectionChannel() chan func(ctx context.Context) {
 	return et.electionChannel
 }
 
 func (et *ElectionTriggerMock) ManualTrigger(ctx context.Context) {
+	fmt.Println("Manual Trigger - write to election channel in a new goroutine")
 	go func() {
 		select {
 		case <-ctx.Done():

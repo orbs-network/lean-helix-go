@@ -1,8 +1,6 @@
 # lean-helix-go
 
-
-**--Work in progress - not yet functional--**
-
+[![CircleCI](https://circleci.com/gh/orbs-network/lean-helix-go.svg?style=svg)](https://circleci.com/gh/orbs-network/lean-helix-go)
 
 Lean Helix consensus algorithm implementation in Go.
 

@@ -1,3 +1,9 @@
+// Copyright 2019 the lean-helix-go authors
+// This file is part of the lean-helix-go library in the Orbs project.
+//
+// This source code is licensed under the MIT license found in the LICENSE file in the root directory of this source tree.
+// The above notice should be included in all copies or substantial portions of the software.
+
 package mocks
 
 import (
@@ -24,7 +30,7 @@ func (m *MockMembership) MyMemberId() primitives.MemberId {
 	return m.myMemberId
 }
 
-func (m *MockMembership) RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64) []primitives.MemberId {
+func (m *MockMembership) RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64) ([]primitives.MemberId, error) {
 	result := m.discovery.AllCommunicationsMemberIds()
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].KeyForMap() < result[j].KeyForMap()
@@ -38,5 +44,5 @@ func (m *MockMembership) RequestOrderedCommittee(ctx context.Context, blockHeigh
 		}
 	}
 
-	return result
+	return result, nil
 }

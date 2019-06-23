@@ -1,3 +1,9 @@
+// Copyright 2019 the lean-helix-go authors
+// This file is part of the lean-helix-go library in the Orbs project.
+//
+// This source code is licensed under the MIT license found in the LICENSE file in the root directory of this source tree.
+// The above notice should be included in all copies or substantial portions of the software.
+
 package test
 
 import (
@@ -44,6 +50,7 @@ func TestCallbackTrigger(t *testing.T) {
 	})
 }
 
+// TODO v1 this is sometimes flaky
 func TestCallbackTriggerOnce(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		et := buildElectionTrigger(ctx, 10*time.Millisecond)
@@ -100,6 +107,7 @@ func TestIgnoreSameViewOrHeight(t *testing.T) {
 	})
 }
 
+// TODO: Flaky
 func TestNotTriggerIfSameViewButDifferentHeight(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		et := buildElectionTrigger(ctx, 30*time.Millisecond)

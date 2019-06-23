@@ -1,3 +1,9 @@
+// Copyright 2019 the lean-helix-go authors
+// This file is part of the lean-helix-go library in the Orbs project.
+//
+// This source code is licensed under the MIT license found in the LICENSE file in the root directory of this source tree.
+// The above notice should be included in all copies or substantial portions of the software.
+
 package proofsvalidator
 
 import (
@@ -16,12 +22,8 @@ func IsInMembers(membersIds []primitives.MemberId, memberId primitives.MemberId)
 	return false
 }
 
-// TODO Should return error
-func VerifyBlockRefMessage(blockRef *protocol.BlockRef, sender *protocol.SenderSignature, keyManager interfaces.KeyManager) bool {
-	if err := keyManager.VerifyConsensusMessage(blockRef.BlockHeight(), blockRef.Raw(), sender); err != nil {
-		return false
-	}
-	return true
+func VerifyBlockRefMessage(blockRef *protocol.BlockRef, sender *protocol.SenderSignature, keyManager interfaces.KeyManager) error {
+	return keyManager.VerifyConsensusMessage(blockRef.BlockHeight(), blockRef.Raw(), sender)
 }
 
 type CalcLeaderId = func(view primitives.View) primitives.MemberId
@@ -70,7 +72,7 @@ func ValidatePreparedProof(
 		return false
 	}
 
-	if !VerifyBlockRefMessage(ppBlockRef, ppSender, keyManager) {
+	if err := VerifyBlockRefMessage(ppBlockRef, ppSender, keyManager); err != nil {
 		return false
 	}
 

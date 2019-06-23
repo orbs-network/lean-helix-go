@@ -1,3 +1,9 @@
+// Copyright 2019 the lean-helix-go authors
+// This file is part of the lean-helix-go library in the Orbs project.
+//
+// This source code is licensed under the MIT license found in the LICENSE file in the root directory of this source tree.
+// The above notice should be included in all copies or substantial portions of the software.
+
 package rawmessagesfilter
 
 import (
@@ -14,16 +20,17 @@ type RawMessageFilter struct {
 	blockHeight              primitives.BlockHeight
 	consensusMessagesHandler ConsensusMessagesHandler
 	myMemberId               primitives.MemberId
-	messageCache             map[primitives.BlockHeight][]interfaces.ConsensusMessage
+	futureCache              map[primitives.BlockHeight][]interfaces.ConsensusMessage
 	logger                   L.LHLogger
+	latestFutureBlockHeight  primitives.BlockHeight // needed for limiting future cache to 1 term (potential memory leak)
 }
 
 func NewConsensusMessageFilter(instanceId primitives.InstanceId, myMemberId primitives.MemberId, logger L.LHLogger) *RawMessageFilter {
 	res := &RawMessageFilter{
-		instanceId:   instanceId,
-		myMemberId:   myMemberId,
-		messageCache: make(map[primitives.BlockHeight][]interfaces.ConsensusMessage),
-		logger:       logger,
+		instanceId:  instanceId,
+		myMemberId:  myMemberId,
+		futureCache: make(map[primitives.BlockHeight][]interfaces.ConsensusMessage),
+		logger:      logger,
 	}
 
 	return res
@@ -31,7 +38,6 @@ func NewConsensusMessageFilter(instanceId primitives.InstanceId, myMemberId prim
 
 func (f *RawMessageFilter) HandleConsensusRawMessage(ctx context.Context, rawMessage *interfaces.ConsensusRawMessage) {
 	message := interfaces.ToConsensusMessage(rawMessage)
-	//f.logger.Debug(L.LC(f.blockHeight, 0, f.myMemberId), "LHFILTER RECEIVED %s with H=%d V=%d sender=%s", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
 	if f.isMyMessage(message) {
 		f.logger.Debug(L.LC(f.blockHeight, math.MaxUint64, f.myMemberId), "LHFILTER IGNORING RECEIVED %s with H=%d V=%d sender=%s IGNORING message I sent", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
 		return
@@ -60,19 +66,30 @@ func (f *RawMessageFilter) isMyMessage(message interfaces.ConsensusMessage) bool
 	return f.myMemberId.Equal(message.SenderMemberId())
 }
 
-func (f *RawMessageFilter) clearCacheHistory(height primitives.BlockHeight) {
-	for messageHeight := range f.messageCache {
+func (f *RawMessageFilter) clearCacheEarlierThan(height primitives.BlockHeight) {
+	for messageHeight := range f.futureCache {
 		if messageHeight < height {
-			delete(f.messageCache, messageHeight)
+			delete(f.futureCache, messageHeight)
 		}
 	}
 }
 
 func (f *RawMessageFilter) pushToCache(height primitives.BlockHeight, message interfaces.ConsensusMessage) {
-	if f.messageCache[height] == nil {
-		f.messageCache[height] = []interfaces.ConsensusMessage{message}
+	// limit future cache to 1 term - potential increased memory hogging linear to distance in block height between this node and currentBlockHeight (the "front")
+	// TODO This requires testing https://github.com/orbs-network/lean-helix-go/issues/35
+	if height < f.latestFutureBlockHeight {
+		return
+	}
+	if height > f.latestFutureBlockHeight {
+		f.clearCacheEarlierThan(height)
+		f.latestFutureBlockHeight = height
+	}
+
+	// add to future cache
+	if f.futureCache[height] == nil {
+		f.futureCache[height] = []interfaces.ConsensusMessage{message}
 	} else {
-		f.messageCache[height] = append(f.messageCache[height], message)
+		f.futureCache[height] = append(f.futureCache[height], message)
 	}
 }
 
@@ -85,16 +102,16 @@ func (f *RawMessageFilter) processConsensusMessage(ctx context.Context, message 
 }
 
 func (f *RawMessageFilter) consumeCacheMessages(ctx context.Context, blockHeight primitives.BlockHeight) {
-	f.clearCacheHistory(blockHeight)
+	f.clearCacheEarlierThan(blockHeight)
 
-	messages := f.messageCache[blockHeight]
+	messages := f.futureCache[blockHeight]
 	if len(messages) > 0 {
 		f.logger.Debug(L.LC(f.blockHeight, math.MaxUint64, f.myMemberId), "LHFILTER consuming %d messages from height=%d", len(messages), blockHeight)
 	}
 	for _, message := range messages {
 		f.processConsensusMessage(ctx, message)
 	}
-	delete(f.messageCache, blockHeight)
+	delete(f.futureCache, blockHeight)
 }
 
 func (f *RawMessageFilter) SetBlockHeight(ctx context.Context, blockHeight primitives.BlockHeight, consensusMessagesHandler ConsensusMessagesHandler) {

@@ -1,3 +1,9 @@
+// Copyright 2019 the lean-helix-go authors
+// This file is part of the lean-helix-go library in the Orbs project.
+//
+// This source code is licensed under the MIT license found in the LICENSE file in the root directory of this source tree.
+// The above notice should be included in all copies or substantial portions of the software.
+
 package test
 
 import (
@@ -24,7 +30,7 @@ func TestPreprepareVerification(t *testing.T) {
 		require.False(t, hasPreprepare, "No preprepare should exist in the storage")
 
 		// sending a preprepare (height 2)
-		h.receivePreprepare(ctx, 1, 2, 1, block2)
+		h.receiveAndHandlePreprepare(ctx, 1, 2, 1, block2)
 
 		// Expect the storage to have it
 		hasPreprepare = h.hasPreprepare(2, 1, block2)
@@ -32,7 +38,7 @@ func TestPreprepareVerification(t *testing.T) {
 
 		// sending another preprepare (height 3)
 		h.failFutureVerifications()
-		h.receivePreprepare(ctx, 1, 3, 1, block3)
+		h.receiveAndHandlePreprepare(ctx, 1, 3, 1, block3)
 
 		// Expect the storage NOT to have it
 		hasPreprepare = h.hasPreprepare(3, 1, block3)
@@ -51,7 +57,7 @@ func TestPrepareVerification(t *testing.T) {
 		require.Equal(t, 0, prepareCount, "No prepare should exist in the storage")
 
 		// sending a prepare
-		h.receivePrepare(ctx, 1, 1, 0, block)
+		h.receiveAndHandlePrepare(ctx, 1, 1, 0, block)
 
 		// Expect the storage to have it
 		prepareCount = h.countPrepare(1, 0, block)
@@ -59,7 +65,7 @@ func TestPrepareVerification(t *testing.T) {
 
 		// sending another (Bad) prepare (From a different node)
 		h.failFutureVerifications()
-		h.receivePrepare(ctx, 2, 1, 0, block)
+		h.receiveAndHandlePrepare(ctx, 2, 1, 0, block)
 
 		// Expect the storage NOT to store it
 		prepareCount = h.countPrepare(1, 0, block)
@@ -71,8 +77,6 @@ func TestViewChangeVerification(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
 
-		block := mocks.ABlock(interfaces.GenesisBlock)
-
 		// start with 0 view-change
 		viewChangeCountOnView4 := h.countViewChange(1, 4)
 		viewChangeCountOnView8 := h.countViewChange(1, 8)
@@ -80,7 +84,7 @@ func TestViewChangeVerification(t *testing.T) {
 		require.Equal(t, 0, viewChangeCountOnView8, "No view-change should exist in the storage, on view 8")
 
 		// sending a view-change
-		h.receiveViewChange(ctx, 3, 1, 4, block)
+		h.receiveAndHandleViewChange(ctx, 3, 1, 4)
 
 		// Expect the storage to have it
 		viewChangeCountOnView4 = h.countViewChange(1, 4)
@@ -89,7 +93,7 @@ func TestViewChangeVerification(t *testing.T) {
 
 		// sending another (Bad) view-change
 		h.failFutureVerifications()
-		h.receiveViewChange(ctx, 3, 2, 8, block)
+		h.receiveAndHandleViewChange(ctx, 3, 2, 8)
 
 		// Expect the storage NOT to store it
 		viewChangeCountOnView4 = h.countViewChange(1, 4)
@@ -114,7 +118,7 @@ func TestNewViewVerification(t *testing.T) {
 		require.False(t, hasPreprepare, "No preprepare should exist in the storage")
 
 		// sending a new-view
-		h.receiveNewView(ctx, 0, 1, 4, block2)
+		h.receiveAndHandleNewView(ctx, 0, 1, 4, block2)
 
 		// Expect the storage to have it
 		hasPreprepare = h.hasPreprepare(1, 4, block2)
@@ -122,7 +126,7 @@ func TestNewViewVerification(t *testing.T) {
 
 		// sending another (Bad) new-view
 		h.failFutureVerifications()
-		h.receiveNewView(ctx, 0, 1, 8, block3)
+		h.receiveAndHandleNewView(ctx, 0, 1, 8, block3)
 
 		// Expect the storage to have it
 		hasPreprepare = h.hasPreprepare(1, 8, block3)
