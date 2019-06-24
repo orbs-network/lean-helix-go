@@ -108,7 +108,7 @@ func (f *MessageFactory) CreateCommitMessage(
 	}
 
 	randomSeedBytes := randomseed.RandomSeedToBytes(f.randomSeed)
-	share := f.keyManager.SignRandomSeed(blockHeight, randomSeedBytes)
+	share := f.keyManager.SignRandomSeed(context.Background(), blockHeight, randomSeedBytes)
 	contentBuilder := protocol.CommitContentBuilder{
 		SignedHeader: signedHeader,
 		Sender:       sender,
