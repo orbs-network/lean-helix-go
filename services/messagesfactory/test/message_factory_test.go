@@ -95,7 +95,7 @@ func TestMessageFactory(t *testing.T) {
 		}
 
 		randomSeedBytes := randomseed.RandomSeedToBytes(randomSeed)
-		share := node0KeyManager.SignRandomSeed(blockHeight, randomSeedBytes)
+		share := node0KeyManager.SignRandomSeed(context.Background(), blockHeight, randomSeedBytes)
 		cmcb := &protocol.CommitContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{

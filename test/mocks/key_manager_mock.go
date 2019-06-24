@@ -60,7 +60,7 @@ func (km *MockKeyManager) VerifyConsensusMessage(blockHeight primitives.BlockHei
 	return nil
 }
 
-func (km *MockKeyManager) SignRandomSeed(blockHeight primitives.BlockHeight, content []byte) primitives.RandomSeedSignature {
+func (km *MockKeyManager) SignRandomSeed(ctx context.Context, blockHeight primitives.BlockHeight, content []byte) primitives.RandomSeedSignature {
 	str := fmt.Sprintf("RND_SIG|%s|%s|%x", blockHeight, km.myMemberId.KeyForMap(), content)
 	return []byte(str)
 }

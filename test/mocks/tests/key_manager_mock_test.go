@@ -49,12 +49,12 @@ func TestKeyManagerRandomSeedVerify(t *testing.T) {
 
 	goodSenderSignature := &protocol.SenderSignatureBuilder{
 		MemberId:  signerId,
-		Signature: primitives.Signature(signerKeyManager.SignRandomSeed(1, content)),
+		Signature: primitives.Signature(signerKeyManager.SignRandomSeed(context.Background(), 1, content)),
 	}
 
 	badSenderSignature := &protocol.SenderSignatureBuilder{
 		MemberId:  signerId,
-		Signature: primitives.Signature(signerKeyManager.SignRandomSeed(1, []byte{6, 6, 6})),
+		Signature: primitives.Signature(signerKeyManager.SignRandomSeed(context.Background(), 1, []byte{6, 6, 6})),
 	}
 
 	require.Nil(t, verifierKeyManager.VerifyRandomSeed(1, content, goodSenderSignature.Build()))
