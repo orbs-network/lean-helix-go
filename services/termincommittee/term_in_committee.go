@@ -313,7 +313,7 @@ func (tic *TermInCommittee) validatePreprepare(ctx context.Context, ppm *interfa
 	blockHeight := ppm.BlockHeight()
 	if tic.hasPreprepare(blockHeight, ppm.View()) {
 		errMsg := fmt.Sprintf("already stored Preprepare for H=%d V=%d", blockHeight, ppm.View())
-		tic.logger.Error(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED PREPREPARE IGNORE: hasPreprepare() failed: %s", errMsg)
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED PREPREPARE IGNORE: hasPreprepare() failed: %s", errMsg)
 		return errors.New(errMsg)
 	}
 
