@@ -658,7 +658,7 @@ func (tic *TermInCommittee) HandleNewView(ctx context.Context, nvm *interfaces.N
 
 	if err := tic.validatePreprepare(ctx, ppm); err == nil {
 		tic.newViewLocally = nvmHeader.View()
-		tic.logger.Error(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW NewViewLocally set to V=%d (handleNewViewMessage), calling SetView()", tic.newViewLocally)
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW NewViewLocally set to V=%d (handleNewViewMessage), calling SetView()", tic.newViewLocally)
 		tic.SetView(ctx, nvmHeader.View())
 		tic.processPreprepare(ctx, ppm)
 	} else {
