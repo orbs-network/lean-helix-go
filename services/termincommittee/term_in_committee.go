@@ -296,7 +296,7 @@ func (tic *TermInCommittee) HandlePrePrepare(ctx context.Context, ppm *interface
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED PREPREPARE (H=%d V=%d sender=%s)", ppm.BlockHeight(), ppm.View(), Str(ppm.SenderMemberId()))
 
 	if err := tic.validatePreprepare(ctx, ppm); err != nil {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED PREPREPARE IGNORE: validatePreprepare() failed: %s", err)
+		tic.logger.Error(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED PREPREPARE IGNORE: validatePreprepare() failed: %s", err)
 		return
 	}
 

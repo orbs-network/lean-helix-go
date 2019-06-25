@@ -8,6 +8,7 @@ package test
 
 import (
 	"bytes"
+	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/messagesfactory"
 	"github.com/orbs-network/lean-helix-go/services/preparedmessages"
@@ -52,7 +53,7 @@ func TestMessageFactory(t *testing.T) {
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
 				MemberId:  memberId0,
-				Signature: node0KeyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw()),
+				Signature: node0KeyManager.SignConsensusMessage(context.Background(), blockHeight, signedHeader.Build().Raw()),
 			},
 		}
 
@@ -74,7 +75,7 @@ func TestMessageFactory(t *testing.T) {
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
 				MemberId:  memberId0,
-				Signature: node0KeyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw()),
+				Signature: node0KeyManager.SignConsensusMessage(context.Background(), blockHeight, signedHeader.Build().Raw()),
 			},
 		}
 
@@ -94,12 +95,12 @@ func TestMessageFactory(t *testing.T) {
 		}
 
 		randomSeedBytes := randomseed.RandomSeedToBytes(randomSeed)
-		share := node0KeyManager.SignRandomSeed(blockHeight, randomSeedBytes)
+		share := node0KeyManager.SignRandomSeed(context.Background(), blockHeight, randomSeedBytes)
 		cmcb := &protocol.CommitContentBuilder{
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
 				MemberId:  memberId0,
-				Signature: node0KeyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw()),
+				Signature: node0KeyManager.SignConsensusMessage(context.Background(), blockHeight, signedHeader.Build().Raw()),
 			},
 			Share: share,
 		}
@@ -123,7 +124,7 @@ func TestMessageFactory(t *testing.T) {
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
 				MemberId:  memberId1,
-				Signature: node1KeyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw()),
+				Signature: node1KeyManager.SignConsensusMessage(context.Background(), blockHeight, signedHeader.Build().Raw()),
 			},
 		}
 
@@ -143,7 +144,7 @@ func TestMessageFactory(t *testing.T) {
 		}
 		ppSender := &protocol.SenderSignatureBuilder{
 			MemberId:  memberId0,
-			Signature: node0KeyManager.SignConsensusMessage(blockHeight, ppBlockRefBuilder.Build().Raw()),
+			Signature: node0KeyManager.SignConsensusMessage(context.Background(), blockHeight, ppBlockRefBuilder.Build().Raw()),
 		}
 		pBlockRefBuilder := &protocol.BlockRefBuilder{
 			MessageType: protocol.LEAN_HELIX_PREPARE,
@@ -155,11 +156,11 @@ func TestMessageFactory(t *testing.T) {
 		pSenders := []*protocol.SenderSignatureBuilder{
 			{
 				MemberId:  memberId1,
-				Signature: node1KeyManager.SignConsensusMessage(blockHeight, pBlockRefBuilder.Build().Raw()),
+				Signature: node1KeyManager.SignConsensusMessage(context.Background(), blockHeight, pBlockRefBuilder.Build().Raw()),
 			},
 			{
 				MemberId:  memberId2,
-				Signature: node2KeyManager.SignConsensusMessage(blockHeight, pBlockRefBuilder.Build().Raw()),
+				Signature: node2KeyManager.SignConsensusMessage(context.Background(), blockHeight, pBlockRefBuilder.Build().Raw()),
 			},
 		}
 		proofBuilder := &protocol.PreparedProofBuilder{
@@ -179,7 +180,7 @@ func TestMessageFactory(t *testing.T) {
 			SignedHeader: signedHeader,
 			Sender: &protocol.SenderSignatureBuilder{
 				MemberId:  memberId1,
-				Signature: node1KeyManager.SignConsensusMessage(blockHeight, signedHeader.Build().Raw()),
+				Signature: node1KeyManager.SignConsensusMessage(context.Background(), blockHeight, signedHeader.Build().Raw()),
 			},
 		}
 
@@ -210,7 +211,7 @@ func TestMessageFactory(t *testing.T) {
 		}
 		ppSender := &protocol.SenderSignatureBuilder{
 			MemberId:  memberId0,
-			Signature: node0KeyManager.SignConsensusMessage(blockHeight, ppBlockRefBuilder.Build().Raw()),
+			Signature: node0KeyManager.SignConsensusMessage(context.Background(), blockHeight, ppBlockRefBuilder.Build().Raw()),
 		}
 		pBlockRefBuilder := &protocol.BlockRefBuilder{
 			MessageType: protocol.LEAN_HELIX_PREPARE,
@@ -222,11 +223,11 @@ func TestMessageFactory(t *testing.T) {
 		pSenders := []*protocol.SenderSignatureBuilder{
 			{
 				MemberId:  memberId1,
-				Signature: node1KeyManager.SignConsensusMessage(blockHeight, pBlockRefBuilder.Build().Raw()),
+				Signature: node1KeyManager.SignConsensusMessage(context.Background(), blockHeight, pBlockRefBuilder.Build().Raw()),
 			},
 			{
 				MemberId:  memberId2,
-				Signature: node2KeyManager.SignConsensusMessage(blockHeight, pBlockRefBuilder.Build().Raw()),
+				Signature: node2KeyManager.SignConsensusMessage(context.Background(), blockHeight, pBlockRefBuilder.Build().Raw()),
 			},
 		}
 		proofBuilder := &protocol.PreparedProofBuilder{
@@ -247,14 +248,14 @@ func TestMessageFactory(t *testing.T) {
 			SignedHeader: nodesVCHeader,
 			Sender: &protocol.SenderSignatureBuilder{
 				MemberId:  memberId1,
-				Signature: node1KeyManager.SignConsensusMessage(blockHeight, nodesVCHeader.Build().Raw()),
+				Signature: node1KeyManager.SignConsensusMessage(context.Background(), blockHeight, nodesVCHeader.Build().Raw()),
 			},
 		}
 		node2Confirmation := &protocol.ViewChangeMessageContentBuilder{
 			SignedHeader: nodesVCHeader,
 			Sender: &protocol.SenderSignatureBuilder{
 				MemberId:  memberId2,
-				Signature: node2KeyManager.SignConsensusMessage(blockHeight, nodesVCHeader.Build().Raw()),
+				Signature: node2KeyManager.SignConsensusMessage(context.Background(), blockHeight, nodesVCHeader.Build().Raw()),
 			},
 		}
 		nvmHeader := &protocol.NewViewHeaderBuilder{
@@ -268,7 +269,7 @@ func TestMessageFactory(t *testing.T) {
 		}
 		nvmSender := &protocol.SenderSignatureBuilder{
 			MemberId:  memberId0,
-			Signature: node0KeyManager.SignConsensusMessage(blockHeight, nvmHeader.Build().Raw()),
+			Signature: node0KeyManager.SignConsensusMessage(context.Background(), blockHeight, nvmHeader.Build().Raw()),
 		}
 		nvmContentBuilder := &protocol.NewViewMessageContentBuilder{
 			SignedHeader: nvmHeader,

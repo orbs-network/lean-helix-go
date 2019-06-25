@@ -255,7 +255,7 @@ func generateSignatures(blockHeight primitives.BlockHeight, blockRef *protocol.B
 	for _, node := range nodes {
 		result = append(result, &protocol.SenderSignatureBuilder{
 			MemberId:  node.MemberId,
-			Signature: node.KeyManager.SignConsensusMessage(blockHeight, blockRef.Raw()),
+			Signature: node.KeyManager.SignConsensusMessage(context.Background(), blockHeight, blockRef.Raw()),
 		})
 	}
 

@@ -7,6 +7,7 @@
 package builders
 
 import (
+	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/messagesfactory"
 	"github.com/orbs-network/lean-helix-go/services/preparedmessages"
@@ -47,7 +48,7 @@ func CreatePreparedProof(
 		for i, mgr := range pSigners {
 			pSenders[i] = &protocol.SenderSignatureBuilder{
 				MemberId:  mgr.MemberId,
-				Signature: mgr.KeyManager.SignConsensusMessage(pBlockRef.BlockHeight, pBlockRef.Build().Raw()),
+				Signature: mgr.KeyManager.SignConsensusMessage(context.Background(), pBlockRef.BlockHeight, pBlockRef.Build().Raw()),
 			}
 		}
 	}
@@ -64,7 +65,7 @@ func CreatePreparedProof(
 		}
 		ppSender = &protocol.SenderSignatureBuilder{
 			MemberId:  ppSigner.MemberId,
-			Signature: ppSigner.KeyManager.SignConsensusMessage(ppBlockRef.BlockHeight, ppBlockRef.Build().Raw()),
+			Signature: ppSigner.KeyManager.SignConsensusMessage(context.Background(), ppBlockRef.BlockHeight, ppBlockRef.Build().Raw()),
 		}
 	}
 	preparedProof := &protocol.PreparedProofBuilder{

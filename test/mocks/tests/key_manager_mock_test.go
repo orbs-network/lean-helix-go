@@ -7,6 +7,7 @@
 package tests
 
 import (
+	"context"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
@@ -25,12 +26,12 @@ func TestKeyManagerVerify(t *testing.T) {
 
 	goodSenderSignature := &protocol.SenderSignatureBuilder{
 		MemberId:  signerId,
-		Signature: signerKeyManager.SignConsensusMessage(1, content),
+		Signature: signerKeyManager.SignConsensusMessage(context.Background(), 1, content),
 	}
 
 	badSenderSignature := &protocol.SenderSignatureBuilder{
 		MemberId:  signerId,
-		Signature: signerKeyManager.SignConsensusMessage(1, []byte{6, 6, 6}),
+		Signature: signerKeyManager.SignConsensusMessage(context.Background(), 1, []byte{6, 6, 6}),
 	}
 
 	require.NoError(t, verifierKeyManager.VerifyConsensusMessage(1, content, goodSenderSignature.Build()))
@@ -48,12 +49,12 @@ func TestKeyManagerRandomSeedVerify(t *testing.T) {
 
 	goodSenderSignature := &protocol.SenderSignatureBuilder{
 		MemberId:  signerId,
-		Signature: primitives.Signature(signerKeyManager.SignRandomSeed(1, content)),
+		Signature: primitives.Signature(signerKeyManager.SignRandomSeed(context.Background(), 1, content)),
 	}
 
 	badSenderSignature := &protocol.SenderSignatureBuilder{
 		MemberId:  signerId,
-		Signature: primitives.Signature(signerKeyManager.SignRandomSeed(1, []byte{6, 6, 6})),
+		Signature: primitives.Signature(signerKeyManager.SignRandomSeed(context.Background(), 1, []byte{6, 6, 6})),
 	}
 
 	require.Nil(t, verifierKeyManager.VerifyRandomSeed(1, content, goodSenderSignature.Build()))
