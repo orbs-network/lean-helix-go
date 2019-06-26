@@ -1,5 +1,8 @@
 # Mainloop with additional listener goroutine
 
+_POC CODE IS INCOMPLETE AND WILL PROBABLY REMAIN SO_
+
+
 ## Sequence Diagram
 
 Paste it [here](https://sequencediagram.org/)
