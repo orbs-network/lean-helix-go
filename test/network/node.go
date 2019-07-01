@@ -96,7 +96,7 @@ func (node *Node) ValidateBlockConsensus(ctx context.Context, block interfaces.B
 
 func (node *Node) Sync(ctx context.Context, prevBlock interfaces.Block, blockProofBytes []byte, prevBlockProofBytes []byte) {
 	if node.leanHelix != nil {
-		if err := node.leanHelix.ValidateBlockConsensus(ctx, prevBlock, blockProofBytes, prevBlockProofBytes); err == nil {
+		if err := node.ValidateBlockConsensus(ctx, prevBlock, blockProofBytes, prevBlockProofBytes); err == nil {
 			go node.leanHelix.UpdateState(ctx, prevBlock, prevBlockProofBytes)
 		}
 	}
