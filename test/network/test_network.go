@@ -121,17 +121,17 @@ func (net *TestNetwork) NodesPauseOnValidate(nodes ...*Node) {
 
 func (net *TestNetwork) WaitForNodesToValidate(ctx context.Context, nodes ...*Node) {
 	for _, node := range nodes {
-		node.BlockUtils.ValidationSns.WaitForSignal(ctx)
+		node.BlockUtils.ValidationLatch.ReturnWhenLatchIsPaused(ctx)
 	}
 }
 
 func (net *TestNetwork) ResumeNodesValidation(ctx context.Context, nodes ...*Node) {
 	for _, node := range nodes {
-		node.BlockUtils.ValidationSns.Resume(ctx)
+		node.BlockUtils.ValidationLatch.Resume(ctx)
 	}
 }
 
-func (net *TestNetwork) NodesPauseOnRequestNewBlock(nodes ...*Node) {
+func (net *TestNetwork) SetNodesToPauseOnRequestNewBlock(nodes ...*Node) {
 	if nodes == nil {
 		nodes = net.Nodes
 	}
@@ -142,11 +142,11 @@ func (net *TestNetwork) NodesPauseOnRequestNewBlock(nodes ...*Node) {
 }
 
 func (net *TestNetwork) WaitForNodeToRequestNewBlock(ctx context.Context, node *Node) {
-	node.BlockUtils.RequestNewBlockSns.WaitForSignal(ctx)
+	node.BlockUtils.RequestNewBlockLatch.ReturnWhenLatchIsPaused(ctx)
 }
 
 func (net *TestNetwork) ResumeNodeRequestNewBlock(ctx context.Context, node *Node) {
-	node.BlockUtils.RequestNewBlockSns.Resume(ctx)
+	node.BlockUtils.RequestNewBlockLatch.Resume(ctx)
 }
 
 func (net *TestNetwork) WaitForConsensus(ctx context.Context) {

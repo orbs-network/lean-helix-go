@@ -93,7 +93,7 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
 		byzantineNode := net.Nodes[3]
-		net.NodesPauseOnRequestNewBlock(node0)
+		net.SetNodesToPauseOnRequestNewBlock(node0)
 		net.StartConsensus(ctx)
 
 		net.WaitForNodeToRequestNewBlock(ctx, node0)

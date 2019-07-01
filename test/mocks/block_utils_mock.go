@@ -30,10 +30,10 @@ type MockBlockUtils struct {
 	blocksPool *BlocksPool
 
 	PauseOnRequestNewBlock bool
-	RequestNewBlockSns     *test.Sns
+	RequestNewBlockLatch   *test.Latch
 
 	ValidationCounter int
-	ValidationSns     *test.Sns
+	ValidationLatch   *test.Latch
 	PauseOnValidation bool
 	ValidationResult  bool
 }
@@ -43,10 +43,10 @@ func NewMockBlockUtils(blocksPool *BlocksPool) *MockBlockUtils {
 		blocksPool: blocksPool,
 
 		PauseOnRequestNewBlock: false,
-		RequestNewBlockSns:     test.NewSignalAndStop(),
+		RequestNewBlockLatch:   test.NewLatch(),
 
 		ValidationCounter: 0,
-		ValidationSns:     test.NewSignalAndStop(),
+		ValidationLatch:   test.NewLatch(),
 		PauseOnValidation: false,
 		ValidationResult:  true,
 	}
@@ -54,7 +54,7 @@ func NewMockBlockUtils(blocksPool *BlocksPool) *MockBlockUtils {
 
 func (b *MockBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
 	if b.PauseOnRequestNewBlock {
-		b.RequestNewBlockSns.SignalAndStop(ctx)
+		b.RequestNewBlockLatch.ReturnWhenLatchIsResumed(ctx)
 	}
 
 	block := b.blocksPool.PopBlock(prevBlock)
@@ -73,7 +73,7 @@ func (b *MockBlockUtils) CounterOfValidation() int {
 func (b *MockBlockUtils) ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, block interfaces.Block, blockHash primitives.BlockHash, prevBlock interfaces.Block) error {
 	b.ValidationCounter++
 	if b.PauseOnValidation {
-		b.ValidationSns.SignalAndStop(ctx)
+		b.ValidationLatch.ReturnWhenLatchIsResumed(ctx)
 	}
 
 	if !b.ValidationResult {

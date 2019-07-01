@@ -29,7 +29,7 @@ func TestNodeSync(t *testing.T) {
 		node2 := net.Nodes[2]
 		node3 := net.Nodes[3]
 
-		net.NodesPauseOnRequestNewBlock()
+		net.SetNodesToPauseOnRequestNewBlock()
 		net.StartConsensus(ctx)
 
 		// closing node3's network to messages (To make it out of sync)

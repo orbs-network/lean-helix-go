@@ -29,7 +29,7 @@ func TestHappyFlow(t *testing.T) {
 func TestHappyFlowMessages(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		net := network.ABasicTestNetwork()
-		net.NodesPauseOnRequestNewBlock()
+		net.SetNodesToPauseOnRequestNewBlock()
 
 		net.StartConsensus(ctx)
 

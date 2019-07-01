@@ -21,7 +21,7 @@ type harness struct {
 func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Block) *harness {
 	//net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).LogToConsole().Build()
 	net := network.ATestNetwork(4, blocksPool...)
-	net.NodesPauseOnRequestNewBlock()
+	net.SetNodesToPauseOnRequestNewBlock()
 	net.StartConsensus(ctx)
 
 	return &harness{
