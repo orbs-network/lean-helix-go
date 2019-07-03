@@ -3,51 +3,41 @@ package acceptance
 import (
 	"context"
 	"fmt"
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
+	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/orbs-network/lean-helix-go/test/network"
 	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
 
-func TestNodeSyncNotProcessedWhileRunningLongOperation(t *testing.T) {
+func TestNodeSynHangsWhileRunningLongOperation(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := network.ABasicTestNetwork()
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
+		net := network.ATestNetwork(4, t.Logf, block1, block2)
 		node0 := net.Nodes[0]
+
 		net.SetNodesToPauseOnRequestNewBlock()
-		net.StartConsensus(ctx)
 
-		fmt.Println("Calling WaitForNodeToRequestNewBlock")
+		node0.StartConsensus(ctx)
+		net.ReturnWhenNodesPauseOnRequestNewBlock(ctx, node0)
 
-		net.WaitForNodeToRequestNewBlock(ctx, net.Nodes[0])
+		fmt.Println("Node is paused on create block..")
 
-		// Send NodeSync
-		node0.Sync(ctx, nil, nil, nil)
+		latestBlock := node0.GetLatestBlock()
+		newBlock := mocks.ABlock(latestBlock)
+		require.Equal(t, primitives.BlockHeight(1), node0.GetCurrentHeight())
+		net.SetNodesToPauseOnHandleUpdateState()
 
-		// Verify OnNewConsensusRound is called (this should fail)
+		time.AfterFunc(1*time.Second, func() {
+			t.Errorf("Waited too long for Sync to complete")
+			t.FailNow()
+		})
 
-		fmt.Println("Called WaitForNodeToRequestNewBlock, waiting 1s")
-
-		time.Sleep(1 * time.Second)
-		fmt.Println("Waited for 1s, calling ResumeNodeRequestNewBlock")
-		net.ResumeNodeRequestNewBlock(ctx, net.Nodes[0])
-		fmt.Println("Called ResumeNodeRequestNewBlock")
-
-		require.True(t, net.WaitForAllNodesToCommitTheSameBlock(ctx))
+		node0.SyncWithoutProof(ctx, newBlock, nil)
+		net.ReturnWhenNodesPauseOnUpdateState(ctx, node0)
 	})
-
-	// Start consensus
-	// Run a paused CreateBlock
-
-}
-
-func TestElectionNotProcessedWhileRunningLongOperation(t *testing.T) {
-	// Start consensus
-	// Run a paused CreateBlock
-	// Send ElectionTrigger
-	// Verify SetView is called (this should fail)
-}
-
-func TestWorkerContextCancellation(t *testing.T) {
-
 }
