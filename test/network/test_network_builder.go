@@ -117,6 +117,10 @@ func (tb *TestNetworkBuilder) buildNode(
 		WithBlocksPool(blocksPool).
 		WithMemberId(memberId)
 
+	if tb.blockUtils != nil {
+		b.WithBlockUtils(tb.blockUtils)
+	}
+
 	if logToConsole {
 		b.ThatLogsToConsole()
 	}

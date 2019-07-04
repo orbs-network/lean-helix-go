@@ -12,6 +12,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/storage"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 )
 
@@ -25,7 +26,7 @@ type Node struct {
 	leanHelix           *leanhelix.LeanHelix
 	blockChain          *mocks.InMemoryBlockChain
 	ElectionTrigger     interfaces.ElectionTrigger
-	BlockUtils          *mocks.MockBlockUtils
+	BlockUtils          interfaces.BlockUtils
 	KeyManager          *mocks.MockKeyManager
 	Storage             interfaces.Storage
 	Communication       *mocks.CommunicationMock
@@ -33,6 +34,8 @@ type Node struct {
 	MemberId            primitives.MemberId
 	NodeStateChannel    chan *NodeState
 	WriteToStateChannel bool
+	PauseOnUpdateState  bool
+	OnUpdateStateLatch  *test.Latch
 }
 
 func (node *Node) GetKeyManager() interfaces.KeyManager {
@@ -41,6 +44,10 @@ func (node *Node) GetKeyManager() interfaces.KeyManager {
 
 func (node *Node) GetMemberId() primitives.MemberId {
 	return node.MemberId
+}
+
+func (node *Node) GetCurrentHeight() primitives.BlockHeight {
+	return node.leanHelix.GetCurrentHeight()
 }
 
 func (node *Node) GetLatestBlock() interfaces.Block {
@@ -69,8 +76,7 @@ func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, 
 
 	if node.WriteToStateChannel {
 		nodeState := &NodeState{
-			block:           block,
-			validationCount: node.BlockUtils.ValidationCounter,
+			block: block,
 		}
 
 		select {
@@ -80,6 +86,12 @@ func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, 
 		case node.NodeStateChannel <- nodeState:
 			return
 		}
+	}
+}
+
+func (node *Node) onUpdateState(ctx context.Context, currentHeight primitives.BlockHeight, receivedBlockHeight primitives.BlockHeight) {
+	if node.PauseOnUpdateState {
+		node.OnUpdateStateLatch.ReturnWhenLatchIsResumed(ctx)
 	}
 }
 
@@ -99,6 +111,12 @@ func (node *Node) Sync(ctx context.Context, prevBlock interfaces.Block, blockPro
 		if err := node.ValidateBlockConsensus(ctx, prevBlock, blockProofBytes, prevBlockProofBytes); err == nil {
 			go node.leanHelix.UpdateState(ctx, prevBlock, prevBlockProofBytes)
 		}
+	}
+}
+
+func (node *Node) SyncWithoutProof(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte) {
+	if node.leanHelix != nil {
+		go node.leanHelix.UpdateState(ctx, prevBlock, prevBlockProofBytes)
 	}
 }
 
@@ -126,7 +144,7 @@ func NewNode(
 	instanceId primitives.InstanceId,
 	membership interfaces.Membership,
 	communication *mocks.CommunicationMock,
-	blockUtils *mocks.MockBlockUtils,
+	blockUtils interfaces.BlockUtils,
 	electionTrigger interfaces.ElectionTrigger,
 	logger interfaces.Logger) *Node {
 
@@ -142,6 +160,7 @@ func NewNode(
 		Membership:          membership,
 		MemberId:            memberId,
 		NodeStateChannel:    make(chan *NodeState),
+		OnUpdateStateLatch:  test.NewLatch(),
 		WriteToStateChannel: true,
 	}
 

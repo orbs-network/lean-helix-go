@@ -22,6 +22,7 @@ type NodeBuilder struct {
 	logsToConsole   bool
 	memberId        primitives.MemberId
 	electionTrigger interfaces.ElectionTrigger
+	blockUtils      interfaces.BlockUtils
 }
 
 func NewNodeBuilder() *NodeBuilder {
@@ -73,13 +74,19 @@ func (builder *NodeBuilder) ThatLogsToConsole() *NodeBuilder {
 	return builder
 }
 
+func (builder *NodeBuilder) WithBlockUtils(utils interfaces.BlockUtils) {
+	builder.blockUtils = utils
+}
+
 func (builder *NodeBuilder) Build() *Node {
 	memberId := builder.memberId
 	if memberId == nil {
 		memberId = primitives.MemberId(fmt.Sprintf("Dummy MemberId"))
 	}
 
-	blockUtils := mocks.NewMockBlockUtils(builder.blocksPool)
+	if builder.blockUtils == nil {
+		builder.blockUtils = mocks.NewMockBlockUtils(builder.blocksPool)
+	}
 
 	var electionTrigger interfaces.ElectionTrigger
 	if builder.electionTrigger == nil {
@@ -92,7 +99,7 @@ func (builder *NodeBuilder) Build() *Node {
 	if builder.logsToConsole {
 		l = logger.NewConsoleLogger()
 	}
-	return NewNode(builder.instanceId, builder.membership, builder.communication, blockUtils, electionTrigger, l)
+	return NewNode(builder.instanceId, builder.membership, builder.communication, builder.blockUtils, electionTrigger, l)
 }
 
 func ADummyNode() *Node {

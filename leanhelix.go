@@ -30,14 +30,16 @@ type blockWithProof struct {
 }
 
 type LeanHelix struct {
-	messagesChannel    chan *interfaces.ConsensusRawMessage
-	updateStateChannel chan *blockWithProof
-	currentHeight      primitives.BlockHeight
-	config             *interfaces.Config
-	logger             L.LHLogger
-	filter             *rawmessagesfilter.RawMessageFilter
-	leanHelixTerm      *leanhelixterm.LeanHelixTerm
-	onCommitCallback   interfaces.OnCommitCallback
+	messagesChannel             chan *interfaces.ConsensusRawMessage
+	updateStateChannel          chan *blockWithProof
+	currentHeight               primitives.BlockHeight
+	config                      *interfaces.Config
+	logger                      L.LHLogger
+	filter                      *rawmessagesfilter.RawMessageFilter
+	leanHelixTerm               *leanhelixterm.LeanHelixTerm
+	onCommitCallback            interfaces.OnCommitCallback
+	onNewConsensusRoundCallback interfaces.OnNewConsensusRoundCallback
+	onUpdateStateCallback       interfaces.OnUpdateStateCallback
 }
 
 // ***********************************
@@ -69,7 +71,7 @@ func (lh *LeanHelix) Run(ctx context.Context) {
 	lh.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHMSG START LISTENING NOW")
 	for {
 		select {
-		case <-ctx.Done():
+		case <-ctx.Done(): // system shutdown
 			lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP DONE, Terminating Run().")
 			lh.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHMSG STOPPED LISTENING")
 			return
@@ -85,17 +87,21 @@ func (lh *LeanHelix) Run(ctx context.Context) {
 			lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP ELECTION")
 			trigger(ctx)
 
-		case receivedBlockWithProof := <-lh.updateStateChannel:
-			receivedBlockHeight := blockheight.GetBlockHeight(receivedBlockWithProof.block)
-			if receivedBlockHeight >= lh.currentHeight {
-				lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE ACCEPTED block with height=%d, calling onNewConsensusRound()", receivedBlockHeight)
-				// This block is received from external source
-				// Refuse to be leader on V=0 for a block received from block sync, because this block will usually be not be the latest block.
-				lh.onNewConsensusRound(ctx, receivedBlockWithProof.block, receivedBlockWithProof.prevBlockProofBytes, false)
-			} else {
-				lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE IGNORE - Received block ignored because its height=%d is less than current height=%d", receivedBlockHeight, lh.currentHeight)
-			}
+		case receivedBlockWithProof := <-lh.updateStateChannel: // NodeSync
+			lh.HandleUpdateState(ctx, receivedBlockWithProof)
 		}
+	}
+}
+
+func (lh *LeanHelix) HandleUpdateState(ctx context.Context, receivedBlockWithProof *blockWithProof) {
+	receivedBlockHeight := blockheight.GetBlockHeight(receivedBlockWithProof.block)
+	if receivedBlockHeight >= lh.currentHeight {
+		lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE ACCEPTED block with height=%d, calling onNewConsensusRound()", receivedBlockHeight)
+		// This block is received from external source
+		// Refuse to be leader on V=0 for a block received from block sync, because this block will usually be not be the latest block.
+		lh.onNewConsensusRound(ctx, receivedBlockWithProof.block, receivedBlockWithProof.prevBlockProofBytes, false)
+	} else {
+		lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP UPDATESTATE IGNORE - Received block ignored because its height=%d is less than current height=%d", receivedBlockHeight, lh.currentHeight)
 	}
 }
 
@@ -236,4 +242,11 @@ func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, prevBlock interfac
 	}
 	lh.leanHelixTerm = leanhelixterm.NewLeanHelixTerm(ctx, lh.logger, lh.config, lh.onCommit, prevBlock, prevBlockProofBytes, canBeFirstLeader)
 	lh.filter.SetBlockHeight(ctx, lh.currentHeight, lh.leanHelixTerm)
+	if lh.onNewConsensusRoundCallback != nil {
+		lh.onNewConsensusRoundCallback(ctx, prevBlock, canBeFirstLeader)
+	}
+}
+
+func (lh *LeanHelix) GetCurrentHeight() primitives.BlockHeight {
+	return lh.currentHeight
 }

@@ -15,6 +15,8 @@ import (
 )
 
 type OnCommitCallback func(ctx context.Context, block Block, blockProof []byte)
+type OnNewConsensusRoundCallback func(ctx context.Context, prevBlock Block, canBeFirstLeader bool)
+type OnUpdateStateCallback func(ctx context.Context, currentHeight primitives.BlockHeight, receivedBlockHeight primitives.BlockHeight)
 
 type Config struct {
 	InstanceId      primitives.InstanceId

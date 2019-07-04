@@ -26,33 +26,28 @@ func CalculateBlockHash(block interfaces.Block) primitives.BlockHash {
 	return hash[:]
 }
 
-type MockBlockUtils struct {
-	blocksPool *BlocksPool
-
+type PausableBlockUtils struct {
+	blocksPool             *BlocksPool
 	PauseOnRequestNewBlock bool
 	RequestNewBlockLatch   *test.Latch
-
-	ValidationCounter int
-	ValidationLatch   *test.Latch
-	PauseOnValidation bool
-	ValidationResult  bool
+	ValidationLatch        *test.Latch
+	PauseOnValidateBlock   bool
+	ValidationResult       bool
 }
 
-func NewMockBlockUtils(blocksPool *BlocksPool) *MockBlockUtils {
-	return &MockBlockUtils{
-		blocksPool: blocksPool,
-
+func NewMockBlockUtils(blocksPool *BlocksPool) *PausableBlockUtils {
+	return &PausableBlockUtils{
+		blocksPool:             blocksPool,
 		PauseOnRequestNewBlock: false,
 		RequestNewBlockLatch:   test.NewLatch(),
 
-		ValidationCounter: 0,
-		ValidationLatch:   test.NewLatch(),
-		PauseOnValidation: false,
-		ValidationResult:  true,
+		ValidationLatch:      test.NewLatch(),
+		PauseOnValidateBlock: false,
+		ValidationResult:     true,
 	}
 }
 
-func (b *MockBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
+func (b *PausableBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
 	if b.PauseOnRequestNewBlock {
 		b.RequestNewBlockLatch.ReturnWhenLatchIsResumed(ctx)
 	}
@@ -62,17 +57,12 @@ func (b *MockBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeigh
 	return block, blockHash
 }
 
-func (b *MockBlockUtils) ValidateBlockCommitment(blockHeight primitives.BlockHeight, block interfaces.Block, blockHash primitives.BlockHash) bool {
+func (b *PausableBlockUtils) ValidateBlockCommitment(blockHeight primitives.BlockHeight, block interfaces.Block, blockHash primitives.BlockHash) bool {
 	return CalculateBlockHash(block).Equal(blockHash)
 }
 
-func (b *MockBlockUtils) CounterOfValidation() int {
-	return b.ValidationCounter
-}
-
-func (b *MockBlockUtils) ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, block interfaces.Block, blockHash primitives.BlockHash, prevBlock interfaces.Block) error {
-	b.ValidationCounter++
-	if b.PauseOnValidation {
+func (b *PausableBlockUtils) ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, block interfaces.Block, blockHash primitives.BlockHash, prevBlock interfaces.Block) error {
+	if b.PauseOnValidateBlock {
 		b.ValidationLatch.ReturnWhenLatchIsResumed(ctx)
 	}
 
