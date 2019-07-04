@@ -34,13 +34,13 @@ func TestHappyFlowMessages(t *testing.T) {
 		net.StartConsensus(ctx)
 
 		// let the leader run on the first round
-		net.WaitForNodeToRequestNewBlock(ctx, net.Nodes[0])
-		net.ResumeNodeRequestNewBlock(ctx, net.Nodes[0])
+		net.ReturnWhenNodesPauseOnRequestNewBlock(ctx, net.Nodes[0])
+		net.ResumeRequestNewBlockOnNodes(ctx, net.Nodes[0])
 
 		net.WaitForAllNodesToCommitTheSameBlock(ctx)
 
 		// hang the leader before the next round
-		net.WaitForNodeToRequestNewBlock(ctx, net.Nodes[0])
+		net.ReturnWhenNodesPauseOnRequestNewBlock(ctx, net.Nodes[0])
 
 		require.Equal(t, 1, net.Nodes[0].Communication.CountSentMessages(protocol.LEAN_HELIX_PREPREPARE))
 		require.Equal(t, 0, net.Nodes[1].Communication.CountSentMessages(protocol.LEAN_HELIX_PREPREPARE))
@@ -78,31 +78,31 @@ func TestHangingNode(t *testing.T) {
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
 		node3 := net.Nodes[3]
-		net.NodesPauseOnValidate()
+		net.SetNodesToPauseOnValidateBlock()
 		net.StartConsensus(ctx)
 
-		net.WaitForNodesToValidate(ctx, node1, node2, node3)
-		net.ResumeNodesValidation(ctx, node1, node2)
+		net.ReturnWhenNodesPauseOnValidateBlock(ctx, node1, node2, node3)
+		net.ResumeValidateBlockOnNodes(ctx, node1, node2)
 		net.WaitForNodesToCommitABlock(ctx, node0, node1, node2)
 		require.True(t, matchers.BlocksAreEqual(node0.GetLatestBlock(), block1))
 		require.True(t, matchers.BlocksAreEqual(node1.GetLatestBlock(), block1))
 		require.True(t, matchers.BlocksAreEqual(node2.GetLatestBlock(), block1))
 		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)
 
-		net.WaitForNodesToValidate(ctx, node1, node2)
-		net.ResumeNodesValidation(ctx, node1, node2)
+		net.ReturnWhenNodesPauseOnValidateBlock(ctx, node1, node2)
+		net.ResumeValidateBlockOnNodes(ctx, node1, node2)
 		net.WaitForNodesToCommitABlock(ctx, node0, node1, node2)
 		require.True(t, matchers.BlocksAreEqual(node0.GetLatestBlock(), block2))
 		require.True(t, matchers.BlocksAreEqual(node1.GetLatestBlock(), block2))
 		require.True(t, matchers.BlocksAreEqual(node2.GetLatestBlock(), block2))
 		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)
 
-		net.ResumeNodesValidation(ctx, node3)
+		net.ResumeValidateBlockOnNodes(ctx, node3)
 		net.WaitForNodesToCommitABlock(ctx, node3)
 		require.True(t, matchers.BlocksAreEqual(node3.GetLatestBlock(), block1))
 
-		net.WaitForNodesToValidate(ctx, node3)
-		net.ResumeNodesValidation(ctx, node3)
+		net.ReturnWhenNodesPauseOnValidateBlock(ctx, node3)
+		net.ResumeValidateBlockOnNodes(ctx, node3)
 		net.WaitForNodesToCommitABlock(ctx, node3)
 		require.True(t, matchers.BlocksAreEqual(node3.GetLatestBlock(), block2))
 	})
