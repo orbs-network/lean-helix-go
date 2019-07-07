@@ -115,9 +115,7 @@ func (node *Node) Sync(ctx context.Context, prevBlock interfaces.Block, blockPro
 }
 
 func (node *Node) SyncWithoutProof(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte) {
-	if node.leanHelix != nil {
-		go node.leanHelix.UpdateState(ctx, prevBlock, prevBlockProofBytes)
-	}
+	node.leanHelix.UpdateState(ctx, prevBlock, prevBlockProofBytes)
 }
 
 func (node *Node) StartConsensusSync(ctx context.Context) {

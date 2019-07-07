@@ -2,7 +2,6 @@ package acceptance
 
 import (
 	"context"
-	"fmt"
 	"github.com/orbs-network/go-mock"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
@@ -18,7 +17,15 @@ type MockBlockUtils struct {
 	mock.Mock
 }
 
+type nilBlock struct{}
+func (nb *nilBlock) Height() primitives.BlockHeight {
+	panic("I'm a mock object for a nil value and this would through nil pointer exception")
+}
+
 func (b *MockBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
+	if prevBlock == nil {
+		prevBlock = &nilBlock{} // mock object cannot handle nil interfaces
+	}
 	res := b.Called(ctx, blockHeight, prevBlock)
 	return res.Get(0).(interfaces.Block), res.Get(1).(primitives.BlockHash)
 }
@@ -39,7 +46,6 @@ func TestRequestNewBlockDoesNotHangNodeSync(t *testing.T) {
 
 		instanceId := primitives.InstanceId(rand.Uint64())
 		mockBlockUtils := &MockBlockUtils{}
-		fmt.Println("Bla 1")
 
 		net := network.NewTestNetworkBuilder().
 			WithNodeCount(4).
@@ -50,62 +56,51 @@ func TestRequestNewBlockDoesNotHangNodeSync(t *testing.T) {
 			Build()
 
 		node0 := net.Nodes[0]
-		fmt.Println("Bla 2")
+
 		// from harness - get mock for BlockUtils.CreateNewBlockProposal - like so:
 		createNewBlockProposalEntered := make(chan struct{})
-		createNewBlockProposalExited := make(chan struct{})
+		createNewBlockProposalCompleted := make(chan struct{})
 		mockBlockUtils.
 			When("RequestNewBlockProposal", mock.Any, mock.Any, mock.Any).
 			Call(func(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
-				fmt.Println("Bla inside ")
-
 				close(createNewBlockProposalEntered)
 				<-ctx.Done()
-				close(createNewBlockProposalExited)
+				close(createNewBlockProposalCompleted)
 				return block1, nil
 			})
-		fmt.Println("Bla 3")
 
 		// wait for its childCtx which will be cancelled when NodeSync is called
 
 		//net.SetNodesToPauseOnRequestNewBlock()
 
 		node0.StartConsensus(ctx)
-		fmt.Println("Bla 4")
-
 		<-createNewBlockProposalEntered // this assures CreateNewBlockProposal is underway
 
 		//net.ReturnWhenNodesPauseOnRequestNewBlock(ctx, node0)
 
-		fmt.Println("Bla 5")
-
 		//net.SetNodesToPauseOnHandleUpdateState()
 
-		doneNodeSync := make(chan struct{})
-		timeoutCtx, _ := context.WithTimeout(ctx, 1*time.Second)
+		updateStateCompleted := make(chan struct{})
 		go func() {
-			fmt.Println("Bla goooooo")
 			node0.SyncWithoutProof(ctx, nil, nil)
-			doneNodeSync <- struct{}{}
+			updateStateCompleted <- struct{}{}
 		}()
 
-		select {
-		case <-doneNodeSync:
-			t.Log("NodeSync finished successfully")
+		requireChanWriteWithinTimeout(t, updateStateCompleted, 1*time.Second, "NodeSync is blocked by RequestNewBlockProposal")
+		requireChanWriteWithinTimeout(t, createNewBlockProposalCompleted, 1*time.Second, "createNewBlockProposal did not return immediately after NodeSync")
 
-		case <-timeoutCtx.Done():
-			t.Errorf("Timed out waiting for NodeSync")
-		}
-
-		select {
-		case <-createNewBlockProposalExited:
-			t.Log("createNewBlockProposal terminated as expected")
-
-		case <-timeoutCtx.Done():
-			t.Errorf("Timed out waiting for createNewBlockProposal context to be cancelled")
-		}
 		// net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
 		//net.ReturnWhenNodesPauseOnUpdateState(ctx, node0)
 	})
+}
+
+
+func requireChanWriteWithinTimeout(t *testing.T, listenChan <-chan struct{}, timeout time.Duration, format string, args ...interface{}) {
+	timeoutCtx, _ := context.WithTimeout(context.Background(), timeout)
+	select {
+	case <-listenChan: // the event we are anticipating
+	case <-timeoutCtx.Done():
+		t.Fatalf(format, args...)
+	}
 }
