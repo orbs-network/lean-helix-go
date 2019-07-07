@@ -45,8 +45,9 @@ func (et *ElectionTriggerMock) ElectionChannel() chan func(ctx context.Context) 
 	return et.electionChannel
 }
 
-func (et *ElectionTriggerMock) ManualTrigger(ctx context.Context) {
+func (et *ElectionTriggerMock) ManualTrigger(ctx context.Context) <-chan struct{} {
 	fmt.Println("Manual Trigger - write to election channel in a new goroutine")
+	done := make(chan struct{})
 	go func() {
 		select {
 		case <-ctx.Done():
@@ -56,8 +57,10 @@ func (et *ElectionTriggerMock) ManualTrigger(ctx context.Context) {
 				et.electionHandler(ctx, et.blockHeight, et.view, nil)
 			}
 		}:
+			close(done)
 		}
 	}()
+	return done
 }
 
 func (et *ElectionTriggerMock) ManualTriggerSync(ctx context.Context) {

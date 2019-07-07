@@ -62,13 +62,13 @@ func (node *Node) GetBlockProofAt(height primitives.BlockHeight) []byte {
 	return node.blockChain.GetBlockProofAt(height)
 }
 
-func (node *Node) TriggerElection(ctx context.Context) {
+func (node *Node) TriggerElection(ctx context.Context) <-chan struct{} {
 	electionTriggerMock, ok := node.ElectionTrigger.(*mocks.ElectionTriggerMock)
-	if ok {
-		electionTriggerMock.ManualTrigger(ctx)
-	} else {
+	if !ok {
 		panic("You are trying to trigger election with an election trigger that is not the ElectionTriggerMock")
 	}
+
+	return electionTriggerMock.ManualTrigger(ctx)
 }
 
 func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, blockProof []byte) {
