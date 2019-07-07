@@ -41,11 +41,9 @@ func (b SimpleMockBlockUtils) ValidateBlockCommitment(blockHeight primitives.Blo
 }
 
 func TestRequestNewBlockDoesNotHangNodeSync(t *testing.T) {
-	t.Skip() // FIXME: Fails
 	test.WithContext(func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
-		//net := network.ATestNetworkBuilder(4, block1, block2).Build()
 
 		instanceId := primitives.InstanceId(rand.Uint64())
 		mockBlockUtils := &SimpleMockBlockUtils{}
@@ -72,16 +70,8 @@ func TestRequestNewBlockDoesNotHangNodeSync(t *testing.T) {
 				return block1, nil
 			})
 
-		// wait for its childCtx which will be cancelled when NodeSync is called
-
-		//net.SetNodesToPauseOnRequestNewBlock()
-
 		node0.StartConsensus(ctx)
 		<-createNewBlockProposalEntered // this assures CreateNewBlockProposal is underway
-
-		//net.ReturnWhenNodesPauseOnRequestNewBlock(ctx, node0)
-
-		//net.SetNodesToPauseOnHandleUpdateState()
 
 		updateStateCompleted := make(chan struct{})
 		go func() {
@@ -90,11 +80,7 @@ func TestRequestNewBlockDoesNotHangNodeSync(t *testing.T) {
 		}()
 
 		requireChanWriteWithinTimeout(t, updateStateCompleted, 1*time.Second, "NodeSync is blocked by RequestNewBlockProposal")
-		requireChanWriteWithinTimeout(t, createNewBlockProposalCompleted, 1*time.Second, "createNewBlockProposal did not return immediately after NodeSync")
-
-		// net.ResumeRequestNewBlockOnNodes(ctx, node0)
-
-		//net.ReturnWhenNodesPauseOnUpdateState(ctx, node0)
+		requireChanWriteWithinTimeout(t, createNewBlockProposalCompleted, 1*time.Second, "RequestNewBlockProposal's ctx was not cancelled immediately after NodeSync")
 	})
 }
 
