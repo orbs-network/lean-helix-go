@@ -13,22 +13,15 @@ import (
 	"time"
 )
 
-type SimpleMockBlockUtils struct {
-	mock.Mock
-}
-
-func (b *SimpleMockBlockUtils) GetValidationResult() bool {
-	panic("implement me")
-}
-
-func (b *SimpleMockBlockUtils) SetValidationResult(bool) {
-	panic("implement me")
-}
-
+// TODO -  a workaround for a bug in go-mock. when passing nil interface type to Call() implementation - Mock.Called() fails to invoke the Call function.
 type nilBlock struct{}
 
 func (nb *nilBlock) Height() primitives.BlockHeight {
-	panic("I'm a mock object for a nil value and this would through nil pointer exception")
+	panic("I'm a mock object for a nil value and this would throw nil pointer exception")
+}
+
+type SimpleMockBlockUtils struct {
+	mock.Mock
 }
 
 func (b *SimpleMockBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
@@ -52,7 +45,7 @@ func TestRequestNewBlockDoesNotHangNodeSync(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
-		//net := network.ATestNetwork(4, block1, block2)
+		//net := network.ATestNetworkBuilder(4, block1, block2).Build()
 
 		instanceId := primitives.InstanceId(rand.Uint64())
 		mockBlockUtils := &SimpleMockBlockUtils{}

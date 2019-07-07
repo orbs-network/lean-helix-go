@@ -18,11 +18,10 @@ type NodeBuilder struct {
 	instanceId      primitives.InstanceId
 	communication   *mocks.CommunicationMock
 	membership      interfaces.Membership
-	blocksPool      *mocks.BlocksPool
 	logsToConsole   bool
 	memberId        primitives.MemberId
 	electionTrigger interfaces.ElectionTrigger
-	blockUtils      mocks.MockBlockUtils
+	blockUtils      interfaces.BlockUtils
 }
 
 func NewNodeBuilder() *NodeBuilder {
@@ -55,13 +54,6 @@ func (builder *NodeBuilder) AsInstanceId(instanceId primitives.InstanceId) *Node
 	return builder
 }
 
-func (builder *NodeBuilder) WithBlocksPool(blocksPool *mocks.BlocksPool) *NodeBuilder {
-	if builder.blocksPool == nil {
-		builder.blocksPool = blocksPool
-	}
-	return builder
-}
-
 func (builder *NodeBuilder) WithElectionTrigger(electionTrigger interfaces.ElectionTrigger) *NodeBuilder {
 	if builder.electionTrigger == nil {
 		builder.electionTrigger = electionTrigger
@@ -74,8 +66,9 @@ func (builder *NodeBuilder) ThatLogsToConsole() *NodeBuilder {
 	return builder
 }
 
-func (builder *NodeBuilder) WithBlockUtils(utils mocks.MockBlockUtils) {
+func (builder *NodeBuilder) WithBlockUtils(utils interfaces.BlockUtils) *NodeBuilder {
 	builder.blockUtils = utils
+	return builder
 }
 
 func (builder *NodeBuilder) Build() *Node {
@@ -85,7 +78,7 @@ func (builder *NodeBuilder) Build() *Node {
 	}
 
 	if builder.blockUtils == nil {
-		builder.blockUtils = mocks.NewMockBlockUtils(builder.blocksPool)
+		builder.blockUtils = mocks.NewMockBlockUtils(mocks.NewBlocksPool(nil))
 	}
 
 	var electionTrigger interfaces.ElectionTrigger

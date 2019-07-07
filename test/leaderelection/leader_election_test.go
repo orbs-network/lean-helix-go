@@ -176,16 +176,10 @@ func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 // TODO: This is sometimes stuck!!! Remove this comment if doesnt happen by end of June 2019
 func TestLeaderCircularOrdering(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		h := NewHarness(ctx, t)
-
 		// Nodes might get into prepared state, and send their block in the view-change
 		// meaning that the new leader will not request new block and we can't hang him.
 		// to prevent nodes from getting prepared, we just don't validate the block
-
-		h.net.Nodes[0].BlockUtils.SetValidationResult(false)
-		h.net.Nodes[1].BlockUtils.SetValidationResult(false)
-		h.net.Nodes[2].BlockUtils.SetValidationResult(false)
-		h.net.Nodes[3].BlockUtils.SetValidationResult(false)
+		h := NewHarnessWithFailingBlockProposalValidations(ctx, t)
 
 		h.net.ReturnWhenNodesPauseOnRequestNewBlock(ctx, h.net.Nodes[0])
 

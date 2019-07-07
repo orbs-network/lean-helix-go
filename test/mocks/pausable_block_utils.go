@@ -26,28 +26,14 @@ func CalculateBlockHash(block interfaces.Block) primitives.BlockHash {
 	return hash[:]
 }
 
-type MockBlockUtils interface {
-	interfaces.BlockUtils
-	GetValidationResult() bool
-	SetValidationResult(bool)
-}
-
 type PausableBlockUtils struct {
-	MockBlockUtils
-	blocksPool             *BlocksPool
-	PauseOnRequestNewBlock bool
-	RequestNewBlockLatch   *test.Latch
-	ValidationLatch        *test.Latch
-	PauseOnValidateBlock   bool
-	ValidationResult       bool
-}
-
-func (b *PausableBlockUtils) GetValidationResult() bool {
-	return b.ValidationResult
-}
-
-func (b *PausableBlockUtils) SetValidationResult(v bool) {
-	b.ValidationResult = v
+	interfaces.BlockUtils
+	blocksPool                   *BlocksPool
+	PauseOnRequestNewBlock       bool
+	RequestNewBlockLatch         *test.Latch
+	ValidationLatch              *test.Latch
+	PauseOnValidateBlock         bool
+	failBlockProposalValidations bool
 }
 
 func NewMockBlockUtils(blocksPool *BlocksPool) *PausableBlockUtils {
@@ -58,8 +44,12 @@ func NewMockBlockUtils(blocksPool *BlocksPool) *PausableBlockUtils {
 
 		ValidationLatch:      test.NewLatch(),
 		PauseOnValidateBlock: false,
-		ValidationResult:     true,
 	}
+}
+
+func (b *PausableBlockUtils) WithFailingBlockProposalValidations() *PausableBlockUtils {
+	b.failBlockProposalValidations = true
+	return b
 }
 
 func (b *PausableBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
@@ -81,7 +71,7 @@ func (b *PausableBlockUtils) ValidateBlockProposal(ctx context.Context, blockHei
 		b.ValidationLatch.ReturnWhenLatchIsResumed(ctx)
 	}
 
-	if !b.ValidationResult {
+	if b.failBlockProposalValidations {
 		return errors.New("some errors")
 	}
 	return nil

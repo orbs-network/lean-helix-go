@@ -9,6 +9,7 @@ package leaderelection
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/orbs-network/lean-helix-go/test/network"
 	"testing"
 )
@@ -19,8 +20,22 @@ type harness struct {
 }
 
 func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Block) *harness {
+	return newHarness(ctx, t, mocks.NewMockBlockUtils(mocks.NewBlocksPool(blocksPool)))
+}
+
+func NewHarnessWithFailingBlockProposalValidations(ctx context.Context, t *testing.T) *harness {
 	//net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).LogToConsole().Build()
-	net := network.ATestNetwork(4, blocksPool...)
+	failingValidationBlocksUtils := mocks.NewMockBlockUtils(mocks.NewBlocksPool(nil)).WithFailingBlockProposalValidations()
+	return newHarness(ctx, t, failingValidationBlocksUtils)
+}
+
+func newHarness(ctx context.Context, t *testing.T, blockUtils interfaces.BlockUtils) *harness {
+	//net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).LogToConsole().Build()
+	networkBuilder := network.ATestNetworkBuilder(4)
+	if blockUtils != nil {
+		networkBuilder = networkBuilder.WithBlockUtils(blockUtils)
+	}
+	net := networkBuilder.Build()
 	net.SetNodesToPauseOnRequestNewBlock()
 	net.StartConsensus(ctx)
 

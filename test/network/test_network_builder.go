@@ -23,7 +23,7 @@ type TestNetworkBuilder struct {
 	customNodeBuilders          []*NodeBuilder
 	upcomingBlocks              []interfaces.Block
 	keyManager                  interfaces.KeyManager
-	blockUtils                  mocks.MockBlockUtils
+	blockUtils                  interfaces.BlockUtils
 	communication               interfaces.Communication
 	orderCommitteeByHeight      bool
 	communicationMaxDelay       time.Duration
@@ -114,7 +114,7 @@ func (tb *TestNetworkBuilder) buildNode(
 		AsInstanceId(tb.instanceId).
 		CommunicatesVia(communicationInstance).
 		ThatIsPartOf(membership).
-		WithBlocksPool(blocksPool).
+		WithBlockUtils(mocks.NewMockBlockUtils(blocksPool)).
 		WithMemberId(memberId)
 
 	if tb.blockUtils != nil {
@@ -155,7 +155,7 @@ func (tb *TestNetworkBuilder) WithCommunication(communication interfaces.Communi
 	return tb
 }
 
-func (tb *TestNetworkBuilder) WithBlockUtils(utils mocks.MockBlockUtils) *TestNetworkBuilder {
+func (tb *TestNetworkBuilder) WithBlockUtils(utils interfaces.BlockUtils) *TestNetworkBuilder {
 	tb.blockUtils = utils
 	return tb
 }
@@ -174,15 +174,14 @@ func NewTestNetworkBuilder() *TestNetworkBuilder {
 }
 
 func ABasicTestNetwork() *TestNetwork {
-	return ATestNetwork(4)
+	return ATestNetworkBuilder(4).Build()
 }
 
-func ATestNetwork(countOfNodes int, blocksPool ...interfaces.Block) *TestNetwork {
+func ATestNetworkBuilder(countOfNodes int, blocksPool ...interfaces.Block) *TestNetworkBuilder {
 	instanceId := primitives.InstanceId(rand.Uint64())
 	return NewTestNetworkBuilder().
 		WithNodeCount(countOfNodes).
 		WithBlocks(blocksPool).
-		InNetwork(instanceId).
+		InNetwork(instanceId)
 		//LogToConsole().
-		Build()
 }

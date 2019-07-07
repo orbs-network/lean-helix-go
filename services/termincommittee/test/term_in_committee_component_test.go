@@ -39,7 +39,7 @@ func TestNewViewNotAcceptedIfDidNotPassValidation(t *testing.T) {
 
 			h.assertView(startView)
 			if failValidations {
-				h.failValidations()
+				h.failMyNodeBlockProposalValidations()
 			}
 			h.receiveAndHandleNewView(ctx, 2, 1, view, block)
 			if shouldAcceptMessage {

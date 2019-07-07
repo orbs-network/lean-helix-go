@@ -34,7 +34,6 @@ type harness struct {
 	termInCommittee   *termincommittee.TermInCommittee
 	storage           interfaces.Storage
 	electionTrigger   interfaces.ElectionTrigger
-	failVerifications bool
 }
 
 func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Block) *harness {
@@ -60,12 +59,11 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 		termInCommittee:   termInCommittee,
 		storage:           termConfig.Storage,
 		electionTrigger:   myNode.ElectionTrigger,
-		failVerifications: false,
 	}
 }
 
-func (h *harness) failValidations() {
-	h.myNode.BlockUtils.SetValidationResult(false)
+func (h *harness) failMyNodeBlockProposalValidations() {
+	h.myNode.BlockUtils.(*mocks.PausableBlockUtils).WithFailingBlockProposalValidations()
 }
 
 func (h *harness) assertView(expectedView primitives.View) {

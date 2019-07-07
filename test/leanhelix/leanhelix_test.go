@@ -73,7 +73,7 @@ func TestHangingNode(t *testing.T) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
 
-		net := network.ATestNetwork(4, block1, block2)
+		net := network.ATestNetworkBuilder(4, block1, block2).Build()
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
