@@ -41,6 +41,7 @@ func (b SimpleMockBlockUtils) ValidateBlockCommitment(blockHeight primitives.Blo
 }
 
 func TestRequestNewBlockDoesNotHangNodeSync(t *testing.T) {
+	t.Skip() // TODO - remove skip when worker-go-routine is implemented!!
 	test.WithContext(func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
