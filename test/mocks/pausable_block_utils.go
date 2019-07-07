@@ -26,13 +26,28 @@ func CalculateBlockHash(block interfaces.Block) primitives.BlockHash {
 	return hash[:]
 }
 
+type MockBlockUtils interface {
+	interfaces.BlockUtils
+	GetValidationResult() bool
+	SetValidationResult(bool)
+}
+
 type PausableBlockUtils struct {
+	MockBlockUtils
 	blocksPool             *BlocksPool
 	PauseOnRequestNewBlock bool
 	RequestNewBlockLatch   *test.Latch
 	ValidationLatch        *test.Latch
 	PauseOnValidateBlock   bool
 	ValidationResult       bool
+}
+
+func (b *PausableBlockUtils) GetValidationResult() bool {
+	return b.ValidationResult
+}
+
+func (b *PausableBlockUtils) SetValidationResult(v bool) {
+	b.ValidationResult = v
 }
 
 func NewMockBlockUtils(blocksPool *BlocksPool) *PausableBlockUtils {

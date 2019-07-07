@@ -182,10 +182,10 @@ func TestLeaderCircularOrdering(t *testing.T) {
 		// meaning that the new leader will not request new block and we can't hang him.
 		// to prevent nodes from getting prepared, we just don't validate the block
 
-		h.net.Nodes[0].BlockUtils.ValidationResult = false
-		h.net.Nodes[1].BlockUtils.ValidationResult = false
-		h.net.Nodes[2].BlockUtils.ValidationResult = false
-		h.net.Nodes[3].BlockUtils.ValidationResult = false
+		h.net.Nodes[0].BlockUtils.SetValidationResult(false)
+		h.net.Nodes[1].BlockUtils.SetValidationResult(false)
+		h.net.Nodes[2].BlockUtils.SetValidationResult(false)
+		h.net.Nodes[3].BlockUtils.SetValidationResult(false)
 
 		h.net.ReturnWhenNodesPauseOnRequestNewBlock(ctx, h.net.Nodes[0])
 

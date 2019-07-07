@@ -26,7 +26,7 @@ type Node struct {
 	leanHelix           *leanhelix.LeanHelix
 	blockChain          *mocks.InMemoryBlockChain
 	ElectionTrigger     interfaces.ElectionTrigger
-	BlockUtils          interfaces.BlockUtils
+	BlockUtils          mocks.MockBlockUtils
 	KeyManager          *mocks.MockKeyManager
 	Storage             interfaces.Storage
 	Communication       *mocks.CommunicationMock
@@ -142,7 +142,7 @@ func NewNode(
 	instanceId primitives.InstanceId,
 	membership interfaces.Membership,
 	communication *mocks.CommunicationMock,
-	blockUtils interfaces.BlockUtils,
+	blockUtils mocks.MockBlockUtils,
 	electionTrigger interfaces.ElectionTrigger,
 	logger interfaces.Logger) *Node {
 

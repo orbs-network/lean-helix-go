@@ -22,7 +22,7 @@ type NodeBuilder struct {
 	logsToConsole   bool
 	memberId        primitives.MemberId
 	electionTrigger interfaces.ElectionTrigger
-	blockUtils      interfaces.BlockUtils
+	blockUtils      mocks.MockBlockUtils
 }
 
 func NewNodeBuilder() *NodeBuilder {
@@ -74,7 +74,7 @@ func (builder *NodeBuilder) ThatLogsToConsole() *NodeBuilder {
 	return builder
 }
 
-func (builder *NodeBuilder) WithBlockUtils(utils interfaces.BlockUtils) {
+func (builder *NodeBuilder) WithBlockUtils(utils mocks.MockBlockUtils) {
 	builder.blockUtils = utils
 }
 

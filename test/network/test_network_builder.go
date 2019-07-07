@@ -23,7 +23,7 @@ type TestNetworkBuilder struct {
 	customNodeBuilders          []*NodeBuilder
 	upcomingBlocks              []interfaces.Block
 	keyManager                  interfaces.KeyManager
-	blockUtils                  interfaces.BlockUtils
+	blockUtils                  mocks.MockBlockUtils
 	communication               interfaces.Communication
 	orderCommitteeByHeight      bool
 	communicationMaxDelay       time.Duration
@@ -155,7 +155,7 @@ func (tb *TestNetworkBuilder) WithCommunication(communication interfaces.Communi
 	return tb
 }
 
-func (tb *TestNetworkBuilder) WithBlockUtils(utils interfaces.BlockUtils) *TestNetworkBuilder {
+func (tb *TestNetworkBuilder) WithBlockUtils(utils mocks.MockBlockUtils) *TestNetworkBuilder {
 	tb.blockUtils = utils
 	return tb
 }

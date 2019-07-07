@@ -65,7 +65,7 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 }
 
 func (h *harness) failValidations() {
-	h.myNode.BlockUtils.ValidationResult = false
+	h.myNode.BlockUtils.SetValidationResult(false)
 }
 
 func (h *harness) assertView(expectedView primitives.View) {
