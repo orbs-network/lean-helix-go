@@ -70,8 +70,8 @@ func TestRequestNewBlockDoesNotHangNodeSync(t *testing.T) {
 				updateStateCompleted.Done()
 			}()
 
-			requireDone(t, updateStateCompleted, 1*time.Second, "NodeSync is blocked by RequestNewBlockProposal")
-			requireDone(t, createNewBlockProposalCancelled, 1*time.Second, "RequestNewBlockProposal's ctx was not cancelled immediately after NodeSync")
+			requireDone(t, updateStateCompleted, TIMEOUT, "NodeSync is blocked by RequestNewBlockProposal")
+			requireDone(t, createNewBlockProposalCancelled, TIMEOUT, "RequestNewBlockProposal's ctx was not cancelled immediately after NodeSync")
 		})
 
 	})
@@ -116,14 +116,13 @@ func newWaitingGroupWithDelta(delta int) *sync.WaitGroup {
 	return &createNewBlockProposalEntered
 }
 
-func withConsensusRound(test func (net *network.TestNetwork, blockUtilsMock *SimpleMockBlockUtils, blockToPropose interfaces.Block)) {
+func withConsensusRound(test func(net *network.TestNetwork, blockUtilsMock *SimpleMockBlockUtils, blockToPropose interfaces.Block)) {
 	block1 := mocks.ABlock(interfaces.GenesisBlock)
-	block2 := mocks.ABlock(block1)
 	instanceId := primitives.InstanceId(rand.Uint64())
 	mockBlockUtils := &SimpleMockBlockUtils{}
 	net := network.NewTestNetworkBuilder().
 		WithNodeCount(4).
-		WithBlocks([]interfaces.Block{block1, block2}).
+		WithBlocks([]interfaces.Block{block1}).
 		WithBlockUtils(mockBlockUtils).
 		InNetwork(instanceId).
 		LogToConsole().
