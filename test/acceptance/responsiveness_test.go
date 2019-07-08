@@ -70,8 +70,8 @@ func TestRequestNewBlockDoesNotHangNodeSync(t *testing.T) {
 				updateStateCompleted.Done()
 			}()
 
-			requireDone(t, updateStateCompleted, TIMEOUT, "NodeSync is blocked by RequestNewBlockProposal")
-			requireDone(t, createNewBlockProposalCancelled, TIMEOUT, "RequestNewBlockProposal's ctx was not cancelled immediately after NodeSync")
+			FailIfNotDoneByTimeout(t, updateStateCompleted, TIMEOUT, "NodeSync is blocked by RequestNewBlockProposal")
+			FailIfNotDoneByTimeout(t, createNewBlockProposalCancelled, TIMEOUT, "RequestNewBlockProposal's ctx was not cancelled immediately after NodeSync")
 		})
 
 	})
@@ -104,8 +104,8 @@ func TestRequestNewBlockDoesNotHangElectionsTrigger(t *testing.T) {
 				electionsTriggerProcessed.Done()
 			}()
 
-			requireDone(t, electionsTriggerProcessed, TIMEOUT, "Election trigger is blocked by RequestNewBlockProposal")
-			requireDone(t, createNewBlockProposalCancelled, TIMEOUT, "RequestNewBlockProposal's ctx was not cancelled immediately after election trigger")
+			test.FailIfNotDoneByTimeout(t, electionsTriggerProcessed, TIMEOUT, "Election trigger is blocked by RequestNewBlockProposal")
+			test.FailIfNotDoneByTimeout(t, createNewBlockProposalCancelled, TIMEOUT, "RequestNewBlockProposal's ctx was not cancelled immediately after election trigger")
 		})
 	})
 }
@@ -129,20 +129,4 @@ func withConsensusRound(test func(net *network.TestNetwork, blockUtilsMock *Simp
 		Build()
 
 	test(net, mockBlockUtils, block1)
-}
-
-func requireDone(t *testing.T, waitGroup *sync.WaitGroup, timeout time.Duration, format string, args ...interface{}) {
-	timeoutCtx, _ := context.WithTimeout(context.Background(), timeout)
-
-	condDone := make(chan struct{})
-	go func() {
-		waitGroup.Wait()
-		close(condDone)
-	}()
-
-	select {
-	case <-condDone: // wait group finished waiting
-	case <-timeoutCtx.Done():
-		t.Fatalf(format, args...)
-	}
 }
