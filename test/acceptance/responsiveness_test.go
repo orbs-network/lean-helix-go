@@ -70,8 +70,8 @@ func TestRequestNewBlockDoesNotHangNodeSync(t *testing.T) {
 				updateStateCompleted.Done()
 			}()
 
-			FailIfNotDoneByTimeout(t, updateStateCompleted, TIMEOUT, "NodeSync is blocked by RequestNewBlockProposal")
-			FailIfNotDoneByTimeout(t, createNewBlockProposalCancelled, TIMEOUT, "RequestNewBlockProposal's ctx was not cancelled immediately after NodeSync")
+			test.FailIfNotDoneByTimeout(t, updateStateCompleted, TIMEOUT, "NodeSync is blocked by RequestNewBlockProposal")
+			test.FailIfNotDoneByTimeout(t, createNewBlockProposalCancelled, TIMEOUT, "RequestNewBlockProposal's ctx was not cancelled immediately after NodeSync")
 		})
 
 	})
