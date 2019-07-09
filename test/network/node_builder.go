@@ -91,6 +91,8 @@ func (builder *NodeBuilder) Build() *Node {
 	var l interfaces.Logger
 	if builder.logsToConsole {
 		l = logger.NewConsoleLogger()
+	} else {
+		l = logger.NewSilentLogger()
 	}
 	return NewNode(builder.instanceId, builder.membership, builder.communication, builder.blockUtils, electionTrigger, l)
 }

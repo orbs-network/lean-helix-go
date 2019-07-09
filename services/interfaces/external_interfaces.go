@@ -27,6 +27,7 @@ type Config struct {
 	ElectionTrigger ElectionTrigger // TimerBasedElectionTrigger can be used
 	Storage         Storage         // optional
 	Logger          Logger          // optional
+	MsgChanBufLen   uint64
 }
 
 type ConsensusRawMessage struct {

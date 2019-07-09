@@ -14,6 +14,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
+	"time"
 )
 
 type NodeState struct {
@@ -23,7 +24,7 @@ type NodeState struct {
 
 type Node struct {
 	instanceId          primitives.InstanceId
-	leanHelix           *leanhelix.LeanHelix
+	leanHelix           *leanhelix.MainLoop
 	blockChain          *mocks.InMemoryBlockChain
 	ElectionTrigger     interfaces.ElectionTrigger
 	BlockUtils          interfaces.BlockUtils
@@ -98,6 +99,7 @@ func (node *Node) onUpdateState(ctx context.Context, currentHeight primitives.Bl
 func (node *Node) StartConsensus(ctx context.Context) {
 	if node.leanHelix != nil {
 		go node.leanHelix.Run(ctx)
+		time.Sleep(200 * time.Millisecond) // FIXME I'm ugly!
 		node.leanHelix.UpdateState(ctx, node.GetLatestBlock(), nil)
 	}
 }
