@@ -79,3 +79,21 @@ Listener->Mainloop: //ctx.Done
 linear off
 
 ```
+
+## Leader Election
+Leader election timeout is based on the current view. The timeout is `base * 2^V`.
+For example, if `base = 4 seconds` then in the first view `V=0`, the timeout is `4s*2^0=4s`.
+In the second view `V=1` the timeout is `4s*2^1=8s` and so on.
+
+### Architecture
+Leader election is governed by an implementation of the interface `ElectionTrigger` under the `interfaces` package.
+
+The Lean Helix implementation is `electiontrigger.TimerBasedElectionTrigger`.
+
+* `MainLoop` accepts in configuration an instance of `ElectionTrigger`.
+* `MainLoop` listens on the channel provided by `ElectionTrigger.ElectionChannel()`
+* `RegisterOnElection` resets the `height`, `view`, `electionHandler` and resets the timer (whose timeout is based on provided `view`).
+** It is called when initializing a new view. For Example, V=2 just started, so `RegisterOnElection` is called with view=2 and the timer is reset to trigger in 16 seconds (`4s*2^2`)
+** Internally, the timer is set to invoke `sendTrigger()` when it expires. `sendTrigger()` writes a func called `trigger` to the election channel.
+
+  

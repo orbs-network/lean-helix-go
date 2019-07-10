@@ -24,9 +24,9 @@ func (net *TestNetwork) GetNodeCommunication(memberId primitives.MemberId) *mock
 	return net.Discovery.GetCommunicationById(memberId)
 }
 
-func (net *TestNetwork) TriggerElection(ctx context.Context) {
+func (net *TestNetwork) TriggerElectionOnAllNodes(ctx context.Context) {
 	for _, node := range net.Nodes {
-		node.TriggerElection(ctx)
+		node.TriggerElectionOnNode(ctx)
 	}
 }
 
@@ -71,7 +71,8 @@ func (net *TestNetwork) WaitForAllNodesToCommitBlock(ctx context.Context, block 
 		case <-ctx.Done():
 			return false
 		case nodeState := <-node.NodeStateChannel:
-			if matchers.BlocksAreEqual(block, nodeState.block) == false {
+			blockAreEqual := matchers.BlocksAreEqual(block, nodeState.block)
+			if blockAreEqual == false {
 				return false
 			}
 		}
@@ -170,7 +171,7 @@ func (net *TestNetwork) SetNodesToPauseOnHandleUpdateState(nodes ...*Node) {
 	}
 }
 
-func (net *TestNetwork) ReturnWhenNodesPauseOnRequestNewBlock(ctx context.Context, node *Node) {
+func (net *TestNetwork) ReturnWhenNodePausesOnRequestNewBlock(ctx context.Context, node *Node) {
 	if pausableBlockUtils, ok := node.BlockUtils.(*mocks.PausableBlockUtils); ok {
 		pausableBlockUtils.RequestNewBlockLatch.ReturnWhenLatchIsPaused(ctx)
 	} else {

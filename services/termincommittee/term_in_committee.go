@@ -180,7 +180,10 @@ func (tic *TermInCommittee) initView(ctx context.Context, view primitives.View) 
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW PreparedLocally set to false")
 	tic.view = view
 	tic.electionTrigger.RegisterOnElection(ctx, tic.height, tic.view, tic.moveToNextLeader)
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW initView() set leader to %s, incremented view to %d, election-timeout=%s, members=%s, goroutines#=%d", Str(tic.calcLeaderMemberId(view)), tic.view, tic.electionTrigger.CalcTimeout(view), ToCommitteeMembersStr(tic.committeeMembersMemberIds), runtime.NumGoroutine())
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId),
+		"LHFLOW initView() set leader to %s, incremented view to %d, election-timeout=%s, members=%s, goroutines#=%d",
+		Str(tic.calcLeaderMemberId(view)), tic.view, tic.electionTrigger.CalcTimeout(view),
+		ToCommitteeMembersStr(tic.committeeMembersMemberIds), runtime.NumGoroutine())
 }
 
 func (tic *TermInCommittee) Dispose() {
@@ -472,13 +475,18 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 		}
 	}
 	if !iSentCommitMessage {
+		// TODO Add correct context to CreateCommitMessage (workerCtx)
 		cm := tic.messageFactory.CreateCommitMessage(blockHeight, view, blockHash)
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND COMMIT because I did not send it during onPreparedLocally")
 		tic.sendConsensusMessage(ctx, cm)
 	}
 	tic.committedBlock = ppm.Block()
 	tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW PHASE COMMITTED CommittedBlock set to H=%d, calling onCommit() with H=%d V=%d block-hash=%s num-commit-messages=%d", ppm.Block().Height(), blockHeight, view, blockHash, len(commits))
+	//fmt.Printf("%v BEFORE ONCOMMIT %v\n", tic.myMemberId, tic.onCommit)
+
 	tic.onCommit(ctx, ppm.Block(), commits)
+	//fmt.Printf("%v AFTER ONCOMMIT %v\n", tic.myMemberId, tic.onCommit)
+	fmt.Println()
 }
 
 func (tic *TermInCommittee) HandleViewChange(ctx context.Context, vcm *interfaces.ViewChangeMessage) {

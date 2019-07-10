@@ -106,12 +106,12 @@ func (g *CommunicationMock) OnRemoteMessage(ctx context.Context, rawMessage *int
 			}
 		}
 
-		go func() {
-			if g.maxDelayDuration > 0 {
-				time.Sleep(time.Duration(rand.Int63n(int64(g.maxDelayDuration))))
-			}
-			s.cb(ctx, rawMessage)
-		}()
+		//go func() {
+		if g.maxDelayDuration > 0 {
+			time.Sleep(time.Duration(rand.Int63n(int64(g.maxDelayDuration))))
+		}
+		s.cb(ctx, rawMessage)
+		//}()
 	}
 }
 
@@ -131,6 +131,14 @@ func (g *CommunicationMock) inOutgoingWhitelist(memberId primitives.MemberId) bo
 		}
 	}
 	return false
+}
+
+func (g *CommunicationMock) DisableOutgoing() {
+	g.SetOutgoingWhitelist([]primitives.MemberId{})
+}
+
+func (g *CommunicationMock) EnableOutgoing() {
+	g.ClearOutgoingWhitelist()
 }
 
 func (g *CommunicationMock) SetOutgoingWhitelist(outgoingWhitelist []primitives.MemberId) {

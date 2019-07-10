@@ -8,7 +8,6 @@ package mocks
 
 import (
 	"context"
-	"fmt"
 	"github.com/orbs-network/lean-helix-go/instrumentation/metrics"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"time"
@@ -27,7 +26,7 @@ func (et *ElectionTriggerMock) CalcTimeout(view primitives.View) time.Duration {
 
 func NewMockElectionTrigger() *ElectionTriggerMock {
 	return &ElectionTriggerMock{
-		electionChannel: make(chan func(ctx context.Context)),
+		electionChannel: make(chan func(ctx context.Context), 1),
 	}
 }
 
@@ -46,21 +45,22 @@ func (et *ElectionTriggerMock) ElectionChannel() chan func(ctx context.Context) 
 }
 
 func (et *ElectionTriggerMock) ManualTrigger(ctx context.Context) <-chan struct{} {
-	fmt.Println("Manual Trigger - write to election channel in a new goroutine")
 	done := make(chan struct{})
 	go func() {
 		select {
 		case <-ctx.Done():
-			return
-		case et.electionChannel <- func(ctx context.Context) {
-			if et.electionHandler != nil {
-				et.electionHandler(ctx, et.blockHeight, et.view, nil)
-			}
-		}:
+			close(done)
+		case et.electionChannel <- et.electionTriggerHandler:
 			close(done)
 		}
 	}()
 	return done
+}
+
+func (et *ElectionTriggerMock) electionTriggerHandler(ctx context.Context) {
+	if et.electionHandler != nil {
+		et.electionHandler(ctx, et.blockHeight, et.view, nil)
+	}
 }
 
 func (et *ElectionTriggerMock) ManualTriggerSync(ctx context.Context) {

@@ -8,7 +8,6 @@ package leanhelix
 
 import (
 	"context"
-	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/blockheight"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/leanhelixterm"
@@ -36,8 +35,10 @@ type MessageWithContext struct {
 }
 
 type WorkerLoop struct {
-	MessagesChannel             chan *MessageWithContext
-	UpdateStateChannel          chan *blockWithProof
+	MessagesChannel    chan *MessageWithContext
+	UpdateStateChannel chan *blockWithProof
+	ElectionChannel    chan func(ctx context.Context)
+
 	currentHeight               primitives.BlockHeight
 	config                      *interfaces.Config
 	logger                      L.LHLogger
@@ -46,7 +47,6 @@ type WorkerLoop struct {
 	onCommitCallback            interfaces.OnCommitCallback
 	onNewConsensusRoundCallback interfaces.OnNewConsensusRoundCallback
 	onUpdateStateCallback       interfaces.OnUpdateStateCallback
-	ElectionChannel             chan func(ctx context.Context)
 }
 
 func NewWorkerLoop(config *interfaces.Config, logger L.LHLogger, onCommitCallback interfaces.OnCommitCallback) *WorkerLoop {
@@ -102,23 +102,6 @@ func (lh *WorkerLoop) HandleUpdateState(ctx context.Context, receivedBlockWithPr
 	} else {
 		lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP UPDATESTATE IGNORE - Received block ignored because its height=%d is less than current height=%d", receivedBlockHeight, lh.currentHeight)
 	}
-}
-
-func (lh *WorkerLoop) UpdateState(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte) {
-	var prevBlockHeight primitives.BlockHeight
-	if prevBlock != nil {
-		prevBlockHeight = prevBlock.Height()
-	}
-	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP UPDATESTATE Writing to UPDATESTATE channel, prevBlockHeight=%d", prevBlockHeight)
-	select {
-	case <-ctx.Done():
-		lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP UPDATESTATE DONE")
-		return
-
-	case lh.UpdateStateChannel <- &blockWithProof{prevBlock, prevBlockProofBytes}:
-		return
-	}
-
 }
 
 func GetMemberIdsFromBlockProof(blockProofBytes []byte) ([]primitives.MemberId, error) {
@@ -216,7 +199,6 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 
 // TODO Is this for testing only? maybe it shouldn't be here
 func (lh *WorkerLoop) HandleConsensusMessage(ctx context.Context, message *interfaces.ConsensusRawMessage) {
-	fmt.Printf("msg chan %v\n", lh.MessagesChannel)
 	select {
 	case <-ctx.Done():
 		lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "HandleConsensusRawMessage() ID=%s CONTEXT TERMINATED", termincommittee.Str(lh.config.Membership.MyMemberId()))

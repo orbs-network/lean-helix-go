@@ -94,7 +94,14 @@ func (builder *NodeBuilder) Build() *Node {
 	} else {
 		l = logger.NewSilentLogger()
 	}
-	return NewNode(builder.instanceId, builder.membership, builder.communication, builder.blockUtils, electionTrigger, l)
+	return NewNode(
+		builder.instanceId,
+		builder.membership,
+		builder.communication,
+		builder.blockUtils,
+		electionTrigger,
+		l,
+	)
 }
 
 func ADummyNode() *Node {

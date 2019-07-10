@@ -45,6 +45,6 @@ func newHarness(ctx context.Context, t *testing.T, blockUtils interfaces.BlockUt
 	}
 }
 
-func (h *harness) TriggerElection(ctx context.Context) {
-	h.net.TriggerElection(ctx)
+func (h *harness) TriggerElectionOnAllNodes(ctx context.Context) {
+	h.net.TriggerElectionOnAllNodes(ctx)
 }

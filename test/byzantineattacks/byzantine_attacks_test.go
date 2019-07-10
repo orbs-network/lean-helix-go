@@ -96,7 +96,7 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 		net.SetNodesToPauseOnRequestNewBlock(node0)
 		net.StartConsensus(ctx)
 
-		net.ReturnWhenNodesPauseOnRequestNewBlock(ctx, node0)
+		net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0)
 
 		// fake a preprepare message from node3 (byzantineNode) that points to a unrelated block (Should be ignored)
 		ppm := builders.APreprepareMessage(net.InstanceId, byzantineNode.KeyManager, byzantineNode.MemberId, 1, 1, fakeBlock)

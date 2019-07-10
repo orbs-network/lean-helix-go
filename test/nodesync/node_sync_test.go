@@ -36,18 +36,18 @@ func TestNodeSync(t *testing.T) {
 		node3.Communication.SetIncomingWhitelist([]primitives.MemberId{})
 
 		// node0, node1, and node2 are progressing to block2
-		net.ReturnWhenNodesPauseOnRequestNewBlock(ctx, node0)
+		net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0)
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
 		net.WaitForNodesToCommitASpecificBlock(ctx, block1, node0, node1, node2)
 
-		net.ReturnWhenNodesPauseOnRequestNewBlock(ctx, node0)
+		net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0)
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
 		net.WaitForNodesToCommitASpecificBlock(ctx, block2, node0, node1, node2)
 
 		// node3 is still "stuck" on the genesis block
 		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)
 
-		net.ReturnWhenNodesPauseOnRequestNewBlock(ctx, node0)
+		net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0)
 
 		// opening node3's network to messages
 		node3.Communication.ClearIncomingWhitelist()

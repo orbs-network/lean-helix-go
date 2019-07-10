@@ -19,15 +19,17 @@ type OnNewConsensusRoundCallback func(ctx context.Context, prevBlock Block, canB
 type OnUpdateStateCallback func(ctx context.Context, currentHeight primitives.BlockHeight, receivedBlockHeight primitives.BlockHeight)
 
 type Config struct {
-	InstanceId      primitives.InstanceId
-	Communication   Communication
-	Membership      Membership
-	BlockUtils      BlockUtils
-	KeyManager      KeyManager
-	ElectionTrigger ElectionTrigger // TimerBasedElectionTrigger can be used
-	Storage         Storage         // optional
-	Logger          Logger          // optional
-	MsgChanBufLen   uint64
+	InstanceId            primitives.InstanceId
+	Communication         Communication
+	Membership            Membership
+	BlockUtils            BlockUtils
+	KeyManager            KeyManager
+	ElectionTrigger       ElectionTrigger // TimerBasedElectionTrigger can be used
+	Storage               Storage         // optional
+	Logger                Logger          // optional
+	MsgChanBufLen         uint64
+	UpdateStateChanBufLen uint64
+	ElectionChanBufLen    uint64
 }
 
 type ConsensusRawMessage struct {

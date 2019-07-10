@@ -33,12 +33,12 @@ func (l *Latch) ReturnWhenLatchIsResumed(ctx context.Context) {
 	case l.pauseChannel <- true:
 	}
 
-	l.log.Debug("ReturnWhenLatchIsResumed() waiting for latch to resume")
+	l.log.Debug("Latch.ReturnWhenLatchIsResumed() waiting for latch to resume")
 	select {
 	case <-ctx.Done():
 		return
 	case <-l.resumeChannel:
-		l.log.Debug("ReturnWhenLatchIsResumed() latch has resumed")
+		l.log.Debug("Latch.ReturnWhenLatchIsResumed() latch has resumed")
 	}
 }
 
@@ -47,7 +47,7 @@ func (l *Latch) ReturnWhenLatchIsPaused(ctx context.Context) {
 	case <-ctx.Done():
 		return
 	case <-l.pauseChannel:
-		l.log.Debug("ReturnWhenLatchIsPaused() latch has paused")
+		l.log.Debug("Latch.ReturnWhenLatchIsPaused() latch has paused")
 	}
 }
 
@@ -56,6 +56,6 @@ func (l *Latch) Resume(ctx context.Context) {
 	case <-ctx.Done():
 		return
 	case l.resumeChannel <- true:
-		l.log.Debug("Resume() resuming latch")
+		l.log.Debug("Latch.Resume() resuming latch")
 	}
 }

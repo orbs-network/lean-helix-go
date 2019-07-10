@@ -8,13 +8,13 @@ package network
 
 import (
 	"context"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/storage"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
-	"time"
 )
 
 type NodeState struct {
@@ -63,12 +63,15 @@ func (node *Node) GetBlockProofAt(height primitives.BlockHeight) []byte {
 	return node.blockChain.GetBlockProofAt(height)
 }
 
-func (node *Node) TriggerElection(ctx context.Context) <-chan struct{} {
+func (node *Node) TriggerElectionOnNode(ctx context.Context) <-chan struct{} {
+
 	electionTriggerMock, ok := node.ElectionTrigger.(*mocks.ElectionTriggerMock)
 	if !ok {
 		panic("You are trying to trigger election with an election trigger that is not the ElectionTriggerMock")
 	}
 
+	//node.leanHelix.TriggerElection(ctx, func(ctx context.Context) { electionTriggerMock.ManualTrigger(ctx) })
+	fmt.Printf("Calling ManualTrigger on node %v\n", node.Membership.MyMemberId())
 	return electionTriggerMock.ManualTrigger(ctx)
 }
 
@@ -90,16 +93,9 @@ func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, 
 	}
 }
 
-func (node *Node) onUpdateState(ctx context.Context, currentHeight primitives.BlockHeight, receivedBlockHeight primitives.BlockHeight) {
-	if node.PauseOnUpdateState {
-		node.OnUpdateStateLatch.ReturnWhenLatchIsResumed(ctx)
-	}
-}
-
 func (node *Node) StartConsensus(ctx context.Context) {
 	if node.leanHelix != nil {
-		go node.leanHelix.Run(ctx)
-		time.Sleep(200 * time.Millisecond) // FIXME I'm ugly!
+		node.leanHelix.Run(ctx)
 		node.leanHelix.UpdateState(ctx, node.GetLatestBlock(), nil)
 	}
 }
