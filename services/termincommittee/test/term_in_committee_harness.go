@@ -25,19 +25,24 @@ import (
 )
 
 type harness struct {
-	t                 *testing.T
-	instanceId        primitives.InstanceId
-	myMemberId        primitives.MemberId
-	keyManager        *mocks.MockKeyManager
-	myNode            *network.Node
-	net               *network.TestNetwork
-	termInCommittee   *termincommittee.TermInCommittee
-	storage           interfaces.Storage
-	electionTrigger   interfaces.ElectionTrigger
+	t               *testing.T
+	instanceId      primitives.InstanceId
+	myMemberId      primitives.MemberId
+	keyManager      *mocks.MockKeyManager
+	myNode          *network.Node
+	net             *network.TestNetwork
+	termInCommittee *termincommittee.TermInCommittee
+	storage         interfaces.Storage
+	electionTrigger interfaces.ElectionTrigger
 }
 
 func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Block) *harness {
-	net := network.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).Build()
+	net := network.
+		NewTestNetworkBuilder().
+		WithNodeCount(4).
+		WithBlocks(blocksPool).
+		LogToConsole().
+		Build()
 	myNode := net.Nodes[0]
 	termConfig := myNode.BuildConfig(logger.NewConsoleLogger())
 	log := logger.NewLhLogger(termConfig.Logger)
@@ -50,15 +55,15 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 	termInCommittee := termincommittee.NewTermInCommittee(ctx, log, termConfig, messageFactory, committeeMembers, blockHeight, prevBlock, true, nil)
 
 	return &harness{
-		t:                 t,
-		instanceId:        termConfig.InstanceId,
-		myMemberId:        myNode.MemberId,
-		myNode:            myNode,
-		net:               net,
-		keyManager:        myNode.KeyManager,
-		termInCommittee:   termInCommittee,
-		storage:           termConfig.Storage,
-		electionTrigger:   myNode.ElectionTrigger,
+		t:               t,
+		instanceId:      termConfig.InstanceId,
+		myMemberId:      myNode.MemberId,
+		myNode:          myNode,
+		net:             net,
+		keyManager:      myNode.KeyManager,
+		termInCommittee: termInCommittee,
+		storage:         termConfig.Storage,
+		electionTrigger: myNode.ElectionTrigger,
 	}
 }
 
