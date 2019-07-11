@@ -65,13 +65,13 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 }
 
 func (lh *LeanHelix) Run(ctx context.Context) {
-	lh.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP START")
-	lh.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHMSG START LISTENING NOW")
+	lh.logger.Debug(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP START")
+	lh.logger.Debug(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHMSG START LISTENING NOW")
 	for {
 		select {
 		case <-ctx.Done():
 			lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW MAINLOOP DONE, Terminating Run().")
-			lh.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHMSG STOPPED LISTENING")
+			lh.logger.Debug(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHMSG STOPPED LISTENING")
 			return
 
 		case message := <-lh.messagesChannel:
@@ -163,7 +163,7 @@ func (lh *LeanHelix) ValidateBlockConsensus(ctx context.Context, block interface
 	if err != nil { // support for failure in committee calculation
 		return err
 	}
-	lh.logger.Info(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "ValidateBlockConsensus: RECEIVED COMMITTEE for H=%d, members=%s", blockHeight, termincommittee.ToCommitteeMembersStr(committeeMembers))
+	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "ValidateBlockConsensus: RECEIVED COMMITTEE for H=%d, members=%s", blockHeight, termincommittee.ToCommitteeMembersStr(committeeMembers))
 
 	sendersIterator := blockProof.NodesIterator()
 	set := make(map[storage.MemberIdStr]bool)
