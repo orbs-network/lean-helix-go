@@ -154,10 +154,10 @@ func TestThatAByzantineLeaderCanNotCauseAFork(t *testing.T) {
 		node2.Communication.SetIncomingWhitelist([]primitives.MemberId{})
 
 		// selection node 1 as the leader
-		node0.TriggerElection(ctx)
-		node1.TriggerElection(ctx)
-		node2.TriggerElection(ctx)
-		node3.TriggerElection(ctx)
+		node0.TriggerElectionOnNode(ctx)
+		node1.TriggerElectionOnNode(ctx)
+		node2.TriggerElectionOnNode(ctx)
+		node3.TriggerElectionOnNode(ctx)
 
 		net.WaitForNodesToCommitASpecificBlock(ctx, block2, node0, node1, node3)
 	})
