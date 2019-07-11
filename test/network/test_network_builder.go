@@ -177,11 +177,15 @@ func ABasicTestNetwork() *TestNetwork {
 	return ATestNetworkBuilder(4).Build()
 }
 
+func ABasicTestNetworkWithConsoleLogs() *TestNetwork {
+	return ATestNetworkBuilder(4).LogToConsole().Build()
+}
+
 func ATestNetworkBuilder(countOfNodes int, blocksPool ...interfaces.Block) *TestNetworkBuilder {
 	instanceId := primitives.InstanceId(rand.Uint64())
 	return NewTestNetworkBuilder().
 		WithNodeCount(countOfNodes).
 		WithBlocks(blocksPool).
 		InNetwork(instanceId)
-		//LogToConsole().
+	//LogToConsole().
 }

@@ -101,7 +101,7 @@ func TestRequestNewBlockDoesNotHangElectionsTrigger(t *testing.T) {
 
 			electionsTriggerProcessed := newWaitingGroupWithDelta(1)
 			go func() {
-				<-node0.TriggerElection(ctx)
+				<-node0.TriggerElectionOnNode(ctx)
 				electionsTriggerProcessed.Done()
 			}()
 
