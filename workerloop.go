@@ -8,6 +8,7 @@ package leanhelix
 
 import (
 	"context"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/blockheight"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/leanhelixterm"
@@ -67,18 +68,21 @@ func NewWorkerLoop(config *interfaces.Config, logger L.LHLogger, onCommitCallbac
 
 func (lh *WorkerLoop) Run(ctx context.Context) {
 	lh.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP START")
-	lh.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHMSG START LISTENING NOW")
+	lh.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHMSG WORKERLOOP START LISTENING NOW")
 	for {
 		select {
 		case <-ctx.Done(): // system shutdown
 			lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP DONE, Terminating Run().")
-			lh.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHMSG STOPPED LISTENING")
+			lh.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHMSG WORKERLOOP STOPPED LISTENING")
 			return
 
 		case res := <-lh.MessagesChannel:
+			fmt.Printf("%v Read from worker messages channel [%p]\n", lh.config.Membership.MyMemberId(), res.msg)
 			lh.filter.HandleConsensusRawMessage(res.ctx, res.msg)
+			fmt.Printf("%v Handled worker message [%p]\n", lh.config.Membership.MyMemberId(), res.msg)
 
 		case trigger := <-lh.ElectionChannel:
+			fmt.Printf("%v Read from work election channel\n", lh.config.Membership.MyMemberId())
 			if trigger == nil {
 				// this cannot happen, ignore
 				lh.logger.Info(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "XXXXXX LHFLOW WORKERLOOP ELECTION, OMG trigger is nil, not triggering election!")

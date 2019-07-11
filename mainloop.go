@@ -53,7 +53,7 @@ func (m *MainLoop) RunMainLoop(ctx context.Context) {
 
 func (m *MainLoop) run(ctx context.Context) {
 	m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW MAINLOOP START")
-	m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "LHMSG START LISTENING NOW")
+	m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "LHMSG MAINLOOP START LISTENING NOW")
 	workerCtx, cancelWorkerContext := context.WithCancel(ctx)
 	for {
 		select {
@@ -61,15 +61,16 @@ func (m *MainLoop) run(ctx context.Context) {
 		case <-ctx.Done(): // system shutdown
 
 			m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW MAINLOOP DONE, Terminating Run().")
-			m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "LHMSG STOPPED LISTENING")
+			m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "LHMSG MAINLOOP STOPPED LISTENING")
 			return
 
 		case message := <-m.messagesChannel:
-			fmt.Printf("%v Read from messages channel\n", m.config.Membership.MyMemberId())
+			fmt.Printf("%v Writing to worker messages channel [%p]\n", m.config.Membership.MyMemberId(), message)
 			m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}
+			fmt.Printf("%v Wrote to worker messages channel [%p]\n", m.config.Membership.MyMemberId(), message)
 
 		case trigger := <-m.electionChannel:
-			fmt.Printf("%v Read from election channel\n", m.config.Membership.MyMemberId())
+			fmt.Printf("%v Read from main election channel\n", m.config.Membership.MyMemberId())
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
 			m.worker.ElectionChannel <- trigger
