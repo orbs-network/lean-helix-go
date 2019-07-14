@@ -17,6 +17,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/stretchr/testify/require"
 	"testing"
+	"time"
 )
 
 const LOG_TO_CONSOLE = false
@@ -229,8 +230,56 @@ func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 		// release the hanged the leader (node0)
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
-		// make sure that we're on block2
+		// make sure that we're on block1
+		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block1))
+
+		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0)
+		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
+
 		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block2))
+	})
+}
+
+func TestNoNewViewIfLessThan2fPlus1ViewChangeAlternativeImplementation(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
+
+		h := NewHarness(ctx, t, LOG_TO_CONSOLE, block1, block2)
+
+		node0 := h.net.Nodes[0]
+		node1 := h.net.Nodes[1]
+		node2 := h.net.Nodes[2]
+
+		// hang the leader (node0)
+		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0)
+
+		// sending only 2 view-change (not enough to be elected)
+		node0VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node0.KeyManager, node0.MemberId, 1, 1, nil)
+		node2VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil)
+		node1.Communication.OnRemoteMessage(ctx, node0VCMessage.ToConsensusRawMessage())
+		node1.Communication.OnRemoteMessage(ctx, node2VCMessage.ToConsensusRawMessage())
+
+		// release the hanged the leader (node0)
+		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
+
+		// make sure that we're on block1
+		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block1))
+
+		node1TriesToProposeABlock := make(chan struct{})
+		go func() {
+			h.net.ReturnWhenNodePausesOnRequestNewBlock(context.Background(), node1)
+			node1TriesToProposeABlock <- struct{}{}
+		}()
+
+		shortCtx, shortCancel := context.WithTimeout(ctx, 100*time.Millisecond)
+		defer shortCancel()
+		select {
+		case <-shortCtx.Done():
+			t.Log("node 1 got a chance to propose a block and did not take it as expected")
+		case <-node1TriesToProposeABlock:
+			t.Fatal("node1 tried to propose a block after receiving only 2 view change messages")
+		}
 	})
 }
 
