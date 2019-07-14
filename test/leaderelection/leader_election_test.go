@@ -20,14 +20,14 @@ import (
 	"time"
 )
 
-const LOG_TO_CONSOLE = false
+const LOG_TO_CONSOLE = true
 
 // TODO FLAKY!
 func Test2fPlus1ViewChangeToBeElected(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
-
+		fmt.Printf("block1=%v block2=%v\n", block1, block2)
 		h := NewHarness(ctx, t, LOG_TO_CONSOLE, block1, block2)
 
 		node0 := h.net.Nodes[0]
@@ -38,7 +38,7 @@ func Test2fPlus1ViewChangeToBeElected(t *testing.T) {
 		// hang the leader (node0)
 		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0)
 		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
-
+		fmt.Printf("--- Node0 (303030) cut off from outgoing comm ---")
 		// manually cause new-view with 3 view-changes
 		node0VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node0.KeyManager, node0.MemberId, 1, 1, nil)
 		node2VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil)
@@ -260,15 +260,15 @@ func TestNoNewViewIfLessThan2fPlus1ViewChangeAlternativeImplementation(t *testin
 		node1.Communication.OnRemoteMessage(ctx, node0VCMessage.ToConsensusRawMessage())
 		node1.Communication.OnRemoteMessage(ctx, node2VCMessage.ToConsensusRawMessage())
 
-		// release the hanged the leader (node0)
+		// Resume the paused leader (node0)
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
-		// make sure that we're on block1
+		// Make sure we're on block1
 		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block1))
 
 		node1TriesToProposeABlock := make(chan struct{})
 		go func() {
-			h.net.ReturnWhenNodePausesOnRequestNewBlock(context.Background(), node1)
+			h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node1)
 			node1TriesToProposeABlock <- struct{}{}
 		}()
 

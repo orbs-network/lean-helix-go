@@ -14,8 +14,13 @@ import (
 
 // MockBlock
 type MockBlock struct {
+	fmt.Stringer
 	height primitives.BlockHeight
 	body   string
+}
+
+func (b *MockBlock) String() string {
+	return fmt.Sprintf("{BLOCK=%s}", b.Body())
 }
 
 func (b *MockBlock) Height() primitives.BlockHeight {
@@ -45,7 +50,7 @@ func ABlock(previousBlock interfaces.Block) interfaces.Block {
 var blocksCounter = 0
 
 func genBody(height primitives.BlockHeight) string {
-	body := fmt.Sprintf("Block #%d Height:%d", blocksCounter, height)
+	body := fmt.Sprintf("#%d|H=%d", blocksCounter, height)
 	if height == 0 {
 		body = body + " (Genesis)"
 	}

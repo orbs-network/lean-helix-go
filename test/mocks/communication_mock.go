@@ -28,6 +28,7 @@ type outgoingMessage struct {
 }
 
 type CommunicationMock struct {
+	memberId  primitives.MemberId
 	discovery *Discovery
 
 	outgoingLock        sync.Mutex
@@ -43,8 +44,9 @@ type CommunicationMock struct {
 	maxDelayDuration           time.Duration
 }
 
-func NewCommunication(discovery *Discovery) *CommunicationMock {
+func NewCommunication(memberId primitives.MemberId, discovery *Discovery) *CommunicationMock {
 	return &CommunicationMock{
+		memberId:                   memberId,
 		discovery:                  discovery,
 		outgoingChannelsMap:        make(map[string]chan *outgoingMessage),
 		nextSubscriptionKey:        0,
@@ -72,13 +74,9 @@ func (g *CommunicationMock) messageSenderLoop(ctx context.Context, channel chan 
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Printf("messageLoop ctx.Done with Err(): %v\n", ctx.Err())
+			fmt.Printf("ID=%s messageLoop ctx.Done with Err(): %v\n", g.memberId, ctx.Err())
 			return
 		case messageData := <-channel:
-			messageType := interfaces.ToConsensusMessage(messageData.message).MessageType()
-			sender := interfaces.ToConsensusMessage(messageData.message).SenderMemberId()
-
-			fmt.Printf("messageSenderLoop RECEIVED %v from %v on %v\n", messageType, sender, messageData.target)
 			g.SendToNode(ctx, messageData.target, messageData.message)
 		}
 
@@ -108,9 +106,9 @@ func (g *CommunicationMock) SendConsensusMessage(ctx context.Context, targets []
 		channel := g.outgoingChannelsMap[target.String()]
 		select {
 		case <-ctx.Done():
-			return errors.Errorf("context canceled for outgoing channel of %v", target)
+			return errors.Errorf("ID=%s context canceled for outgoing channel of %v", g.memberId, target)
 		case channel <- &outgoingMessage{target, message}:
-			fmt.Printf("SendConsensusMessage SENT %v to %v\n", messageType, target)
+			fmt.Printf("ID=%s SendConsensusMessage SENT %v to %v\n", g.memberId, messageType, target)
 			continue
 		}
 	}
@@ -191,11 +189,15 @@ func (g *CommunicationMock) ClearIncomingWhitelist() {
 func (g *CommunicationMock) SendToNode(ctx context.Context, targetMemberId primitives.MemberId, consensusRawMessage *interfaces.ConsensusRawMessage) {
 	if g.outgoingWhitelist != nil {
 		if !g.inOutgoingWhitelist(targetMemberId) {
+			fmt.Printf("ID=%s LHMSG DROPPED (to %s)\n", g.memberId, targetMemberId)
 			return
 		}
 	}
 
 	if targetCommunication := g.discovery.GetCommunicationById(targetMemberId); targetCommunication != nil {
+		messageType := interfaces.ToConsensusMessage(consensusRawMessage).MessageType()
+		sender := interfaces.ToConsensusMessage(consensusRawMessage).SenderMemberId()
+		fmt.Printf("ID=%s messageSenderLoop RECEIVED %v from %v\n", g.memberId, messageType, sender)
 		targetCommunication.OnRemoteMessage(ctx, consensusRawMessage)
 	} else {
 		return

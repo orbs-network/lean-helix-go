@@ -9,7 +9,6 @@ package leaderelection
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
-	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/orbs-network/lean-helix-go/test/network"
 	"testing"
 )
@@ -20,25 +19,27 @@ type harness struct {
 }
 
 func NewHarness(ctx context.Context, t *testing.T, logsToConsole bool, blocksPool ...interfaces.Block) *harness {
-	return newHarness(ctx, t, logsToConsole, mocks.NewMockBlockUtils(mocks.NewBlocksPool(blocksPool)))
+	return newHarness(ctx, t, logsToConsole, false, blocksPool...)
+	//return newHarness(ctx, t, logsToConsole, mocks.NewMockBlockUtils(mocks.NewBlocksPool(blocksPool)))
 }
 
 func NewHarnessWithFailingBlockProposalValidations(ctx context.Context, t *testing.T, logsToConsole bool) *harness {
 	//net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).LogToConsole().Build()
-	failingValidationBlocksUtils := mocks.NewMockBlockUtils(mocks.NewBlocksPool(nil)).WithFailingBlockProposalValidations()
-	return newHarness(ctx, t, logsToConsole, failingValidationBlocksUtils)
+	return newHarness(ctx, t, logsToConsole, true)
 }
 
-func newHarness(ctx context.Context, t *testing.T, logsToConsole bool, blockUtils interfaces.BlockUtils) *harness {
+func newHarness(ctx context.Context, t *testing.T, logsToConsole bool, withFailingBlockProposalValidations bool, blocksPool ...interfaces.Block) *harness {
 	//net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).LogToConsole().Build()
 	networkBuilder := network.ATestNetworkBuilder(4)
-	if blockUtils != nil {
-		networkBuilder = networkBuilder.WithBlockUtils(blockUtils)
-	}
+	//if blockUtils != nil {
+	//	networkBuilder = networkBuilder.WithBlockUtils(blockUtils)
+	//}
 	if logsToConsole {
 		networkBuilder = networkBuilder.LogToConsole()
 	}
-	net := networkBuilder.Build(ctx)
+	net := networkBuilder.
+		WithMaybeFailingBlockProposalValidations(withFailingBlockProposalValidations, blocksPool...).
+		Build(ctx)
 
 	// Create all channels in advance, using the test context which will only get canceled at the end of test
 	for _, node := range net.Nodes {

@@ -10,6 +10,7 @@ import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/logger"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
 type Latch struct {
@@ -26,36 +27,36 @@ func NewLatch() *Latch {
 	}
 }
 
-func (l *Latch) ReturnWhenLatchIsResumed(ctx context.Context) {
+func (l *Latch) ReturnWhenLatchIsResumed(ctx context.Context, memberId primitives.MemberId) {
 	select {
 	case <-ctx.Done():
 		return
 	case l.pauseChannel <- true:
 	}
 
-	l.log.Debug("Latch.ReturnWhenLatchIsResumed() waiting for latch to resume")
+	l.log.Debug("ID=%s Latch.ReturnWhenLatchIsResumed() waiting for latch to resume", memberId)
 	select {
 	case <-ctx.Done():
 		return
 	case <-l.resumeChannel:
-		l.log.Debug("Latch.ReturnWhenLatchIsResumed() latch has resumed")
+		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsResumed() latch has resumed", memberId)
 	}
 }
 
-func (l *Latch) ReturnWhenLatchIsPaused(ctx context.Context) {
+func (l *Latch) ReturnWhenLatchIsPaused(ctx context.Context, memberId primitives.MemberId) {
 	select {
 	case <-ctx.Done():
 		return
 	case <-l.pauseChannel:
-		l.log.Debug("Latch.ReturnWhenLatchIsPaused() latch has paused")
+		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsPaused() latch has paused", memberId)
 	}
 }
 
-func (l *Latch) Resume(ctx context.Context) {
+func (l *Latch) Resume(ctx context.Context, memberId primitives.MemberId) {
 	select {
 	case <-ctx.Done():
 		return
 	case l.resumeChannel <- true:
-		l.log.Debug("Latch.Resume() resuming latch")
+		l.log.Debug("ID=%s Latch.Resume() resuming latch", memberId)
 	}
 }

@@ -66,14 +66,14 @@ func (net *TestNetwork) AllNodesChainEndsWithABlock(block interfaces.Block) bool
 	return true
 }
 
-func (net *TestNetwork) WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx context.Context, block interfaces.Block) bool {
+func (net *TestNetwork) WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx context.Context, expectedBlock interfaces.Block) bool {
 	for _, node := range net.Nodes {
 		select {
 		case <-ctx.Done():
 			return false
 		case nodeState := <-node.NodeStateChannel:
-			blockAreEqual := matchers.BlocksAreEqual(block, nodeState.block)
-			fmt.Printf("NODESTATE READ %v equal=%t\n", nodeState.block, blockAreEqual)
+			blockAreEqual := matchers.BlocksAreEqual(expectedBlock, nodeState.block)
+			fmt.Printf("NODESTATE READ nodeState.block=%v expectedBlock=%v equal=%t\n", nodeState.block, expectedBlock, blockAreEqual)
 			if blockAreEqual == false {
 				return false
 			}
@@ -130,7 +130,7 @@ func (net *TestNetwork) SetNodesToPauseOnValidateBlock(nodes ...*Node) {
 func (net *TestNetwork) ReturnWhenNodesPauseOnValidateBlock(ctx context.Context, nodes ...*Node) {
 	for _, node := range nodes {
 		if pausableBlockUtils, ok := node.BlockUtils.(*mocks.PausableBlockUtils); ok {
-			pausableBlockUtils.ValidationLatch.ReturnWhenLatchIsPaused(ctx)
+			pausableBlockUtils.ValidationLatch.ReturnWhenLatchIsPaused(ctx, node.MemberId)
 		} else {
 			panic("Node.BlockUtils is not PausableBlockUtils")
 		}
@@ -141,7 +141,7 @@ func (net *TestNetwork) ReturnWhenNodesPauseOnValidateBlock(ctx context.Context,
 func (net *TestNetwork) ResumeValidateBlockOnNodes(ctx context.Context, nodes ...*Node) {
 	for _, node := range nodes {
 		if pausableBlockUtils, ok := node.BlockUtils.(*mocks.PausableBlockUtils); ok {
-			pausableBlockUtils.ValidationLatch.Resume(ctx)
+			pausableBlockUtils.ValidationLatch.Resume(ctx, node.MemberId)
 		} else {
 			panic("Node.BlockUtils is not PausableBlockUtils")
 		}
@@ -182,19 +182,19 @@ func (net *TestNetwork) SetNodesToPauseOnHandleUpdateState(nodes ...*Node) {
 
 func (net *TestNetwork) ReturnWhenNodePausesOnRequestNewBlock(ctx context.Context, node *Node) {
 	if pausableBlockUtils, ok := node.BlockUtils.(*mocks.PausableBlockUtils); ok {
-		pausableBlockUtils.RequestNewBlockLatch.ReturnWhenLatchIsPaused(ctx)
+		pausableBlockUtils.RequestNewBlockLatch.ReturnWhenLatchIsPaused(ctx, node.MemberId)
 	} else {
 		panic("Node.BlockUtils is not PausableBlockUtils")
 	}
 }
 
 func (net *TestNetwork) ReturnWhenNodesPauseOnUpdateState(ctx context.Context, node *Node) {
-	node.OnUpdateStateLatch.ReturnWhenLatchIsPaused(ctx)
+	node.OnUpdateStateLatch.ReturnWhenLatchIsPaused(ctx, node.MemberId)
 }
 
 func (net *TestNetwork) ResumeRequestNewBlockOnNodes(ctx context.Context, node *Node) {
 	if pausableBlockUtils, ok := node.BlockUtils.(*mocks.PausableBlockUtils); ok {
-		pausableBlockUtils.RequestNewBlockLatch.Resume(ctx)
+		pausableBlockUtils.RequestNewBlockLatch.Resume(ctx, node.MemberId)
 	} else {
 		panic("Node.BlockUtils is not PausableBlockUtils")
 	}

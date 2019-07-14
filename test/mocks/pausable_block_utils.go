@@ -28,6 +28,7 @@ func CalculateBlockHash(block interfaces.Block) primitives.BlockHash {
 
 type PausableBlockUtils struct {
 	interfaces.BlockUtils
+	memberId                     primitives.MemberId
 	blocksPool                   *BlocksPool
 	PauseOnRequestNewBlock       bool
 	RequestNewBlockLatch         *test.Latch
@@ -36,8 +37,9 @@ type PausableBlockUtils struct {
 	failBlockProposalValidations bool
 }
 
-func NewMockBlockUtils(blocksPool *BlocksPool) *PausableBlockUtils {
+func NewMockBlockUtils(memberId primitives.MemberId, blocksPool *BlocksPool) *PausableBlockUtils {
 	return &PausableBlockUtils{
+		memberId:               memberId,
 		blocksPool:             blocksPool,
 		PauseOnRequestNewBlock: false,
 		RequestNewBlockLatch:   test.NewLatch(),
@@ -54,13 +56,13 @@ func (b *PausableBlockUtils) WithFailingBlockProposalValidations() *PausableBloc
 
 func (b *PausableBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
 	if b.PauseOnRequestNewBlock {
-		fmt.Printf("Sleeping until latch is freed to propose new block\n")
-		b.RequestNewBlockLatch.ReturnWhenLatchIsResumed(ctx)
+		fmt.Printf("ID=%s Sleeping until latch is freed to propose new block\n", b.memberId)
+		b.RequestNewBlockLatch.ReturnWhenLatchIsResumed(ctx, b.memberId)
 	}
 
 	block := b.blocksPool.PopBlock(prevBlock)
 	blockHash := CalculateBlockHash(block)
-	fmt.Printf("Proposing block %v, context err: %s\n", block, ctx.Err())
+	fmt.Printf("ID=%s Proposing block %v, context err: %s\n", b.memberId, block, ctx.Err())
 	return block, blockHash
 }
 
@@ -70,7 +72,7 @@ func (b *PausableBlockUtils) ValidateBlockCommitment(blockHeight primitives.Bloc
 
 func (b *PausableBlockUtils) ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, block interfaces.Block, blockHash primitives.BlockHash, prevBlock interfaces.Block) error {
 	if b.PauseOnValidateBlock {
-		b.ValidationLatch.ReturnWhenLatchIsResumed(ctx)
+		b.ValidationLatch.ReturnWhenLatchIsResumed(ctx, b.memberId)
 	}
 
 	if b.failBlockProposalValidations {

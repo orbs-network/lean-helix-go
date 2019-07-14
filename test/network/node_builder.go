@@ -78,7 +78,7 @@ func (builder *NodeBuilder) Build() *Node {
 	}
 
 	if builder.blockUtils == nil {
-		builder.blockUtils = mocks.NewMockBlockUtils(mocks.NewBlocksPool(nil))
+		builder.blockUtils = mocks.NewMockBlockUtils(builder.memberId, mocks.NewBlocksPool(nil))
 	}
 
 	var electionTrigger interfaces.ElectionTrigger
@@ -109,6 +109,6 @@ func ADummyNode() *Node {
 	return NewNodeBuilder().
 		WithMemberId(memberId).
 		ThatIsPartOf(mocks.NewMockMembership(memberId, nil, false)).
-		CommunicatesVia(mocks.NewCommunication(nil)).
+		CommunicatesVia(mocks.NewCommunication(memberId, nil)).
 		Build()
 }
