@@ -26,7 +26,7 @@ func TestThatWeReachConsensusEventIfWeDelayAllTheGossipMessages(t *testing.T) {
 			GossipMessagesMaxDelay(time.Duration(100) * time.Millisecond).
 			WithNodeCount(4).
 			//LogToConsole().
-			Build()
+			Build(ctx)
 
 		net.Nodes[0].WriteToStateChannel = false
 		net.Nodes[1].WriteToStateChannel = false

@@ -104,7 +104,7 @@ func TestAValidBlockProof(t *testing.T) {
 		block2 := mocks.ABlock(block1)
 		block3 := mocks.ABlock(block2)
 
-		net := network.ABasicTestNetwork()
+		net := network.ABasicTestNetwork(ctx)
 		net.StartConsensus(ctx)
 
 		node0 := net.Nodes[0]
@@ -125,7 +125,7 @@ func TestAValidBlockProofWithNilPrevBlockProof(t *testing.T) {
 		block2 := mocks.ABlock(block1)
 		block3 := mocks.ABlock(block2)
 
-		net := network.ABasicTestNetwork()
+		net := network.ABasicTestNetwork(ctx)
 		net.StartConsensus(ctx)
 
 		node0 := net.Nodes[0]
@@ -144,7 +144,7 @@ func TestThatWeDoNotAcceptNilBlockProof(t *testing.T) {
 		block2 := mocks.ABlock(block1)
 		block3 := mocks.ABlock(block2)
 
-		net := network.ABasicTestNetwork()
+		net := network.ABasicTestNetwork(ctx)
 		net.StartConsensus(ctx)
 
 		//node0 := net.Nodes[0]
@@ -163,7 +163,7 @@ func TestThatWeDoNotAcceptNilBlockProof(t *testing.T) {
 
 func TestThatBlockRefInsideProofValidation(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := network.ABasicTestNetwork()
+		net := network.ABasicTestNetwork(ctx)
 		net.StartConsensus(ctx)
 
 		node0 := net.Nodes[0]
@@ -264,7 +264,7 @@ func generateSignatures(blockHeight primitives.BlockHeight, blockRef *protocol.B
 
 func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := network.ABasicTestNetwork()
+		net := network.ABasicTestNetwork(ctx)
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
@@ -343,7 +343,7 @@ func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 
 func TestRandomSeedSignatureValidation(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := network.ABasicTestNetwork()
+		net := network.ABasicTestNetwork(ctx)
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]

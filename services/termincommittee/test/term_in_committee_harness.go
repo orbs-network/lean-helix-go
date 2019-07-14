@@ -42,7 +42,7 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 		WithNodeCount(4).
 		WithBlocks(blocksPool).
 		LogToConsole().
-		Build()
+		Build(ctx)
 	myNode := net.Nodes[0]
 	termConfig := myNode.BuildConfig(logger.NewConsoleLogger())
 	log := logger.NewLhLogger(termConfig.Logger)

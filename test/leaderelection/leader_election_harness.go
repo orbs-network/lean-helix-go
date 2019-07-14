@@ -38,7 +38,7 @@ func newHarness(ctx context.Context, t *testing.T, logsToConsole bool, blockUtil
 	if logsToConsole {
 		networkBuilder = networkBuilder.LogToConsole()
 	}
-	net := networkBuilder.Build()
+	net := networkBuilder.Build(ctx)
 
 	// Create all channels in advance, using the test context which will only get canceled at the end of test
 	for _, node := range net.Nodes {

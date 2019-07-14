@@ -47,7 +47,7 @@ func TestRequestNewBlockDoesNotHangNodeSync(t *testing.T) {
 
 	t.Skip() // TODO - remove skip when worker-go-routine is implemented!!
 	test.WithContext(func(ctx context.Context) {
-		withConsensusRound(func(net *network.TestNetwork, blockUtilsMock *SimpleMockBlockUtils, blockToPropose interfaces.Block) {
+		withConsensusRound(ctx, func(net *network.TestNetwork, blockUtilsMock *SimpleMockBlockUtils, blockToPropose interfaces.Block) {
 			node0 := net.Nodes[0]
 
 			createNewBlockProposalEntered := newWaitingGroupWithDelta(1)
@@ -81,7 +81,7 @@ func TestRequestNewBlockDoesNotHangNodeSync(t *testing.T) {
 func TestRequestNewBlockDoesNotHangElectionsTrigger(t *testing.T) {
 	t.Skip() // TODO - remove skip when worker-go-routine is implemented!!
 	test.WithContext(func(ctx context.Context) {
-		withConsensusRound(func(net *network.TestNetwork, blockUtilsMock *SimpleMockBlockUtils, blockToPropose interfaces.Block) {
+		withConsensusRound(ctx, func(net *network.TestNetwork, blockUtilsMock *SimpleMockBlockUtils, blockToPropose interfaces.Block) {
 			node0 := net.Nodes[0]
 
 			createNewBlockProposalEntered := newWaitingGroupWithDelta(1)
@@ -117,7 +117,7 @@ func newWaitingGroupWithDelta(delta int) *sync.WaitGroup {
 	return &createNewBlockProposalEntered
 }
 
-func withConsensusRound(test func(net *network.TestNetwork, blockUtilsMock *SimpleMockBlockUtils, blockToPropose interfaces.Block)) {
+func withConsensusRound(ctx context.Context, test func(net *network.TestNetwork, blockUtilsMock *SimpleMockBlockUtils, blockToPropose interfaces.Block)) {
 	block1 := mocks.ABlock(interfaces.GenesisBlock)
 	instanceId := primitives.InstanceId(rand.Uint64())
 	mockBlockUtils := &SimpleMockBlockUtils{}
@@ -127,7 +127,7 @@ func withConsensusRound(test func(net *network.TestNetwork, blockUtilsMock *Simp
 		WithBlockUtils(mockBlockUtils).
 		InNetwork(instanceId).
 		LogToConsole().
-		Build()
+		Build(ctx)
 
 	test(net, mockBlockUtils, block1)
 }

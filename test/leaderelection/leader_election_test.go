@@ -21,6 +21,7 @@ import (
 
 const LOG_TO_CONSOLE = false
 
+// TODO FLAKY!
 func Test2fPlus1ViewChangeToBeElected(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
@@ -233,7 +234,7 @@ func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 	})
 }
 
-// TODO: This is sometimes stuck!!! Remove this comment if doesnt happen by end of June 2019
+// TODO FLAKY!
 func TestLeaderCircularOrdering(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		// Nodes might get into prepared state, and send their block in the view-change

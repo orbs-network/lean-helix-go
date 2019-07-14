@@ -93,7 +93,7 @@ func (g *CommunicationMock) ReturnAndMaybeCreateOutgoingChannelByTarget(ctx cont
 	if channel == nil {
 		channel = make(chan *outgoingMessage, 100)
 		g.outgoingChannelsMap[target.String()] = channel
-		fmt.Printf("ReturnAndMaybeCreateOutgoingChannelByTarget() start for %s\n", target)
+		//fmt.Printf("ReturnAndMaybeCreateOutgoingChannelByTarget() start for %s\n", target)
 		go g.messageSenderLoop(ctx, channel)
 	}
 

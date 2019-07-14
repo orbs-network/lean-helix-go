@@ -26,7 +26,7 @@ func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
 			WithBlocks([]interfaces.Block{block}).
-			Build()
+			Build(ctx)
 
 		net.Nodes[3].Communication.SetIncomingWhitelist([]primitives.MemberId{})
 
@@ -43,7 +43,7 @@ func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 			NewTestNetworkBuilder().
 			WithNodeCount(7).
 			WithBlocks([]interfaces.Block{block}).
-			Build()
+			Build(ctx)
 
 		net.Nodes[1].Communication.SetIncomingWhitelist([]primitives.MemberId{})
 		net.Nodes[2].Communication.SetIncomingWhitelist([]primitives.MemberId{})
@@ -61,7 +61,7 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
 			WithBlocks([]interfaces.Block{block1}).
-			Build()
+			Build(ctx)
 
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
@@ -88,7 +88,8 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
 			WithBlocks([]interfaces.Block{goodBlock}).
-			Build()
+			LogToConsole().
+			Build(ctx)
 
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
@@ -122,7 +123,7 @@ func TestThatAByzantineLeaderCannotCauseAFork(t *testing.T) {
 			WithNodeCount(4).
 			WithBlocks([]interfaces.Block{block1, block2}).
 			LogToConsole().
-			Build()
+			Build(ctx)
 
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]

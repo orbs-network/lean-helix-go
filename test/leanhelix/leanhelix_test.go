@@ -20,7 +20,7 @@ import (
 
 func TestHappyFlow(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := network.ABasicTestNetworkWithConsoleLogs()
+		net := network.ABasicTestNetworkWithConsoleLogs(ctx)
 		net.StartConsensus(ctx)
 		require.True(t, net.WaitForAllNodesToCommitTheSameBlock(ctx))
 	})
@@ -28,7 +28,7 @@ func TestHappyFlow(t *testing.T) {
 
 func TestHappyFlowMessages(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := network.ABasicTestNetwork()
+		net := network.ABasicTestNetwork(ctx)
 		net.SetNodesToPauseOnRequestNewBlock()
 
 		net.StartConsensus(ctx)
@@ -61,7 +61,7 @@ func TestHappyFlowMessages(t *testing.T) {
 
 func TestConsensusFor8Blocks(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := network.ABasicTestNetwork().StartConsensus(ctx)
+		net := network.ABasicTestNetwork(ctx).StartConsensus(ctx)
 		for i := 0; i < 8; i++ {
 			net.WaitForAllNodesToCommitTheSameBlock(ctx)
 		}
@@ -73,7 +73,7 @@ func TestHangingNode(t *testing.T) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
 
-		net := network.ATestNetworkBuilder(4, block1, block2).Build()
+		net := network.ATestNetworkBuilder(4, block1, block2).Build(ctx)
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]

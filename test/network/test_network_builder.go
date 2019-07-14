@@ -7,6 +7,7 @@
 package network
 
 import (
+	"context"
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/electiontrigger"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
@@ -74,13 +75,24 @@ func (tb *TestNetworkBuilder) OrderCommitteeByHeight() *TestNetworkBuilder {
 	return tb
 }
 
-func (tb *TestNetworkBuilder) Build() *TestNetwork {
+func (tb *TestNetworkBuilder) Build(ctx context.Context) *TestNetwork {
 	blocksPool := tb.buildBlocksPool()
 	discovery := mocks.NewDiscovery()
 	nodes := tb.createNodes(discovery, blocksPool, tb.logToConsole)
 	testNetwork := NewTestNetwork(tb.instanceId, discovery)
 	testNetwork.RegisterNodes(nodes)
+
+	tb.setupCommChannels(ctx, testNetwork)
+
 	return testNetwork
+}
+
+func (tb *TestNetworkBuilder) setupCommChannels(ctx context.Context, network *TestNetwork) {
+	for _, node := range network.Nodes {
+		for _, peerNode := range network.Nodes {
+			network.GetNodeCommunication(node.MemberId).ReturnAndMaybeCreateOutgoingChannelByTarget(ctx, peerNode.MemberId)
+		}
+	}
 }
 
 func (tb *TestNetworkBuilder) buildBlocksPool() *mocks.BlocksPool {
@@ -173,12 +185,12 @@ func NewTestNetworkBuilder() *TestNetworkBuilder {
 	}
 }
 
-func ABasicTestNetwork() *TestNetwork {
-	return ATestNetworkBuilder(4).Build()
+func ABasicTestNetwork(ctx context.Context) *TestNetwork {
+	return ATestNetworkBuilder(4).Build(ctx)
 }
 
-func ABasicTestNetworkWithConsoleLogs() *TestNetwork {
-	return ATestNetworkBuilder(4).LogToConsole().Build()
+func ABasicTestNetworkWithConsoleLogs(ctx context.Context) *TestNetwork {
+	return ATestNetworkBuilder(4).LogToConsole().Build(ctx)
 }
 
 func ATestNetworkBuilder(countOfNodes int, blocksPool ...interfaces.Block) *TestNetworkBuilder {
