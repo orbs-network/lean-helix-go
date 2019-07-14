@@ -55,7 +55,7 @@ func (m *MainLoop) run(ctx context.Context) {
 	defer func(){if e := recover(); e != nil {fmt.Println(e)} else {fmt.Println("MAIN SHUTDOWN")}}()
 
 	m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW MAINLOOP START")
-	m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "LHMSG START LISTENING NOW")
+	m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "LHMSG MAINLOOP START LISTENING NOW")
 	workerCtx, cancelWorkerContext := context.WithCancel(ctx)
 	for {
 		fmt.Printf("%v main loop listening\n", m.config.Membership.MyMemberId())
@@ -65,7 +65,7 @@ func (m *MainLoop) run(ctx context.Context) {
 		case <-ctx.Done(): // system shutdown
 
 			m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW MAINLOOP DONE, Terminating Run().")
-			m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "LHMSG STOPPED LISTENING")
+			m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "LHMSG MAINLOOP STOPPED LISTENING")
 			return
 
 		case message := <-m.messagesChannel:
@@ -73,9 +73,10 @@ func (m *MainLoop) run(ctx context.Context) {
 			fmt.Printf("%v main loop read from messages channel (%v) from %v for block height %d\n", m.config.Membership.MyMemberId(), parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight())
 
 			m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}
+			fmt.Printf("%v Wrote to worker messages channel [%p]\n", m.config.Membership.MyMemberId(), message)
 
 		case trigger := <-m.electionChannel:
-			fmt.Printf("%v main loop read from election channel\n", m.config.Membership.MyMemberId())
+			fmt.Printf("%v main loop read from main election channel\n", m.config.Membership.MyMemberId())
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
 			m.worker.ElectionChannel <- trigger

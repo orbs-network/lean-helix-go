@@ -68,15 +68,15 @@ func NewWorkerLoop(config *interfaces.Config, logger L.LHLogger, onCommitCallbac
 
 func (lh *WorkerLoop) Run(ctx context.Context) {
 	defer func(){if e := recover(); e != nil {fmt.Println(e)} else {fmt.Println("WORKER SHUTDOWN")}}()
-	lh.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP START")
-	lh.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHMSG START LISTENING NOW")
+	lh.logger.Debug(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP START")
+	lh.logger.Debug(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHMSG WORKERLOOP START LISTENING NOW")
 	for {
 		fmt.Printf("%v worker loop listening\n", lh.config.Membership.MyMemberId())
 
 		select {
 		case <-ctx.Done(): // system shutdown
 			lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP DONE, Terminating Run().")
-			lh.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHMSG STOPPED LISTENING")
+			lh.logger.Debug(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHMSG WORKERLOOP STOPPED LISTENING")
 			return
 
 		case res := <-lh.MessagesChannel:
@@ -84,6 +84,7 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 			fmt.Printf("%v worker loop read from messages channel (%v) from %v for block height %d\n", lh.config.Membership.MyMemberId(), message.MessageType(), message.SenderMemberId(), message.BlockHeight())
 
 			lh.filter.HandleConsensusRawMessage(res.ctx, res.msg)
+			fmt.Printf("%v Handled worker message [%p]\n", lh.config.Membership.MyMemberId(), res.msg)
 
 		case trigger := <-lh.ElectionChannel:
 			fmt.Printf("%v worker loop read from election channel\n", lh.config.Membership.MyMemberId())
@@ -162,7 +163,7 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 	if err != nil { // support for failure in committee calculation
 		return err
 	}
-	lh.logger.Info(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "ValidateBlockConsensus: RECEIVED COMMITTEE for H=%d, members=%s", blockHeight, termincommittee.ToCommitteeMembersStr(committeeMembers))
+	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "ValidateBlockConsensus: RECEIVED COMMITTEE for H=%d, members=%s", blockHeight, termincommittee.ToCommitteeMembersStr(committeeMembers))
 
 	sendersIterator := blockProof.NodesIterator()
 	set := make(map[storage.MemberIdStr]bool)

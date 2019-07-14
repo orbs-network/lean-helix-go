@@ -19,21 +19,24 @@ type harness struct {
 	net *network.TestNetwork
 }
 
-func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Block) *harness {
-	return newHarness(ctx, t, mocks.NewMockBlockUtils(mocks.NewBlocksPool(blocksPool)))
+func NewHarness(ctx context.Context, t *testing.T, logsToConsole bool, blocksPool ...interfaces.Block) *harness {
+	return newHarness(ctx, t, logsToConsole, mocks.NewMockBlockUtils(mocks.NewBlocksPool(blocksPool)))
 }
 
-func NewHarnessWithFailingBlockProposalValidations(ctx context.Context, t *testing.T) *harness {
+func NewHarnessWithFailingBlockProposalValidations(ctx context.Context, t *testing.T, logsToConsole bool) *harness {
 	//net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).LogToConsole().Build()
 	failingValidationBlocksUtils := mocks.NewMockBlockUtils(mocks.NewBlocksPool(nil)).WithFailingBlockProposalValidations()
-	return newHarness(ctx, t, failingValidationBlocksUtils)
+	return newHarness(ctx, t, logsToConsole, failingValidationBlocksUtils)
 }
 
-func newHarness(ctx context.Context, t *testing.T, blockUtils interfaces.BlockUtils) *harness {
+func newHarness(ctx context.Context, t *testing.T, logsToConsole bool, blockUtils interfaces.BlockUtils) *harness {
 	//net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).LogToConsole().Build()
 	networkBuilder := network.ATestNetworkBuilder(4)
 	if blockUtils != nil {
 		networkBuilder = networkBuilder.WithBlockUtils(blockUtils)
+	}
+	if logsToConsole {
+		networkBuilder = networkBuilder.LogToConsole()
 	}
 	net := networkBuilder.Build()
 	net.SetNodesToPauseOnRequestNewBlock()
