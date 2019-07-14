@@ -26,7 +26,7 @@ func (et *ElectionTriggerMock) CalcTimeout(view primitives.View) time.Duration {
 
 func NewMockElectionTrigger() *ElectionTriggerMock {
 	return &ElectionTriggerMock{
-		electionChannel: make(chan func(ctx context.Context), 1),
+		electionChannel: make(chan func(ctx context.Context), 0), // Caution - keep 0 to make elections channel blocking
 	}
 }
 

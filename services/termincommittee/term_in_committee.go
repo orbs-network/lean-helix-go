@@ -158,6 +158,9 @@ func (tic *TermInCommittee) startTerm(ctx context.Context, canBeFirstLeader bool
 	if err := tic.isLeader(tic.myMemberId, tic.view); err == nil {
 		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW startTerm() I AM THE LEADER OF FIRST VIEW, requesting new block")
 		block, blockHash := tic.blockUtils.RequestNewBlockProposal(ctx, tic.height, tic.prevBlock)
+
+		// TODO Add error handling "if ctx.Err() != nil or block == nil"
+
 		ppm := tic.messageFactory.CreatePreprepareMessage(tic.height, tic.view, block, blockHash)
 
 		tic.storage.StorePreprepare(ppm)
@@ -482,10 +485,8 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 	}
 	tic.committedBlock = ppm.Block()
 	tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW PHASE COMMITTED CommittedBlock set to H=%d, calling onCommit() with H=%d V=%d block-hash=%s num-commit-messages=%d", ppm.Block().Height(), blockHeight, view, blockHash, len(commits))
-	//fmt.Printf("%v BEFORE ONCOMMIT %v\n", tic.myMemberId, tic.onCommit)
 
 	tic.onCommit(ctx, ppm.Block(), commits)
-	//fmt.Printf("%v AFTER ONCOMMIT %v\n", tic.myMemberId, tic.onCommit)
 	fmt.Println()
 }
 

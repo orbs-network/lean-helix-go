@@ -8,7 +8,6 @@ package leaderelection
 
 import (
 	"context"
-	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
@@ -74,7 +73,6 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 
 		// Thwart Preprepare message sending by node0 for block2
 		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0)           // pause when proposing block2
-		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{}) // Prevent PREPREPARE from being sent
 
 		// increment view - this selects node1 as the leader
 		/*
@@ -84,31 +82,24 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 			so in turn they did not receive 2f+1 PREPAREs (a.k.a PREPARED phase)
 			so new leader is free to suggest another block instead of block2
 		*/
-		fmt.Printf("NOW TRIGGERING ELECTION ON NODES\n")
 
-		electionTriggerProcessedAck := make([]<-chan struct{}, 4)
-		electionTriggerProcessedAck[0] = h.net.Nodes[0].TriggerElectionOnNode(ctx)
-		electionTriggerProcessedAck[1] = h.net.Nodes[1].TriggerElectionOnNode(ctx)
-		electionTriggerProcessedAck[2] = h.net.Nodes[2].TriggerElectionOnNode(ctx)
-		electionTriggerProcessedAck[3] = h.net.Nodes[3].TriggerElectionOnNode(ctx)
+		<- h.net.Nodes[1].TriggerElectionOnNode(ctx)
+		<- h.net.Nodes[2].TriggerElectionOnNode(ctx)
+		<- h.net.Nodes[3].TriggerElectionOnNode(ctx)
 
-		for i, c := range electionTriggerProcessedAck {
-			go func(i int, c <-chan struct{}) {
-				<-c
-				fmt.Printf("Election Trigger Processed %d\n", i)
-			}(i, c)
-		}
-
-		fmt.Printf("DONE TRIGGERING ELECTION ON NODES\n")
-
-		node0.Communication.ClearOutgoingWhitelist()
-
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node1)
+		// free the first leader to send stale PREPREPARE now when the others are in next view
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
+		// tell the old leader to advance it's view so it can join the others in view 1
+		<- h.net.Nodes[0].TriggerElectionOnNode(ctx)
+
+		// sync with new leader on block proposal
+		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node1)
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node1) // processing block 3
 
 		h.net.WaitForAllNodesToCommitBlock(ctx, block3)
+
+		// TODO - expect preprepare messages were sent from node0 for block2
 	})
 }
 

@@ -29,8 +29,8 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 	return &MainLoop{
 		config:             config,
 		onCommitCallback:   onCommitCallback,
-		messagesChannel:    make(chan *interfaces.ConsensusRawMessage, config.MsgChanBufLen),
-		updateStateChannel: make(chan *blockWithProof, config.UpdateStateChanBufLen),
+		messagesChannel:    make(chan *interfaces.ConsensusRawMessage, 10), // TODO use config.MsgChanBufLen
+		updateStateChannel: make(chan *blockWithProof, 10), // TODO use config.UpdateStateChanBufLen
 		electionChannel:    electionChannel,
 		currentHeight:      0,
 		logger:             LoggerToLHLogger(config.Logger),
@@ -52,10 +52,14 @@ func (m *MainLoop) RunMainLoop(ctx context.Context) {
 }
 
 func (m *MainLoop) run(ctx context.Context) {
+	defer func(){if e := recover(); e != nil {fmt.Println(e)} else {fmt.Println("MAIN SHUTDOWN")}}()
+
 	m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW MAINLOOP START")
 	m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "LHMSG START LISTENING NOW")
 	workerCtx, cancelWorkerContext := context.WithCancel(ctx)
 	for {
+		fmt.Printf("%v main loop listening\n", m.config.Membership.MyMemberId())
+
 		select {
 
 		case <-ctx.Done(): // system shutdown
@@ -65,16 +69,20 @@ func (m *MainLoop) run(ctx context.Context) {
 			return
 
 		case message := <-m.messagesChannel:
-			fmt.Printf("%v Read from messages channel\n", m.config.Membership.MyMemberId())
+			parsedMessage := interfaces.ToConsensusMessage(message)
+			fmt.Printf("%v main loop read from messages channel (%v) from %v for block height %d\n", m.config.Membership.MyMemberId(), parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight())
+
 			m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}
 
 		case trigger := <-m.electionChannel:
-			fmt.Printf("%v Read from election channel\n", m.config.Membership.MyMemberId())
+			fmt.Printf("%v main loop read from election channel\n", m.config.Membership.MyMemberId())
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
 			m.worker.ElectionChannel <- trigger
 
 		case receivedBlockWithProof := <-m.updateStateChannel: // NodeSync
+			fmt.Printf("%v main loop read from update state channel\n", m.config.Membership.MyMemberId())
+
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
 

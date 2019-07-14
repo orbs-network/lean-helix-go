@@ -8,6 +8,7 @@ package leanhelix
 
 import (
 	"context"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/blockheight"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/leanhelixterm"
@@ -54,7 +55,7 @@ func NewWorkerLoop(config *interfaces.Config, logger L.LHLogger, onCommitCallbac
 	logger.Debug(L.LC(math.MaxUint64, math.MaxUint64, config.Membership.MyMemberId()), "LHFLOW NewWorkerLoop()")
 	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), logger)
 	return &WorkerLoop{
-		MessagesChannel:    make(chan *MessageWithContext, config.MsgChanBufLen),
+		MessagesChannel:    make(chan *MessageWithContext, 10),
 		UpdateStateChannel: make(chan *blockWithProof),
 		ElectionChannel:    make(chan func(ctx context.Context)),
 		currentHeight:      0,
@@ -66,9 +67,12 @@ func NewWorkerLoop(config *interfaces.Config, logger L.LHLogger, onCommitCallbac
 }
 
 func (lh *WorkerLoop) Run(ctx context.Context) {
+	defer func(){if e := recover(); e != nil {fmt.Println(e)} else {fmt.Println("WORKER SHUTDOWN")}}()
 	lh.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP START")
 	lh.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHMSG START LISTENING NOW")
 	for {
+		fmt.Printf("%v worker loop listening\n", lh.config.Membership.MyMemberId())
+
 		select {
 		case <-ctx.Done(): // system shutdown
 			lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP DONE, Terminating Run().")
@@ -76,9 +80,14 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 			return
 
 		case res := <-lh.MessagesChannel:
+			message := interfaces.ToConsensusMessage(res.msg)
+			fmt.Printf("%v worker loop read from messages channel (%v) from %v for block height %d\n", lh.config.Membership.MyMemberId(), message.MessageType(), message.SenderMemberId(), message.BlockHeight())
+
 			lh.filter.HandleConsensusRawMessage(res.ctx, res.msg)
 
 		case trigger := <-lh.ElectionChannel:
+			fmt.Printf("%v worker loop read from election channel\n", lh.config.Membership.MyMemberId())
+
 			if trigger == nil {
 				// this cannot happen, ignore
 				lh.logger.Info(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "XXXXXX LHFLOW WORKERLOOP ELECTION, OMG trigger is nil, not triggering election!")
@@ -87,6 +96,8 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 			trigger(ctx)
 
 		case receivedBlockWithProof := <-lh.UpdateStateChannel: // NodeSync
+			fmt.Printf("%v worker loop read from update state channel\n", lh.config.Membership.MyMemberId())
+
 			lh.HandleUpdateState(ctx, receivedBlockWithProof)
 		}
 	}

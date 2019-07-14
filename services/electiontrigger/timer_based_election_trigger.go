@@ -28,7 +28,7 @@ type TimerBasedElectionTrigger struct {
 
 func NewTimerBasedElectionTrigger(minTimeout time.Duration, onElectionCB func(m metrics.ElectionMetrics)) *TimerBasedElectionTrigger {
 	return &TimerBasedElectionTrigger{
-		electionChannel: make(chan func(ctx context.Context), 1),
+		electionChannel: make(chan func(ctx context.Context), 0), // Caution - keep 0 to make election channel blocking
 		minTimeout:      minTimeout,
 		onElectionCB:    onElectionCB,
 	}

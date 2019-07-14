@@ -54,11 +54,13 @@ func (b *PausableBlockUtils) WithFailingBlockProposalValidations() *PausableBloc
 
 func (b *PausableBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
 	if b.PauseOnRequestNewBlock {
+		fmt.Printf("Sleeping until latch is freed to propose new block\n")
 		b.RequestNewBlockLatch.ReturnWhenLatchIsResumed(ctx)
 	}
 
 	block := b.blocksPool.PopBlock(prevBlock)
 	blockHash := CalculateBlockHash(block)
+	fmt.Printf("Proposing block %v, context err: %s\n", block, ctx.Err())
 	return block, blockHash
 }
 

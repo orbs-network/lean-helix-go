@@ -198,6 +198,7 @@ func (net *TestNetwork) WaitForConsensus(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-node.NodeStateChannel:
+			continue
 		}
 	}
 }
@@ -212,6 +213,7 @@ func (net *TestNetwork) WaitForNodesToCommitABlock(ctx context.Context, nodes ..
 		case <-ctx.Done():
 			return
 		case <-node.NodeStateChannel:
+			continue
 		}
 	}
 }
