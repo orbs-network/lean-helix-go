@@ -8,6 +8,7 @@ package network
 
 import (
 	"context"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/matchers"
@@ -65,13 +66,14 @@ func (net *TestNetwork) AllNodesChainEndsWithABlock(block interfaces.Block) bool
 	return true
 }
 
-func (net *TestNetwork) WaitForAllNodesToCommitBlock(ctx context.Context, block interfaces.Block) bool {
+func (net *TestNetwork) WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx context.Context, block interfaces.Block) bool {
 	for _, node := range net.Nodes {
 		select {
 		case <-ctx.Done():
 			return false
 		case nodeState := <-node.NodeStateChannel:
 			blockAreEqual := matchers.BlocksAreEqual(block, nodeState.block)
+			fmt.Printf("NODESTATE READ %v equal=%t\n", nodeState.block, blockAreEqual)
 			if blockAreEqual == false {
 				return false
 			}

@@ -38,7 +38,7 @@ type ConsensusRawMessage struct {
 }
 
 type Communication interface {
-	SendConsensusMessage(ctx context.Context, recipients []primitives.MemberId, message *ConsensusRawMessage)
+	SendConsensusMessage(ctx context.Context, recipients []primitives.MemberId, message *ConsensusRawMessage) error
 }
 
 type Membership interface {

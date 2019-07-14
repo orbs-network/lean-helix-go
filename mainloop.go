@@ -30,7 +30,7 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 		config:             config,
 		onCommitCallback:   onCommitCallback,
 		messagesChannel:    make(chan *interfaces.ConsensusRawMessage, 10), // TODO use config.MsgChanBufLen
-		updateStateChannel: make(chan *blockWithProof, 10), // TODO use config.UpdateStateChanBufLen
+		updateStateChannel: make(chan *blockWithProof, 10),                 // TODO use config.UpdateStateChanBufLen
 		electionChannel:    electionChannel,
 		currentHeight:      0,
 		logger:             LoggerToLHLogger(config.Logger),
@@ -52,13 +52,19 @@ func (m *MainLoop) RunMainLoop(ctx context.Context) {
 }
 
 func (m *MainLoop) run(ctx context.Context) {
-	defer func(){if e := recover(); e != nil {fmt.Println(e)} else {fmt.Println("MAIN SHUTDOWN")}}()
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Println(e)
+		} else {
+			fmt.Println("MAIN SHUTDOWN")
+		}
+	}()
 
 	m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW MAINLOOP START")
 	m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "LHMSG MAINLOOP START LISTENING NOW")
 	workerCtx, cancelWorkerContext := context.WithCancel(ctx)
 	for {
-		fmt.Printf("%v main loop listening\n", m.config.Membership.MyMemberId())
+		m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW MAINLOOP LISTENING")
 
 		select {
 
@@ -70,15 +76,16 @@ func (m *MainLoop) run(ctx context.Context) {
 
 		case message := <-m.messagesChannel:
 			parsedMessage := interfaces.ToConsensusMessage(message)
-			fmt.Printf("%v main loop read from messages channel (%v) from %v for block height %d\n", m.config.Membership.MyMemberId(), parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight())
+			m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHMSG MAINLOOP RECEIVED %v from %v for H=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight())
 
 			m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}
-			fmt.Printf("%v Wrote to worker messages channel [%p]\n", m.config.Membership.MyMemberId(), message)
+			//fmt.Printf("%v Wrote to worker messages channel [%p]\n", m.config.Membership.MyMemberId(), message)
 
 		case trigger := <-m.electionChannel:
-			fmt.Printf("%v main loop read from main election channel\n", m.config.Membership.MyMemberId())
+			//fmt.Printf("%v main loop read from main election channel\n", m.config.Membership.MyMemberId())
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
+			m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW CANCELED WORKER CONTEXT DUE TO ELECTION")
 			m.worker.ElectionChannel <- trigger
 
 		case receivedBlockWithProof := <-m.updateStateChannel: // NodeSync
@@ -86,6 +93,7 @@ func (m *MainLoop) run(ctx context.Context) {
 
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
+			m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW CANCELED WORKER CONTEXT DUE TO UPDATESTATE")
 
 			m.worker.UpdateStateChannel <- receivedBlockWithProof
 

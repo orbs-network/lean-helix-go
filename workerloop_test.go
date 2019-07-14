@@ -43,11 +43,11 @@ func TestWorkerLoopReturnsOnMainContextCancellation(t *testing.T) {
 		}()
 		mainCancel()
 
-		test.FailIfNotDoneByTimeout(t, wg, 1*time.Second, "Main context was cancelled but worker loop did not return by timeout")
+		test.FailIfNotDoneByTimeout(t, wg, 1*time.Second, "Main context was canceled but worker loop did not return by timeout")
 	})
 }
 
-// Write test that teases out Worker structure of loop with worker context that is cancelled on NodeSync and Election
+// Write test that teases out Worker structure of loop with worker context that is canceled on NodeSync and Election
 
 func TestWorkerContextPropagatedToCancellableOperationsInWorkerLoop(t *testing.T) {
 

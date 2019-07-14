@@ -165,7 +165,9 @@ func (tic *TermInCommittee) startTerm(ctx context.Context, canBeFirstLeader bool
 
 		tic.storage.StorePreprepare(ppm)
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND PREPREPARE")
-		tic.sendConsensusMessage(ctx, ppm)
+		if err = tic.sendConsensusMessage(ctx, ppm); err != nil {
+			tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND PREPREPARE FAILED - %s", err)
+		}
 	}
 }
 
@@ -222,8 +224,10 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 		tic.storage.StoreViewChange(vcm)
 		tic.checkElected(ctx, tic.height, tic.view)
 	} else {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND VIEW_CHANGE (I'm not leader) moveToNextLeader() (%s)", err)
-		tic.sendConsensusMessageToSpecificMember(ctx, newLeader, vcm)
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND VIEW_CHANGE (I'm not leader) to %s (%s)", newLeader, err)
+		if sendErr := tic.sendConsensusMessageToSpecificMember(ctx, newLeader, vcm); sendErr != nil {
+			tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND VIEW_CHANGE to %s FAILED - %s", newLeader, sendErr)
+		}
 	}
 	if onElectionCB != nil {
 		onElectionCB(metrics.NewElectionMetrics(newLeader, tic.view))
@@ -257,10 +261,10 @@ func (tic *TermInCommittee) checkElected(ctx context.Context, height primitives.
 	}
 
 	if len(vcms) < minimumNodes {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkElected() stored %d of %d VIEW_CHANGE messages (last-sender=%s)", len(vcms), minimumNodes, Str(vcms[len(vcms)-1].SenderMemberId()))
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkElected() stored %d of %d VIEW_CHANGE messages", len(vcms), minimumNodes)
 		return
 	}
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkElected() stored %d of %d VIEW_CHANGE messages (last-sender=%s)", len(vcms), minimumNodes, Str(vcms[len(vcms)-1].SenderMemberId()))
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkElected() stored %d of %d VIEW_CHANGE messages", len(vcms), minimumNodes)
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkElected() has enough VIEW_CHANGE messages, proceeding to onElected() with V=%d", view)
 	tic.onElected(ctx, view, vcms[:minimumNodes])
 }
@@ -283,19 +287,21 @@ func (tic *TermInCommittee) onElected(ctx context.Context, view primitives.View,
 	nvm := tic.messageFactory.CreateNewViewMessage(tic.height, view, ppmContentBuilder, confirmations, block)
 	tic.storage.StorePreprepare(ppm)
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND NEW_VIEW")
-	tic.sendConsensusMessage(ctx, nvm)
+	if err := tic.sendConsensusMessage(ctx, nvm); err != nil {
+		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND NEW_VIEW FAILED - %s", err)
+	}
 }
 
-func (tic *TermInCommittee) sendConsensusMessage(ctx context.Context, message interfaces.ConsensusMessage) {
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "sendConsensusMessage() msgType=%v", message.MessageType())
+func (tic *TermInCommittee) sendConsensusMessage(ctx context.Context, message interfaces.ConsensusMessage) error {
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND sendConsensusMessage() target=ALL, msgType=%v", message.MessageType())
 	rawMessage := interfaces.CreateConsensusRawMessage(message)
-	tic.communication.SendConsensusMessage(ctx, tic.otherCommitteeMembersMemberIds, rawMessage)
+	return tic.communication.SendConsensusMessage(ctx, tic.otherCommitteeMembersMemberIds, rawMessage)
 }
 
-func (tic *TermInCommittee) sendConsensusMessageToSpecificMember(ctx context.Context, targetMemberId primitives.MemberId, message interfaces.ConsensusMessage) {
-	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "sendConsensusMessageToSpecificMember() target=%s, msgType=%v", Str(targetMemberId), message.MessageType())
+func (tic *TermInCommittee) sendConsensusMessageToSpecificMember(ctx context.Context, targetMemberId primitives.MemberId, message interfaces.ConsensusMessage) error {
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND sendConsensusMessageToSpecificMember() target=%s, msgType=%v", Str(targetMemberId), message.MessageType())
 	rawMessage := interfaces.CreateConsensusRawMessage(message)
-	tic.communication.SendConsensusMessage(ctx, []primitives.MemberId{targetMemberId}, rawMessage)
+	return tic.communication.SendConsensusMessage(ctx, []primitives.MemberId{targetMemberId}, rawMessage)
 }
 
 func (tic *TermInCommittee) HandlePrePrepare(ctx context.Context, ppm *interfaces.PreprepareMessage) {
@@ -353,7 +359,9 @@ func (tic *TermInCommittee) processPreprepare(ctx context.Context, ppm *interfac
 	tic.storage.StorePreprepare(ppm)
 	tic.storage.StorePrepare(pm)
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND PREPARE")
-	tic.sendConsensusMessage(ctx, pm)
+	if err := tic.sendConsensusMessage(ctx, pm); err != nil {
+		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND PREPARE FAILED - %s", err)
+	}
 
 	if err := tic.checkPreparedLocally(ctx, header.BlockHeight(), header.View(), header.BlockHash()); err != nil {
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "checkPreparedLocally: err=%v", err)
@@ -432,7 +440,9 @@ func (tic *TermInCommittee) onPreparedLocally(ctx context.Context, blockHeight p
 	cm := tic.messageFactory.CreateCommitMessage(blockHeight, view, blockHash)
 	tic.storage.StoreCommit(cm)
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND COMMIT")
-	tic.sendConsensusMessage(ctx, cm)
+	if err := tic.sendConsensusMessage(ctx, cm); err != nil {
+		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND COMMIT FAILED - %s", err)
+	}
 	tic.checkCommitted(ctx, blockHeight, view, blockHash)
 }
 
@@ -480,8 +490,10 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 	if !iSentCommitMessage {
 		// TODO Add correct context to CreateCommitMessage (workerCtx)
 		cm := tic.messageFactory.CreateCommitMessage(blockHeight, view, blockHash)
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND COMMIT because I did not send it during onPreparedLocally")
-		tic.sendConsensusMessage(ctx, cm)
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND COMMIT [checkCommitted] because I did not send it during onPreparedLocally")
+		if err := tic.sendConsensusMessage(ctx, cm); err != nil {
+			tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND COMMIT FAILED [checkCommitted] - %s", err)
+		}
 	}
 	tic.committedBlock = ppm.Block()
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW PHASE COMMITTED CommittedBlock set to H=%d, calling onCommit() with H=%d V=%d block-hash=%s num-commit-messages=%d", ppm.Block().Height(), blockHeight, view, blockHash, len(commits))

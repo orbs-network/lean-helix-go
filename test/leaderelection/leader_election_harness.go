@@ -39,6 +39,14 @@ func newHarness(ctx context.Context, t *testing.T, logsToConsole bool, blockUtil
 		networkBuilder = networkBuilder.LogToConsole()
 	}
 	net := networkBuilder.Build()
+
+	// Create all channels in advance, using the test context which will only get canceled at the end of test
+	for _, node := range net.Nodes {
+		for _, peerNode := range net.Nodes {
+			net.GetNodeCommunication(node.MemberId).ReturnAndMaybeCreateOutgoingChannelByTarget(ctx, peerNode.MemberId)
+		}
+	}
+
 	net.SetNodesToPauseOnRequestNewBlock()
 	net.StartConsensus(ctx)
 

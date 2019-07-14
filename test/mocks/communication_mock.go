@@ -8,10 +8,13 @@ package mocks
 
 import (
 	"context"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
+	"github.com/pkg/errors"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -25,10 +28,15 @@ type outgoingMessage struct {
 }
 
 type CommunicationMock struct {
-	discovery                  *Discovery
-	outgoingChannelsMap        map[string]chan *outgoingMessage
-	totalSubscriptions         int
-	subscriptions              map[int]*SubscriptionValue
+	discovery *Discovery
+
+	outgoingLock        sync.Mutex
+	outgoingChannelsMap map[string]chan *outgoingMessage
+
+	subscriptionsLock   sync.Mutex
+	nextSubscriptionKey int
+	subscriptions       map[int]*SubscriptionValue
+
 	outgoingWhitelist          []primitives.MemberId
 	incomingWhiteListMemberIds []primitives.MemberId
 	statsSentMessages          []*interfaces.ConsensusRawMessage
@@ -39,7 +47,7 @@ func NewCommunication(discovery *Discovery) *CommunicationMock {
 	return &CommunicationMock{
 		discovery:                  discovery,
 		outgoingChannelsMap:        make(map[string]chan *outgoingMessage),
-		totalSubscriptions:         0,
+		nextSubscriptionKey:        0,
 		subscriptions:              make(map[int]*SubscriptionValue),
 		outgoingWhitelist:          nil,
 		incomingWhiteListMemberIds: nil,
@@ -53,51 +61,74 @@ func (g *CommunicationMock) SetMessagesMaxDelay(duration time.Duration) {
 }
 
 func (g *CommunicationMock) messageSenderLoop(ctx context.Context, channel chan *outgoingMessage) {
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Println("messageSenderLoop() PANIC: ", e)
+		} else {
+			fmt.Println("messageSenderLoop() end")
+		}
+	}()
+
 	for {
 		select {
 		case <-ctx.Done():
+			fmt.Printf("messageLoop ctx.Done with Err(): %v\n", ctx.Err())
 			return
 		case messageData := <-channel:
+			messageType := interfaces.ToConsensusMessage(messageData.message).MessageType()
+			sender := interfaces.ToConsensusMessage(messageData.message).SenderMemberId()
+
+			fmt.Printf("messageSenderLoop RECEIVED %v from %v on %v\n", messageType, sender, messageData.target)
 			g.SendToNode(ctx, messageData.target, messageData.message)
 		}
 
 	}
 }
 
-func (g *CommunicationMock) getOutgoingChannelByTarget(ctx context.Context, target primitives.MemberId) chan *outgoingMessage {
+func (g *CommunicationMock) ReturnAndMaybeCreateOutgoingChannelByTarget(ctx context.Context, target primitives.MemberId) chan *outgoingMessage {
+	g.outgoingLock.Lock()
+	defer g.outgoingLock.Unlock()
+
 	channel := g.outgoingChannelsMap[target.String()]
 	if channel == nil {
 		channel = make(chan *outgoingMessage, 100)
 		g.outgoingChannelsMap[target.String()] = channel
+		fmt.Printf("ReturnAndMaybeCreateOutgoingChannelByTarget() start for %s\n", target)
 		go g.messageSenderLoop(ctx, channel)
 	}
 
 	return channel
 }
 
-func (g *CommunicationMock) SendConsensusMessage(ctx context.Context, targets []primitives.MemberId, message *interfaces.ConsensusRawMessage) {
+func (g *CommunicationMock) SendConsensusMessage(ctx context.Context, targets []primitives.MemberId, message *interfaces.ConsensusRawMessage) error {
+	messageType := interfaces.ToConsensusMessage(message).MessageType()
+
 	g.statsSentMessages = append(g.statsSentMessages, message)
 	for _, target := range targets {
-		channel := g.getOutgoingChannelByTarget(ctx, target)
+		channel := g.outgoingChannelsMap[target.String()]
 		select {
 		case <-ctx.Done():
-			return
+			return errors.Errorf("context canceled for outgoing channel of %v", target)
 		case channel <- &outgoingMessage{target, message}:
+			fmt.Printf("SendConsensusMessage SENT %v to %v\n", messageType, target)
+			continue
 		}
 	}
+	return nil
 }
 
-func (g *CommunicationMock) RegisterOnMessage(cb func(ctx context.Context, message *interfaces.ConsensusRawMessage)) int {
-	g.totalSubscriptions++
-	g.subscriptions[g.totalSubscriptions] = &SubscriptionValue{cb}
-	return g.totalSubscriptions
-}
+func (g *CommunicationMock) RegisterOnMessage(cb func(ctx context.Context, message *interfaces.ConsensusRawMessage)) {
+	g.subscriptionsLock.Lock()
+	defer g.subscriptionsLock.Unlock()
 
-func (g *CommunicationMock) UnregisterOnMessage(subscriptionToken int) {
-	delete(g.subscriptions, subscriptionToken)
+	g.nextSubscriptionKey++
+	g.subscriptions[g.nextSubscriptionKey] = &SubscriptionValue{cb}
 }
 
 func (g *CommunicationMock) OnRemoteMessage(ctx context.Context, rawMessage *interfaces.ConsensusRawMessage) {
+	g.subscriptionsLock.Lock()
+	defer g.subscriptionsLock.Unlock()
+
 	for _, s := range g.subscriptions {
 		if g.incomingWhiteListMemberIds != nil {
 			senderMemberId := interfaces.ToConsensusMessage(rawMessage).SenderMemberId()
@@ -166,6 +197,8 @@ func (g *CommunicationMock) SendToNode(ctx context.Context, targetMemberId primi
 
 	if targetCommunication := g.discovery.GetCommunicationById(targetMemberId); targetCommunication != nil {
 		targetCommunication.OnRemoteMessage(ctx, consensusRawMessage)
+	} else {
+		return
 	}
 	return
 }

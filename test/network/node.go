@@ -88,6 +88,7 @@ func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, 
 			return
 
 		case node.NodeStateChannel <- nodeState:
+			fmt.Printf("NODESTATE WROTE %v\n", block)
 			return
 		}
 	}

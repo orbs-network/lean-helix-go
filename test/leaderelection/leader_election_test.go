@@ -53,7 +53,7 @@ func Test2fPlus1ViewChangeToBeElected(t *testing.T) {
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
 		// make sure that we're on block2
-		h.net.WaitForAllNodesToCommitBlock(ctx, block2)
+		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block2))
 	})
 }
 
@@ -70,10 +70,11 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 
 		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0) // processing block1, should be agreed by all nodes
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		h.net.WaitForAllNodesToCommitBlock(ctx, block1)
-
+		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block1))
+		fmt.Println("--- BLOCK1 COMMITTED ---")
 		// Thwart Preprepare message sending by node0 for block2
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0)           // pause when proposing block2
+		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0) // pause when proposing block2
+		fmt.Println("--- NODE0 PAUSED ON REQUEST NEW BLOCK ---")
 
 		// increment view - this selects node1 as the leader
 		/*
@@ -84,21 +85,24 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 			so new leader is free to suggest another block instead of block2
 		*/
 
-		<- h.net.Nodes[1].TriggerElectionOnNode(ctx)
-		<- h.net.Nodes[2].TriggerElectionOnNode(ctx)
-		<- h.net.Nodes[3].TriggerElectionOnNode(ctx)
+		<-h.net.Nodes[1].TriggerElectionOnNode(ctx)
+		<-h.net.Nodes[2].TriggerElectionOnNode(ctx)
+		<-h.net.Nodes[3].TriggerElectionOnNode(ctx)
+
+		fmt.Println("--- TRIGGERED ELECTION ON NODES 1 2 3 ---")
 
 		// free the first leader to send stale PREPREPARE now when the others are in next view
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
-
+		fmt.Println("--- NODE0 RESUMED REQUEST NEW BLOCK ---")
 		// tell the old leader to advance it's view so it can join the others in view 1
-		<- h.net.Nodes[0].TriggerElectionOnNode(ctx)
-
+		<-h.net.Nodes[0].TriggerElectionOnNode(ctx)
+		fmt.Println("--- TRIGGERED ELECTION ON NODE0")
 		// sync with new leader on block proposal
 		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node1)
+		fmt.Println("--- NODE1 PAUSED ON REQUEST NEW BLOCK ---")
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node1) // processing block 3
-		fmt.Printf("Resumed RequestNewBlock on node1\n")
-		h.net.WaitForAllNodesToCommitBlock(ctx, block2)
+		fmt.Println("--- NODE1 RESUMED REQUEST NEW BLOCK ---")
+		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block3))
 
 		// TODO - expect preprepare messages were sent from node0 for block2
 	})
@@ -121,7 +125,7 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0)
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
-		h.net.WaitForAllNodesToCommitBlock(ctx, block1)
+		h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block1)
 
 		// processing block 2
 		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0)
@@ -142,7 +146,7 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 
 		// processing block 3
 		//h.net.ResumeRequestNewBlockOnNodes(ctx, node1)
-		h.net.WaitForAllNodesToCommitBlock(ctx, block2)
+		h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block2)
 	})
 }
 */
@@ -225,7 +229,7 @@ func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
 		// make sure that we're on block2
-		h.net.WaitForAllNodesToCommitBlock(ctx, block2)
+		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block2))
 	})
 }
 

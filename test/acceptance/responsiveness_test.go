@@ -51,13 +51,13 @@ func TestRequestNewBlockDoesNotHangNodeSync(t *testing.T) {
 			node0 := net.Nodes[0]
 
 			createNewBlockProposalEntered := newWaitingGroupWithDelta(1)
-			createNewBlockProposalCancelled := newWaitingGroupWithDelta(1)
+			createNewBlockProposalCanceled := newWaitingGroupWithDelta(1)
 			blockUtilsMock.
 				When("RequestNewBlockProposal", mock.Any, mock.Any, mock.Any).
 				Call(func(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
 					createNewBlockProposalEntered.Done()
 					<-ctx.Done() // block until context cancellation
-					createNewBlockProposalCancelled.Done()
+					createNewBlockProposalCanceled.Done()
 					return blockToPropose, nil
 				})
 
@@ -72,7 +72,7 @@ func TestRequestNewBlockDoesNotHangNodeSync(t *testing.T) {
 			}()
 
 			test.FailIfNotDoneByTimeout(t, updateStateCompleted, TIMEOUT, "NodeSync is blocked by RequestNewBlockProposal")
-			test.FailIfNotDoneByTimeout(t, createNewBlockProposalCancelled, TIMEOUT, "RequestNewBlockProposal's ctx was not cancelled immediately after NodeSync")
+			test.FailIfNotDoneByTimeout(t, createNewBlockProposalCanceled, TIMEOUT, "RequestNewBlockProposal's ctx was not canceled immediately after NodeSync")
 		})
 
 	})
@@ -85,13 +85,13 @@ func TestRequestNewBlockDoesNotHangElectionsTrigger(t *testing.T) {
 			node0 := net.Nodes[0]
 
 			createNewBlockProposalEntered := newWaitingGroupWithDelta(1)
-			createNewBlockProposalCancelled := newWaitingGroupWithDelta(1)
+			createNewBlockProposalCanceled := newWaitingGroupWithDelta(1)
 			blockUtilsMock.
 				When("RequestNewBlockProposal", mock.Any, mock.Any, mock.Any).
 				Call(func(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
 					createNewBlockProposalEntered.Done()
 					<-ctx.Done() // block until context cancellation
-					createNewBlockProposalCancelled.Done()
+					createNewBlockProposalCanceled.Done()
 					return blockToPropose, nil
 				})
 
@@ -106,7 +106,7 @@ func TestRequestNewBlockDoesNotHangElectionsTrigger(t *testing.T) {
 			}()
 
 			test.FailIfNotDoneByTimeout(t, electionsTriggerProcessed, TIMEOUT, "Election trigger is blocked by RequestNewBlockProposal")
-			test.FailIfNotDoneByTimeout(t, createNewBlockProposalCancelled, TIMEOUT, "RequestNewBlockProposal's ctx was not cancelled immediately after election trigger")
+			test.FailIfNotDoneByTimeout(t, createNewBlockProposalCanceled, TIMEOUT, "RequestNewBlockProposal's ctx was not canceled immediately after election trigger")
 		})
 	})
 }
