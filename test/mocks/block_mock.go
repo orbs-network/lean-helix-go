@@ -20,7 +20,7 @@ type MockBlock struct {
 }
 
 func (b *MockBlock) String() string {
-	return fmt.Sprintf("{BLOCK=%s}", b.Body())
+	return fmt.Sprintf("{%s}", b.Body())
 }
 
 func (b *MockBlock) Height() primitives.BlockHeight {
@@ -44,13 +44,14 @@ func ABlock(previousBlock interfaces.Block) interfaces.Block {
 		height: newBlockHeight,
 		body:   genBody(newBlockHeight),
 	}
+	fmt.Printf("Created mock block: %s\n", block)
 	return block
 }
 
 var blocksCounter = 0
 
 func genBody(height primitives.BlockHeight) string {
-	body := fmt.Sprintf("#%d|H=%d", blocksCounter, height)
+	body := fmt.Sprintf("SN=%d,H=%d", blocksCounter, height)
 	if height == 0 {
 		body = body + " (Genesis)"
 	}

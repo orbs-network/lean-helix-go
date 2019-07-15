@@ -63,7 +63,7 @@ func (b *PausableBlockUtils) RequestNewBlockProposal(ctx context.Context, blockH
 
 	block := b.blocksPool.PopBlock(prevBlock)
 	blockHash := CalculateBlockHash(block)
-	fmt.Printf("ID=%s Proposing block %v, context err: %s\n", b.memberId, block, ctx.Err())
+	fmt.Printf("ID=%s RequestNewBlockProposal: Proposing block %v, context err: %s\n", b.memberId, block, ctx.Err())
 	return block, blockHash
 }
 

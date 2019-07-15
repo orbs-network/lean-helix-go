@@ -220,7 +220,7 @@ func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, bloc
 	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW onCommitCallback START from leanhelix.onCommit()")
 	lh.onCommitCallback(ctx, block, blockProofBytes)
 	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW onCommitCallback RETURNED from leanhelix.onCommit()")
-	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "Calling onNewConsensusRound from leanhelix.onCommit()")
+	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "Calling onNewConsensusRound() from leanhelix.onCommit()")
 	lh.onNewConsensusRound(ctx, block, blockProofBytes, true)
 }
 

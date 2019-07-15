@@ -73,7 +73,7 @@ func (net *TestNetwork) WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven
 			return false
 		case nodeState := <-node.NodeStateChannel:
 			blockAreEqual := matchers.BlocksAreEqual(expectedBlock, nodeState.block)
-			fmt.Printf("NODESTATE READ nodeState.block=%v expectedBlock=%v equal=%t\n", nodeState.block, expectedBlock, blockAreEqual)
+			fmt.Printf("ID=%s NODESTATE READ comparing nodeState.block=%v expectedBlock=%v equal=%t\n", node.MemberId, nodeState.block, expectedBlock, blockAreEqual)
 			if blockAreEqual == false {
 				return false
 			}

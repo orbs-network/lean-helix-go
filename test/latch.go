@@ -48,10 +48,10 @@ func (l *Latch) ReturnWhenLatchIsResumed(ctx context.Context, memberId primitive
 }
 
 func (l *Latch) ReturnWhenLatchIsPaused(ctx context.Context, memberId primitives.MemberId) {
-	l.log.Debug("ID=%s Latch.ReturnWhenLatchIsPaused() start")
+	l.log.Debug("ID=%s Latch.ReturnWhenLatchIsPaused() start", memberId)
 	select {
 	case <-ctx.Done():
-		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsPaused() ctx.Done")
+		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsPaused() ctx.Done", memberId)
 		return
 	case <-l.pauseChannel:
 		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsPaused() read from Pause channel (latch has paused)", memberId)
@@ -59,10 +59,10 @@ func (l *Latch) ReturnWhenLatchIsPaused(ctx context.Context, memberId primitives
 }
 
 func (l *Latch) Resume(ctx context.Context, memberId primitives.MemberId) {
-	l.log.Debug("ID=%s Latch.Resume() start")
+	l.log.Debug("ID=%s Latch.Resume() start", memberId)
 	select {
 	case <-ctx.Done():
-		l.log.Debug("ID=%s Latch.Resume() ctx.Done")
+		l.log.Debug("ID=%s Latch.Resume() ctx.Done", memberId)
 		return
 	case l.resumeChannel <- true:
 		l.log.Debug("ID=%s Latch.Resume() resuming latch", memberId)

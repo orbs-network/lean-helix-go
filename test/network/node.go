@@ -71,7 +71,7 @@ func (node *Node) TriggerElectionOnNode(ctx context.Context) <-chan struct{} {
 	}
 
 	//node.leanHelix.TriggerElection(ctx, func(ctx context.Context) { electionTriggerMock.ManualTrigger(ctx) })
-	fmt.Printf("Calling ManualTrigger on node %v\n", node.Membership.MyMemberId())
+	fmt.Printf("ID=%s Calling ManualTrigger\n", node.MemberId)
 	return electionTriggerMock.ManualTrigger(ctx)
 }
 
@@ -88,7 +88,7 @@ func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, 
 			return
 
 		case node.NodeStateChannel <- nodeState:
-			fmt.Printf("NODESTATE WROTE %v\n", block)
+			fmt.Printf("ID=%s NODESTATE WROTE %v\n", node.MemberId, block)
 			return
 		}
 	}

@@ -162,7 +162,7 @@ func (g *CommunicationMock) inOutgoingWhitelist(memberId primitives.MemberId) bo
 	return false
 }
 
-func (g *CommunicationMock) DisableOutgoing() {
+func (g *CommunicationMock) DisableOutgoingCommunication() {
 	g.SetOutgoingWhitelist([]primitives.MemberId{})
 }
 
