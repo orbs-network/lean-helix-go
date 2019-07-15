@@ -284,45 +284,52 @@ func TestNoNewViewIfLessThan2fPlus1ViewChangeAlternativeImplementation(t *testin
 }
 
 // TODO FLAKY!
+// Let each and every node try and be the Leader and finally return to the original leader
 func TestLeaderCircularOrdering(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		// Nodes might get into prepared state, and send their block in the view-change
-		// meaning that the new leader will not request new block and we can't hang him.
-		// to prevent nodes from getting prepared, we just don't validate the block
+		// Set block validation to always fail.
+		// The reason for this is to prevent the Validator (non-leader) nodes
+		// from going into PREPARED phase after validating the block.
+		// If nodes were to go into PREPARED phase, this would "lock" the proposed
+		// block, preventing the next Leader from suggesting a different block
+		// by calling RequestNewBlockProposal.
+		// We want node0 to pause on RequestNewBlockProposal because it is our stop signal for the test
 		h := NewHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
 
 		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, h.net.Nodes[0])
 
 		// selecting node 1 as the leader
-		h.net.Nodes[0].TriggerElectionOnNode(ctx)
-		h.net.Nodes[2].TriggerElectionOnNode(ctx)
-		h.net.Nodes[3].TriggerElectionOnNode(ctx)
+		<-h.net.Nodes[0].TriggerElectionOnNode(ctx)
+		<-h.net.Nodes[2].TriggerElectionOnNode(ctx)
+		<-h.net.Nodes[3].TriggerElectionOnNode(ctx)
 
 		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[0])
 		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, h.net.Nodes[1])
 
 		// selecting node 2 as the leader
-		h.net.Nodes[0].TriggerElectionOnNode(ctx)
-		h.net.Nodes[1].TriggerElectionOnNode(ctx)
-		h.net.Nodes[3].TriggerElectionOnNode(ctx)
+		<-h.net.Nodes[0].TriggerElectionOnNode(ctx)
+		<-h.net.Nodes[1].TriggerElectionOnNode(ctx)
+		<-h.net.Nodes[3].TriggerElectionOnNode(ctx)
 
 		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[1])
 		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, h.net.Nodes[2])
 
 		// selecting node 3 as the leader
-		h.net.Nodes[0].TriggerElectionOnNode(ctx)
-		h.net.Nodes[1].TriggerElectionOnNode(ctx)
-		h.net.Nodes[2].TriggerElectionOnNode(ctx)
+		<-h.net.Nodes[0].TriggerElectionOnNode(ctx)
+		<-h.net.Nodes[1].TriggerElectionOnNode(ctx)
+		<-h.net.Nodes[2].TriggerElectionOnNode(ctx)
 
 		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[2])
 		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, h.net.Nodes[3])
 
 		// back to node 0 as the leader
-		h.net.Nodes[1].TriggerElectionOnNode(ctx)
-		h.net.Nodes[2].TriggerElectionOnNode(ctx)
-		h.net.Nodes[3].TriggerElectionOnNode(ctx)
+		<-h.net.Nodes[1].TriggerElectionOnNode(ctx)
+		<-h.net.Nodes[2].TriggerElectionOnNode(ctx)
+		<-h.net.Nodes[3].TriggerElectionOnNode(ctx)
 
 		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[3])
+
 		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, h.net.Nodes[0])
+
 	})
 }

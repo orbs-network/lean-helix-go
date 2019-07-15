@@ -70,8 +70,6 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 	defer func() {
 		if e := recover(); e != nil {
 			fmt.Println(e)
-		} else {
-			fmt.Println("WORKER SHUTDOWN")
 		}
 	}()
 	lh.logger.Debug(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP START")
@@ -86,14 +84,9 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 			return
 
 		case res := <-lh.MessagesChannel:
-			message := interfaces.ToConsensusMessage(res.msg)
-			fmt.Printf("%v worker loop read from messages channel (%v) from %v for block height %d\n", lh.config.Membership.MyMemberId(), message.MessageType(), message.SenderMemberId(), message.BlockHeight())
-
 			lh.filter.HandleConsensusRawMessage(res.ctx, res.msg)
-			//fmt.Printf("%v Handled worker message [%p]\n", lh.config.Membership.MyMemberId(), res.msg)
 
 		case trigger := <-lh.ElectionChannel:
-			//fmt.Printf("%v worker loop read from election channel\n", lh.config.Membership.MyMemberId())
 			if trigger == nil {
 				// this cannot happen, ignore
 				lh.logger.Info(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "XXXXXX LHFLOW WORKERLOOP ELECTION, OMG trigger is nil, not triggering election!")
@@ -102,8 +95,6 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 			trigger(ctx)
 
 		case receivedBlockWithProof := <-lh.UpdateStateChannel: // NodeSync
-			fmt.Printf("%v worker loop read from update state channel\n", lh.config.Membership.MyMemberId())
-
 			lh.HandleUpdateState(ctx, receivedBlockWithProof)
 		}
 	}
