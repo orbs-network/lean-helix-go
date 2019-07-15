@@ -195,9 +195,6 @@ func (g *CommunicationMock) SendToNode(ctx context.Context, targetMemberId primi
 	}
 
 	if targetCommunication := g.discovery.GetCommunicationById(targetMemberId); targetCommunication != nil {
-		messageType := interfaces.ToConsensusMessage(consensusRawMessage).MessageType()
-		sender := interfaces.ToConsensusMessage(consensusRawMessage).SenderMemberId()
-		fmt.Printf("ID=%s messageSenderLoop RECEIVED %v from %v\n", g.memberId, messageType, sender)
 		targetCommunication.OnRemoteMessage(ctx, consensusRawMessage)
 	} else {
 		return

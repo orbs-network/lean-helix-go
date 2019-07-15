@@ -180,7 +180,7 @@ func (net *TestNetwork) SetNodesToPauseOnHandleUpdateState(nodes ...*Node) {
 	}
 }
 
-func (net *TestNetwork) ReturnWhenNodePausesOnRequestNewBlock(ctx context.Context, node *Node) {
+func (net *TestNetwork) ReturnWhenNodeIsPausedOnRequestNewBlock(ctx context.Context, node *Node) {
 	if pausableBlockUtils, ok := node.BlockUtils.(*mocks.PausableBlockUtils); ok {
 		pausableBlockUtils.RequestNewBlockLatch.ReturnWhenLatchIsPaused(ctx, node.MemberId)
 	} else {

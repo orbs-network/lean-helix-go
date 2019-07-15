@@ -28,43 +28,43 @@ func NewLatch() *Latch {
 }
 
 func (l *Latch) ReturnWhenLatchIsResumed(ctx context.Context, memberId primitives.MemberId) {
-	l.log.Debug("ID=%s Latch.ReturnWhenLatchIsResumed() start", memberId)
+	l.log.Debug("ID=%s Latch.ReturnWhenLatchIsResumed() start, blocked till reading from Pause channel", memberId)
 	select {
 	case <-ctx.Done():
 		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsResumed() ctx.Done (before Pause)", memberId)
 		return
 	case l.pauseChannel <- true:
-		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsResumed() wrote to Pause channel", memberId)
+		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsResumed() wrote to paused latch", memberId)
 	}
 
-	l.log.Debug("ID=%s Latch.ReturnWhenLatchIsResumed() waiting for latch to resume", memberId)
+	l.log.Debug("ID=%s Latch.ReturnWhenLatchIsResumed() blocked till writing to resume channel", memberId)
 	select {
 	case <-ctx.Done():
 		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsResumed() ctx.Done (before Resume)", memberId)
 		return
 	case <-l.resumeChannel:
-		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsResumed() latch has resumed", memberId)
+		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsResumed() read from resume channel", memberId)
 	}
 }
 
 func (l *Latch) ReturnWhenLatchIsPaused(ctx context.Context, memberId primitives.MemberId) {
-	l.log.Debug("ID=%s Latch.ReturnWhenLatchIsPaused() start", memberId)
+	l.log.Debug("ID=%s Latch.ReturnWhenLatchIsPaused() start, blocked till writing to pause channel", memberId)
 	select {
 	case <-ctx.Done():
 		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsPaused() ctx.Done", memberId)
 		return
 	case <-l.pauseChannel:
-		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsPaused() read from Pause channel (latch has paused)", memberId)
+		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsPaused() read from Pause channel", memberId)
 	}
 }
 
 func (l *Latch) Resume(ctx context.Context, memberId primitives.MemberId) {
-	l.log.Debug("ID=%s Latch.Resume() start", memberId)
+	l.log.Debug("ID=%s Latch.Resume() start, blocked till reading from Resume channel", memberId)
 	select {
 	case <-ctx.Done():
 		l.log.Debug("ID=%s Latch.Resume() ctx.Done", memberId)
 		return
 	case l.resumeChannel <- true:
-		l.log.Debug("ID=%s Latch.Resume() resuming latch", memberId)
+		l.log.Debug("ID=%s Latch.Resume() wrote to Resume channel", memberId)
 	}
 }

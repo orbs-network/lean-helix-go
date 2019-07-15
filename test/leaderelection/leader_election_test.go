@@ -27,19 +27,18 @@ func TestNewLeaderProposesNewBlockIfPreviousLeaderFailedToBringNetworkIntoPrepar
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
 		h := NewHarness(ctx, t, LOG_TO_CONSOLE, block1, block2)
-
 		node0 := h.net.Nodes[0]
 		node1 := h.net.Nodes[1]
 
-		// Block the leader (node0)
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0)
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
+
 		node0.Communication.DisableOutgoingCommunication()
 
 		manuallyElectNode1AsNewLeader(ctx, h)
 
 		// Now that we caused node1 to be the new leader, it will ask for a new block.
 		// BTW the test doesn't care which block it actually is
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node1)
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node1)
 	})
 }
 
@@ -68,12 +67,12 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 		node0 := h.net.Nodes[0]
 		node1 := h.net.Nodes[1]
 
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0) // processing block1, should be agreed by all nodes
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block1, should be agreed by all nodes
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block1))
 		fmt.Println("--- BLOCK1 COMMITTED ---")
 		// Thwart Preprepare message sending by node0 for block2
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0) // pause when proposing block2
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // pause when proposing block2
 		fmt.Println("--- NODE0 PAUSED ON REQUEST NEW BLOCK ---")
 
 		// increment view - this selects node1 as the leader
@@ -98,7 +97,7 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 		<-h.net.Nodes[0].TriggerElectionOnNode(ctx)
 		fmt.Println("--- TRIGGERED ELECTION ON NODE0")
 		// sync with new leader on block proposal
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node1)
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node1)
 		fmt.Println("--- NODE1 PAUSED ON REQUEST NEW BLOCK ---")
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node1) // processing block 3
 		fmt.Println("--- NODE1 RESUMED REQUEST NEW BLOCK ---")
@@ -122,13 +121,13 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 
 		// processing block1, should be agreed by all nodes
 
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0)
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
 		h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block1)
 
 		// processing block 2
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0)
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 
 		node0.Communication.DisableOutgoingCommunication() // Rationale: do not send PREPREPARE, prevent race-condition
 
@@ -142,7 +141,7 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 
 
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		//h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node1)
+		//h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node1)
 
 		// processing block 3
 		//h.net.ResumeRequestNewBlockOnNodes(ctx, node1)
@@ -158,7 +157,7 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 		node2 := h.net.Nodes[2]
 		node3 := h.net.Nodes[3]
 
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0)
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
 
 		// selection node 1 as the leader
@@ -168,7 +167,7 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 		node3.TriggerElectionOnNode(ctx)
 
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node1)
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node1)
 		node0.Communication.ClearOutgoingWhitelist()
 
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node1)
@@ -193,7 +192,7 @@ func TestNotCountingViewChangeFromTheSameNode(t *testing.T) {
 		node2 := h.net.Nodes[2]
 
 		// hang the leader (node0)
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0)
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 
 		// sending only 4 view-change from the same node
 		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
@@ -217,7 +216,7 @@ func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 		node2 := h.net.Nodes[2]
 
 		// hang the leader (node0)
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0)
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 
 		// sending only 2 view-change (not enough to be elected)
 		node0VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node0.KeyManager, node0.MemberId, 1, 1, nil)
@@ -231,7 +230,7 @@ func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 		// make sure that we're on block1
 		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block1))
 
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0)
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
 		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block2))
@@ -250,7 +249,7 @@ func TestNoNewViewIfLessThan2fPlus1ViewChangeAlternativeImplementation(t *testin
 		node2 := h.net.Nodes[2]
 
 		// hang the leader (node0)
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node0)
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 
 		// sending only 2 view-change (not enough to be elected)
 		node0VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node0.KeyManager, node0.MemberId, 1, 1, nil)
@@ -266,7 +265,7 @@ func TestNoNewViewIfLessThan2fPlus1ViewChangeAlternativeImplementation(t *testin
 
 		node1TriesToProposeABlock := make(chan struct{})
 		go func() {
-			h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, node1)
+			h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node1)
 			node1TriesToProposeABlock <- struct{}{}
 		}()
 
@@ -285,49 +284,52 @@ func TestNoNewViewIfLessThan2fPlus1ViewChangeAlternativeImplementation(t *testin
 // Let each and every node try and be the Leader and finally return to the original leader
 func TestLeaderCircularOrdering(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
+
+		// TL;DR Always fail validation so that the network will never close blocks
+
 		// Set block validation to always fail.
 		// The reason for this is to prevent the Validator (non-leader) nodes
 		// from going into PREPARED phase after validating the block.
 		// If nodes were to go into PREPARED phase, this would "lock" the proposed
 		// block, preventing the next Leader from suggesting a different block
 		// by calling RequestNewBlockProposal.
-		// We want node0 to pause on RequestNewBlockProposal because it is our stop signal for the test
+		// We DO want node0 to pause on RequestNewBlockProposal because it is our stop signal for the test
+
+		timer := time.AfterFunc(50000*time.Millisecond, func() {
+			t.Fatal("Test is stuck")
+		})
 		h := NewHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
 
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, h.net.Nodes[0])
-
-		// selecting node 1 as the leader
-		<-h.net.Nodes[0].TriggerElectionOnNode(ctx)
-		<-h.net.Nodes[2].TriggerElectionOnNode(ctx)
-		<-h.net.Nodes[3].TriggerElectionOnNode(ctx)
-
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
 		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[0])
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, h.net.Nodes[1])
 
-		// selecting node 2 as the leader
-		<-h.net.Nodes[0].TriggerElectionOnNode(ctx)
-		<-h.net.Nodes[1].TriggerElectionOnNode(ctx)
-		<-h.net.Nodes[3].TriggerElectionOnNode(ctx)
-
+		electNewLeader(ctx, h, 1)
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[1])
 		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[1])
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, h.net.Nodes[2])
 
-		// selecting node 3 as the leader
-		<-h.net.Nodes[0].TriggerElectionOnNode(ctx)
-		<-h.net.Nodes[1].TriggerElectionOnNode(ctx)
-		<-h.net.Nodes[2].TriggerElectionOnNode(ctx)
-
+		electNewLeader(ctx, h, 2)
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[2])
 		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[2])
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, h.net.Nodes[3])
 
-		// back to node 0 as the leader
-		<-h.net.Nodes[1].TriggerElectionOnNode(ctx)
-		<-h.net.Nodes[2].TriggerElectionOnNode(ctx)
-		<-h.net.Nodes[3].TriggerElectionOnNode(ctx)
-
+		electNewLeader(ctx, h, 3)
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[3])
 		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[3])
 
-		h.net.ReturnWhenNodePausesOnRequestNewBlock(ctx, h.net.Nodes[0])
-
+		// back to node0 as leader
+		electNewLeader(ctx, h, 0)
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
+		timer.Stop()
 	})
+}
+
+func electNewLeader(ctx context.Context, h *harness, newLeaderIndex int) {
+
+	fmt.Printf("electNewLeader start %d\n", newLeaderIndex)
+	for i, node := range h.net.Nodes {
+		if i == newLeaderIndex {
+			continue
+		}
+		<-node.TriggerElectionOnNode(ctx)
+	}
+	fmt.Printf("electNewLeader end %d\n", newLeaderIndex)
 }

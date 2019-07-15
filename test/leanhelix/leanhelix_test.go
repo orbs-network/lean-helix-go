@@ -34,13 +34,13 @@ func TestHappyFlowMessages(t *testing.T) {
 		net.StartConsensus(ctx)
 
 		// let the leader run on the first round
-		net.ReturnWhenNodePausesOnRequestNewBlock(ctx, net.Nodes[0])
+		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, net.Nodes[0])
 		net.ResumeRequestNewBlockOnNodes(ctx, net.Nodes[0])
 
 		net.WaitForAllNodesToCommitTheSameBlock(ctx)
 
 		// hang the leader before the next round
-		net.ReturnWhenNodePausesOnRequestNewBlock(ctx, net.Nodes[0])
+		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, net.Nodes[0])
 
 		require.Equal(t, 1, net.Nodes[0].Communication.CountSentMessages(protocol.LEAN_HELIX_PREPREPARE))
 		require.Equal(t, 0, net.Nodes[1].Communication.CountSentMessages(protocol.LEAN_HELIX_PREPREPARE))
