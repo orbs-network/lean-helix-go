@@ -96,7 +96,7 @@
 
 #### `Leader Only`
 * If not `IsLeader(my_state.View, my_state.My_ID)` Return.
-* Block = Request new block proposal by calling `Config.BlockUtils.RequestNewBlock()`.
+* Block = Request new block proposal by calling `Config.BlockUtils.RequestNewBlock(my_state.My_ID)`.
 * Block_hash = Get Block_hash by calling `Config.BlockUtils.CalcBlockHash(Block)`
 * Generate PRE_PREPARE message with signature. Store in Log and broadcast to all member nodes.
     * PRE_PREPARE_HEADER:
@@ -158,7 +158,8 @@
 ## `OnPrePrepareReceived(Message)`
 > Process a leader block proposal.
 #### Validate message, including Block
-* Block_hash = Get Block_hash by calling `Config.BlockUtils.CalcBlockHash(Message.Block)`
+* Leader_ID = Get the leader id by calling `GetLeaderID(View)` where View = PRE_PREPARE_HEADER.View
+* Block_hash = Get Block_hash by calling `Config.BlockUtils.CalcBlockHash(Message.Block, )`
 * If `ValidatePrePrepare(Message, Block_hash)` Continue
 * If Block is not Valid by calling `Config.BlockUtils.ValidateBlock(Message.Block)` Return.
 #### Check state still match - Important! state might change during blocking validation process

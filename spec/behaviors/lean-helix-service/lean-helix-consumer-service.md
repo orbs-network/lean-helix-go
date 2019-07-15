@@ -81,7 +81,7 @@
 ## *BlockUtils*
 > Provide block funcionalities including its creation, validation and hashing scheme. \
 &nbsp;
-## `RequestNewBlockProposal(height, prevBlock) : block, block_hash` 
+## `RequestNewBlockProposal(height, leader_ID, prevBlock) : block, block_hash` 
 > Returns a block interface along with its digest commitment. \
 > Construct the blockProposal = Block, block_hash (block_hash - digest commitment of Block) on top of prevBlock
 > Note: The block _(block_hash)_ will then go through consensus.
@@ -93,9 +93,9 @@
 * TransactionsBlock:
     * prevTxBlockHash = Sha256(prevBlock.TransactionBlock.Header)
     * Get new TransactionsBlock by calling `ConsensusContext.RequestNewTransactionsBlock(newBlockHeight, prevBlockTimeStamp, prevTxBlockHash)` 
-* ResultsBlockBlock:
+* ResultsBlock:
     * prevRxBlockHash = Sha256(prevBlock.ResultsBlock.Header)  
-    * Get new ResultsBlock by calling `ConsensusContext.RequestNewResultsBlock(newBlockHeight, prevBlockTimeStamp, prevRxBlockHash)`  
+    * Get new ResultsBlock by calling `ConsensusContext.RequestNewResultsBlock(newBlockHeight, leader_ID, prevBlockTimeStamp, prevRxBlockHash)`  
 * Construct Block:
   * TransactionsBlock
   * ResultsBlock
@@ -106,7 +106,7 @@
  
 
 &nbsp;
-##`ValidateBlock(height, block, block_hash, prevBlock) : is_valid`
+##`ValidateBlock(height, leader_ID, block, block_hash, prevBlock) : is_valid`
 > Validate block proposal against prevBlock and digest commitment.\
 > full validation - content and structure _(Note: this includes validating against previous block _(e.g. pointer _(prevBlockHash)_ and timestamp - whithin acceptable range of local clock)_.)_
 * Validate height against block.Height and prevBlock.Height  
@@ -116,7 +116,7 @@
 * PrevTxBlockHash = Sha256(prevBlock.TransactionBlock.Header)
 * Validate the TransactionsBlock by calling `ConsensusContext.ValidateTransactionsBlock(height, block.TransactionsBlock, PrevTxBlockHash, PrevBlockTimeStamp)`
 * PrevRxBlockHash = Sha256(prevBlock.ResultsBlock.Header)   
-* Validate the ResultsBlock by calling `ConsensusContext.ValidateResultsBlock(height, block.ResultsBlock, block.TransactionsBlock, PrevRxBlockHash, PrevBlockTimeStamp)`
+* Validate the ResultsBlock by calling `ConsensusContext.ValidateResultsBlock(height, leader_ID, block.ResultsBlock, block.TransactionsBlock, PrevRxBlockHash, PrevBlockTimeStamp)`
 * Return True If all passed  
 
 &nbsp;
