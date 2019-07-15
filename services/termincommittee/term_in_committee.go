@@ -316,9 +316,9 @@ func (tic *TermInCommittee) HandlePrePrepare(ctx context.Context, ppm *interface
 	err := tic.blockUtils.ValidateBlockProposal(ctx, ppm.BlockHeight(), ppm.Block(), ppm.Content().SignedHeader().BlockHash(), tic.prevBlock)
 	if err != nil {
 		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED PREPREPARE IGNORE: blockUtils.ValidateBlockProposal() failed: %s", err)
+	} else {
+		tic.processPreprepare(ctx, ppm)
 	}
-
-	tic.processPreprepare(ctx, ppm)
 
 }
 

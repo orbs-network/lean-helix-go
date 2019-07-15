@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-const LOG_TO_CONSOLE = true
+const LOG_TO_CONSOLE = false
 
 func TestNewLeaderProposesNewBlockIfPreviousLeaderFailedToBringNetworkIntoPreparedPhase(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
@@ -62,7 +62,7 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 		block2 := mocks.ABlock(block1)
 		block3 := mocks.ABlock(block1)
 
-		h := NewHarness(ctx, t, true, block1, block2, block3)
+		h := NewHarness(ctx, t, LOG_TO_CONSOLE, block1, block2, block3)
 
 		node0 := h.net.Nodes[0]
 		node1 := h.net.Nodes[1]
@@ -107,48 +107,6 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 	})
 }
 
-/*
-func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
-		block1 := mocks.ABlock(interfaces.GenesisBlock)
-		block2 := mocks.ABlock(block1)
-		block3 := mocks.ABlock(block1)
-
-		h := NewHarness(ctx, t, block1, block2, block3)
-
-		node0 := h.net.Nodes[0]
-		//node1 := h.net.Nodes[1]
-
-		// processing block1, should be agreed by all nodes
-
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
-		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
-
-		h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block1)
-
-		// processing block 2
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
-
-		node0.Communication.DisableOutgoingCommunication() // Rationale: do not send PREPREPARE, prevent race-condition
-
-		// select node 1 as the leader (dropping block2)
-		h.net.Nodes[0].TriggerElection(ctx)
-		h.net.Nodes[1].TriggerElection(ctx)
-		h.net.Nodes[2].TriggerElection(ctx)
-		h.net.Nodes[3].TriggerElection(ctx)
-
-		node0.Communication.EnableOutgoing()
-
-
-		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		//h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node1)
-
-		// processing block 3
-		//h.net.ResumeRequestNewBlockOnNodes(ctx, node1)
-		h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block2)
-	})
-}
-*/
 func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t, LOG_TO_CONSOLE)
@@ -160,7 +118,7 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
 
-		// selection node 1 as the leader
+		// Elect node1 as the leader
 		node0.TriggerElectionOnNode(ctx)
 		node1.TriggerElectionOnNode(ctx)
 		node2.TriggerElectionOnNode(ctx)
@@ -224,39 +182,6 @@ func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 		node1.Communication.OnRemoteMessage(ctx, node0VCMessage.ToConsensusRawMessage())
 		node1.Communication.OnRemoteMessage(ctx, node2VCMessage.ToConsensusRawMessage())
 
-		// release the hanged the leader (node0)
-		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
-
-		// make sure that we're on block1
-		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block1))
-
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
-		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
-
-		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block2))
-	})
-}
-
-func TestNoNewViewIfLessThan2fPlus1ViewChangeAlternativeImplementation(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
-		block1 := mocks.ABlock(interfaces.GenesisBlock)
-		block2 := mocks.ABlock(block1)
-
-		h := NewHarness(ctx, t, LOG_TO_CONSOLE, block1, block2)
-
-		node0 := h.net.Nodes[0]
-		node1 := h.net.Nodes[1]
-		node2 := h.net.Nodes[2]
-
-		// hang the leader (node0)
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
-
-		// sending only 2 view-change (not enough to be elected)
-		node0VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node0.KeyManager, node0.MemberId, 1, 1, nil)
-		node2VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil)
-		node1.Communication.OnRemoteMessage(ctx, node0VCMessage.ToConsensusRawMessage())
-		node1.Communication.OnRemoteMessage(ctx, node2VCMessage.ToConsensusRawMessage())
-
 		// Resume the paused leader (node0)
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
@@ -280,7 +205,6 @@ func TestNoNewViewIfLessThan2fPlus1ViewChangeAlternativeImplementation(t *testin
 	})
 }
 
-// TODO FLAKY!
 // Let each and every node try and be the Leader and finally return to the original leader
 func TestLeaderCircularOrdering(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
@@ -332,4 +256,26 @@ func electNewLeader(ctx context.Context, h *harness, newLeaderIndex int) {
 		<-node.TriggerElectionOnNode(ctx)
 	}
 	fmt.Printf("electNewLeader end %d\n", newLeaderIndex)
+}
+
+func TestDoesNotCloseBlockWhenValidateBlockProposalFails(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+
+		h := NewHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
+
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
+		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[0])
+
+		c := make(chan struct{})
+		go func() {
+			h.net.WaitForNodesToCommitABlock(ctx)
+			close(c)
+		}()
+
+		select {
+		case <-time.After(50 * time.Millisecond):
+		case <-c:
+			t.Fatal("Block was closed despite validations failing")
+		}
+	})
 }
