@@ -150,7 +150,11 @@ func NewNode(
 	electionTrigger interfaces.ElectionTrigger,
 	logger interfaces.Logger) *Node {
 
+	if electionTrigger == nil {
+		electionTrigger = mocks.NewMockElectionTrigger()
+	}
 	memberId := membership.MyMemberId()
+
 	node := &Node{
 		instanceId:          instanceId,
 		blockChain:          mocks.NewInMemoryBlockChain(),
@@ -165,8 +169,10 @@ func NewNode(
 		OnUpdateStateLatch:  test.NewLatch(),
 		WriteToStateChannel: true,
 	}
+	config := node.BuildConfig(logger)
+	config.OverrideElectionTrigger = node.ElectionTrigger
 
-	leanHelix := leanhelix.NewLeanHelix(node.BuildConfig(logger), node.onCommittedBlock)
+	leanHelix := leanhelix.NewLeanHelix(config, node.onCommittedBlock)
 	communication.RegisterOnMessage(leanHelix.HandleConsensusMessage)
 
 	node.leanHelix = leanHelix

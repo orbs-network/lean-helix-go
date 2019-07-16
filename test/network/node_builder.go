@@ -81,13 +81,6 @@ func (builder *NodeBuilder) Build() *Node {
 		builder.blockUtils = mocks.NewMockBlockUtils(builder.memberId, mocks.NewBlocksPool(nil))
 	}
 
-	var electionTrigger interfaces.ElectionTrigger
-	if builder.electionTrigger == nil {
-		electionTrigger = mocks.NewMockElectionTrigger()
-	} else {
-		electionTrigger = builder.electionTrigger
-	}
-
 	var l interfaces.Logger
 	if builder.logsToConsole {
 		l = logger.NewConsoleLogger()
@@ -99,7 +92,7 @@ func (builder *NodeBuilder) Build() *Node {
 		builder.membership,
 		builder.communication,
 		builder.blockUtils,
-		electionTrigger,
+		builder.electionTrigger,
 		l,
 	)
 }

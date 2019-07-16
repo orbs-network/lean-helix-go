@@ -26,12 +26,20 @@ type MainLoop struct {
 
 func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommitCallback) *MainLoop {
 
+	var electionTrigger interfaces.ElectionTrigger
+
+	if config.OverrideElectionTrigger != nil {
+		electionTrigger = config.OverrideElectionTrigger
+	} else {
+		electionTrigger = electiontrigger.NewTimerBasedElectionTrigger(config.ElectionTimeoutOnV0, config.OnElectionCB)
+	}
+
 	return &MainLoop{
 		config:             config,
 		onCommitCallback:   onCommitCallback,
 		messagesChannel:    make(chan *interfaces.ConsensusRawMessage, 10), // TODO use config.MsgChanBufLen
 		updateStateChannel: make(chan *blockWithProof, 10),                 // TODO use config.UpdateStateChanBufLen
-		electionTrigger:    electiontrigger.NewTimerBasedElectionTrigger(config.ElectionTimeoutOnV0, config.OnElectionCB),
+		electionTrigger:    electionTrigger,
 		currentHeight:      0,
 		logger:             LoggerToLHLogger(config.Logger),
 	}
