@@ -3,6 +3,7 @@ package leanhelix
 import (
 	"context"
 	"fmt"
+	"github.com/orbs-network/lean-helix-go/services/electiontrigger"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	L "github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
@@ -13,7 +14,7 @@ import (
 type MainLoop struct {
 	messagesChannel    chan *interfaces.ConsensusRawMessage
 	updateStateChannel chan *blockWithProof
-	electionChannel    chan func(ctx context.Context)
+	electionTrigger    interfaces.ElectionTrigger
 
 	currentHeight    primitives.BlockHeight
 	config           *interfaces.Config
@@ -24,14 +25,13 @@ type MainLoop struct {
 }
 
 func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommitCallback) *MainLoop {
-	electionChannel := config.ElectionTrigger.ElectionChannel()
 
 	return &MainLoop{
 		config:             config,
 		onCommitCallback:   onCommitCallback,
 		messagesChannel:    make(chan *interfaces.ConsensusRawMessage, 10), // TODO use config.MsgChanBufLen
 		updateStateChannel: make(chan *blockWithProof, 10),                 // TODO use config.UpdateStateChanBufLen
-		electionChannel:    electionChannel,
+		electionTrigger:    electiontrigger.NewTimerBasedElectionTrigger(config.ElectionTimeoutOnV0, config.OnElectionCB),
 		currentHeight:      0,
 		logger:             LoggerToLHLogger(config.Logger),
 	}
@@ -46,30 +46,36 @@ func (m *MainLoop) Run(ctx context.Context) {
 }
 
 func (m *MainLoop) RunMainLoop(ctx context.Context) {
-
 	go m.run(ctx)
+}
 
+func (m *MainLoop) RunWorkerLoop(ctx context.Context) {
+	lhLog := LoggerToLHLogger(m.config.Logger)
+	m.worker = NewWorkerLoop(m.config, lhLog, m.electionTrigger, m.onCommitCallback)
+	go m.worker.Run(ctx)
 }
 
 func (m *MainLoop) run(ctx context.Context) {
 	defer func() {
 		if e := recover(); e != nil {
-			fmt.Println(e)
+			fmt.Printf("MAINLOOP PANIC: %v\n", e)
 		} else {
-			fmt.Println("MAIN SHUTDOWN")
+			fmt.Println("MAINLOOP SHUTDOWN")
 		}
 	}()
 
+	if m.electionTrigger == nil {
+		panic("Election trigger was not configured, cannot run Lean Helix (mainloop.run)")
+	}
+
+	fmt.Println("MAINLOOP START")
 	m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW MAINLOOP START")
 	m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "LHMSG MAINLOOP START LISTENING NOW")
 	workerCtx, cancelWorkerContext := context.WithCancel(ctx)
 	for {
 		m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW MAINLOOP LISTENING")
-
 		select {
-
 		case <-ctx.Done(): // system shutdown
-
 			m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW MAINLOOP DONE, Terminating Run().")
 			m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "LHMSG MAINLOOP STOPPED LISTENING")
 			return
@@ -77,36 +83,21 @@ func (m *MainLoop) run(ctx context.Context) {
 		case message := <-m.messagesChannel:
 			parsedMessage := interfaces.ToConsensusMessage(message)
 			m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHMSG MAINLOOP RECEIVED %v from %v for H=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight())
-
 			m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}
-			//fmt.Printf("%v Wrote to worker messages channel [%p]\n", m.config.Membership.MyMemberId(), message)
 
-		case trigger := <-m.electionChannel:
-			//fmt.Printf("%v main loop read from main election channel\n", m.config.Membership.MyMemberId())
+		case trigger := <-m.electionTrigger.ElectionChannel():
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
 			m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW CANCELED WORKER CONTEXT DUE TO ELECTION")
 			m.worker.ElectionChannel <- trigger
 
 		case receivedBlockWithProof := <-m.updateStateChannel: // NodeSync
-			fmt.Printf("%v main loop read from update state channel\n", m.config.Membership.MyMemberId())
-
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
 			m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW CANCELED WORKER CONTEXT DUE TO UPDATESTATE")
-
 			m.worker.UpdateStateChannel <- receivedBlockWithProof
-
 		}
 	}
-}
-
-func (m *MainLoop) RunWorkerLoop(ctx context.Context) {
-
-	lhLog := LoggerToLHLogger(m.config.Logger)
-	m.worker = NewWorkerLoop(m.config, lhLog, m.onCommitCallback)
-
-	go m.worker.Run(ctx)
 }
 
 func LoggerToLHLogger(logger interfaces.Logger) L.LHLogger {
@@ -147,11 +138,14 @@ func (m *MainLoop) UpdateState(ctx context.Context, prevBlock interfaces.Block, 
 
 // called by tests
 func (m *MainLoop) TriggerElection(ctx context.Context, f func(ctx context.Context)) {
+	if m.electionTrigger == nil {
+		panic("Election trigger was not configured, cannot run Lean Helix (mainloop.TriggerElection)")
+	}
 	select {
 	case <-ctx.Done():
 		m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "TriggerElection() ID=%s CONTEXT TERMINATED", termincommittee.Str(m.config.Membership.MyMemberId()))
 		return
-	case m.electionChannel <- f:
+	case m.electionTrigger.ElectionChannel() <- f:
 	}
 }
 

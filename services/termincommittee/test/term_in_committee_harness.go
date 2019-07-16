@@ -52,7 +52,7 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 	committeeMembers, _ := termConfig.Membership.RequestOrderedCommittee(ctx, blockHeight, uint64(12345))
 	messageFactory := messagesfactory.NewMessageFactory(termConfig.InstanceId, termConfig.KeyManager, termConfig.Membership.MyMemberId(), 0)
 	log.Info(nil, "NewHarness calling NewTermInCommittee with H=%d", blockHeight)
-	termInCommittee := termincommittee.NewTermInCommittee(ctx, log, termConfig, messageFactory, committeeMembers, blockHeight, prevBlock, true, nil)
+	termInCommittee := termincommittee.NewTermInCommittee(ctx, log, termConfig, messageFactory, myNode.ElectionTrigger, committeeMembers, blockHeight, prevBlock, true, nil)
 
 	return &harness{
 		t:               t,

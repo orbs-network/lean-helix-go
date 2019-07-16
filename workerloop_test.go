@@ -2,6 +2,7 @@ package leanhelix
 
 import (
 	"context"
+	"github.com/orbs-network/lean-helix-go/services/electiontrigger"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
@@ -14,15 +15,18 @@ import (
 
 func DummyWorkerConfig() *interfaces.Config {
 	return &interfaces.Config{
-		InstanceId:      123,
-		Communication:   nil,
-		Membership:      mocks.NewMockMembership(primitives.MemberId{0, 1, 2}, nil, true),
-		BlockUtils:      nil,
-		KeyManager:      nil,
-		ElectionTrigger: nil,
-		Storage:         nil,
-		Logger:          logger.NewSilentLogger(),
-		MsgChanBufLen:   10,
+		InstanceId:            123,
+		Communication:         nil,
+		Membership:            mocks.NewMockMembership(primitives.MemberId{0, 1, 2}, nil, true),
+		BlockUtils:            nil,
+		KeyManager:            nil,
+		ElectionTimeoutOnV0:   10 * time.Millisecond,
+		OnElectionCB:          nil,
+		Storage:               nil,
+		Logger:                logger.NewSilentLogger(),
+		MsgChanBufLen:         10,
+		UpdateStateChanBufLen: 10,
+		ElectionChanBufLen:    0,
 	}
 }
 
@@ -36,7 +40,8 @@ func TestWorkerLoopReturnsOnMainContextCancellation(t *testing.T) {
 		wg.Add(1)
 
 		cfg := DummyWorkerConfig()
-		workerLoop := NewWorkerLoop(cfg, LoggerToLHLogger(cfg.Logger), nil)
+		electionTrigger := electiontrigger.NewTimerBasedElectionTrigger(cfg.ElectionTimeoutOnV0, nil)
+		workerLoop := NewWorkerLoop(cfg, LoggerToLHLogger(cfg.Logger), electionTrigger, nil)
 		go func() {
 			workerLoop.Run(mainCtx)
 			wg.Done()

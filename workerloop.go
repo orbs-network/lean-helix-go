@@ -39,6 +39,7 @@ type WorkerLoop struct {
 	MessagesChannel    chan *MessageWithContext
 	UpdateStateChannel chan *blockWithProof
 	ElectionChannel    chan func(ctx context.Context)
+	electionTrigger    interfaces.ElectionTrigger
 
 	currentHeight               primitives.BlockHeight
 	config                      *interfaces.Config
@@ -50,7 +51,7 @@ type WorkerLoop struct {
 	onUpdateStateCallback       interfaces.OnUpdateStateCallback
 }
 
-func NewWorkerLoop(config *interfaces.Config, logger L.LHLogger, onCommitCallback interfaces.OnCommitCallback) *WorkerLoop {
+func NewWorkerLoop(config *interfaces.Config, logger L.LHLogger, electionTrigger interfaces.ElectionTrigger, onCommitCallback interfaces.OnCommitCallback) *WorkerLoop {
 
 	logger.Debug(L.LC(math.MaxUint64, math.MaxUint64, config.Membership.MyMemberId()), "LHFLOW NewWorkerLoop()")
 	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), logger)
@@ -58,6 +59,7 @@ func NewWorkerLoop(config *interfaces.Config, logger L.LHLogger, onCommitCallbac
 		MessagesChannel:    make(chan *MessageWithContext, 10),
 		UpdateStateChannel: make(chan *blockWithProof),
 		ElectionChannel:    make(chan func(ctx context.Context)),
+		electionTrigger:    electionTrigger,
 		currentHeight:      0,
 		config:             config,
 		logger:             logger,
@@ -231,7 +233,7 @@ func (lh *WorkerLoop) onNewConsensusRound(ctx context.Context, prevBlock interfa
 		lh.leanHelixTerm.Dispose()
 		lh.leanHelixTerm = nil
 	}
-	lh.leanHelixTerm = leanhelixterm.NewLeanHelixTerm(ctx, lh.logger, lh.config, lh.onCommit, prevBlock, prevBlockProofBytes, canBeFirstLeader)
+	lh.leanHelixTerm = leanhelixterm.NewLeanHelixTerm(ctx, lh.logger, lh.config, lh.electionTrigger, lh.onCommit, prevBlock, prevBlockProofBytes, canBeFirstLeader)
 	lh.filter.SetBlockHeight(ctx, lh.currentHeight, lh.leanHelixTerm)
 	if lh.onNewConsensusRoundCallback != nil {
 		lh.onNewConsensusRoundCallback(ctx, prevBlock, canBeFirstLeader)

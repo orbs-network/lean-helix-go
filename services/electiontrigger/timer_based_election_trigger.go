@@ -74,6 +74,6 @@ func (t *TimerBasedElectionTrigger) sendTrigger() {
 }
 
 func (t *TimerBasedElectionTrigger) CalcTimeout(view primitives.View) time.Duration {
-	timeoutMultiplier := time.Duration(int64(math.Pow(TIMEOUT_EXP_BASE, float64(view))))
+	timeoutMultiplier := time.Duration(int64(math.Pow(2, float64(view))))
 	return timeoutMultiplier * t.minTimeout
 }

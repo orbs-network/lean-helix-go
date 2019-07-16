@@ -24,9 +24,10 @@ type Config struct {
 	Membership            Membership
 	BlockUtils            BlockUtils
 	KeyManager            KeyManager
-	ElectionTrigger       ElectionTrigger // TimerBasedElectionTrigger can be used
-	Storage               Storage         // optional
-	Logger                Logger          // optional
+	ElectionTimeoutOnV0   time.Duration
+	OnElectionCB          func(metrics.ElectionMetrics)
+	Storage               Storage // optional
+	Logger                Logger  // optional
 	MsgChanBufLen         uint64
 	UpdateStateChanBufLen uint64
 	ElectionChanBufLen    uint64

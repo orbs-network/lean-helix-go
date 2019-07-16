@@ -15,6 +15,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
+	"time"
 )
 
 type NodeState struct {
@@ -125,14 +126,18 @@ func (node *Node) StartConsensusSync(ctx context.Context) {
 
 func (node *Node) BuildConfig(logger interfaces.Logger) *interfaces.Config {
 	return &interfaces.Config{
-		InstanceId:      node.instanceId,
-		Communication:   node.Communication,
-		Membership:      node.Membership,
-		ElectionTrigger: node.ElectionTrigger,
-		BlockUtils:      node.BlockUtils,
-		KeyManager:      node.KeyManager,
-		Storage:         node.Storage,
-		Logger:          logger,
+		InstanceId:            node.instanceId,
+		Communication:         node.Communication,
+		Membership:            node.Membership,
+		BlockUtils:            node.BlockUtils,
+		KeyManager:            node.KeyManager,
+		ElectionTimeoutOnV0:   10 * time.Millisecond,
+		OnElectionCB:          nil,
+		Storage:               node.Storage,
+		Logger:                logger,
+		MsgChanBufLen:         10,
+		UpdateStateChanBufLen: 10,
+		ElectionChanBufLen:    0,
 	}
 
 }
