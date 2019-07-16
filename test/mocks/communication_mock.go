@@ -99,8 +99,6 @@ func (g *CommunicationMock) ReturnAndMaybeCreateOutgoingChannelByTarget(ctx cont
 }
 
 func (g *CommunicationMock) SendConsensusMessage(ctx context.Context, targets []primitives.MemberId, message *interfaces.ConsensusRawMessage) error {
-	messageType := interfaces.ToConsensusMessage(message).MessageType()
-
 	g.statsSentMessages = append(g.statsSentMessages, message)
 	for _, target := range targets {
 		channel := g.outgoingChannelsMap[target.String()]
@@ -108,7 +106,7 @@ func (g *CommunicationMock) SendConsensusMessage(ctx context.Context, targets []
 		case <-ctx.Done():
 			return errors.Errorf("ID=%s context canceled for outgoing channel of %v", g.memberId, target)
 		case channel <- &outgoingMessage{target, message}:
-			fmt.Printf("ID=%s SendConsensusMessage SENT %v to %v\n", g.memberId, messageType, target)
+			//fmt.Printf("ID=%s SendConsensusMessage SENT %v to %v\n", g.memberId, messageType, target)
 			continue
 		}
 	}
