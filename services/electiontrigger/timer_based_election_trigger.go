@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-var TIMEOUT_EXP_BASE = float64(2.0)
+var TIMEOUT_EXP_BASE = 2.0
 
 type TimerBasedElectionTrigger struct {
 	electionChannel chan func(ctx context.Context)
@@ -23,7 +23,7 @@ type TimerBasedElectionTrigger struct {
 	blockHeight     primitives.BlockHeight
 	electionHandler func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics))
 	onElectionCB    func(m metrics.ElectionMetrics)
-	triggerTimer    *time.Timer
+	timer           *time.Timer
 }
 
 func NewTimerBasedElectionTrigger(minTimeout time.Duration, onElectionCB func(m metrics.ElectionMetrics)) *TimerBasedElectionTrigger {
@@ -40,7 +40,7 @@ func (t *TimerBasedElectionTrigger) RegisterOnElection(ctx context.Context, bloc
 		t.view = view
 		t.blockHeight = blockHeight
 		t.Stop()
-		t.triggerTimer = time.AfterFunc(timeout, t.sendTrigger)
+		t.timer = time.AfterFunc(timeout, t.onTimerTimeout)
 	}
 	t.electionHandler = electionHandler
 }
@@ -51,26 +51,26 @@ func (t *TimerBasedElectionTrigger) ElectionChannel() chan func(ctx context.Cont
 
 func (t *TimerBasedElectionTrigger) Stop() {
 	t.electionHandler = nil
-	if t.triggerTimer != nil {
-		active := t.triggerTimer.Stop()
+	if t.timer != nil {
+		active := t.timer.Stop()
 		if !active {
 			select {
-			case <-t.triggerTimer.C:
+			case <-t.timer.C:
 			default:
 			}
 		}
-		t.triggerTimer = nil
+		t.timer = nil
 	}
 }
 
-func (t *TimerBasedElectionTrigger) trigger(ctx context.Context) {
+func (t *TimerBasedElectionTrigger) runOnReadElectionChannel(ctx context.Context) {
 	if t.electionHandler != nil {
 		t.electionHandler(ctx, t.blockHeight, t.view, t.onElectionCB)
 	}
 }
 
-func (t *TimerBasedElectionTrigger) sendTrigger() {
-	t.electionChannel <- t.trigger
+func (t *TimerBasedElectionTrigger) onTimerTimeout() {
+	t.electionChannel <- t.runOnReadElectionChannel
 }
 
 func (t *TimerBasedElectionTrigger) CalcTimeout(view primitives.View) time.Duration {
