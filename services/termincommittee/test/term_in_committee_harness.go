@@ -42,7 +42,7 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 	net := network.
 		NewTestNetworkBuilder().
 		WithNodeCount(4).
-		WithBlocks(blocksPool).
+		WithBlocks(blocksPool...).
 		//LogToConsole().
 		Build(ctx)
 	myNode := net.Nodes[0]

@@ -48,7 +48,7 @@ func (tb *TestNetworkBuilder) InNetwork(instanceId primitives.InstanceId) *TestN
 	return tb
 }
 
-func (tb *TestNetworkBuilder) WithBlocks(upcomingBlocks []interfaces.Block) *TestNetworkBuilder {
+func (tb *TestNetworkBuilder) WithBlocks(upcomingBlocks ...interfaces.Block) *TestNetworkBuilder {
 	if tb.upcomingBlocks == nil {
 		tb.upcomingBlocks = upcomingBlocks
 	}
@@ -211,7 +211,7 @@ func ATestNetworkBuilder(countOfNodes int, blocksPool ...interfaces.Block) *Test
 	instanceId := primitives.InstanceId(rand.Uint64())
 	return NewTestNetworkBuilder().
 		WithNodeCount(countOfNodes).
-		WithBlocks(blocksPool).
+		WithBlocks(blocksPool...).
 		InNetwork(instanceId)
 	//LogToConsole().
 }

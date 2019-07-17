@@ -8,6 +8,7 @@ import (
 	L "github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/pkg/errors"
 	"math"
 )
 
@@ -99,6 +100,11 @@ func (m *MainLoop) run(ctx context.Context) {
 			m.worker.electionChannel <- trigger
 
 		case receivedBlockWithProof := <-m.mainUpdateStateChannel: // NodeSync
+			if err := checkReceivedBlockIsValid(m.currentHeight, receivedBlockWithProof); err != nil {
+				m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW UPDATESTATE - BLOCK IGNORED - %s", err)
+				return
+			}
+
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
 			m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW UPDATESTATE - CANCELED WORKER CONTEXT")
@@ -106,6 +112,22 @@ func (m *MainLoop) run(ctx context.Context) {
 
 		}
 	}
+}
+
+func checkReceivedBlockIsValid(currentHeight primitives.BlockHeight, receivedBlockWithProof *blockWithProof) error {
+	if receivedBlockWithProof == nil {
+		return errors.Errorf("receivedBlockWithProof is nil")
+	}
+	var receivedBlockHeight primitives.BlockHeight
+	if receivedBlockWithProof.block == nil {
+		receivedBlockHeight = 0
+	} else {
+		receivedBlockHeight = receivedBlockWithProof.block.Height()
+	}
+	if receivedBlockHeight < currentHeight {
+		return errors.Errorf("Received block height is %d which is lower than current height of %d", receivedBlockWithProof.block.Height(), currentHeight)
+	}
+	return nil
 }
 
 func LoggerToLHLogger(logger interfaces.Logger) L.LHLogger {

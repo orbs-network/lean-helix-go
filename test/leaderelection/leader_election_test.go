@@ -101,8 +101,6 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node1) // processing block 3
 		t.Log("--- NODE1 RESUMED REQUEST NEW BLOCK ---")
 		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block3))
-
-		// TODO - expect preprepare messages were sent from node0 for block2
 	})
 }
 

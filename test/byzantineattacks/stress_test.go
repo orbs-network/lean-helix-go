@@ -8,7 +8,6 @@ package byzantineattacks
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/network"
 	"math/rand"
@@ -21,7 +20,7 @@ func TestThatWeReachConsensusEventIfWeDelayAllTheGossipMessages(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		net := network.
 			NewTestNetworkBuilder().
-			WithBlocks([]interfaces.Block{}).
+			WithBlocks().
 			WithTimeBasedElectionTrigger(time.Duration(200) * time.Millisecond).
 			GossipMessagesMaxDelay(time.Duration(100) * time.Millisecond).
 			WithNodeCount(4).

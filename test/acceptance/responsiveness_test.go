@@ -123,7 +123,7 @@ func withConsensusRound(ctx context.Context, test func(net *network.TestNetwork,
 	mockBlockUtils := &SimpleMockBlockUtils{}
 	net := network.NewTestNetworkBuilder().
 		WithNodeCount(4).
-		WithBlocks([]interfaces.Block{block1}).
+		WithBlocks(block1).
 		WithBlockUtils(mockBlockUtils).
 		InNetwork(instanceId).
 		LogToConsole().
