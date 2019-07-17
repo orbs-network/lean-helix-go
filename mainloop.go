@@ -12,14 +12,13 @@ import (
 )
 
 type MainLoop struct {
-	messagesChannel    chan *interfaces.ConsensusRawMessage
-	updateStateChannel chan *blockWithProof
-	electionTrigger    interfaces.ElectionTrigger
-
-	currentHeight    primitives.BlockHeight
-	config           *interfaces.Config
-	logger           L.LHLogger
-	onCommitCallback interfaces.OnCommitCallback
+	messagesChannel        chan *interfaces.ConsensusRawMessage
+	mainUpdateStateChannel chan *blockWithProof
+	electionTrigger        interfaces.ElectionTrigger
+	currentHeight          primitives.BlockHeight
+	config                 *interfaces.Config
+	logger                 L.LHLogger
+	onCommitCallback       interfaces.OnCommitCallback
 
 	worker *WorkerLoop
 }
@@ -34,14 +33,16 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 		electionTrigger = electiontrigger.NewTimerBasedElectionTrigger(config.ElectionTimeoutOnV0, config.OnElectionCB)
 	}
 
+	// TODO Create shared State object
+
 	return &MainLoop{
-		config:             config,
-		onCommitCallback:   onCommitCallback,
-		messagesChannel:    make(chan *interfaces.ConsensusRawMessage, 10), // TODO use config.MsgChanBufLen
-		updateStateChannel: make(chan *blockWithProof, 10),                 // TODO use config.UpdateStateChanBufLen
-		electionTrigger:    electionTrigger,
-		currentHeight:      0,
-		logger:             LoggerToLHLogger(config.Logger),
+		config:                 config,
+		onCommitCallback:       onCommitCallback,
+		messagesChannel:        make(chan *interfaces.ConsensusRawMessage, 10), // TODO use config.MsgChanBufLen
+		mainUpdateStateChannel: make(chan *blockWithProof, 10),                 // TODO use config.UpdateStateChanBufLen
+		electionTrigger:        electionTrigger,
+		currentHeight:          0,
+		logger:                 LoggerToLHLogger(config.Logger),
 	}
 }
 
@@ -94,14 +95,15 @@ func (m *MainLoop) run(ctx context.Context) {
 		case trigger := <-m.electionTrigger.ElectionChannel():
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
-			m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW CANCELED WORKER CONTEXT DUE TO ELECTION")
-			m.worker.ElectionChannel <- trigger
+			m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW ELECTION - CANCELED WORKER CONTEXT")
+			m.worker.electionChannel <- trigger
 
-		case receivedBlockWithProof := <-m.updateStateChannel: // NodeSync
+		case receivedBlockWithProof := <-m.mainUpdateStateChannel: // NodeSync
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
-			m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW CANCELED WORKER CONTEXT DUE TO UPDATESTATE")
-			m.worker.UpdateStateChannel <- receivedBlockWithProof
+			m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW UPDATESTATE - CANCELED WORKER CONTEXT")
+			m.worker.workerUpdateStateChannel <- receivedBlockWithProof
+
 		}
 	}
 }
@@ -135,7 +137,7 @@ func (m *MainLoop) UpdateState(ctx context.Context, prevBlock interfaces.Block, 
 	case <-ctx.Done():
 		m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "UpdateState() ID=%s CONTEXT TERMINATED", termincommittee.Str(m.config.Membership.MyMemberId()))
 		return
-	case m.updateStateChannel <- &blockWithProof{
+	case m.mainUpdateStateChannel <- &blockWithProof{
 		block:               prevBlock,
 		prevBlockProofBytes: prevBlockProofBytes,
 	}:

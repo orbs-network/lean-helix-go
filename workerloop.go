@@ -36,10 +36,10 @@ type MessageWithContext struct {
 }
 
 type WorkerLoop struct {
-	MessagesChannel    chan *MessageWithContext
-	UpdateStateChannel chan *blockWithProof
-	ElectionChannel    chan func(ctx context.Context)
-	electionTrigger    interfaces.ElectionTrigger
+	MessagesChannel          chan *MessageWithContext
+	workerUpdateStateChannel chan *blockWithProof
+	electionChannel          chan func(ctx context.Context)
+	electionTrigger          interfaces.ElectionTrigger
 
 	currentHeight               primitives.BlockHeight
 	config                      *interfaces.Config
@@ -56,15 +56,15 @@ func NewWorkerLoop(config *interfaces.Config, logger L.LHLogger, electionTrigger
 	logger.Debug(L.LC(math.MaxUint64, math.MaxUint64, config.Membership.MyMemberId()), "LHFLOW NewWorkerLoop()")
 	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), logger)
 	return &WorkerLoop{
-		MessagesChannel:    make(chan *MessageWithContext, 10),
-		UpdateStateChannel: make(chan *blockWithProof),
-		ElectionChannel:    make(chan func(ctx context.Context)),
-		electionTrigger:    electionTrigger,
-		currentHeight:      0,
-		config:             config,
-		logger:             logger,
-		filter:             filter,
-		onCommitCallback:   onCommitCallback,
+		MessagesChannel:          make(chan *MessageWithContext, 10),
+		workerUpdateStateChannel: make(chan *blockWithProof),
+		electionChannel:          make(chan func(ctx context.Context)),
+		electionTrigger:          electionTrigger,
+		currentHeight:            0,
+		config:                   config,
+		logger:                   logger,
+		filter:                   filter,
+		onCommitCallback:         onCommitCallback,
 	}
 }
 
@@ -89,7 +89,7 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 		case res := <-lh.MessagesChannel:
 			lh.filter.HandleConsensusRawMessage(res.ctx, res.msg)
 
-		case trigger := <-lh.ElectionChannel:
+		case trigger := <-lh.electionChannel:
 			if trigger == nil {
 				// this cannot happen, ignore
 				lh.logger.Info(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "XXXXXX LHFLOW WORKERLOOP ELECTION, OMG trigger is nil, not triggering election!")
@@ -97,7 +97,7 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 			lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP ELECTION")
 			trigger(ctx)
 
-		case receivedBlockWithProof := <-lh.UpdateStateChannel: // NodeSync
+		case receivedBlockWithProof := <-lh.workerUpdateStateChannel: // NodeSync
 			lh.HandleUpdateState(ctx, receivedBlockWithProof)
 		}
 	}
