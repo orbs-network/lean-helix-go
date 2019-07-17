@@ -8,7 +8,6 @@ package network
 
 import (
 	"context"
-	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/matchers"
@@ -73,7 +72,6 @@ func (net *TestNetwork) WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven
 			return false
 		case nodeState := <-node.NodeStateChannel:
 			blockAreEqual := matchers.BlocksAreEqual(expectedBlock, nodeState.block)
-			fmt.Printf("ID=%s NODESTATE READ comparing nodeState.block=%v expectedBlock=%v equal=%t\n", node.MemberId, nodeState.block, expectedBlock, blockAreEqual)
 			if blockAreEqual == false {
 				return false
 			}

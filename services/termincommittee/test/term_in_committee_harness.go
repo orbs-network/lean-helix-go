@@ -24,6 +24,8 @@ import (
 	"testing"
 )
 
+const TERM_IN_COMMITTEE_HARNESS_LOGS_TO_CONSOLE = false
+
 type harness struct {
 	t               *testing.T
 	instanceId      primitives.InstanceId
@@ -41,10 +43,16 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 		NewTestNetworkBuilder().
 		WithNodeCount(4).
 		WithBlocks(blocksPool).
-		LogToConsole().
+		//LogToConsole().
 		Build(ctx)
 	myNode := net.Nodes[0]
-	termConfig := myNode.BuildConfig(logger.NewConsoleLogger())
+	var logOutput interfaces.Logger
+	if TERM_IN_COMMITTEE_HARNESS_LOGS_TO_CONSOLE {
+		logOutput = logger.NewConsoleLogger()
+	} else {
+		logOutput = logger.NewSilentLogger()
+	}
+	termConfig := myNode.BuildConfig(logOutput)
 	log := logger.NewLhLogger(termConfig.Logger)
 
 	prevBlock := myNode.GetLatestBlock()

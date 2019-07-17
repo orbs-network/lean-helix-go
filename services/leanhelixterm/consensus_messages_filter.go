@@ -45,7 +45,6 @@ func (mp *ConsensusMessagesFilter) HandleConsensusMessage(ctx context.Context, m
 
 		randomSeedBytes := randomseed.RandomSeedToBytes(mp.randomSeed)
 		if err := mp.keyManager.VerifyRandomSeed(message.BlockHeight(), randomSeedBytes, senderSignature); err != nil {
-			//fmt.Println("Filter VerifyRandomSeed Failed")
 			return
 		}
 		mp.handler.HandleCommit(ctx, message)

@@ -7,7 +7,6 @@
 package matchers
 
 import (
-	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 )
@@ -15,6 +14,5 @@ import (
 func BlocksAreEqual(block1 interfaces.Block, block2 interfaces.Block) bool {
 	block1Hash := mocks.CalculateBlockHash(block1)
 	block2Hash := mocks.CalculateBlockHash(block2)
-	fmt.Printf("BlocksAreEqual: %s vs %s\n", block1Hash, block2Hash)
 	return block1Hash.Equal(block2Hash)
 }

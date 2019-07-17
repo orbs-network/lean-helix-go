@@ -88,7 +88,7 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
 			WithBlocks([]interfaces.Block{goodBlock}).
-			LogToConsole().
+			//LogToConsole().
 			Build(ctx)
 
 		node0 := net.Nodes[0]

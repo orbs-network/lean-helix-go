@@ -17,9 +17,6 @@ import (
 )
 
 func CalculateBlockHash(block interfaces.Block) primitives.BlockHash {
-	if block == interfaces.GenesisBlock {
-		fmt.Printf("Genesis")
-	}
 	mockBlock := block.(*MockBlock)
 	str := fmt.Sprintf("%d_%s", mockBlock.Height(), mockBlock.Body())
 	hash := sha256.Sum256([]byte(str))
@@ -63,7 +60,6 @@ func (b *PausableBlockUtils) RequestNewBlockProposal(ctx context.Context, blockH
 
 	block := b.blocksPool.PopBlock(prevBlock)
 	blockHash := CalculateBlockHash(block)
-	fmt.Printf("ID=%s RequestNewBlockProposal: Proposing block %v, context err: %s\n", b.memberId, block, ctx.Err())
 	return block, blockHash
 }
 

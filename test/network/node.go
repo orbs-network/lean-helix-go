@@ -8,7 +8,6 @@ package network
 
 import (
 	"context"
-	"fmt"
 	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/storage"
@@ -71,8 +70,6 @@ func (node *Node) TriggerElectionOnNode(ctx context.Context) <-chan struct{} {
 		panic("You are trying to trigger election with an election trigger that is not the ElectionTriggerMock")
 	}
 
-	//node.leanHelix.TriggerElection(ctx, func(ctx context.Context) { electionTriggerMock.ManualTrigger(ctx) })
-	fmt.Printf("ID=%s Calling ManualTrigger\n", node.MemberId)
 	return electionTriggerMock.ManualTrigger(ctx)
 }
 
@@ -89,7 +86,6 @@ func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, 
 			return
 
 		case node.NodeStateChannel <- nodeState:
-			fmt.Printf("ID=%s NODESTATE WROTE %v\n", node.MemberId, block)
 			return
 		}
 	}

@@ -71,7 +71,8 @@ func NewWorkerLoop(config *interfaces.Config, logger L.LHLogger, electionTrigger
 func (lh *WorkerLoop) Run(ctx context.Context) {
 	defer func() {
 		if e := recover(); e != nil {
-			fmt.Println(e)
+			fmt.Printf("WORKERLOOP PANIC: %v\n", e) // keep this raw print - can be useful if everything breaks
+			lh.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "WORKERLOOP PANIC: %v", e)
 		}
 	}()
 	lh.logger.Debug(L.LC(math.MaxUint64, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP START")

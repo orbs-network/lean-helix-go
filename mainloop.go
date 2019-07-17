@@ -66,9 +66,8 @@ func (m *MainLoop) RunWorkerLoop(ctx context.Context) {
 func (m *MainLoop) run(ctx context.Context) {
 	defer func() {
 		if e := recover(); e != nil {
-			fmt.Printf("MAINLOOP PANIC: %v\n", e)
-		} else {
-			fmt.Println("MAINLOOP SHUTDOWN")
+			fmt.Printf("MAINLOOP PANIC: %v\n", e) // keep this raw print - can be useful if everything breaks
+			m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "MAINLOOP PANIC: %v", e)
 		}
 	}()
 
@@ -76,7 +75,6 @@ func (m *MainLoop) run(ctx context.Context) {
 		panic("Election trigger was not configured, cannot run Lean Helix (mainloop.run)")
 	}
 
-	fmt.Println("MAINLOOP START")
 	m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW MAINLOOP START")
 	m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "LHMSG MAINLOOP START LISTENING NOW")
 	workerCtx, cancelWorkerContext := context.WithCancel(ctx)

@@ -7,7 +7,6 @@
 package mocks
 
 import (
-	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"sync"
 )
@@ -23,10 +22,8 @@ func (bp *BlocksPool) PopBlock(prevBlock interfaces.Block) interfaces.Block {
 	if len(bp.upcomingBlocks) > 0 {
 		// Simple queue impl, see https://github.com/golang/go/wiki/SliceTricks
 		nextBlock, bp.upcomingBlocks = bp.upcomingBlocks[0], bp.upcomingBlocks[1:]
-		fmt.Printf("PopBlock: popped block: %s remaining %d\n", nextBlock, len(bp.upcomingBlocks))
 	} else {
 		nextBlock = ABlock(prevBlock)
-		fmt.Printf("PopBlock: returning new block: %s\n", nextBlock)
 	}
 	bp.mutex.Unlock()
 	return nextBlock

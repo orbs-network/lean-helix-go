@@ -66,15 +66,12 @@ func (g *CommunicationMock) messageSenderLoop(ctx context.Context, channel chan 
 	defer func() {
 		if e := recover(); e != nil {
 			fmt.Println("messageSenderLoop() PANIC: ", e)
-		} else {
-			fmt.Println("messageSenderLoop() end")
 		}
 	}()
 
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Printf("ID=%s messageLoop ctx.Done with Err(): %v\n", g.memberId, ctx.Err())
 			return
 		case messageData := <-channel:
 			g.SendToNode(ctx, messageData.target, messageData.message)
@@ -91,7 +88,6 @@ func (g *CommunicationMock) ReturnAndMaybeCreateOutgoingChannelByTarget(ctx cont
 	if channel == nil {
 		channel = make(chan *outgoingMessage, 100)
 		g.outgoingChannelsMap[target.String()] = channel
-		//fmt.Printf("ReturnAndMaybeCreateOutgoingChannelByTarget() start for %s\n", target)
 		go g.messageSenderLoop(ctx, channel)
 	}
 
@@ -106,7 +102,6 @@ func (g *CommunicationMock) SendConsensusMessage(ctx context.Context, targets []
 		case <-ctx.Done():
 			return errors.Errorf("ID=%s context canceled for outgoing channel of %v", g.memberId, target)
 		case channel <- &outgoingMessage{target, message}:
-			//fmt.Printf("ID=%s SendConsensusMessage SENT %v to %v\n", g.memberId, messageType, target)
 			continue
 		}
 	}
@@ -187,7 +182,6 @@ func (g *CommunicationMock) ClearIncomingWhitelist() {
 func (g *CommunicationMock) SendToNode(ctx context.Context, targetMemberId primitives.MemberId, consensusRawMessage *interfaces.ConsensusRawMessage) {
 	if g.outgoingWhitelist != nil {
 		if !g.inOutgoingWhitelist(targetMemberId) {
-			fmt.Printf("ID=%s LHMSG DROPPED (to %s)\n", g.memberId, targetMemberId)
 			return
 		}
 	}

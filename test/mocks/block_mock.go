@@ -44,7 +44,6 @@ func ABlock(previousBlock interfaces.Block) interfaces.Block {
 		height: newBlockHeight,
 		body:   genBody(newBlockHeight),
 	}
-	fmt.Printf("Created mock block: %s\n", block)
 	return block
 }
 

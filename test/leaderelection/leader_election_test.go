@@ -8,7 +8,6 @@ package leaderelection
 
 import (
 	"context"
-	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
@@ -70,10 +69,10 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block1, should be agreed by all nodes
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block1))
-		fmt.Println("--- BLOCK1 COMMITTED ---")
+		t.Log("--- BLOCK1 COMMITTED ---")
 		// Thwart Preprepare message sending by node0 for block2
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // pause when proposing block2
-		fmt.Println("--- NODE0 PAUSED ON REQUEST NEW BLOCK ---")
+		t.Log("--- NODE0 PAUSED ON REQUEST NEW BLOCK ---")
 
 		// increment view - this selects node1 as the leader
 		/*
@@ -88,19 +87,19 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 		<-h.net.Nodes[2].TriggerElectionOnNode(ctx)
 		<-h.net.Nodes[3].TriggerElectionOnNode(ctx)
 
-		fmt.Println("--- TRIGGERED ELECTION ON NODES 1 2 3 ---")
+		t.Log("--- TRIGGERED ELECTION ON NODES 1 2 3 ---")
 
 		// free the first leader to send stale PREPREPARE now when the others are in next view
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		fmt.Println("--- NODE0 RESUMED REQUEST NEW BLOCK ---")
+		t.Log("--- NODE0 RESUMED REQUEST NEW BLOCK ---")
 		// tell the old leader to advance it's view so it can join the others in view 1
 		<-h.net.Nodes[0].TriggerElectionOnNode(ctx)
-		fmt.Println("--- TRIGGERED ELECTION ON NODE0")
+		t.Log("--- TRIGGERED ELECTION ON NODE0")
 		// sync with new leader on block proposal
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node1)
-		fmt.Println("--- NODE1 PAUSED ON REQUEST NEW BLOCK ---")
+		t.Log("--- NODE1 PAUSED ON REQUEST NEW BLOCK ---")
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node1) // processing block 3
-		fmt.Println("--- NODE1 RESUMED REQUEST NEW BLOCK ---")
+		t.Log("--- NODE1 RESUMED REQUEST NEW BLOCK ---")
 		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block3))
 
 		// TODO - expect preprepare messages were sent from node0 for block2
@@ -248,14 +247,12 @@ func TestLeaderCircularOrdering(t *testing.T) {
 
 func electNewLeader(ctx context.Context, h *harness, newLeaderIndex int) {
 
-	fmt.Printf("electNewLeader start %d\n", newLeaderIndex)
 	for i, node := range h.net.Nodes {
 		if i == newLeaderIndex {
 			continue
 		}
 		<-node.TriggerElectionOnNode(ctx)
 	}
-	fmt.Printf("electNewLeader end %d\n", newLeaderIndex)
 }
 
 func TestDoesNotCloseBlockWhenValidateBlockProposalFails(t *testing.T) {

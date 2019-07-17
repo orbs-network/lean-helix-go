@@ -22,7 +22,6 @@ import (
 func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
-
 		h.assertView(0)
 		h.triggerElection(ctx)
 		h.assertView(1)
