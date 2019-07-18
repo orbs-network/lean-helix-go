@@ -156,19 +156,22 @@ func (tic *TermInCommittee) startTerm(ctx context.Context, canBeFirstLeader bool
 		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW startTerm() I CANNOT BE LEADER OF FIRST VIEW, skipping view")
 		return
 	}
-	if err := tic.isLeader(tic.myMemberId, tic.view); err == nil {
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW startTerm() I AM THE LEADER OF FIRST VIEW, requesting new block")
-		block, blockHash := tic.blockUtils.RequestNewBlockProposal(ctx, tic.height, tic.prevBlock)
 
-		// TODO Add error handling "if ctx.Err() != nil or block == nil"
+	if err := tic.isLeader(tic.myMemberId, tic.view); err != nil {
+		return // not leader, do nothing
+	}
 
-		ppm := tic.messageFactory.CreatePreprepareMessage(tic.height, tic.view, block, blockHash)
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW startTerm() I AM THE LEADER OF FIRST VIEW, requesting new block")
+	block, blockHash := tic.blockUtils.RequestNewBlockProposal(ctx, tic.height, tic.prevBlock)
 
-		tic.storage.StorePreprepare(ppm)
-		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND PREPREPARE")
-		if err = tic.sendConsensusMessage(ctx, ppm); err != nil {
-			tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND PREPREPARE FAILED - %s", err)
-		}
+	// TODO Add error handling "if ctx.Err() != nil or block == nil"
+
+	ppm := tic.messageFactory.CreatePreprepareMessage(tic.height, tic.view, block, blockHash)
+
+	tic.storage.StorePreprepare(ppm)
+	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND PREPREPARE")
+	if err := tic.sendConsensusMessage(ctx, ppm); err != nil {
+		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG SEND PREPREPARE FAILED - %s", err)
 	}
 }
 
