@@ -164,7 +164,14 @@ func (tic *TermInCommittee) startTerm(ctx context.Context, canBeFirstLeader bool
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW startTerm() I AM THE LEADER OF FIRST VIEW, requesting new block")
 	block, blockHash := tic.blockUtils.RequestNewBlockProposal(ctx, tic.height, tic.prevBlock)
 
-	// TODO Add error handling "if ctx.Err() != nil or block == nil"
+	// Sometimes PPM will still be sent although context was canceled,
+	// because cancellation is not fast enough.
+	// Context cancellation is only a performance optimization,
+	// so whether PPM is sent out or not, does not affect correctness
+	if ctx.Err() != nil {
+		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW startTerm() RequestNewBlockProposal() context canceled, not sending PREPREPARE - %s", ctx.Err())
+		return
+	}
 
 	ppm := tic.messageFactory.CreatePreprepareMessage(tic.height, tic.view, block, blockHash)
 
@@ -238,7 +245,6 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 	}
 }
 
-// TODO Consider returning error with who is the expected leader (tic.calcLeaderMemberId(v)), to help caller debug this
 func (tic *TermInCommittee) isLeader(memberId primitives.MemberId, v primitives.View) error {
 	return isLeaderOfViewForThisCommittee(memberId, v, tic.committeeMembersMemberIds)
 }
@@ -281,6 +287,10 @@ func (tic *TermInCommittee) onElected(ctx context.Context, view primitives.View,
 	if block == nil {
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW onElected() MISSING BLOCK IN VIEW_CHANGE, calling RequestNewBlockProposal()")
 		block, blockHash = tic.blockUtils.RequestNewBlockProposal(ctx, tic.height, tic.prevBlock)
+		if ctx.Err() != nil {
+			tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW onElected() RequestNewBlockProposal() context canceled, not sending NEW_VIEW - %s", ctx.Err())
+			return
+		}
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW onElected() returned from RequestNewBlockProposal(), sending the new block as part of NEW_VIEW")
 	} else {
 		tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW onElected() found block with H=%d in VIEW_CHANGE messages, so sending it as part of NEW_VIEW", block.Height())

@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-const LOG_TO_CONSOLE = false
+const LOG_TO_CONSOLE = true
 
 func TestNewLeaderProposesNewBlockIfPreviousLeaderFailedToBringNetworkIntoPreparedPhase(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
