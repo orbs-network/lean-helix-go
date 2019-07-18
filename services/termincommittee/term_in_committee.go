@@ -328,6 +328,12 @@ func (tic *TermInCommittee) HandlePrePrepare(ctx context.Context, ppm *interface
 	}
 
 	err := tic.blockUtils.ValidateBlockProposal(ctx, ppm.BlockHeight(), ppm.Block(), ppm.Content().SignedHeader().BlockHash(), tic.prevBlock)
+	// TODO Add ctx.Err() != nil handling
+	if ctx.Err() != nil {
+		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW HandlePrePrepare() ValidateBlockProposal - %s", ctx.Err())
+		return
+	}
+
 	if err != nil {
 		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHMSG RECEIVED PREPREPARE IGNORE: blockUtils.ValidateBlockProposal() failed: %s", err)
 	} else {
@@ -690,8 +696,14 @@ func (tic *TermInCommittee) HandleNewView(ctx context.Context, nvm *interfaces.N
 	// leader proposed a new block in this view, checking its proposal
 	if latestVote == nil {
 		err := tic.blockUtils.ValidateBlockProposal(ctx, ppm.BlockHeight(), ppm.Block(), ppm.Content().SignedHeader().BlockHash(), tic.prevBlock)
+		// TODO Add ctx.Err() != nil handling
+		if ctx.Err() != nil {
+			tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW HandleNewView() ValidateBlockProposal - %s", ctx.Err())
+			return
+		}
+
 		if err != nil {
-			tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "Proposed block failed ValidateBlockProposal: %s", err)
+			tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW Proposed block failed ValidateBlockProposal: %s", err)
 			return
 		}
 	}
