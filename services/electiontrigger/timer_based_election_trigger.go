@@ -40,7 +40,11 @@ func (t *TimerBasedElectionTrigger) RegisterOnElection(ctx context.Context, bloc
 		t.view = view
 		t.blockHeight = blockHeight
 		t.Stop()
-		t.timer = time.AfterFunc(timeout, t.onTimerTimeout)
+		t.timer = time.AfterFunc(timeout, func() {
+			if ctx.Err() == nil {
+				t.onTimerTimeout() // prevent running this after test code is complete (due to test error: "Log in goroutine after test has completed")
+			}
+		})
 	}
 	t.electionHandler = electionHandler
 }
