@@ -25,21 +25,22 @@ func CalculateBlockHash(block interfaces.Block) primitives.BlockHash {
 
 type PausableBlockUtils struct {
 	interfaces.BlockUtils
-	memberId                     primitives.MemberId
-	blocksPool                   *BlocksPool
-	PauseOnRequestNewBlock       bool
-	RequestNewBlockLatch         *test.Latch
-	ValidationLatch              *test.Latch
-	PauseOnValidateBlock         bool
-	failBlockProposalValidations bool
+	memberId   primitives.MemberId
+	blocksPool *BlocksPool
+	//PauseOnRequestNewBlock       bool
+	PauseOnRequestNewBlockOnZeroCounter int64
+	RequestNewBlockLatch                *test.Latch
+	ValidationLatch                     *test.Latch
+	PauseOnValidateBlock                bool
+	failBlockProposalValidations        bool
 }
 
 func NewMockBlockUtils(memberId primitives.MemberId, blocksPool *BlocksPool) *PausableBlockUtils {
 	return &PausableBlockUtils{
-		memberId:               memberId,
-		blocksPool:             blocksPool,
-		PauseOnRequestNewBlock: false,
-		RequestNewBlockLatch:   test.NewLatch(),
+		memberId:                            memberId,
+		blocksPool:                          blocksPool,
+		PauseOnRequestNewBlockOnZeroCounter: 0,
+		RequestNewBlockLatch:                test.NewLatch(),
 
 		ValidationLatch:      test.NewLatch(),
 		PauseOnValidateBlock: false,
@@ -52,10 +53,12 @@ func (b *PausableBlockUtils) WithFailingBlockProposalValidations() *PausableBloc
 }
 
 func (b *PausableBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
-	if b.PauseOnRequestNewBlock {
+	if b.PauseOnRequestNewBlockOnZeroCounter == 0 {
 		fmt.Printf("ID=%s H=%d RequestNewBlockProposal: Sleeping until latch is resumed\n", b.memberId, blockHeight)
 		b.RequestNewBlockLatch.ReturnWhenLatchIsResumed(ctx, b.memberId)
 		fmt.Printf("ID=%s H=%d RequestNewBlockProposal: Latch has resumed\n", b.memberId, blockHeight)
+	} else {
+		b.PauseOnRequestNewBlockOnZeroCounter--
 	}
 
 	block := b.blocksPool.PopBlock(prevBlock)
