@@ -8,6 +8,7 @@ package network
 
 import (
 	"context"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/matchers"
@@ -63,7 +64,7 @@ func (net *TestNetwork) WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven
 		select {
 		case <-ctx.Done():
 			return false
-		case nodeState := <-node.NodeStateChannel:
+		case nodeState := <-node.CommittedBlockChannel:
 			blockAreEqual := matchers.BlocksAreEqual(expectedBlock, nodeState.block)
 			if blockAreEqual == false {
 				return false
@@ -83,7 +84,7 @@ func (net *TestNetwork) WaitForAllNodesToCommitTheSameBlock(ctx context.Context)
 	select {
 	case <-ctx.Done():
 		return false
-	case firstNodeStateChannel := <-net.Nodes[0].NodeStateChannel:
+	case firstNodeStateChannel := <-net.Nodes[0].CommittedBlockChannel:
 		firstNodeBlock := firstNodeStateChannel.block
 		for i := 1; i < len(net.Nodes); i++ {
 			node := net.Nodes[i]
@@ -92,7 +93,7 @@ func (net *TestNetwork) WaitForAllNodesToCommitTheSameBlock(ctx context.Context)
 			case <-ctx.Done():
 				return false
 
-			case nodeState := <-node.NodeStateChannel:
+			case nodeState := <-node.CommittedBlockChannel:
 				if matchers.BlocksAreEqual(firstNodeBlock, nodeState.block) == false {
 					return false
 				}
@@ -192,27 +193,19 @@ func (net *TestNetwork) ResumeRequestNewBlockOnNodes(ctx context.Context, node *
 
 }
 
-func (net *TestNetwork) WaitForConsensus(ctx context.Context) {
-	for _, node := range net.Nodes {
-		select {
-		case <-ctx.Done():
-			return
-		case <-node.NodeStateChannel:
-			continue
-		}
-	}
-}
-
 func (net *TestNetwork) WaitForNodesToCommitABlock(ctx context.Context, nodes ...*Node) {
 	if nodes == nil {
 		nodes = net.Nodes
 	}
 
 	for _, node := range nodes {
+		fmt.Printf("ID=%s WaitForNodesToCommitABlock BEFORE\n", node.MemberId)
 		select {
 		case <-ctx.Done():
+			fmt.Printf("ID=%s WaitForNodesToCommitABlock ctx.Done\n", node.MemberId)
 			return
-		case <-node.NodeStateChannel:
+		case <-node.CommittedBlockChannel:
+			fmt.Printf("ID=%s WaitForNodesToCommitABlock AFTER\n", node.MemberId)
 			continue
 		}
 	}
@@ -228,7 +221,7 @@ func (net *TestNetwork) WaitForNodesToCommitASpecificBlock(ctx context.Context, 
 		select {
 		case <-ctx.Done():
 			return false
-		case nodeState := <-node.NodeStateChannel:
+		case nodeState := <-node.CommittedBlockChannel:
 			if matchers.BlocksAreEqual(block, nodeState.block) == false {
 				return false
 			}
@@ -244,7 +237,7 @@ func (net *TestNetwork) AllNodesValidatedNoMoreThanOnceBeforeCommit(ctx context.
 		select {
 		case <-ctx.Done():
 			return false
-		case nodeState := <-node.NodeStateChannel:
+		case nodeState := <-node.CommittedBlockChannel:
 			if nodeState.validationCount > 1 {
 				return false
 			}

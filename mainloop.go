@@ -115,6 +115,7 @@ func (m *MainLoop) run(ctx context.Context) {
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
 			m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW UPDATESTATE - CANCELED WORKER CONTEXT")
 			m.worker.workerUpdateStateChannel <- receivedBlockWithProof
+			m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW UPDATESTATE - Wrote to worker UpdateState channel")
 
 		}
 	}

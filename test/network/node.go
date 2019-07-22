@@ -24,20 +24,20 @@ type NodeState struct {
 }
 
 type Node struct {
-	instanceId          primitives.InstanceId
-	leanHelix           *leanhelix.MainLoop
-	blockChain          *mocks.InMemoryBlockChain
-	ElectionTrigger     interfaces.ElectionTrigger
-	BlockUtils          interfaces.BlockUtils
-	KeyManager          *mocks.MockKeyManager
-	Storage             interfaces.Storage
-	Communication       *mocks.CommunicationMock
-	Membership          interfaces.Membership
-	MemberId            primitives.MemberId
-	NodeStateChannel    chan *NodeState
-	WriteToStateChannel bool
-	PauseOnUpdateState  bool
-	OnUpdateStateLatch  *test.Latch
+	instanceId            primitives.InstanceId
+	leanHelix             *leanhelix.MainLoop
+	blockChain            *mocks.InMemoryBlockChain
+	ElectionTrigger       interfaces.ElectionTrigger
+	BlockUtils            interfaces.BlockUtils
+	KeyManager            *mocks.MockKeyManager
+	Storage               interfaces.Storage
+	Communication         *mocks.CommunicationMock
+	Membership            interfaces.Membership
+	MemberId              primitives.MemberId
+	CommittedBlockChannel chan *NodeState
+	WriteToStateChannel   bool
+	PauseOnUpdateState    bool
+	OnUpdateStateLatch    *test.Latch
 }
 
 func (node *Node) GetKeyManager() interfaces.KeyManager {
@@ -86,7 +86,7 @@ func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, 
 		case <-ctx.Done():
 			return
 
-		case node.NodeStateChannel <- nodeState:
+		case node.CommittedBlockChannel <- nodeState:
 			return
 		}
 	}
@@ -104,13 +104,16 @@ func (node *Node) ValidateBlockConsensus(ctx context.Context, block interfaces.B
 }
 
 func (node *Node) Sync(ctx context.Context, prevBlock interfaces.Block, blockProofBytes []byte, prevBlockProofBytes []byte) {
-	if node.leanHelix != nil {
-		if err := node.ValidateBlockConsensus(ctx, prevBlock, blockProofBytes, prevBlockProofBytes); err == nil {
-			fmt.Printf("ID=%s H=%d NodeSync(): Passed validation, calling UpdateState\n", node.MemberId, node.GetCurrentHeight())
-			node.leanHelix.UpdateState(ctx, prevBlock, prevBlockProofBytes)
-		} else {
-			fmt.Printf("ID=%s H=%d NodeSync(): Failed validation: %s\n", node.MemberId, node.GetCurrentHeight(), err)
-		}
+	if node.leanHelix == nil {
+		return
+	}
+	fmt.Printf("ID=%s H=%d B.H=%d NodeSync(): Start, calling ValidateBlockConsensus\n", node.MemberId, node.GetCurrentHeight(), prevBlock.Height())
+	if err := node.ValidateBlockConsensus(ctx, prevBlock, blockProofBytes, prevBlockProofBytes); err == nil {
+		fmt.Printf("ID=%s H=%d B.H=%d NodeSync(): Passed ValidateBlockConsensus, calling UpdateState\n", node.MemberId, node.GetCurrentHeight(), prevBlock.Height())
+		node.leanHelix.UpdateState(ctx, prevBlock, prevBlockProofBytes)
+		fmt.Printf("ID=%s H=%d B.H=%d NodeSync(): UpdateState returned\n", node.MemberId, node.GetCurrentHeight(), prevBlock.Height())
+	} else {
+		fmt.Printf("ID=%s H=%d B.H=%d NodeSync(): Failed validation: %s\n", node.MemberId, node.GetCurrentHeight(), prevBlock.Height(), err)
 	}
 }
 
@@ -150,18 +153,18 @@ func NewNode(
 	memberId := membership.MyMemberId()
 
 	node := &Node{
-		instanceId:          instanceId,
-		blockChain:          mocks.NewInMemoryBlockChain(),
-		ElectionTrigger:     electionTrigger,
-		BlockUtils:          blockUtils,
-		KeyManager:          mocks.NewMockKeyManager(memberId),
-		Storage:             storage.NewInMemoryStorage(),
-		Communication:       communication,
-		Membership:          membership,
-		MemberId:            memberId,
-		NodeStateChannel:    make(chan *NodeState),
-		OnUpdateStateLatch:  test.NewLatch(),
-		WriteToStateChannel: true,
+		instanceId:            instanceId,
+		blockChain:            mocks.NewInMemoryBlockChain(),
+		ElectionTrigger:       electionTrigger,
+		BlockUtils:            blockUtils,
+		KeyManager:            mocks.NewMockKeyManager(memberId),
+		Storage:               storage.NewInMemoryStorage(),
+		Communication:         communication,
+		Membership:            membership,
+		MemberId:              memberId,
+		CommittedBlockChannel: make(chan *NodeState),
+		OnUpdateStateLatch:    test.NewLatch(),
+		WriteToStateChannel:   true,
 	}
 	config := node.BuildConfig(logger)
 	config.OverrideElectionTrigger = node.ElectionTrigger
