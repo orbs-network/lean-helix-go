@@ -52,7 +52,7 @@ type WorkerLoop struct {
 
 func NewWorkerLoop(state state.State, config *interfaces.Config, logger L.LHLogger, electionTrigger interfaces.ElectionTrigger, onCommitCallback interfaces.OnCommitCallback) *WorkerLoop {
 
-	logger.Debug(L.LC(state.Height(), state.View(), config.Membership.MyMemberId()), "LHFLOW NewWorkerLoop()")
+	logger.Debug("LHFLOW NewWorkerLoop()")
 	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), logger, state)
 	return &WorkerLoop{
 		MessagesChannel:          make(chan *MessageWithContext, 10),
@@ -71,18 +71,18 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 	defer func() {
 		if e := recover(); e != nil {
 			fmt.Printf("WORKERLOOP PANIC: %v\n", e) // keep this raw print - can be useful if everything breaks
-			lh.logger.Info(L.LC(lh.state.Height(), lh.state.View(), lh.config.Membership.MyMemberId()), "WORKERLOOP PANIC: %v", e)
+			lh.logger.Info("WORKERLOOP PANIC: %v", e)
 		}
 	}()
-	lh.logger.Debug(L.LC(lh.state.Height(), lh.state.View(), lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP START")
-	lh.logger.Debug(L.LC(lh.state.Height(), lh.state.View(), lh.config.Membership.MyMemberId()), "LHMSG WORKERLOOP START LISTENING NOW")
+	lh.logger.Debug("LHFLOW WORKERLOOP START")
+	lh.logger.Debug("LHMSG WORKERLOOP START LISTENING NOW")
 	for {
-		lh.logger.Debug(L.LC(lh.state.Height(), lh.state.View(), lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP LISTENING")
+		lh.logger.Debug("LHFLOW WORKERLOOP LISTENING")
 
 		select {
 		case <-ctx.Done(): // system shutdown
-			lh.logger.Debug(L.LC(lh.state.Height(), lh.state.View(), lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP DONE, Terminating Run().")
-			lh.logger.Debug(L.LC(lh.state.Height(), lh.state.View(), lh.config.Membership.MyMemberId()), "LHMSG WORKERLOOP STOPPED LISTENING")
+			lh.logger.Debug("LHFLOW WORKERLOOP DONE, Terminating Run().")
+			lh.logger.Debug("LHMSG WORKERLOOP STOPPED LISTENING")
 			return
 
 		case res := <-lh.MessagesChannel:
@@ -91,9 +91,9 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 		case trigger := <-lh.electionChannel:
 			if trigger == nil {
 				// this cannot happen, ignore
-				lh.logger.Info(L.LC(lh.state.Height(), lh.state.View(), lh.config.Membership.MyMemberId()), "XXXXXX LHFLOW WORKERLOOP ELECTION, OMG trigger is nil, not triggering election!")
+				lh.logger.Info("XXXXXX LHFLOW WORKERLOOP ELECTION, OMG trigger is nil, not triggering election!")
 			}
-			lh.logger.Debug(L.LC(lh.state.Height(), lh.state.View(), lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP ELECTION")
+			lh.logger.Debug("LHFLOW WORKERLOOP ELECTION")
 			trigger(ctx)
 
 		case receivedBlockWithProof := <-lh.workerUpdateStateChannel: // NodeSync
@@ -107,12 +107,12 @@ func (lh *WorkerLoop) HandleUpdateState(ctx context.Context, receivedBlockWithPr
 
 	// TODO Get current height from STATE with RLock and check if block has higher height
 	if receivedBlockHeight >= lh.state.Height() {
-		lh.logger.Debug(L.LC(lh.state.Height(), lh.state.View(), lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP UPDATESTATE ACCEPTED block with height=%d, calling onNewConsensusRound()", receivedBlockHeight)
+		lh.logger.Debug("LHFLOW WORKERLOOP UPDATESTATE ACCEPTED block with height=%d, calling onNewConsensusRound()", receivedBlockHeight)
 		// This block is received from external source
 		// Refuse to be leader on V=0 for a block received from block sync, because this block will usually be not be the latest block.
 		lh.onNewConsensusRound(ctx, receivedBlockWithProof.block, receivedBlockWithProof.prevBlockProofBytes, false)
 	} else {
-		lh.logger.Debug(L.LC(lh.state.Height(), lh.state.View(), lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP UPDATESTATE IGNORE - Received block ignored because its height=%d is less than current height=%d", receivedBlockHeight, lh.state.Height())
+		lh.logger.Debug("LHFLOW WORKERLOOP UPDATESTATE IGNORE - Received block ignored because its height=%d is less than current height=%d", receivedBlockHeight, lh.state.Height())
 	}
 }
 
@@ -134,7 +134,7 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 	if block == nil {
 		return errors.Errorf("ValidateBlockConsensus: nil block")
 	}
-	lh.logger.Debug(L.LC(lh.state.Height(), lh.state.View(), lh.config.Membership.MyMemberId()), "ValidateBlockConsensus START for blockHeight=%d", block.Height())
+	lh.logger.Debug("ValidateBlockConsensus START for blockHeight=%d", block.Height())
 	if blockProofBytes == nil || len(blockProofBytes) == 0 {
 		return errors.Errorf("ValidateBlockConsensus: nil blockProof")
 	}
@@ -163,7 +163,7 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 	if err != nil { // support for failure in committee calculation
 		return err
 	}
-	lh.logger.Debug(L.LC(lh.state.Height(), lh.state.View(), lh.config.Membership.MyMemberId()), "ValidateBlockConsensus: RECEIVED COMMITTEE for H=%d, members=%s", blockHeight, termincommittee.ToCommitteeMembersStr(committeeMembers))
+	lh.logger.Debug("ValidateBlockConsensus: RECEIVED COMMITTEE for H=%d, members=%s", blockHeight, termincommittee.ToCommitteeMembersStr(committeeMembers))
 
 	sendersIterator := blockProof.NodesIterator()
 	set := make(map[storage.MemberIdStr]bool)
@@ -204,7 +204,7 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 	if err := randomseed.ValidateRandomSeed(lh.config.KeyManager, blockHeight, blockProof, prevBlockProof); err != nil {
 		return errors.Wrapf(err, "ValidateBlockConsensus: ValidateRandomSeed() failed")
 	}
-	lh.logger.Debug(L.LC(lh.state.Height(), lh.state.View(), lh.config.Membership.MyMemberId()), "ValidateBlockConsensus PASSED for blockHeight=%s", block.Height())
+	lh.logger.Debug("ValidateBlockConsensus PASSED for blockHeight=%s", block.Height())
 
 	return nil
 }
@@ -213,7 +213,7 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 func (lh *WorkerLoop) HandleConsensusMessage(ctx context.Context, message *interfaces.ConsensusRawMessage) {
 	select {
 	case <-ctx.Done():
-		lh.logger.Debug(L.LC(lh.state.Height(), lh.state.View(), lh.config.Membership.MyMemberId()), "HandleConsensusRawMessage() ID=%s CONTEXT TERMINATED", termincommittee.Str(lh.config.Membership.MyMemberId()))
+		lh.logger.Debug("HandleConsensusRawMessage() ID=%s CONTEXT TERMINATED", termincommittee.Str(lh.config.Membership.MyMemberId()))
 		return
 
 	case lh.MessagesChannel <- &MessageWithContext{ctx: ctx, msg: message}:
@@ -221,10 +221,10 @@ func (lh *WorkerLoop) HandleConsensusMessage(ctx context.Context, message *inter
 }
 
 func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, blockProofBytes []byte) {
-	lh.logger.Debug(L.LC(lh.state.Height(), lh.state.View(), lh.config.Membership.MyMemberId()), "LHFLOW onCommitCallback START from leanhelix.onCommit()")
+	lh.logger.Debug("LHFLOW onCommitCallback START from leanhelix.onCommit()")
 	lh.onCommitCallback(ctx, block, blockProofBytes)
-	lh.logger.Debug(L.LC(lh.state.Height(), lh.state.View(), lh.config.Membership.MyMemberId()), "LHFLOW onCommitCallback RETURNED from leanhelix.onCommit()")
-	lh.logger.Debug(L.LC(lh.state.Height(), lh.state.View(), lh.config.Membership.MyMemberId()), "Calling onNewConsensusRound() from leanhelix.onCommit()")
+	lh.logger.Debug("LHFLOW onCommitCallback RETURNED from leanhelix.onCommit()")
+	lh.logger.Debug("Calling onNewConsensusRound() from leanhelix.onCommit()")
 	lh.onNewConsensusRound(ctx, block, blockProofBytes, true)
 }
 
@@ -233,7 +233,7 @@ func (lh *WorkerLoop) onNewConsensusRound(ctx context.Context, prevBlock interfa
 	// TODO RWLock
 
 	lh.state.SetHeight(blockheight.GetBlockHeight(prevBlock) + 1)
-	lh.logger.Debug(L.LC(lh.state.Height(), lh.state.View(), lh.config.Membership.MyMemberId()), "onNewConsensusRound() INCREMENTED HEIGHT TO %d", lh.state.Height())
+	lh.logger.Debug("onNewConsensusRound() INCREMENTED HEIGHT TO %d", lh.state.Height())
 	if lh.leanHelixTerm != nil {
 		lh.leanHelixTerm.Dispose()
 		lh.leanHelixTerm = nil

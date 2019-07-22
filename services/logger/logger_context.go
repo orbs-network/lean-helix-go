@@ -44,7 +44,7 @@ func (lc *_LC) String() string {
 }
 
 type lhLogger struct {
-	config         interfaces.Config
+	config         *interfaces.Config
 	state          state.State
 	externalLogger interfaces.Logger
 }
@@ -53,16 +53,16 @@ func (l *lhLogger) ExternalLogger() interfaces.Logger {
 	return l.externalLogger
 }
 
-func (l *lhLogger) Debug(lc *_LC, format string, args ...interface{}) {
-	l.externalLogger.Debug(fmt.Sprintf("%s %s", lc, format), args...)
+func (l *lhLogger) Debug(format string, args ...interface{}) {
+	l.externalLogger.Debug(fmt.Sprintf("%s %s", LC(l.state.Height(), l.state.View(), l.config.Membership.MyMemberId()), format), args...)
 }
 
-func (l *lhLogger) Info(lc *_LC, format string, args ...interface{}) {
-	l.externalLogger.Info(fmt.Sprintf("%s %s", lc, format), args...)
+func (l *lhLogger) Info(format string, args ...interface{}) {
+	l.externalLogger.Info(fmt.Sprintf("%s %s", LC(l.state.Height(), l.state.View(), l.config.Membership.MyMemberId()), format), args...)
 }
 
-func (l *lhLogger) Error(lc *_LC, format string, args ...interface{}) {
-	l.externalLogger.Error(fmt.Sprintf("%s %s", lc, format), args...)
+func (l *lhLogger) Error(format string, args ...interface{}) {
+	l.externalLogger.Error(fmt.Sprintf("%s %s", LC(l.state.Height(), l.state.View(), l.config.Membership.MyMemberId()), format), args...)
 }
 
 func NewLhLogger(config *interfaces.Config, state state.State) LHLogger {
@@ -73,8 +73,8 @@ func NewLhLogger(config *interfaces.Config, state state.State) LHLogger {
 		logger = config.Logger
 	}
 	return &lhLogger{
-		config:         interfaces.Config{},
-		state:          nil,
+		config:         config,
+		state:          state,
 		externalLogger: logger,
 	}
 }
@@ -91,9 +91,9 @@ func MemberIdToStr(memberId primitives.MemberId) string {
 }
 
 type LHLogger interface {
-	Debug(lc *_LC, format string, args ...interface{})
-	Info(lc *_LC, format string, args ...interface{})
-	Error(lc *_LC, format string, args ...interface{})
+	Debug(format string, args ...interface{})
+	Info(format string, args ...interface{})
+	Error(format string, args ...interface{})
 	ExternalLogger() interfaces.Logger
 }
 

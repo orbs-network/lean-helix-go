@@ -10,7 +10,6 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/state"
 	"github.com/pkg/errors"
-	"math"
 )
 
 type MainLoop struct {
@@ -69,7 +68,7 @@ func (m *MainLoop) run(ctx context.Context) {
 	defer func() {
 		if e := recover(); e != nil {
 			fmt.Printf("MAINLOOP PANIC: %v\n", e) // keep this raw print - can be useful if everything breaks
-			m.logger.Info(L.LC(math.MaxUint64, math.MaxUint64, m.config.Membership.MyMemberId()), "MAINLOOP PANIC: %v", e)
+			m.logger.Info("MAINLOOP PANIC: %v", e)
 		}
 	}()
 
@@ -77,20 +76,20 @@ func (m *MainLoop) run(ctx context.Context) {
 		panic("Election trigger was not configured, cannot run Lean Helix (mainloop.run)")
 	}
 
-	m.logger.Info(L.LC(m.state.Height(), m.state.View(), m.config.Membership.MyMemberId()), "LHFLOW MAINLOOP START")
-	m.logger.Info(L.LC(m.state.Height(), m.state.View(), m.config.Membership.MyMemberId()), "LHMSG MAINLOOP START LISTENING NOW")
+	m.logger.Info("LHFLOW MAINLOOP START")
+	m.logger.Info("LHMSG MAINLOOP START LISTENING NOW")
 	workerCtx, cancelWorkerContext := context.WithCancel(ctx)
 	for {
-		m.logger.Debug(L.LC(m.state.Height(), m.state.View(), m.config.Membership.MyMemberId()), "LHFLOW MAINLOOP LISTENING")
+		m.logger.Debug("LHFLOW MAINLOOP LISTENING")
 		select {
 		case <-ctx.Done(): // system shutdown
-			m.logger.Debug(L.LC(m.state.Height(), m.state.View(), m.config.Membership.MyMemberId()), "LHFLOW MAINLOOP DONE, Terminating Run().")
-			m.logger.Info(L.LC(m.state.Height(), m.state.View(), m.config.Membership.MyMemberId()), "LHMSG MAINLOOP STOPPED LISTENING")
+			m.logger.Debug("LHFLOW MAINLOOP DONE, Terminating Run().")
+			m.logger.Info("LHMSG MAINLOOP STOPPED LISTENING")
 			return
 
 		case message := <-m.messagesChannel:
 			parsedMessage := interfaces.ToConsensusMessage(message)
-			m.logger.Debug(L.LC(m.state.Height(), m.state.View(), m.config.Membership.MyMemberId()), "LHMSG MAINLOOP RECEIVED %v from %v for H=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight())
+			m.logger.Debug("LHMSG MAINLOOP RECEIVED %v from %v for H=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight())
 			m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}
 
 		case trigger := <-m.electionTrigger.ElectionChannel():
@@ -100,22 +99,22 @@ func (m *MainLoop) run(ctx context.Context) {
 
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
-			m.logger.Debug(L.LC(m.state.Height(), m.state.View(), m.config.Membership.MyMemberId()), "LHFLOW ELECTION - CANCELED WORKER CONTEXT")
+			m.logger.Debug("LHFLOW ELECTION - CANCELED WORKER CONTEXT")
 			m.worker.electionChannel <- trigger
 
 		case receivedBlockWithProof := <-m.mainUpdateStateChannel: // NodeSync
 
 			// TODO Get current height from STATE with RLock and check if block has higher height
 			if err := checkReceivedBlockIsValid(m.state.Height(), receivedBlockWithProof); err != nil {
-				m.logger.Debug(L.LC(m.state.Height(), m.state.View(), m.config.Membership.MyMemberId()), "LHFLOW UPDATESTATE - BLOCK IGNORED - %s", err)
+				m.logger.Debug("LHFLOW UPDATESTATE - BLOCK IGNORED - %s", err)
 				return
 			}
 
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
-			m.logger.Debug(L.LC(m.state.Height(), m.state.View(), m.config.Membership.MyMemberId()), "LHFLOW UPDATESTATE - CANCELED WORKER CONTEXT")
+			m.logger.Debug("LHFLOW UPDATESTATE - CANCELED WORKER CONTEXT")
 			m.worker.workerUpdateStateChannel <- receivedBlockWithProof
-			m.logger.Debug(L.LC(m.state.Height(), m.state.View(), m.config.Membership.MyMemberId()), "LHFLOW UPDATESTATE - Wrote to worker UpdateState channel")
+			m.logger.Debug("LHFLOW UPDATESTATE - Wrote to worker UpdateState channel")
 
 		}
 	}
@@ -149,7 +148,7 @@ func (m *MainLoop) UpdateState(ctx context.Context, prevBlock interfaces.Block, 
 
 	select {
 	case <-ctx.Done():
-		m.logger.Debug(L.LC(m.state.Height(), m.state.View(), m.config.Membership.MyMemberId()), "UpdateState() ID=%s CONTEXT TERMINATED", termincommittee.Str(m.config.Membership.MyMemberId()))
+		m.logger.Debug("UpdateState() ID=%s CONTEXT TERMINATED", termincommittee.Str(m.config.Membership.MyMemberId()))
 		return
 	case m.mainUpdateStateChannel <- &blockWithProof{
 		block:               prevBlock,
@@ -165,7 +164,7 @@ func (m *MainLoop) TriggerElection(ctx context.Context, f func(ctx context.Conte
 	}
 	select {
 	case <-ctx.Done():
-		m.logger.Debug(L.LC(m.state.Height(), m.state.View(), m.config.Membership.MyMemberId()), "TriggerElection() ID=%s CONTEXT TERMINATED", termincommittee.Str(m.config.Membership.MyMemberId()))
+		m.logger.Debug("TriggerElection() ID=%s CONTEXT TERMINATED", termincommittee.Str(m.config.Membership.MyMemberId()))
 		return
 	case m.electionTrigger.ElectionChannel() <- f:
 	}
@@ -175,7 +174,7 @@ func (m *MainLoop) HandleConsensusMessage(ctx context.Context, message *interfac
 
 	select {
 	case <-ctx.Done():
-		m.logger.Debug(L.LC(m.state.Height(), m.state.View(), m.config.Membership.MyMemberId()), "HandleConsensusRawMessage() ID=%s CONTEXT TERMINATED", termincommittee.Str(m.config.Membership.MyMemberId()))
+		m.logger.Debug("HandleConsensusRawMessage() ID=%s CONTEXT TERMINATED", termincommittee.Str(m.config.Membership.MyMemberId()))
 		return
 
 	case m.messagesChannel <- message:

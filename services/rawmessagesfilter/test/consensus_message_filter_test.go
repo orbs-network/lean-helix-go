@@ -63,7 +63,7 @@ func GenerateNewViewMessage(instanceId primitives.InstanceId, blockHeight primit
 func TestGettingAMessage(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		instanceId := primitives.InstanceId(rand.Uint64())
-		state := mocks.NewMockState(10, 20)
+		state := mocks.NewMockState().WithHeightView(10, 20)
 		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state), state)
 		messagesHandler := NewTermMessagesHandlerMock()
 		filter.ConsumeCacheMessages(ctx, messagesHandler)
@@ -89,7 +89,7 @@ func TestGettingAMessage(t *testing.T) {
 func TestFilterMessagesFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		instanceId := primitives.InstanceId(rand.Uint64())
-		state := mocks.NewMockState()
+		state := mocks.NewMockState().WithHeightView(10, 0)
 		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state), state)
 		messagesHandler := NewTermMessagesHandlerMock()
 		filter.ConsumeCacheMessages(ctx, messagesHandler)
@@ -108,7 +108,7 @@ func TestFilterMessagesFromThePast(t *testing.T) {
 
 func TestFilterMessagesWithBadInstanceId(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		state := mocks.NewMockState()
+		state := mocks.NewMockState().WithHeightView(10, 0)
 		filter := rawmessagesfilter.NewConsensusMessageFilter(777, primitives.MemberId("My MemberId"), testLogger(state), state)
 		messagesHandler := NewTermMessagesHandlerMock()
 		filter.ConsumeCacheMessages(ctx, messagesHandler)
@@ -128,7 +128,7 @@ func TestFilterMessagesWithBadInstanceId(t *testing.T) {
 func TestCacheMessagesFromTheFuture(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		instanceId := primitives.InstanceId(rand.Uint64())
-		state := mocks.NewMockState()
+		state := mocks.NewMockState().WithHeightView(10, 0)
 		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state), state)
 		messagesHandler := NewTermMessagesHandlerMock()
 		filter.ConsumeCacheMessages(ctx, messagesHandler)
@@ -148,7 +148,7 @@ func TestCacheMessagesFromTheFuture(t *testing.T) {
 func TestFilterMessagesWithMyMemberId(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		instanceId := primitives.InstanceId(rand.Uint64())
-		state := mocks.NewMockState()
+		state := mocks.NewMockState().WithHeightView(10, 0)
 		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state), state)
 		messagesHandler := NewTermMessagesHandlerMock()
 		filter.ConsumeCacheMessages(ctx, messagesHandler)

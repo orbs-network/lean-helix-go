@@ -13,7 +13,6 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/state"
-	"math"
 )
 
 type RawMessageFilter struct {
@@ -41,26 +40,26 @@ func NewConsensusMessageFilter(instanceId primitives.InstanceId, myMemberId prim
 func (f *RawMessageFilter) HandleConsensusRawMessage(ctx context.Context, rawMessage *interfaces.ConsensusRawMessage) {
 	message := interfaces.ToConsensusMessage(rawMessage)
 	if f.isMyMessage(message) {
-		f.logger.Debug(L.LC(f.state.Height(), math.MaxUint64, f.myMemberId), "LHFILTER IGNORING RECEIVED %s with H=%d V=%d sender=%s IGNORING message I sent", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
+		f.logger.Debug("LHFILTER IGNORING RECEIVED %s with H=%d V=%d sender=%s IGNORING message I sent", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
 		return
 	}
 
 	if message.BlockHeight() < f.state.Height() {
-		f.logger.Debug(L.LC(f.state.Height(), math.MaxUint64, f.myMemberId), "LHFILTER IGNORING RECEIVED %s with H=%d V=%d sender=%s IGNORING message from the past", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
+		f.logger.Debug("LHFILTER IGNORING RECEIVED %s with H=%d V=%d sender=%s IGNORING message from the past", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
 		return
 	}
 
 	if message.InstanceId() != f.instanceId {
-		f.logger.Debug(L.LC(f.state.Height(), math.MaxUint64, f.myMemberId), "LHFILTER IGNORING RECEIVED %s with H=%d V=%d sender=%s IGNORING message from different instanceID=%s because my instanceID==%s", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()), message.InstanceId(), f.instanceId)
+		f.logger.Debug("LHFILTER IGNORING RECEIVED %s with H=%d V=%d sender=%s IGNORING message from different instanceID=%s because my instanceID==%s", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()), message.InstanceId(), f.instanceId)
 		return
 	}
 
 	if message.BlockHeight() > f.state.Height() {
 		f.pushToCache(message.BlockHeight(), message)
-		f.logger.Debug(L.LC(f.state.Height(), math.MaxUint64, f.myMemberId), "LHFILTER STORING RECEIVED %s with H=%d V=%d sender=%s STORING message from future height", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
+		f.logger.Debug("LHFILTER STORING RECEIVED %s with H=%d V=%d sender=%s STORING message from future height", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
 		return
 	}
-	f.logger.Debug(L.LC(f.state.Height(), math.MaxUint64, f.myMemberId), "LHFILTER RECEIVED %s with H=%d V=%d sender=%s OK PROCESSING", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
+	f.logger.Debug("LHFILTER RECEIVED %s with H=%d V=%d sender=%s OK PROCESSING", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
 	f.processConsensusMessage(ctx, message)
 }
 
@@ -110,7 +109,7 @@ func (f *RawMessageFilter) ConsumeCacheMessages(ctx context.Context, consensusMe
 
 	messages := f.futureCache[height]
 	if len(messages) > 0 {
-		f.logger.Debug(L.LC(f.state.Height(), math.MaxUint64, f.myMemberId), "LHFILTER consuming %d messages from height=%d", len(messages), height)
+		f.logger.Debug("LHFILTER consuming %d messages from height=%d", len(messages), height)
 	}
 	for _, message := range messages {
 		f.processConsensusMessage(ctx, message)

@@ -9,6 +9,30 @@ type MockState struct {
 	st state.State
 }
 
+func (s *MockState) SetHeight(newHeight primitives.BlockHeight) *state.HeightView {
+	return s.st.SetHeight(newHeight)
+}
+
+func (s *MockState) SetView(newView primitives.View) *state.HeightView {
+	return s.st.SetView(newView)
+}
+
+func (s *MockState) SetHeightView(newHeight primitives.BlockHeight, newView primitives.View) *state.HeightView {
+	return s.st.SetHeightView(newHeight, newView)
+}
+
+func (s *MockState) Height() primitives.BlockHeight {
+	return s.st.Height()
+}
+
+func (s *MockState) View() primitives.View {
+	return s.st.View()
+}
+
+func (s *MockState) HeightView() *state.HeightView {
+	return s.st.HeightView()
+}
+
 func NewMockState() *MockState {
 	return &MockState{st: state.NewState()}
 }
