@@ -96,7 +96,7 @@ func (m *MainLoop) run(ctx context.Context) {
 		case trigger := <-m.electionTrigger.ElectionChannel():
 			//case trigger, height, view := <-m.electionTrigger.ElectionChannel():
 
-			// TODO: RLock State.GetView()==view && GetHeight()==height
+			// TODO: RLock State.View()==view && Height()==height
 
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
