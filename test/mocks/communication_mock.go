@@ -54,6 +54,7 @@ type CommunicationMock struct {
 	incomingWhiteListMemberIds []primitives.MemberId
 	statsSentMessages          []*interfaces.ConsensusRawMessage
 	maxDelayDuration           time.Duration
+	messagesHistoryLock        sync.Mutex
 	messagesHistory            []*messageProps
 }
 
@@ -135,6 +136,9 @@ func (g *CommunicationMock) addToHistory(rawMessage *interfaces.ConsensusRawMess
 	}
 	fmt.Printf("ID=%s addToHistory(): H=%d V=%d TYPE=%s sender=%s receiver=%s\n",
 		g.memberId, msgProps.height, msgProps.view, msgProps.messageType, msgProps.sender, msgProps.receiver)
+
+	g.messagesHistoryLock.Lock()
+	defer g.messagesHistoryLock.Unlock()
 	g.messagesHistory = append(g.messagesHistory, msgProps)
 }
 
@@ -250,6 +254,9 @@ func (g *CommunicationMock) GetSentMessages(messageType protocol.MessageType) []
 }
 
 func (g *CommunicationMock) CountMessagesSent(messageType protocol.MessageType, height primitives.BlockHeight, view primitives.View, target primitives.MemberId) int {
+
+	g.messagesHistoryLock.Lock()
+	defer g.messagesHistoryLock.Unlock()
 
 	var counter int
 	for _, msg := range g.messagesHistory {
