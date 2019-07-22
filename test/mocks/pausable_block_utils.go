@@ -14,6 +14,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
+	"math"
 )
 
 func CalculateBlockHash(block interfaces.Block) primitives.BlockHash {
@@ -39,7 +40,7 @@ func NewMockBlockUtils(memberId primitives.MemberId, blocksPool *BlocksPool) *Pa
 	return &PausableBlockUtils{
 		memberId:                            memberId,
 		blocksPool:                          blocksPool,
-		PauseOnRequestNewBlockOnZeroCounter: 0,
+		PauseOnRequestNewBlockOnZeroCounter: math.MaxInt64,
 		RequestNewBlockLatch:                test.NewLatch(),
 
 		ValidationLatch:      test.NewLatch(),
