@@ -151,7 +151,11 @@ func panicOnLessThanMinimumCommitteeMembers(committeeMembers []primitives.Member
 
 func (tic *TermInCommittee) startTerm(ctx context.Context, canBeFirstLeader bool) {
 	tic.setNotPreparedLocally()
+
+	// TODO Think if need to call SetView() (see what it does)
 	tic.initView(ctx, 0)
+
+	// TODO Consider removing canBeFirstLeader
 	if tic.height > 1 && !canBeFirstLeader {
 		tic.logger.Info(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW startTerm() I CANNOT BE LEADER OF FIRST VIEW, skipping view")
 		return
@@ -194,6 +198,9 @@ func (tic *TermInCommittee) SetView(ctx context.Context, view primitives.View) {
 
 func (tic *TermInCommittee) initView(ctx context.Context, view primitives.View) {
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId), "LHFLOW PreparedLocally set to false")
+
+	// TODO WLock on State.SetView()
+
 	tic.view = view
 	tic.electionTrigger.RegisterOnElection(ctx, tic.height, tic.view, tic.moveToNextLeader)
 	tic.logger.Debug(L.LC(tic.height, tic.view, tic.myMemberId),
@@ -217,6 +224,9 @@ func calcLeaderOfViewAndCommittee(view primitives.View, committeeMembersMemberId
 }
 
 func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics)) {
+
+	// TODO Under RLock
+
 	if view != tic.view || height != tic.height {
 		return
 	}
