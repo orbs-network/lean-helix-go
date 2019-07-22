@@ -94,12 +94,18 @@ func (m *MainLoop) run(ctx context.Context) {
 			m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}
 
 		case trigger := <-m.electionTrigger.ElectionChannel():
+			//case trigger, height, view := <-m.electionTrigger.ElectionChannel():
+
+			// TODO: RLock State.GetView()==view && GetHeight()==height
+
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
 			m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW ELECTION - CANCELED WORKER CONTEXT")
 			m.worker.electionChannel <- trigger
 
 		case receivedBlockWithProof := <-m.mainUpdateStateChannel: // NodeSync
+
+			// TODO Get current height from STATE with RLock and check if block has higher height
 			if err := checkReceivedBlockIsValid(m.currentHeight, receivedBlockWithProof); err != nil {
 				m.logger.Debug(L.LC(m.currentHeight, math.MaxUint64, m.config.Membership.MyMemberId()), "LHFLOW UPDATESTATE - BLOCK IGNORED - %s", err)
 				return

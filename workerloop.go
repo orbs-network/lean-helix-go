@@ -105,6 +105,9 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 
 func (lh *WorkerLoop) HandleUpdateState(ctx context.Context, receivedBlockWithProof *blockWithProof) {
 	receivedBlockHeight := blockheight.GetBlockHeight(receivedBlockWithProof.block)
+
+	// TODO Get current height from STATE with RLock and check if block has higher height
+
 	if receivedBlockHeight >= lh.currentHeight {
 		lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "LHFLOW WORKERLOOP UPDATESTATE ACCEPTED block with height=%d, calling onNewConsensusRound()", receivedBlockHeight)
 		// This block is received from external source
@@ -150,7 +153,7 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 
 	blockHeight := block.Height()
 	if blockHeight != blockRefFromProof.BlockHeight() {
-		return errors.Errorf("ValidateBlockConsensus: Mismatched block height: block=%v blockProof=%v", blockHeight, block.Height())
+		return errors.Errorf("ValidateBlockConsensus: Mismatched height: blockHeight=%v but blockProof.height=%v", blockHeight, blockRefFromProof.BlockHeight())
 	}
 
 	if !lh.config.BlockUtils.ValidateBlockCommitment(blockHeight, block, blockRefFromProof.BlockHash()) {
@@ -228,6 +231,9 @@ func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, bloc
 }
 
 func (lh *WorkerLoop) onNewConsensusRound(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) {
+
+	// TODO RWLock
+
 	lh.currentHeight = blockheight.GetBlockHeight(prevBlock) + 1
 	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "onNewConsensusRound() INCREMENTED HEIGHT TO %d", lh.currentHeight)
 	if lh.leanHelixTerm != nil {
