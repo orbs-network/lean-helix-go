@@ -12,6 +12,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/matchers"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
+	"math"
 )
 
 type TestNetwork struct {
@@ -33,14 +34,6 @@ func (net *TestNetwork) TriggerElectionOnAllNodes(ctx context.Context) {
 func (net *TestNetwork) StartConsensus(ctx context.Context) *TestNetwork {
 	for _, node := range net.Nodes {
 		node.StartConsensus(ctx)
-	}
-
-	return net
-}
-
-func (net *TestNetwork) StartConsensusSync(ctx context.Context) *TestNetwork {
-	for _, node := range net.Nodes {
-		node.StartConsensusSync(ctx)
 	}
 
 	return net
@@ -148,20 +141,20 @@ func (net *TestNetwork) ResumeValidateBlockOnNodes(ctx context.Context, nodes ..
 }
 
 func (net *TestNetwork) SetNodesToPauseOnRequestNewBlock(nodes ...*Node) {
-	net.setNodesToPauseOnRequestNewBlock(true, nodes)
+	net.SetNodesPauseCounterOnRequestNewBlock(0, nodes...)
 }
 
 func (net *TestNetwork) SetNodesToNotPauseOnRequestNewBlock(nodes ...*Node) {
-	net.setNodesToPauseOnRequestNewBlock(false, nodes)
+	net.SetNodesPauseCounterOnRequestNewBlock(math.MaxInt64, nodes...)
 }
 
-func (net *TestNetwork) setNodesToPauseOnRequestNewBlock(pause bool, nodes []*Node) {
+func (net *TestNetwork) SetNodesPauseCounterOnRequestNewBlock(counter int64, nodes ...*Node) {
 	if nodes == nil {
 		nodes = net.Nodes
 	}
 	for _, node := range nodes {
 		if pausableBlockUtils, ok := node.BlockUtils.(*mocks.PausableBlockUtils); ok {
-			pausableBlockUtils.PauseOnRequestNewBlock = pause
+			pausableBlockUtils.PauseOnRequestNewBlockOnZeroCounter = counter
 		} else {
 			panic("Node.BlockUtils is not PausableBlockUtils")
 		}
@@ -258,6 +251,10 @@ func (net *TestNetwork) AllNodesValidatedNoMoreThanOnceBeforeCommit(ctx context.
 		}
 	}
 	return true
+}
+
+func (net *TestNetwork) SetNodesToNotPauseOnTheFirstXTimesOfOnRequestNewBlock(timesNotToPause int) {
+
 }
 
 func NewTestNetwork(instanceId primitives.InstanceId, discovery *mocks.Discovery) *TestNetwork {

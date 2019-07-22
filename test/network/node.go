@@ -8,6 +8,7 @@ package network
 
 import (
 	"context"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/storage"
@@ -105,19 +106,16 @@ func (node *Node) ValidateBlockConsensus(ctx context.Context, block interfaces.B
 func (node *Node) Sync(ctx context.Context, prevBlock interfaces.Block, blockProofBytes []byte, prevBlockProofBytes []byte) {
 	if node.leanHelix != nil {
 		if err := node.ValidateBlockConsensus(ctx, prevBlock, blockProofBytes, prevBlockProofBytes); err == nil {
-			go node.leanHelix.UpdateState(ctx, prevBlock, prevBlockProofBytes)
+			fmt.Printf("ID=%s H=%d NodeSync(): Passed validation, calling UpdateState\n", node.MemberId, node.GetCurrentHeight())
+			node.leanHelix.UpdateState(ctx, prevBlock, prevBlockProofBytes)
+		} else {
+			fmt.Printf("ID=%s H=%d NodeSync(): Failed validation: %s\n", node.MemberId, node.GetCurrentHeight(), err)
 		}
 	}
 }
 
-func (node *Node) SyncWithoutProof(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte) {
+func (node *Node) SyncWithoutValidation(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte) {
 	node.leanHelix.UpdateState(ctx, prevBlock, prevBlockProofBytes)
-}
-
-func (node *Node) StartConsensusSync(ctx context.Context) {
-	if node.leanHelix != nil {
-		go node.leanHelix.UpdateState(ctx, node.GetLatestBlock(), nil)
-	}
 }
 
 func (node *Node) BuildConfig(logger interfaces.Logger) *interfaces.Config {
@@ -169,7 +167,7 @@ func NewNode(
 	config.OverrideElectionTrigger = node.ElectionTrigger
 
 	leanHelix := leanhelix.NewLeanHelix(config, node.onCommittedBlock)
-	communication.RegisterOnMessage(leanHelix.HandleConsensusMessage)
+	communication.RegisterIncomingMessageHandler(leanHelix.HandleConsensusMessage)
 
 	node.leanHelix = leanHelix
 	return node

@@ -91,7 +91,8 @@ func (tb *TestNetworkBuilder) Build(ctx context.Context) *TestNetwork {
 func (tb *TestNetworkBuilder) setupCommChannels(ctx context.Context, network *TestNetwork) {
 	for _, node := range network.Nodes {
 		for _, peerNode := range network.Nodes {
-			network.GetNodeCommunication(node.MemberId).ReturnAndMaybeCreateOutgoingChannelByTarget(ctx, peerNode.MemberId)
+			comm := network.GetNodeCommunication(node.MemberId)
+			comm.ReturnAndMaybeCreateOutgoingChannelByTarget(ctx, peerNode.MemberId)
 		}
 	}
 }
