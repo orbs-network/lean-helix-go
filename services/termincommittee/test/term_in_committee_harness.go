@@ -53,7 +53,7 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 		logOutput = logger.NewSilentLogger()
 	}
 	termConfig := myNode.BuildConfig(logOutput)
-	log := logger.NewLhLogger(termConfig.Logger)
+	log := logger.NewLhLogger(termConfig, mocks.NewMockState())
 
 	prevBlock := myNode.GetLatestBlock()
 	blockHeight := blockheight.GetBlockHeight(prevBlock) + 1

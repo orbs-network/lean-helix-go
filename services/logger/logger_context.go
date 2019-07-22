@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/state"
 	"math"
 )
 
@@ -43,6 +44,8 @@ func (lc *_LC) String() string {
 }
 
 type lhLogger struct {
+	config         interfaces.Config
+	state          state.State
 	externalLogger interfaces.Logger
 }
 
@@ -62,9 +65,17 @@ func (l *lhLogger) Error(lc *_LC, format string, args ...interface{}) {
 	l.externalLogger.Error(fmt.Sprintf("%s %s", lc, format), args...)
 }
 
-func NewLhLogger(externalLogger interfaces.Logger) LHLogger {
+func NewLhLogger(config *interfaces.Config, state state.State) LHLogger {
+	var logger interfaces.Logger
+	if config.Logger == nil {
+		logger = NewSilentLogger()
+	} else {
+		logger = config.Logger
+	}
 	return &lhLogger{
-		externalLogger: externalLogger,
+		config:         interfaces.Config{},
+		state:          nil,
+		externalLogger: logger,
 	}
 }
 

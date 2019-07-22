@@ -49,7 +49,7 @@ func (node *Node) GetMemberId() primitives.MemberId {
 }
 
 func (node *Node) GetCurrentHeight() primitives.BlockHeight {
-	return node.leanHelix.GetCurrentHeight()
+	return node.leanHelix.State().Height()
 }
 
 func (node *Node) GetLatestBlock() interfaces.Block {

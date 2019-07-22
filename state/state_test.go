@@ -1,4 +1,4 @@
-package leanhelix
+package state
 
 import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"

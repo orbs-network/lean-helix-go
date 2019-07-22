@@ -6,6 +6,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/state"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"sync"
@@ -40,8 +41,9 @@ func TestWorkerLoopReturnsOnMainContextCancellation(t *testing.T) {
 		wg.Add(1)
 
 		cfg := DummyWorkerConfig()
+		s := state.NewState()
 		electionTrigger := electiontrigger.NewTimerBasedElectionTrigger(cfg.ElectionTimeoutOnV0, nil)
-		workerLoop := NewWorkerLoop(cfg, LoggerToLHLogger(cfg.Logger), electionTrigger, nil)
+		workerLoop := NewWorkerLoop(s, cfg, logger.NewLhLogger(cfg, s), electionTrigger, nil)
 		go func() {
 			workerLoop.Run(mainCtx)
 			wg.Done()

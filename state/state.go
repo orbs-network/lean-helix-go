@@ -1,4 +1,4 @@
-package leanhelix
+package state
 
 import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
@@ -16,14 +16,14 @@ type State interface {
 }
 
 type state struct {
-	lock   sync.RWMutex
+	sync.RWMutex
 	height primitives.BlockHeight
 	view   primitives.View
 }
 
 func (s *state) SetHeight(newHeight primitives.BlockHeight) *HeightView {
-	s.lock.Lock()
-	defer s.lock.Unlock()
+	s.Lock()
+	defer s.Unlock()
 
 	s.height = newHeight
 	s.view = 0
@@ -34,8 +34,8 @@ func (s *state) SetHeight(newHeight primitives.BlockHeight) *HeightView {
 }
 
 func (s *state) SetView(newView primitives.View) *HeightView {
-	s.lock.Lock()
-	defer s.lock.Unlock()
+	s.Lock()
+	defer s.Unlock()
 
 	s.view = newView
 	return &HeightView{
@@ -45,8 +45,8 @@ func (s *state) SetView(newView primitives.View) *HeightView {
 }
 
 func (s *state) SetHeightView(newHeight primitives.BlockHeight, newView primitives.View) *HeightView {
-	s.lock.Lock()
-	defer s.lock.Unlock()
+	s.Lock()
+	defer s.Unlock()
 
 	s.height = newHeight
 	s.view = newView
@@ -57,22 +57,22 @@ func (s *state) SetHeightView(newHeight primitives.BlockHeight, newView primitiv
 }
 
 func (s *state) Height() primitives.BlockHeight {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+	s.RLock()
+	defer s.RUnlock()
 
 	return s.height
 }
 
 func (s *state) View() primitives.View {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+	s.RLock()
+	defer s.RUnlock()
 
 	return s.view
 }
 
 func (s *state) HeightView() *HeightView {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+	s.RLock()
+	defer s.RUnlock()
 
 	return &HeightView{
 		height: s.height,
@@ -80,7 +80,7 @@ func (s *state) HeightView() *HeightView {
 	}
 }
 
-func NewState() *state {
+func NewState() State {
 	return &state{
 		height: 0,
 		view:   0,
