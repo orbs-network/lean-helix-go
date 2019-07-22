@@ -67,7 +67,7 @@ func TestRequestNewBlockDoesNotHangNodeSync(t *testing.T) {
 
 			updateStateCompleted := newWaitingGroupWithDelta(1)
 			go func() {
-				node0.SyncWithoutProof(ctx, nil, nil)
+				node0.SyncWithoutValidation(ctx, nil, nil)
 				updateStateCompleted.Done()
 			}()
 

@@ -50,9 +50,9 @@ func manuallyElectNode1AsNewLeader(ctx context.Context, h *harness) {
 	node0VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node0.KeyManager, node0.MemberId, 1, 1, nil)
 	node2VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil)
 	node3VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node3.KeyManager, node3.MemberId, 1, 1, nil)
-	node1.Communication.OnRemoteMessage(ctx, node0VCMessage.ToConsensusRawMessage())
-	node1.Communication.OnRemoteMessage(ctx, node2VCMessage.ToConsensusRawMessage())
-	node1.Communication.OnRemoteMessage(ctx, node3VCMessage.ToConsensusRawMessage())
+	node1.Communication.OnIncomingMessage(ctx, node0VCMessage.ToConsensusRawMessage())
+	node1.Communication.OnIncomingMessage(ctx, node2VCMessage.ToConsensusRawMessage())
+	node1.Communication.OnIncomingMessage(ctx, node3VCMessage.ToConsensusRawMessage())
 }
 
 func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
@@ -150,10 +150,10 @@ func TestNotCountingViewChangeFromTheSameNode(t *testing.T) {
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 
 		// sending only 4 view-change from the same node
-		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
+		node1.Communication.OnIncomingMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
+		node1.Communication.OnIncomingMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
+		node1.Communication.OnIncomingMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
+		node1.Communication.OnIncomingMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
 
 		node1.Communication.CountSentMessages(protocol.LEAN_HELIX_NEW_VIEW)
 	})
@@ -176,8 +176,8 @@ func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 		// sending only 2 view-change (not enough to be elected)
 		node0VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node0.KeyManager, node0.MemberId, 1, 1, nil)
 		node2VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil)
-		node1.Communication.OnRemoteMessage(ctx, node0VCMessage.ToConsensusRawMessage())
-		node1.Communication.OnRemoteMessage(ctx, node2VCMessage.ToConsensusRawMessage())
+		node1.Communication.OnIncomingMessage(ctx, node0VCMessage.ToConsensusRawMessage())
+		node1.Communication.OnIncomingMessage(ctx, node2VCMessage.ToConsensusRawMessage())
 
 		// Resume the paused leader (node0)
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
