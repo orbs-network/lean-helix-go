@@ -19,7 +19,6 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/rawmessagesfilter"
 	"github.com/orbs-network/lean-helix-go/services/storage"
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
-	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/state"
 	"github.com/pkg/errors"
@@ -38,8 +37,8 @@ type MessageWithContext struct {
 type WorkerLoop struct {
 	MessagesChannel             chan *MessageWithContext
 	workerUpdateStateChannel    chan *blockWithProof
-	electionChannel             chan func(ctx context.Context)
-	electionTrigger             interfaces.ElectionTrigger
+	electionChannel             chan *interfaces.ElectionTrigger
+	electionTrigger             interfaces.ElectionScheduler
 	state                       state.State
 	config                      *interfaces.Config
 	logger                      L.LHLogger
@@ -50,14 +49,14 @@ type WorkerLoop struct {
 	onUpdateStateCallback       interfaces.OnUpdateStateCallback
 }
 
-func NewWorkerLoop(state state.State, config *interfaces.Config, logger L.LHLogger, electionTrigger interfaces.ElectionTrigger, onCommitCallback interfaces.OnCommitCallback) *WorkerLoop {
+func NewWorkerLoop(state state.State, config *interfaces.Config, logger L.LHLogger, electionTrigger interfaces.ElectionScheduler, onCommitCallback interfaces.OnCommitCallback) *WorkerLoop {
 
 	logger.Debug("LHFLOW NewWorkerLoop()")
 	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), logger, state)
 	return &WorkerLoop{
 		MessagesChannel:          make(chan *MessageWithContext, 10),
 		workerUpdateStateChannel: make(chan *blockWithProof),
-		electionChannel:          make(chan func(ctx context.Context)),
+		electionChannel:          make(chan *interfaces.ElectionTrigger),
 		electionTrigger:          electionTrigger,
 		state:                    state,
 		config:                   config,
@@ -74,30 +73,39 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 			lh.logger.Info("WORKERLOOP PANIC: %v", e)
 		}
 	}()
-	lh.logger.Debug("LHFLOW WORKERLOOP START")
-	lh.logger.Debug("LHMSG WORKERLOOP START LISTENING NOW")
+	lh.logger.Debug("LHFLOW LHMSG WORKERLOOP START LISTENING NOW")
 	for {
 		lh.logger.Debug("LHFLOW WORKERLOOP LISTENING")
 
 		select {
 		case <-ctx.Done(): // system shutdown
-			lh.logger.Debug("LHFLOW WORKERLOOP DONE, Terminating Run().")
-			lh.logger.Debug("LHMSG WORKERLOOP STOPPED LISTENING")
+			lh.logger.Info("LHFLOW WORKERLOOP DONE STOPPED LISTENING, Terminating Run()")
 			return
 
 		case res := <-lh.MessagesChannel:
+			parsedMessage := interfaces.ToConsensusMessage(res.msg)
+			lh.logger.Debug("LHFLOW LHMSG MAINLOOP RECEIVED %v from %v for H=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight())
 			lh.filter.HandleConsensusRawMessage(res.ctx, res.msg)
 
 		case trigger := <-lh.electionChannel:
 			if trigger == nil {
 				// this cannot happen, ignore
 				lh.logger.Info("XXXXXX LHFLOW WORKERLOOP ELECTION, OMG trigger is nil, not triggering election!")
+				continue
 			}
+			current := lh.state.HeightView()
+			if current.Height() != trigger.Hv.Height() || current.View() != trigger.Hv.View() { // stale election message
+				lh.logger.Debug("LHFLOW WORKERLOOP ELECTION - INVALID HEIGHT/VIEW IGNORED - Current: %s, ElectionTrigger: %s", current, trigger.Hv)
+				continue
+			}
+
 			lh.logger.Debug("LHFLOW WORKERLOOP ELECTION")
-			trigger(ctx)
+			trigger.MoveToNextLeader(ctx)
 
 		case receivedBlockWithProof := <-lh.workerUpdateStateChannel: // NodeSync
+			lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP - Received block")
 			lh.HandleUpdateState(ctx, receivedBlockWithProof)
+			lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP - Handled block")
 		}
 	}
 }
@@ -105,7 +113,6 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 func (lh *WorkerLoop) HandleUpdateState(ctx context.Context, receivedBlockWithProof *blockWithProof) {
 	receivedBlockHeight := blockheight.GetBlockHeight(receivedBlockWithProof.block)
 
-	// TODO Get current height from STATE with RLock and check if block has higher height
 	if receivedBlockHeight >= lh.state.Height() {
 		lh.logger.Debug("LHFLOW WORKERLOOP UPDATESTATE ACCEPTED block with height=%d, calling onNewConsensusRound()", receivedBlockHeight)
 		// This block is received from external source
@@ -114,19 +121,6 @@ func (lh *WorkerLoop) HandleUpdateState(ctx context.Context, receivedBlockWithPr
 	} else {
 		lh.logger.Debug("LHFLOW WORKERLOOP UPDATESTATE IGNORE - Received block ignored because its height=%d is less than current height=%d", receivedBlockHeight, lh.state.Height())
 	}
-}
-
-func GetMemberIdsFromBlockProof(blockProofBytes []byte) ([]primitives.MemberId, error) {
-	if blockProofBytes == nil || len(blockProofBytes) == 0 {
-		return nil, errors.Errorf("GetMemberIdsFromBlockProof: nil blockProof - cannot deduce members locally")
-	}
-	blockProof := protocol.BlockProofReader(blockProofBytes)
-	sendersIterator := blockProof.NodesIterator()
-	committeeMembers := make([]primitives.MemberId, 0)
-	for sendersIterator.HasNext() {
-		committeeMembers = append(committeeMembers, sendersIterator.NextNodes().MemberId())
-	}
-	return committeeMembers, nil
 }
 
 func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProofBytes []byte, maybePrevBlockProofBytes []byte) error {
@@ -230,15 +224,13 @@ func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, bloc
 
 func (lh *WorkerLoop) onNewConsensusRound(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) {
 
-	// TODO RWLock
-
 	lh.state.SetHeight(blockheight.GetBlockHeight(prevBlock) + 1)
 	lh.logger.Debug("onNewConsensusRound() INCREMENTED HEIGHT TO %d", lh.state.Height())
 	if lh.leanHelixTerm != nil {
 		lh.leanHelixTerm.Dispose()
 		lh.leanHelixTerm = nil
 	}
-	lh.leanHelixTerm = leanhelixterm.NewLeanHelixTerm(ctx, lh.logger, lh.config, lh.electionTrigger, lh.onCommit, prevBlock, prevBlockProofBytes, canBeFirstLeader)
+	lh.leanHelixTerm = leanhelixterm.NewLeanHelixTerm(ctx, lh.logger, lh.config, lh.state, lh.electionTrigger, lh.onCommit, prevBlock, prevBlockProofBytes, canBeFirstLeader)
 	lh.filter.ConsumeCacheMessages(ctx, lh.leanHelixTerm)
 	if lh.onNewConsensusRoundCallback != nil {
 		lh.onNewConsensusRoundCallback(ctx, prevBlock, canBeFirstLeader)
