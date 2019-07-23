@@ -36,7 +36,7 @@ func TestCallingCallback(t *testing.T) {
 
 		go et.ManualTrigger(ctx)
 		trigger := <-et.ElectionChannel()
-		trigger(ctx)
+		trigger.MoveToNextLeader(ctx)
 
 		require.Equal(t, expectedView, actualView)
 		require.Equal(t, expectedHeight, actualHeight)
@@ -49,6 +49,6 @@ func TestIgnoreEmptyCallback(t *testing.T) {
 
 		go et.ManualTrigger(ctx)
 		trigger := <-et.ElectionChannel()
-		trigger(ctx)
+		trigger.MoveToNextLeader(ctx)
 	})
 }
