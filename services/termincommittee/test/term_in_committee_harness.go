@@ -35,7 +35,7 @@ type harness struct {
 	net             *network.TestNetwork
 	termInCommittee *termincommittee.TermInCommittee
 	storage         interfaces.Storage
-	electionTrigger interfaces.ElectionTrigger
+	electionTrigger interfaces.ElectionScheduler
 }
 
 func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Block) *harness {
@@ -56,11 +56,11 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 	log := logger.NewLhLogger(termConfig, mocks.NewMockState())
 
 	prevBlock := myNode.GetLatestBlock()
-	blockHeight := blockheight.GetBlockHeight(prevBlock) + 1
-	committeeMembers, _ := termConfig.Membership.RequestOrderedCommittee(ctx, blockHeight, uint64(12345))
+	state := mocks.NewMockState().WithHeightView(blockheight.GetBlockHeight(prevBlock)+1, 0)
+	committeeMembers, _ := termConfig.Membership.RequestOrderedCommittee(ctx, state.Height(), uint64(12345))
 	messageFactory := messagesfactory.NewMessageFactory(termConfig.InstanceId, termConfig.KeyManager, termConfig.Membership.MyMemberId(), 0)
-	log.Info("NewHarness calling NewTermInCommittee with H=%d", blockHeight)
-	termInCommittee := termincommittee.NewTermInCommittee(ctx, log, termConfig, messageFactory, myNode.ElectionTrigger, committeeMembers, blockHeight, prevBlock, true, nil)
+	log.Info("NewHarness calling NewTermInCommittee with H=%d", state.Height())
+	termInCommittee := termincommittee.NewTermInCommittee(ctx, log, termConfig, state, messageFactory, myNode.ElectionTrigger, committeeMembers, prevBlock, true, nil)
 
 	return &harness{
 		t:               t,
@@ -80,7 +80,7 @@ func (h *harness) failMyNodeBlockProposalValidations() {
 }
 
 func (h *harness) assertView(expectedView primitives.View) {
-	view := h.termInCommittee.GetView()
+	view := h.termInCommittee.State.View()
 	require.Equal(h.t, expectedView, view, fmt.Sprintf("TermInCommittee should have view=%d, but got %d", uint64(expectedView), uint64(view)))
 }
 
@@ -126,7 +126,7 @@ func (h *harness) builderMessageSenders(nodesIds ...int) []*builders.MessageSign
 
 func (h *harness) electionTillView(ctx context.Context, view primitives.View) {
 	for {
-		if h.termInCommittee.GetView() == view {
+		if h.termInCommittee.State.View() == view {
 			break
 		}
 		h.triggerElection(ctx)
