@@ -1,6 +1,7 @@
 package state
 
 import (
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"sync"
 )
@@ -27,10 +28,7 @@ func (s *state) SetHeight(newHeight primitives.BlockHeight) *HeightView {
 
 	s.height = newHeight
 	s.view = 0
-	return &HeightView{
-		height: s.height,
-		view:   s.view,
-	}
+	return NewHeightView(s.height, s.view)
 }
 
 func (s *state) SetView(newView primitives.View) *HeightView {
@@ -38,10 +36,7 @@ func (s *state) SetView(newView primitives.View) *HeightView {
 	defer s.Unlock()
 
 	s.view = newView
-	return &HeightView{
-		height: s.height,
-		view:   s.view,
-	}
+	return NewHeightView(s.height, s.view)
 }
 
 func (s *state) SetHeightView(newHeight primitives.BlockHeight, newView primitives.View) *HeightView {
@@ -50,10 +45,7 @@ func (s *state) SetHeightView(newHeight primitives.BlockHeight, newView primitiv
 
 	s.height = newHeight
 	s.view = newView
-	return &HeightView{
-		height: s.height,
-		view:   s.view,
-	}
+	return NewHeightView(s.height, s.view)
 }
 
 func (s *state) Height() primitives.BlockHeight {
@@ -74,10 +66,7 @@ func (s *state) HeightView() *HeightView {
 	s.RLock()
 	defer s.RUnlock()
 
-	return &HeightView{
-		height: s.height,
-		view:   s.view,
-	}
+	return NewHeightView(s.height, s.view)
 }
 
 func NewState() State {
@@ -87,9 +76,21 @@ func NewState() State {
 	}
 }
 
+// Immutable instance of height+view
 type HeightView struct {
 	height primitives.BlockHeight
 	view   primitives.View
+}
+
+func (hv *HeightView) String() string {
+	return fmt.Sprintf("H=%d,V=%d", hv.height, hv.view)
+}
+
+func NewHeightView(h primitives.BlockHeight, v primitives.View) *HeightView {
+	return &HeightView{
+		height: h,
+		view:   v,
+	}
 }
 
 func (hv *HeightView) Height() primitives.BlockHeight {
