@@ -11,6 +11,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/instrumentation/metrics"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
+	"github.com/orbs-network/lean-helix-go/state"
 	"time"
 )
 
@@ -31,7 +32,7 @@ type Config struct {
 	MsgChanBufLen           uint64
 	UpdateStateChanBufLen   uint64
 	ElectionChanBufLen      uint64
-	OverrideElectionTrigger ElectionTrigger
+	OverrideElectionTrigger ElectionScheduler
 }
 
 type ConsensusRawMessage struct {
@@ -62,10 +63,15 @@ type KeyManager interface {
 	AggregateRandomSeed(blockHeight primitives.BlockHeight, randomSeedShares []*protocol.SenderSignature) primitives.RandomSeedSignature
 }
 
-type ElectionTrigger interface {
+type ElectionTrigger struct {
+	MoveToNextLeader func(ctx context.Context)
+	Hv               *state.HeightView
+}
+
+type ElectionScheduler interface {
 	RegisterOnElection(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, cb func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics)))
 	Stop()
-	ElectionChannel() chan func(ctx context.Context)
+	ElectionChannel() chan *ElectionTrigger
 	CalcTimeout(view primitives.View) time.Duration
 }
 
