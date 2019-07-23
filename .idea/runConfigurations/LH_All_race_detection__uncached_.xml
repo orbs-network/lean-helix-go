@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="LH-All uncached" type="GoTestRunConfiguration" factoryName="Go Test">
+  <configuration default="false" name="LH-All race detection (uncached)" type="GoTestRunConfiguration" factoryName="Go Test">
     <module name="lean-helix-go" />
     <working_directory value="$PROJECT_DIR$/" />
     <go_parameters value="-i" />
