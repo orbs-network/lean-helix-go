@@ -13,6 +13,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/storage"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/state"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"time"
@@ -37,6 +38,10 @@ type Node struct {
 	CommittedBlockChannel chan *NodeState
 	WriteToStateChannel   bool
 	OnUpdateStateLatch    *test.Latch
+}
+
+func (node *Node) State() state.State {
+	return node.leanHelix.State()
 }
 
 func (node *Node) GetKeyManager() interfaces.KeyManager {
@@ -70,7 +75,7 @@ func (node *Node) TriggerElectionOnNode(ctx context.Context) <-chan struct{} {
 		panic("You are trying to trigger election with an election trigger that is not the ElectionTriggerMock")
 	}
 
-	return electionTriggerMock.ManualTrigger(ctx)
+	return electionTriggerMock.ManualTrigger(ctx, node.State().HeightView())
 }
 
 func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, blockProof []byte) {

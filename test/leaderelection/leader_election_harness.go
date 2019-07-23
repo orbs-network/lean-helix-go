@@ -56,7 +56,3 @@ func newHarness(ctx context.Context, t *testing.T, logsToConsole bool, withFaili
 		net: net,
 	}
 }
-
-func (h *harness) TriggerElectionOnAllNodes(ctx context.Context) {
-	h.net.TriggerElectionOnAllNodes(ctx)
-}

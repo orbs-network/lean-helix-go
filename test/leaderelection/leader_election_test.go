@@ -8,6 +8,7 @@ package leaderelection
 
 import (
 	"context"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
@@ -104,6 +105,7 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 	})
 }
 
+// TODO FLAKY!!!!
 func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t, LOG_TO_CONSOLE)
@@ -116,10 +118,10 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
 
 		// Elect node1 as the leader
-		node0.TriggerElectionOnNode(ctx)
-		node1.TriggerElectionOnNode(ctx)
-		node2.TriggerElectionOnNode(ctx)
-		node3.TriggerElectionOnNode(ctx)
+		<-node0.TriggerElectionOnNode(ctx)
+		<-node1.TriggerElectionOnNode(ctx)
+		<-node2.TriggerElectionOnNode(ctx)
+		<-node3.TriggerElectionOnNode(ctx)
 
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node1)
@@ -216,28 +218,37 @@ func TestLeaderCircularOrdering(t *testing.T) {
 		// by calling RequestNewBlockProposal.
 		// We DO want node0 to pause on RequestNewBlockProposal because it is our stop signal for the test
 
-		timer := time.AfterFunc(50000*time.Millisecond, func() {
+		timer := time.AfterFunc(10000*time.Millisecond, func() {
 			t.Fatal("Test is stuck")
 		})
 		h := NewHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
+		h.net.SetNodesToPauseOnRequestNewBlock()
 
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
 		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[0])
 
+		fmt.Println("Electing 1")
 		electNewLeader(ctx, h, 1)
+		fmt.Println("Electing 1 DONE")
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[1])
 		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[1])
 
+		fmt.Println("Electing 2")
 		electNewLeader(ctx, h, 2)
+		fmt.Println("Electing 2 DONE")
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[2])
 		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[2])
 
+		fmt.Println("Electing 3")
 		electNewLeader(ctx, h, 3)
+		fmt.Println("Electing 3 DONE")
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[3])
 		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[3])
 
 		// back to node0 as leader
+		fmt.Println("Electing 0 again")
 		electNewLeader(ctx, h, 0)
+		fmt.Println("Electing 0 again DONE")
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
 		timer.Stop()
 	})

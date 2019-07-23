@@ -87,7 +87,7 @@ func (h *harness) assertView(expectedView primitives.View) {
 func (h *harness) triggerElection(ctx context.Context) {
 	electionTriggerMock, ok := h.electionTrigger.(*mocks.ElectionTriggerMock)
 	if ok {
-		electionTriggerMock.ManualTrigger(ctx)
+		electionTriggerMock.ManualTrigger(ctx, h.myNode.State().HeightView())
 	} else {
 		panic("You are trying to trigger election with an election trigger that is not the ElectionTriggerMock")
 	}

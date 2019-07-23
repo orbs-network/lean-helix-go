@@ -84,7 +84,7 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 
 		case res := <-lh.MessagesChannel:
 			parsedMessage := interfaces.ToConsensusMessage(res.msg)
-			lh.logger.Debug("LHFLOW LHMSG MAINLOOP RECEIVED %v from %v for H=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight())
+			lh.logger.Debug("LHFLOW LHMSG WORKERLOOP RECEIVED %v from %v for H=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight())
 			lh.filter.HandleConsensusRawMessage(res.ctx, res.msg)
 
 		case trigger := <-lh.electionChannel:

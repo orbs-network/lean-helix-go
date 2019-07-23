@@ -46,7 +46,7 @@ func (et *ElectionTriggerMock) Stop() {
 	et.electionHandler = nil
 }
 
-func (et *ElectionTriggerMock) ManualTrigger(ctx context.Context) <-chan struct{} {
+func (et *ElectionTriggerMock) ManualTrigger(ctx context.Context, hv *state.HeightView) <-chan struct{} {
 	done := make(chan struct{})
 	go func() {
 		select {
@@ -54,7 +54,7 @@ func (et *ElectionTriggerMock) ManualTrigger(ctx context.Context) <-chan struct{
 			close(done)
 		case et.electionChannel <- &interfaces.ElectionTrigger{
 			MoveToNextLeader: et.electionTriggerHandler,
-			Hv:               state.NewHeightView(et.blockHeight, et.view),
+			Hv:               state.NewHeightView(hv.Height(), hv.View()),
 		}:
 			close(done)
 		}

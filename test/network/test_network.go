@@ -26,12 +26,6 @@ func (net *TestNetwork) GetNodeCommunication(memberId primitives.MemberId) *mock
 	return net.Discovery.GetCommunicationById(memberId)
 }
 
-func (net *TestNetwork) TriggerElectionOnAllNodes(ctx context.Context) {
-	for _, node := range net.Nodes {
-		node.TriggerElectionOnNode(ctx)
-	}
-}
-
 func (net *TestNetwork) StartConsensus(ctx context.Context) *TestNetwork {
 	for _, node := range net.Nodes {
 		node.StartConsensus(ctx)
