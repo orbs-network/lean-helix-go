@@ -17,15 +17,15 @@ import (
 	"time"
 )
 
-func buildElectionTrigger(ctx context.Context, timeout time.Duration) *electiontrigger.TimerBasedElectionTrigger {
-	et := electiontrigger.NewTimerBasedElectionTrigger(timeout, nil)
+func buildElectionTrigger(ctx context.Context, timeout time.Duration) *Electiontrigger.TimerBasedElectionTrigger {
+	et := Electiontrigger.NewTimerBasedElectionTrigger(timeout, nil)
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case trigger := <-et.ElectionChannel():
-				trigger(ctx)
+				trigger.MoveToNextLeader(ctx)
 			}
 		}
 	}()

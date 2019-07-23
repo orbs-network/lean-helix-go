@@ -4,12 +4,14 @@
 // This source code is licensed under the MIT license found in the LICENSE file in the root directory of this source tree.
 // The above notice should be included in all copies or substantial portions of the software.
 
-package electiontrigger
+package Electiontrigger
 
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/instrumentation/metrics"
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/state"
 	"math"
 	"time"
 )
@@ -17,7 +19,7 @@ import (
 var TIMEOUT_EXP_BASE = 2.0
 
 type TimerBasedElectionTrigger struct {
-	electionChannel chan func(ctx context.Context)
+	electionChannel chan *interfaces.ElectionTrigger
 	minTimeout      time.Duration
 	view            primitives.View
 	blockHeight     primitives.BlockHeight
@@ -28,7 +30,7 @@ type TimerBasedElectionTrigger struct {
 
 func NewTimerBasedElectionTrigger(minTimeout time.Duration, onElectionCB func(m metrics.ElectionMetrics)) *TimerBasedElectionTrigger {
 	return &TimerBasedElectionTrigger{
-		electionChannel: make(chan func(ctx context.Context), 0), // Caution - keep 0 to make election channel blocking
+		electionChannel: make(chan *interfaces.ElectionTrigger, 0), // Caution - keep 0 to make election channel blocking
 		minTimeout:      minTimeout,
 		onElectionCB:    onElectionCB,
 	}
@@ -49,7 +51,7 @@ func (t *TimerBasedElectionTrigger) RegisterOnElection(ctx context.Context, bloc
 	t.electionHandler = electionHandler
 }
 
-func (t *TimerBasedElectionTrigger) ElectionChannel() chan func(ctx context.Context) {
+func (t *TimerBasedElectionTrigger) ElectionChannel() chan *interfaces.ElectionTrigger {
 	return t.electionChannel
 }
 
@@ -74,7 +76,11 @@ func (t *TimerBasedElectionTrigger) runOnReadElectionChannel(ctx context.Context
 }
 
 func (t *TimerBasedElectionTrigger) onTimerTimeout() {
-	t.electionChannel <- t.runOnReadElectionChannel
+	t.electionChannel <- &interfaces.ElectionTrigger{
+		MoveToNextLeader: t.runOnReadElectionChannel,
+		Hv:               state.NewHeightView(t.blockHeight, t.view),
+	}
+
 }
 
 func (t *TimerBasedElectionTrigger) CalcTimeout(view primitives.View) time.Duration {
