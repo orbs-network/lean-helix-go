@@ -142,33 +142,23 @@ func (net *TestNetwork) ResumeValidateBlockOnNodes(ctx context.Context, nodes ..
 }
 
 func (net *TestNetwork) SetNodesToPauseOnRequestNewBlock(nodes ...*Node) {
-	net.SetNodesPauseCounterOnRequestNewBlock(0, nodes...)
+	net.SetNodesPauseOnRequestNewBlockWhenCounterIsZero(0, nodes...)
 }
 
 func (net *TestNetwork) SetNodesToNotPauseOnRequestNewBlock(nodes ...*Node) {
-	net.SetNodesPauseCounterOnRequestNewBlock(math.MaxInt64, nodes...)
+	net.SetNodesPauseOnRequestNewBlockWhenCounterIsZero(math.MaxInt64, nodes...)
 }
 
-func (net *TestNetwork) SetNodesPauseCounterOnRequestNewBlock(counter int64, nodes ...*Node) {
+func (net *TestNetwork) SetNodesPauseOnRequestNewBlockWhenCounterIsZero(counter int64, nodes ...*Node) {
 	if nodes == nil {
 		nodes = net.Nodes
 	}
 	for _, node := range nodes {
 		if pausableBlockUtils, ok := node.BlockUtils.(*mocks.PausableBlockUtils); ok {
-			pausableBlockUtils.PauseOnRequestNewBlockOnZeroCounter = counter
+			pausableBlockUtils.PauseOnRequestNewBlockWhenCounterIsZero = counter
 		} else {
 			panic("Node.BlockUtils is not PausableBlockUtils")
 		}
-	}
-}
-
-func (net *TestNetwork) SetNodesToPauseOnHandleUpdateState(nodes ...*Node) {
-	if nodes == nil {
-		nodes = net.Nodes
-	}
-
-	for _, node := range nodes {
-		node.PauseOnUpdateState = true
 	}
 }
 

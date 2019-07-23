@@ -20,7 +20,7 @@ type NodeBuilder struct {
 	membership      interfaces.Membership
 	logsToConsole   bool
 	memberId        primitives.MemberId
-	electionTrigger interfaces.ElectionTrigger
+	electionTrigger interfaces.ElectionScheduler
 	blockUtils      interfaces.BlockUtils
 }
 
@@ -54,7 +54,7 @@ func (builder *NodeBuilder) AsInstanceId(instanceId primitives.InstanceId) *Node
 	return builder
 }
 
-func (builder *NodeBuilder) WithElectionTrigger(electionTrigger interfaces.ElectionTrigger) *NodeBuilder {
+func (builder *NodeBuilder) WithElectionTrigger(electionTrigger interfaces.ElectionScheduler) *NodeBuilder {
 	if builder.electionTrigger == nil {
 		builder.electionTrigger = electionTrigger
 	}

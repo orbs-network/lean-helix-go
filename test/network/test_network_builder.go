@@ -147,7 +147,7 @@ func (tb *TestNetworkBuilder) buildNode(
 	}
 
 	if tb.useTimeBasedElectionTrigger {
-		et := electiontrigger.NewTimerBasedElectionTrigger(tb.electionTriggerTimeout, nil)
+		et := Electiontrigger.NewTimerBasedElectionTrigger(tb.electionTriggerTimeout, nil)
 		b.WithElectionTrigger(et)
 	}
 	return b.Build()

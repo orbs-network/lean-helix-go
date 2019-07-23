@@ -27,7 +27,7 @@ type Node struct {
 	instanceId            primitives.InstanceId
 	leanHelix             *leanhelix.MainLoop
 	blockChain            *mocks.InMemoryBlockChain
-	ElectionTrigger       interfaces.ElectionTrigger
+	ElectionTrigger       interfaces.ElectionScheduler
 	BlockUtils            interfaces.BlockUtils
 	KeyManager            *mocks.MockKeyManager
 	Storage               interfaces.Storage
@@ -36,7 +36,6 @@ type Node struct {
 	MemberId              primitives.MemberId
 	CommittedBlockChannel chan *NodeState
 	WriteToStateChannel   bool
-	PauseOnUpdateState    bool
 	OnUpdateStateLatch    *test.Latch
 }
 
@@ -144,7 +143,7 @@ func NewNode(
 	membership interfaces.Membership,
 	communication *mocks.CommunicationMock,
 	blockUtils interfaces.BlockUtils,
-	electionTrigger interfaces.ElectionTrigger,
+	electionTrigger interfaces.ElectionScheduler,
 	logger interfaces.Logger) *Node {
 
 	if electionTrigger == nil {
