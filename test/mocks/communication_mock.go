@@ -243,6 +243,7 @@ func (g *CommunicationMock) CountSentMessages(messageType protocol.MessageType) 
 	return res
 }
 
+// TODO Refactor this, maybe get the data from messagesHistory instead of statsSentMessages
 func (g *CommunicationMock) GetSentMessages(messageType protocol.MessageType) []*interfaces.ConsensusRawMessage {
 	var res []*interfaces.ConsensusRawMessage
 	for _, msg := range g.statsSentMessages {

@@ -9,7 +9,9 @@ package mocks
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/instrumentation/metrics"
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/state"
 	"time"
 )
 
@@ -17,7 +19,11 @@ type ElectionTriggerMock struct {
 	blockHeight     primitives.BlockHeight
 	view            primitives.View
 	electionHandler func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics))
-	electionChannel chan func(ctx context.Context)
+	electionChannel chan *interfaces.ElectionTrigger
+}
+
+func (et *ElectionTriggerMock) ElectionChannel() chan *interfaces.ElectionTrigger {
+	return et.electionChannel
 }
 
 func (et *ElectionTriggerMock) CalcTimeout(view primitives.View) time.Duration {
@@ -26,7 +32,7 @@ func (et *ElectionTriggerMock) CalcTimeout(view primitives.View) time.Duration {
 
 func NewMockElectionTrigger() *ElectionTriggerMock {
 	return &ElectionTriggerMock{
-		electionChannel: make(chan func(ctx context.Context), 0), // Caution - keep 0 to make elections channel blocking
+		electionChannel: make(chan *interfaces.ElectionTrigger, 0), // Caution - keep 0 to make elections channel blocking
 	}
 }
 
@@ -40,17 +46,16 @@ func (et *ElectionTriggerMock) Stop() {
 	et.electionHandler = nil
 }
 
-func (et *ElectionTriggerMock) ElectionChannel() chan func(ctx context.Context) {
-	return et.electionChannel
-}
-
 func (et *ElectionTriggerMock) ManualTrigger(ctx context.Context) <-chan struct{} {
 	done := make(chan struct{})
 	go func() {
 		select {
 		case <-ctx.Done():
 			close(done)
-		case et.electionChannel <- et.electionTriggerHandler:
+		case et.electionChannel <- &interfaces.ElectionTrigger{
+			MoveToNextLeader: et.electionTriggerHandler,
+			Hv:               state.NewHeightView(et.blockHeight, et.view),
+		}:
 			close(done)
 		}
 	}()

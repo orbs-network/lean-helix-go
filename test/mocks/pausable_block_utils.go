@@ -29,19 +29,19 @@ type PausableBlockUtils struct {
 	memberId   primitives.MemberId
 	blocksPool *BlocksPool
 	//PauseOnRequestNewBlock       bool
-	PauseOnRequestNewBlockOnZeroCounter int64
-	RequestNewBlockLatch                *test.Latch
-	ValidationLatch                     *test.Latch
-	PauseOnValidateBlock                bool
-	failBlockProposalValidations        bool
+	PauseOnRequestNewBlockWhenCounterIsZero int64
+	RequestNewBlockLatch                    *test.Latch
+	ValidationLatch                         *test.Latch
+	PauseOnValidateBlock                    bool
+	failBlockProposalValidations            bool
 }
 
 func NewMockBlockUtils(memberId primitives.MemberId, blocksPool *BlocksPool) *PausableBlockUtils {
 	return &PausableBlockUtils{
-		memberId:                            memberId,
-		blocksPool:                          blocksPool,
-		PauseOnRequestNewBlockOnZeroCounter: math.MaxInt64,
-		RequestNewBlockLatch:                test.NewLatch(),
+		memberId:                                memberId,
+		blocksPool:                              blocksPool,
+		PauseOnRequestNewBlockWhenCounterIsZero: math.MaxInt64, // no pause by default
+		RequestNewBlockLatch:                    test.NewLatch(),
 
 		ValidationLatch:      test.NewLatch(),
 		PauseOnValidateBlock: false,
@@ -54,12 +54,12 @@ func (b *PausableBlockUtils) WithFailingBlockProposalValidations() *PausableBloc
 }
 
 func (b *PausableBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
-	if b.PauseOnRequestNewBlockOnZeroCounter == 0 {
+	if b.PauseOnRequestNewBlockWhenCounterIsZero == 0 {
 		fmt.Printf("ID=%s H=%d RequestNewBlockProposal: Sleeping until latch is resumed\n", b.memberId, blockHeight)
 		b.RequestNewBlockLatch.ReturnWhenLatchIsResumed(ctx, b.memberId)
 		fmt.Printf("ID=%s H=%d RequestNewBlockProposal: Latch has resumed\n", b.memberId, blockHeight)
 	} else {
-		b.PauseOnRequestNewBlockOnZeroCounter--
+		b.PauseOnRequestNewBlockWhenCounterIsZero--
 	}
 
 	block := b.blocksPool.PopBlock(prevBlock)
