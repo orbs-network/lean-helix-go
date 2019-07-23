@@ -15,7 +15,7 @@ import (
 type MainLoop struct {
 	messagesChannel        chan *interfaces.ConsensusRawMessage
 	mainUpdateStateChannel chan *blockWithProof
-	electionTrigger        interfaces.ElectionTrigger
+	electionScheduler      interfaces.ElectionScheduler
 	config                 *interfaces.Config
 	logger                 L.LHLogger
 	onCommitCallback       interfaces.OnCommitCallback
@@ -25,12 +25,12 @@ type MainLoop struct {
 
 func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommitCallback) *MainLoop {
 
-	var electionTrigger interfaces.ElectionTrigger
+	var electionTrigger interfaces.ElectionScheduler
 
 	if config.OverrideElectionTrigger != nil {
 		electionTrigger = config.OverrideElectionTrigger
 	} else {
-		electionTrigger = electiontrigger.NewTimerBasedElectionTrigger(config.ElectionTimeoutOnV0, config.OnElectionCB)
+		electionTrigger = Electiontrigger.NewTimerBasedElectionTrigger(config.ElectionTimeoutOnV0, config.OnElectionCB)
 	}
 
 	// TODO Create shared State object
@@ -41,7 +41,7 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 		onCommitCallback:       onCommitCallback,
 		messagesChannel:        make(chan *interfaces.ConsensusRawMessage, 10), // TODO use config.MsgChanBufLen
 		mainUpdateStateChannel: make(chan *blockWithProof, 10),                 // TODO use config.UpdateStateChanBufLen
-		electionTrigger:        electionTrigger,
+		electionScheduler:      electionTrigger,
 		state:                  state,
 		logger:                 L.NewLhLogger(config, state),
 	}
@@ -60,7 +60,7 @@ func (m *MainLoop) RunMainLoop(ctx context.Context) {
 }
 
 func (m *MainLoop) RunWorkerLoop(ctx context.Context) {
-	m.worker = NewWorkerLoop(m.state, m.config, m.logger, m.electionTrigger, m.onCommitCallback)
+	m.worker = NewWorkerLoop(m.state, m.config, m.logger, m.electionScheduler, m.onCommitCallback)
 	go m.worker.Run(ctx)
 }
 
@@ -72,49 +72,49 @@ func (m *MainLoop) run(ctx context.Context) {
 		}
 	}()
 
-	if m.electionTrigger == nil {
+	if m.electionScheduler == nil {
 		panic("Election trigger was not configured, cannot run Lean Helix (mainloop.run)")
 	}
 
-	m.logger.Info("LHFLOW MAINLOOP START")
-	m.logger.Info("LHMSG MAINLOOP START LISTENING NOW")
+	m.logger.Info("LHFLOW LHMSG MAINLOOP START LISTENING NOW")
 	workerCtx, cancelWorkerContext := context.WithCancel(ctx)
 	for {
 		m.logger.Debug("LHFLOW MAINLOOP LISTENING")
 		select {
 		case <-ctx.Done(): // system shutdown
-			m.logger.Debug("LHFLOW MAINLOOP DONE, Terminating Run().")
-			m.logger.Info("LHMSG MAINLOOP STOPPED LISTENING")
+			m.logger.Info("LHFLOW LHMSG MAINLOOP DONE STOPPED LISTENING, Terminating Run().")
 			return
 
 		case message := <-m.messagesChannel:
 			parsedMessage := interfaces.ToConsensusMessage(message)
-			m.logger.Debug("LHMSG MAINLOOP RECEIVED %v from %v for H=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight())
+			m.logger.Debug("LHFLOW LHMSG MAINLOOP RECEIVED %v from %v for H=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight())
 			m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}
 
-		case trigger := <-m.electionTrigger.ElectionChannel():
-			//case trigger, height, view := <-m.electionTrigger.ElectionChannel():
+		case trigger := <-m.electionScheduler.ElectionChannel():
 
-			// TODO: RLock State.View()==view && Height()==height
-
-			cancelWorkerContext()
-			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
-			m.logger.Debug("LHFLOW ELECTION - CANCELED WORKER CONTEXT")
-			m.worker.electionChannel <- trigger
-
-		case receivedBlockWithProof := <-m.mainUpdateStateChannel: // NodeSync
-
-			// TODO Get current height from STATE with RLock and check if block has higher height
-			if err := checkReceivedBlockIsValid(m.state.Height(), receivedBlockWithProof); err != nil {
-				m.logger.Debug("LHFLOW UPDATESTATE - BLOCK IGNORED - %s", err)
-				return
+			current := m.state.HeightView()
+			if current.Height() != trigger.Hv.Height() || current.View() != trigger.Hv.View() { // stale election message
+				m.logger.Debug("LHFLOW MAINLOOP ELECTION - INVALID HEIGHT/VIEW IGNORED - Current: %s, ElectionTrigger: %s", current, trigger.Hv)
+				continue
 			}
 
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
-			m.logger.Debug("LHFLOW UPDATESTATE - CANCELED WORKER CONTEXT")
+			m.logger.Debug("LHFLOW MAINLOOP ELECTION - CANCELED WORKER CONTEXT")
+			m.worker.electionChannel <- trigger
+
+		case receivedBlockWithProof := <-m.mainUpdateStateChannel: // NodeSync
+
+			if err := checkReceivedBlockIsValid(m.state.Height(), receivedBlockWithProof); err != nil {
+				m.logger.Debug("LHFLOW UPDATESTATE - INVALID BLOCK IGNORED - %s", err)
+				continue
+			}
+
+			cancelWorkerContext()
+			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
+			m.logger.Debug("LHFLOW MAINLOOP UPDATESTATE - CANCELED WORKER CONTEXT")
 			m.worker.workerUpdateStateChannel <- receivedBlockWithProof
-			m.logger.Debug("LHFLOW UPDATESTATE - Wrote to worker UpdateState channel")
+			m.logger.Debug("LHFLOW MAINLOOP UPDATESTATE - Wrote to worker UpdateState channel")
 
 		}
 	}
@@ -154,19 +154,6 @@ func (m *MainLoop) UpdateState(ctx context.Context, prevBlock interfaces.Block, 
 		block:               prevBlock,
 		prevBlockProofBytes: prevBlockProofBytes,
 	}:
-	}
-}
-
-// called by tests
-func (m *MainLoop) TriggerElection(ctx context.Context, f func(ctx context.Context)) {
-	if m.electionTrigger == nil {
-		panic("Election trigger was not configured, cannot run Lean Helix (mainloop.TriggerElection)")
-	}
-	select {
-	case <-ctx.Done():
-		m.logger.Debug("TriggerElection() ID=%s CONTEXT TERMINATED", termincommittee.Str(m.config.Membership.MyMemberId()))
-		return
-	case m.electionTrigger.ElectionChannel() <- f:
 	}
 }
 

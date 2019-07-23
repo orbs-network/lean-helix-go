@@ -42,7 +42,7 @@ func TestWorkerLoopReturnsOnMainContextCancellation(t *testing.T) {
 
 		cfg := DummyWorkerConfig()
 		s := state.NewState()
-		electionTrigger := electiontrigger.NewTimerBasedElectionTrigger(cfg.ElectionTimeoutOnV0, nil)
+		electionTrigger := Electiontrigger.NewTimerBasedElectionTrigger(cfg.ElectionTimeoutOnV0, nil)
 		workerLoop := NewWorkerLoop(s, cfg, logger.NewLhLogger(cfg, s), electionTrigger, nil)
 		go func() {
 			workerLoop.Run(mainCtx)
