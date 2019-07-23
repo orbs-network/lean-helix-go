@@ -18,6 +18,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
+	"github.com/orbs-network/lean-helix-go/state"
 )
 
 type LeanHelixTerm struct {
@@ -25,7 +26,7 @@ type LeanHelixTerm struct {
 	termInCommittee *termincommittee.TermInCommittee
 }
 
-func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfaces.Config, electionTrigger interfaces.ElectionTrigger, onCommit interfaces.OnCommitCallback, prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) *LeanHelixTerm {
+func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfaces.Config, state state.State, electionTrigger interfaces.ElectionScheduler, onCommit interfaces.OnCommitCallback, prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) *LeanHelixTerm {
 	prevBlockProof := protocol.BlockProofReader(prevBlockProofBytes)
 	randomSeed := randomseed.CalculateRandomSeed(prevBlockProof.RandomSeedSignature())
 	blockHeight := blockheight.GetBlockHeight(prevBlock) + 1
@@ -41,7 +42,7 @@ func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfac
 	isParticipating := isParticipatingInCommittee(myMemberId, committeeMembers)
 	log.Debug("RECEIVED COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s, isParticipating=%t", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers), isParticipating)
 	if isParticipating {
-		termInCommittee := termincommittee.NewTermInCommittee(ctx, log, config, messageFactory, electionTrigger, committeeMembers, blockHeight, prevBlock, canBeFirstLeader, CommitsToProof(log, blockHeight, myMemberId, config.KeyManager, onCommit))
+		termInCommittee := termincommittee.NewTermInCommittee(ctx, log, config, state, messageFactory, electionTrigger, committeeMembers, prevBlock, canBeFirstLeader, CommitsToProof(log, blockHeight, myMemberId, config.KeyManager, onCommit))
 		return &LeanHelixTerm{
 			ConsensusMessagesFilter: NewConsensusMessagesFilter(termInCommittee, config.KeyManager, randomSeed),
 			termInCommittee:         termInCommittee,
