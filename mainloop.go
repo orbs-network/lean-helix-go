@@ -13,17 +13,18 @@ import (
 )
 
 type MainLoop struct {
-	messagesChannel        chan *interfaces.ConsensusRawMessage
-	mainUpdateStateChannel chan *blockWithProof
-	electionScheduler      interfaces.ElectionScheduler
-	config                 *interfaces.Config
-	logger                 L.LHLogger
-	onCommitCallback       interfaces.OnCommitCallback
-	state                  state.State
-	worker                 *WorkerLoop
+	messagesChannel             chan *interfaces.ConsensusRawMessage
+	mainUpdateStateChannel      chan *blockWithProof
+	electionScheduler           interfaces.ElectionScheduler
+	config                      *interfaces.Config
+	logger                      L.LHLogger
+	onCommitCallback            interfaces.OnCommitCallback
+	onNewConsensusRoundCallback interfaces.OnNewConsensusRoundCallback
+	state                       state.State
+	worker                      *WorkerLoop
 }
 
-func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommitCallback) *MainLoop {
+func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommitCallback, onNewConsensusRoundCallback interfaces.OnNewConsensusRoundCallback) *MainLoop {
 
 	var electionTrigger interfaces.ElectionScheduler
 
@@ -37,13 +38,14 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 	state := state.NewState()
 
 	return &MainLoop{
-		config:                 config,
-		onCommitCallback:       onCommitCallback,
-		messagesChannel:        make(chan *interfaces.ConsensusRawMessage, 10), // TODO use config.MsgChanBufLen
-		mainUpdateStateChannel: make(chan *blockWithProof, 10),                 // TODO use config.UpdateStateChanBufLen
-		electionScheduler:      electionTrigger,
-		state:                  state,
-		logger:                 L.NewLhLogger(config, state),
+		config:                      config,
+		onCommitCallback:            onCommitCallback,
+		onNewConsensusRoundCallback: onNewConsensusRoundCallback,
+		messagesChannel:             make(chan *interfaces.ConsensusRawMessage, 10), // TODO use config.MsgChanBufLen
+		mainUpdateStateChannel:      make(chan *blockWithProof, 10),                 // TODO use config.UpdateStateChanBufLen
+		electionScheduler:           electionTrigger,
+		state:                       state,
+		logger:                      L.NewLhLogger(config, state),
 	}
 }
 
@@ -60,7 +62,7 @@ func (m *MainLoop) RunMainLoop(ctx context.Context) {
 }
 
 func (m *MainLoop) RunWorkerLoop(ctx context.Context) {
-	m.worker = NewWorkerLoop(m.state, m.config, m.logger, m.electionScheduler, m.onCommitCallback)
+	m.worker = NewWorkerLoop(m.state, m.config, m.logger, m.electionScheduler, m.onCommitCallback, m.onNewConsensusRoundCallback)
 	go m.worker.Run(ctx)
 }
 
@@ -106,7 +108,7 @@ func (m *MainLoop) run(ctx context.Context) {
 		case receivedBlockWithProof := <-m.mainUpdateStateChannel: // NodeSync
 
 			if err := checkReceivedBlockIsValid(m.state.Height(), receivedBlockWithProof); err != nil {
-				m.logger.Debug("LHFLOW UPDATESTATE - INVALID BLOCK IGNORED - %s", err)
+				m.logger.Debug("LHFLOW UPDATESTATE - INVALID MAINLOOP BLOCK IGNORED - %s", err)
 				continue
 			}
 

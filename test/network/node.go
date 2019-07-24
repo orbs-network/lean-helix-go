@@ -21,23 +21,25 @@ import (
 
 type NodeState struct {
 	block           interfaces.Block
+	blockProofBytes []byte
 	validationCount int
 }
 
 type Node struct {
-	instanceId            primitives.InstanceId
-	leanHelix             *leanhelix.MainLoop
-	blockChain            *mocks.InMemoryBlockChain
-	ElectionTrigger       interfaces.ElectionScheduler
-	BlockUtils            interfaces.BlockUtils
-	KeyManager            *mocks.MockKeyManager
-	Storage               interfaces.Storage
-	Communication         *mocks.CommunicationMock
-	Membership            interfaces.Membership
-	MemberId              primitives.MemberId
-	CommittedBlockChannel chan *NodeState
-	WriteToStateChannel   bool
-	OnUpdateStateLatch    *test.Latch
+	instanceId               primitives.InstanceId
+	leanHelix                *leanhelix.MainLoop
+	blockChain               *mocks.InMemoryBlockChain
+	ElectionTrigger          interfaces.ElectionScheduler
+	BlockUtils               interfaces.BlockUtils
+	KeyManager               *mocks.MockKeyManager
+	Storage                  interfaces.Storage
+	Communication            *mocks.CommunicationMock
+	Membership               interfaces.Membership
+	MemberId                 primitives.MemberId
+	CommittedBlockChannel    chan *NodeState
+	NewConsensusRoundChannel chan primitives.BlockHeight
+	WriteToStateChannel      bool
+	OnUpdateStateLatch       *test.Latch
 }
 
 func (node *Node) State() state.State {
@@ -83,7 +85,8 @@ func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, 
 
 	if node.WriteToStateChannel {
 		nodeState := &NodeState{
-			block: block,
+			block:           block,
+			blockProofBytes: blockProof,
 		}
 
 		select {
@@ -94,6 +97,34 @@ func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, 
 			return
 		}
 	}
+}
+
+func (node *Node) onNewConsensusRound(ctx context.Context, newHeight primitives.BlockHeight, prevBlock interfaces.Block, canBeFirstLeader bool) {
+
+	if node.NewConsensusRoundChannel == nil {
+		return
+	}
+
+	select {
+	case <-ctx.Done():
+		return
+	case node.NewConsensusRoundChannel <- newHeight:
+		return
+	}
+}
+
+func (node *Node) PauseOnNewConsensusRoundUntilReadingFrom(c chan primitives.BlockHeight) *Node {
+	node.NewConsensusRoundChannel = c
+	return node
+}
+
+func (node *Node) DontPauseOnNewConsensusRound() *Node {
+	node.NewConsensusRoundChannel = nil
+	return node
+}
+
+func (node *Node) ConsensusRoundChannel() chan primitives.BlockHeight {
+	return node.NewConsensusRoundChannel
 }
 
 func (node *Node) StartConsensus(ctx context.Context) {
@@ -157,23 +188,24 @@ func NewNode(
 	memberId := membership.MyMemberId()
 
 	node := &Node{
-		instanceId:            instanceId,
-		blockChain:            mocks.NewInMemoryBlockChain(),
-		ElectionTrigger:       electionTrigger,
-		BlockUtils:            blockUtils,
-		KeyManager:            mocks.NewMockKeyManager(memberId),
-		Storage:               storage.NewInMemoryStorage(),
-		Communication:         communication,
-		Membership:            membership,
-		MemberId:              memberId,
-		CommittedBlockChannel: make(chan *NodeState),
-		OnUpdateStateLatch:    test.NewLatch(),
-		WriteToStateChannel:   true,
+		instanceId:               instanceId,
+		blockChain:               mocks.NewInMemoryBlockChain(),
+		ElectionTrigger:          electionTrigger,
+		BlockUtils:               blockUtils,
+		KeyManager:               mocks.NewMockKeyManager(memberId),
+		Storage:                  storage.NewInMemoryStorage(),
+		Communication:            communication,
+		Membership:               membership,
+		MemberId:                 memberId,
+		CommittedBlockChannel:    make(chan *NodeState),
+		NewConsensusRoundChannel: nil,
+		OnUpdateStateLatch:       test.NewLatch(),
+		WriteToStateChannel:      true,
 	}
 	config := node.BuildConfig(logger)
 	config.OverrideElectionTrigger = node.ElectionTrigger
 
-	leanHelix := leanhelix.NewLeanHelix(config, node.onCommittedBlock)
+	leanHelix := leanhelix.NewLeanHelix(config, node.onCommittedBlock, node.onNewConsensusRound)
 	communication.RegisterIncomingMessageHandler(leanHelix.HandleConsensusMessage)
 
 	node.leanHelix = leanHelix

@@ -49,20 +49,27 @@ type WorkerLoop struct {
 	onUpdateStateCallback       interfaces.OnUpdateStateCallback
 }
 
-func NewWorkerLoop(state state.State, config *interfaces.Config, logger L.LHLogger, electionTrigger interfaces.ElectionScheduler, onCommitCallback interfaces.OnCommitCallback) *WorkerLoop {
+func NewWorkerLoop(
+	state state.State,
+	config *interfaces.Config,
+	logger L.LHLogger,
+	electionTrigger interfaces.ElectionScheduler,
+	onCommitCallback interfaces.OnCommitCallback,
+	onNewConsensusRoundCallback interfaces.OnNewConsensusRoundCallback) *WorkerLoop {
 
 	logger.Debug("LHFLOW NewWorkerLoop()")
 	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), logger, state)
 	return &WorkerLoop{
-		MessagesChannel:          make(chan *MessageWithContext, 10),
-		workerUpdateStateChannel: make(chan *blockWithProof),
-		electionChannel:          make(chan *interfaces.ElectionTrigger),
-		electionTrigger:          electionTrigger,
-		state:                    state,
-		config:                   config,
-		logger:                   logger,
-		filter:                   filter,
-		onCommitCallback:         onCommitCallback,
+		MessagesChannel:             make(chan *MessageWithContext, 10),
+		workerUpdateStateChannel:    make(chan *blockWithProof),
+		electionChannel:             make(chan *interfaces.ElectionTrigger),
+		electionTrigger:             electionTrigger,
+		state:                       state,
+		config:                      config,
+		logger:                      logger,
+		filter:                      filter,
+		onCommitCallback:            onCommitCallback,
+		onNewConsensusRoundCallback: onNewConsensusRoundCallback,
 	}
 }
 
@@ -233,6 +240,6 @@ func (lh *WorkerLoop) onNewConsensusRound(ctx context.Context, prevBlock interfa
 	lh.leanHelixTerm = leanhelixterm.NewLeanHelixTerm(ctx, lh.logger, lh.config, lh.state, lh.electionTrigger, lh.onCommit, prevBlock, prevBlockProofBytes, canBeFirstLeader)
 	lh.filter.ConsumeCacheMessages(ctx, lh.leanHelixTerm)
 	if lh.onNewConsensusRoundCallback != nil {
-		lh.onNewConsensusRoundCallback(ctx, prevBlock, canBeFirstLeader)
+		lh.onNewConsensusRoundCallback(ctx, lh.state.Height(), prevBlock, canBeFirstLeader)
 	}
 }

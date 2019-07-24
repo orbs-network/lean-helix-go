@@ -21,10 +21,9 @@ type TestNetworkBuilder struct {
 	instanceId                          primitives.InstanceId
 	NodeCount                           int
 	logToConsole                        bool
-	customNodeBuilders                  []*NodeBuilder
 	upcomingBlocks                      []interfaces.Block
 	keyManager                          interfaces.KeyManager
-	blockUtils                          interfaces.BlockUtils
+	blockUtils                          []interfaces.BlockUtils
 	communication                       interfaces.Communication
 	orderCommitteeByHeight              bool
 	communicationMaxDelay               time.Duration
@@ -35,11 +34,6 @@ type TestNetworkBuilder struct {
 
 func (tb *TestNetworkBuilder) WithNodeCount(nodeCount int) *TestNetworkBuilder {
 	tb.NodeCount = nodeCount
-	return tb
-}
-
-func (tb *TestNetworkBuilder) WithCustomNodeBuilder(nodeBuilder *NodeBuilder) *TestNetworkBuilder {
-	tb.customNodeBuilders = append(tb.customNodeBuilders, nodeBuilder)
 	return tb
 }
 
@@ -114,7 +108,7 @@ func (tb *TestNetworkBuilder) buildNode(
 	nodeBuilder *NodeBuilder,
 	memberId primitives.MemberId,
 	discovery *mocks.Discovery,
-	blocksPool *mocks.BlocksPool,
+	blockUtils interfaces.BlockUtils,
 	logToConsole bool,
 	withFailingBlockProposalValidations bool,
 ) *Node {
@@ -125,11 +119,6 @@ func (tb *TestNetworkBuilder) buildNode(
 	}
 	discovery.RegisterCommunication(memberId, communicationInstance)
 	membership := mocks.NewMockMembership(memberId, discovery, tb.orderCommitteeByHeight)
-
-	blockUtils := mocks.NewMockBlockUtils(memberId, blocksPool)
-	if withFailingBlockProposalValidations {
-		blockUtils = blockUtils.WithFailingBlockProposalValidations()
-	}
 
 	b := nodeBuilder.
 		AsInstanceId(tb.instanceId).
@@ -156,15 +145,21 @@ func (tb *TestNetworkBuilder) buildNode(
 func (tb *TestNetworkBuilder) createNodes(discovery *mocks.Discovery, blocksPool *mocks.BlocksPool, logToConsole bool, withFailingBlockProposalValidations bool) []*Node {
 	var nodes []*Node
 	for i := 0; i < tb.NodeCount; i++ {
-		nodeBuilder := NewNodeBuilder()
-		memberId := primitives.MemberId(fmt.Sprintf("%03d", i))
-		node := tb.buildNode(nodeBuilder, memberId, discovery, blocksPool, logToConsole, withFailingBlockProposalValidations)
-		nodes = append(nodes, node)
-	}
 
-	for i, customBuilder := range tb.customNodeBuilders {
-		memberId := primitives.MemberId(fmt.Sprintf("C02%d", i))
-		node := tb.buildNode(customBuilder, memberId, discovery, blocksPool, logToConsole, withFailingBlockProposalValidations)
+		memberId := primitives.MemberId(fmt.Sprintf("%03d", i))
+		var blockUtils interfaces.BlockUtils
+		if i < len(tb.blockUtils) {
+			blockUtils = tb.blockUtils[i]
+		} else {
+			pausableBlockUtils := mocks.NewMockBlockUtils(memberId, blocksPool)
+			if withFailingBlockProposalValidations {
+				pausableBlockUtils.WithFailingBlockProposalValidations()
+			}
+			blockUtils = pausableBlockUtils
+		}
+
+		nodeBuilder := NewNodeBuilder()
+		node := tb.buildNode(nodeBuilder, memberId, discovery, blockUtils, logToConsole, withFailingBlockProposalValidations)
 		nodes = append(nodes, node)
 	}
 
@@ -176,7 +171,7 @@ func (tb *TestNetworkBuilder) WithCommunication(communication interfaces.Communi
 	return tb
 }
 
-func (tb *TestNetworkBuilder) WithBlockUtils(utils interfaces.BlockUtils) *TestNetworkBuilder {
+func (tb *TestNetworkBuilder) WithBlockUtils(utils []interfaces.BlockUtils) *TestNetworkBuilder {
 	tb.blockUtils = utils
 	return tb
 }
@@ -194,9 +189,8 @@ func (tb *TestNetworkBuilder) WithMaybeFailingBlockProposalValidations(b bool, b
 
 func NewTestNetworkBuilder() *TestNetworkBuilder {
 	return &TestNetworkBuilder{
-		NodeCount:          0,
-		customNodeBuilders: nil,
-		upcomingBlocks:     nil,
+		NodeCount:      0,
+		upcomingBlocks: nil,
 	}
 }
 

@@ -43,16 +43,20 @@ func (b SimpleMockBlockUtils) ValidateBlockCommitment(blockHeight primitives.Blo
 	return b.Called(blockHeight, block, blockHash).Bool(0)
 }
 
-func TestRequestNewBlockDoesNotHangNodeSync(t *testing.T) {
+func TestNodeSyncCompletesImmediatelyWhileBlockedOnRequestNewBlockProposal(t *testing.T) {
+	// Set to pause on RequestNewBlockProposal of H=1
+	// Call sync with a valid block - how to verify this passed?
+	// Verify node0 reached H=2
+	// Set to pause on RequestNewBlockProposal again
 
-	t.Skip() // TODO - remove skip when worker-go-routine is implemented!!
 	test.WithContext(func(ctx context.Context) {
-		withConsensusRound(ctx, func(net *network.TestNetwork, blockUtilsMock *SimpleMockBlockUtils, blockToPropose interfaces.Block) {
+		withConsensusRound(ctx, func(net *network.TestNetwork, blockUtilsMocks []*SimpleMockBlockUtils, blockToPropose interfaces.Block) {
 			node0 := net.Nodes[0]
+			leaderBlockUtilsMock := blockUtilsMocks[0]
 
 			createNewBlockProposalEntered := newWaitingGroupWithDelta(1)
 			createNewBlockProposalCanceled := newWaitingGroupWithDelta(1)
-			blockUtilsMock.
+			leaderBlockUtilsMock.
 				When("RequestNewBlockProposal", mock.Any, mock.Any, mock.Any).
 				Call(func(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
 					createNewBlockProposalEntered.Done()
@@ -61,17 +65,26 @@ func TestRequestNewBlockDoesNotHangNodeSync(t *testing.T) {
 					return blockToPropose, nil
 				})
 
-			node0.StartConsensus(ctx)
+			net.StartConsensus(ctx)
 
 			createNewBlockProposalEntered.Wait()
 
-			updateStateCompleted := newWaitingGroupWithDelta(1)
+			/*
+				blocksWithProofs := generateProofs(block1, block2, block3)
+
+				blockToSync := blocksWithProofs[2].block
+				blockProofToSync := blocksWithProofs[2].proof
+				prevBlockProofToSync := blocksWithProofs[1].proof
+
+				for _, node := range net.Nodes {
+					node.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync)
+				}
+			*/
+
 			go func() {
-				node0.SyncWithoutValidation(ctx, nil, nil)
-				updateStateCompleted.Done()
+				node0.SyncWithoutValidation(ctx, nil, nil) // TODO replace with regular sync with generate block proofs
 			}()
 
-			test.FailIfNotDoneByTimeout(t, updateStateCompleted, TIMEOUT, "NodeSync is blocked by RequestNewBlockProposal")
 			test.FailIfNotDoneByTimeout(t, createNewBlockProposalCanceled, TIMEOUT, "RequestNewBlockProposal's ctx was not canceled immediately after NodeSync")
 		})
 
@@ -79,10 +92,10 @@ func TestRequestNewBlockDoesNotHangNodeSync(t *testing.T) {
 }
 
 func TestRequestNewBlockDoesNotHangElectionsTrigger(t *testing.T) {
-	t.Skip() // TODO - remove skip when worker-go-routine is implemented!!
 	test.WithContext(func(ctx context.Context) {
-		withConsensusRound(ctx, func(net *network.TestNetwork, blockUtilsMock *SimpleMockBlockUtils, blockToPropose interfaces.Block) {
+		withConsensusRound(ctx, func(net *network.TestNetwork, blockUtilsMocks []*SimpleMockBlockUtils, blockToPropose interfaces.Block) {
 			node0 := net.Nodes[0]
+			blockUtilsMock := blockUtilsMocks[0]
 
 			createNewBlockProposalEntered := newWaitingGroupWithDelta(1)
 			createNewBlockProposalCanceled := newWaitingGroupWithDelta(1)
@@ -117,17 +130,25 @@ func newWaitingGroupWithDelta(delta int) *sync.WaitGroup {
 	return &createNewBlockProposalEntered
 }
 
-func withConsensusRound(ctx context.Context, test func(net *network.TestNetwork, blockUtilsMock *SimpleMockBlockUtils, blockToPropose interfaces.Block)) {
+func withConsensusRound(ctx context.Context, test func(net *network.TestNetwork, blockUtilsMock []*SimpleMockBlockUtils, blockToPropose interfaces.Block)) {
+	nodeCount := 4
+
 	block1 := mocks.ABlock(interfaces.GenesisBlock)
 	instanceId := primitives.InstanceId(rand.Uint64())
-	mockBlockUtils := &SimpleMockBlockUtils{}
+
+	var simpleMockBlockUtils []*SimpleMockBlockUtils
+	var blockUtils []interfaces.BlockUtils
+	for i := 0; i < nodeCount; i++ {
+		aBlockUtils := &SimpleMockBlockUtils{}
+		simpleMockBlockUtils = append(simpleMockBlockUtils, aBlockUtils)
+		blockUtils = append(blockUtils, aBlockUtils)
+	}
 	net := network.NewTestNetworkBuilder().
-		WithNodeCount(4).
-		WithBlocks(block1).
-		WithBlockUtils(mockBlockUtils).
+		WithNodeCount(nodeCount).
+		WithBlockUtils(blockUtils).
 		InNetwork(instanceId).
 		LogToConsole().
 		Build(ctx)
 
-	test(net, mockBlockUtils, block1)
+	test(net, simpleMockBlockUtils, block1)
 }

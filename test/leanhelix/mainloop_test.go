@@ -47,7 +47,6 @@ func TestMainloopReportsCorrectHeight(t *testing.T) {
 }
 
 func TestVerifyPreprepareMessageSentByLeader_HappyFlow(t *testing.T) {
-	//t.Skip("Unskip when State object makes mainlop.currentHeight return correct result")
 	test.WithContext(func(ctx context.Context) {
 		nodeCount := 4
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
@@ -76,8 +75,8 @@ func TestVerifyPreprepareMessageSentByLeader_HappyFlow(t *testing.T) {
 	})
 }
 
+// TO
 func TestPreprepareMessageNotSentByLeaderIfRequestNewBlockProposalContextCancelled(t *testing.T) {
-	t.Skip("Unskip when State object makes mainlop.currentHeight return correct result")
 	test.WithContext(func(ctx context.Context) {
 		nodeCount := 4
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
@@ -92,6 +91,8 @@ func TestPreprepareMessageNotSentByLeaderIfRequestNewBlockProposalContextCancell
 			Build(ctx)
 
 		node0 := net.Nodes[0]
+		consensusRoundChan := make(chan primitives.BlockHeight, 10)
+
 		//net.SetNodesPauseOnRequestNewBlockWhenCounterIsZero(2)
 		net.SetNodesToPauseOnRequestNewBlock()
 		net.StartConsensus(ctx)
@@ -106,14 +107,27 @@ func TestPreprepareMessageNotSentByLeaderIfRequestNewBlockProposalContextCancell
 		prevBlockProof := node0.GetBlockProofAt(latestBlock.Height())
 		fmt.Printf("Node0 is on H=%d\n", latestBlock.Height())
 
+		node0.PauseOnNewConsensusRoundUntilReadingFrom(consensusRoundChan)
 		for _, node := range net.Nodes {
-			node.Sync(ctx, latestBlock, latestBlockProof, prevBlockProof) // block2 has H=2 so next block is H=3
+			node.Sync(ctx, block2, block2Proof, latestBlockProof) // block2 has H=2 so next block is H=3
 		}
+
+		select {
+		case <-ctx.Done():
+			return
+		case h := <-node0.ConsensusRoundChannel():
+			require.Equal(t, latestBlock.Height(), h, "Called OnNewConsensusRound with height %d instead of %d", h, latestBlock.Height())
+		default:
+			t.Fatal("Test did not trigger OnNewConsesusRound (fix the test)")
+		}
+		node0.DontPauseOnNewConsensusRound()
+
 		// Sync closed the context of previous Pause of RequestNewBlock so now it's time to pause on it again
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block3
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
 		net.WaitForNodesToCommitABlock(ctx)
 
+		latestBlock = node0.GetLatestBlock()
 		// TODO This line will work only when State is implemented
 		require.Equal(t, latestBlock.Height()+1, node0.GetCurrentHeight(), "node0 should be on height %d", latestBlock.Height()+1)
 
