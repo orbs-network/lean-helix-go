@@ -13,7 +13,6 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
-	"math/rand"
 	"time"
 )
 
@@ -203,10 +202,10 @@ func ABasicTestNetworkWithConsoleLogs(ctx context.Context) *TestNetwork {
 }
 
 func ATestNetworkBuilder(countOfNodes int, blocksPool ...interfaces.Block) *TestNetworkBuilder {
-	instanceId := primitives.InstanceId(rand.Uint64())
+	//instanceId := primitives.InstanceId(rand.Uint64())
 	return NewTestNetworkBuilder().
 		WithNodeCount(countOfNodes).
-		WithBlocks(blocksPool...).
-		InNetwork(instanceId)
+		WithBlocks(blocksPool...)
+	//InNetwork(instanceId) // generates a random InstanceID, not needed for most tests
 	//LogToConsole().
 }

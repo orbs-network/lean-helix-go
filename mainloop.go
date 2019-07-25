@@ -61,7 +61,13 @@ func (m *MainLoop) RunMainLoop(ctx context.Context) {
 }
 
 func (m *MainLoop) RunWorkerLoop(ctx context.Context) {
-	m.worker = NewWorkerLoop(m.state, m.config, m.logger, m.electionScheduler, m.onCommitCallback, m.onNewConsensusRoundCallback)
+	m.worker = NewWorkerLoop(
+		m.state,
+		m.config,
+		m.logger,
+		m.electionScheduler,
+		m.onCommitCallback,
+		m.onNewConsensusRoundCallback)
 	go m.worker.Run(ctx)
 }
 
