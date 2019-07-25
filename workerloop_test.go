@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+// TODO This file is a candidate for removal - impractical to unit-test it
+
 func DummyWorkerConfig() *interfaces.Config {
 	return &interfaces.Config{
 		InstanceId:            123,
@@ -43,7 +45,7 @@ func TestWorkerLoopReturnsOnMainContextCancellation(t *testing.T) {
 		cfg := DummyWorkerConfig()
 		s := state.NewState()
 		electionTrigger := Electiontrigger.NewTimerBasedElectionTrigger(cfg.ElectionTimeoutOnV0, nil)
-		workerLoop := NewWorkerLoop(s, cfg, logger.NewLhLogger(cfg, s), electionTrigger, nil)
+		workerLoop := NewWorkerLoop(s, cfg, logger.NewLhLogger(cfg, s), electionTrigger, nil, nil)
 		go func() {
 			workerLoop.Run(mainCtx)
 			wg.Done()

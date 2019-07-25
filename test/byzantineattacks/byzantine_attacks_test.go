@@ -32,7 +32,7 @@ func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
 
 		net.StartConsensus(ctx)
 
-		net.WaitForNodesToCommitABlock(ctx, net.Nodes[0], net.Nodes[1], net.Nodes[2])
+		net.WaitUntilNodesCommitAnyBlock(ctx, net.Nodes[0], net.Nodes[1], net.Nodes[2])
 	})
 }
 
@@ -50,7 +50,7 @@ func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 
 		net.StartConsensus(ctx)
 
-		net.WaitForNodesToCommitABlock(ctx, net.Nodes[0], net.Nodes[3], net.Nodes[4], net.Nodes[5], net.Nodes[6])
+		net.WaitUntilNodesCommitAnyBlock(ctx, net.Nodes[0], net.Nodes[3], net.Nodes[4], net.Nodes[5], net.Nodes[6])
 	})
 }
 
@@ -74,7 +74,7 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 		net.StartConsensus(ctx)
 
 		// node0, node1 and node2 should reach consensus
-		net.WaitForNodesToCommitASpecificBlock(ctx, block1, node0, node1, node2)
+		net.WaitUntilNodesCommitASpecificBlock(ctx, block1, node0, node1, node2)
 
 		node0.StartConsensus(ctx)
 	})
@@ -162,6 +162,6 @@ func TestThatAByzantineLeaderCannotCauseAFork(t *testing.T) {
 		node2.TriggerElectionOnNode(ctx)
 		node3.TriggerElectionOnNode(ctx)
 
-		net.WaitForNodesToCommitASpecificBlock(ctx, block2, node0, node1, node3)
+		net.WaitUntilNodesCommitASpecificBlock(ctx, block2, node0, node1, node3)
 	})
 }

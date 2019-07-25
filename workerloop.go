@@ -210,16 +210,16 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 	return nil
 }
 
-// TODO Is this for testing only? maybe it shouldn't be here
-func (lh *WorkerLoop) HandleConsensusMessage(ctx context.Context, message *interfaces.ConsensusRawMessage) {
-	select {
-	case <-ctx.Done():
-		lh.logger.Debug("HandleConsensusRawMessage() ID=%s CONTEXT TERMINATED", termincommittee.Str(lh.config.Membership.MyMemberId()))
-		return
-
-	case lh.MessagesChannel <- &MessageWithContext{ctx: ctx, msg: message}:
-	}
-}
+//// TODO Is this for testing only? maybe it shouldn't be here
+//func (lh *WorkerLoop) HandleConsensusMessage(ctx context.Context, message *interfaces.ConsensusRawMessage) {
+//	select {
+//	case <-ctx.Done():
+//		lh.logger.Debug("HandleConsensusRawMessage() ID=%s CONTEXT TERMINATED", termincommittee.Str(lh.config.Membership.MyMemberId()))
+//		return
+//
+//	case lh.MessagesChannel <- &MessageWithContext{ctx: ctx, msg: message}:
+//	}
+//}
 
 func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, blockProofBytes []byte) {
 	lh.logger.Debug("LHFLOW onCommitCallback START from leanhelix.onCommit()")

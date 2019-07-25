@@ -59,15 +59,15 @@ func (node *Node) GetCurrentHeight() primitives.BlockHeight {
 }
 
 func (node *Node) GetLatestBlock() interfaces.Block {
-	return node.blockChain.GetLastBlock()
+	return node.blockChain.LastBlock()
 }
 
 func (node *Node) GetLatestBlockProof() []byte {
-	return node.blockChain.GetLastBlockProof()
+	return node.blockChain.LastBlockProof()
 }
 
 func (node *Node) GetBlockProofAt(height primitives.BlockHeight) []byte {
-	return node.blockChain.GetBlockProofAt(height)
+	return node.blockChain.BlockProofAt(height)
 }
 
 func (node *Node) TriggerElectionOnNode(ctx context.Context) <-chan struct{} {
@@ -97,6 +97,10 @@ func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, 
 			return
 		}
 	}
+}
+
+func (node *Node) BlockChain() *mocks.InMemoryBlockChain {
+	return node.blockChain
 }
 
 func (node *Node) onNewConsensusRound(ctx context.Context, newHeight primitives.BlockHeight, prevBlock interfaces.Block, canBeFirstLeader bool) {

@@ -154,7 +154,6 @@ func (tic *TermInCommittee) startTerm(ctx context.Context, canBeFirstLeader bool
 
 	tic.initView(ctx, 0)
 
-	// TODO Consider removing canBeFirstLeader
 	currentHV := tic.State.HeightView()
 	if currentHV.Height() > 1 && !canBeFirstLeader {
 		tic.logger.Info("LHFLOW startTerm() I CANNOT BE LEADER OF FIRST VIEW, skipping view")
@@ -381,7 +380,6 @@ func (tic *TermInCommittee) hasPreprepare(blockHeight primitives.BlockHeight, vi
 }
 
 func (tic *TermInCommittee) processPreprepare(ctx context.Context, ppm *interfaces.PreprepareMessage) {
-	// TODO per spec move this to validatePreprepare()
 	header := ppm.Content().SignedHeader()
 	if tic.State.View() != header.View() {
 		tic.logger.Debug("processPreprepare() message from incorrect view %d", header.View())
@@ -523,7 +521,7 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 		}
 	}
 	if !iSentCommitMessage {
-		// TODO Add correct context to CreateCommitMessage (workerCtx)
+		// TODO Add correct context to CreateCommitMessage (workerCtx) - fix all places with context.Background() in general
 		cm := tic.messageFactory.CreateCommitMessage(blockHeight, view, blockHash)
 		tic.logger.Debug("LHMSG SEND COMMIT [checkCommitted] because I did not send it during onPreparedLocally")
 		if err := tic.sendConsensusMessage(ctx, cm); err != nil {

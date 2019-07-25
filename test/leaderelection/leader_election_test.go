@@ -56,6 +56,114 @@ func manuallyElectNode1AsNewLeader(ctx context.Context, h *harness) {
 	node1.Communication.OnIncomingMessage(ctx, node3VCMessage.ToConsensusRawMessage())
 }
 
+func TestNotCountingViewChangeFromTheSameNode(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
+
+		h := NewHarness(ctx, t, LOG_TO_CONSOLE, block1, block2)
+
+		node0 := h.net.Nodes[0]
+		node1 := h.net.Nodes[1]
+		node2 := h.net.Nodes[2]
+
+		// hang the leader (node0)
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
+
+		// sending only 4 view-change from the same node
+		node1.Communication.OnIncomingMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
+		node1.Communication.OnIncomingMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
+		node1.Communication.OnIncomingMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
+		node1.Communication.OnIncomingMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
+
+		node1.Communication.CountSentMessages(protocol.LEAN_HELIX_NEW_VIEW)
+	})
+}
+
+func electNewLeader(ctx context.Context, h *harness, newLeaderIndex int) {
+
+	for i, node := range h.net.Nodes {
+		if i == newLeaderIndex {
+			continue
+		}
+		<-node.TriggerElectionOnNode(ctx)
+	}
+}
+
+func TestDoesNotCloseBlockWhenValidateBlockProposalFails(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+
+		h := NewHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
+
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
+		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[0])
+
+		c := make(chan struct{})
+		go func() {
+			h.net.WaitUntilNodesCommitAnyBlock(ctx)
+			close(c)
+		}()
+
+		select {
+		case <-time.After(50 * time.Millisecond):
+		case <-c:
+			t.Fatal("Block was closed despite validations failing")
+		}
+	})
+}
+
+//////////////////////////
+
+// Let each and every node try and be the Leader and finally return to the original leader
+func TestLeaderCircularOrdering(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+
+		// TL;DR Always fail validation so that the network will never close blocks
+
+		// Set block validation to always fail.
+		// The reason for this is to prevent the Validator (non-leader) nodes
+		// from going into PREPARED phase after validating the block.
+		// If nodes were to go into PREPARED phase, this would "lock" the proposed
+		// block, preventing the next Leader from suggesting a different block
+		// by calling RequestNewBlockProposal.
+		// We DO want node0 to pause on RequestNewBlockProposal because it is our stop signal for the test
+
+		timer := time.AfterFunc(10000*time.Millisecond, func() {
+			t.Fatal("Test is stuck")
+		})
+		h := NewHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
+		h.net.SetNodesToPauseOnRequestNewBlock()
+
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
+		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[0])
+
+		fmt.Println("Electing 1")
+		electNewLeader(ctx, h, 1)
+		fmt.Println("Electing 1 DONE")
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[1])
+		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[1])
+
+		fmt.Println("Electing 2")
+		electNewLeader(ctx, h, 2)
+		fmt.Println("Electing 2 DONE")
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[2])
+		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[2])
+
+		fmt.Println("Electing 3")
+		electNewLeader(ctx, h, 3)
+		fmt.Println("Electing 3 DONE")
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[3])
+		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[3])
+
+		// back to node0 as leader
+		fmt.Println("Electing 0 again")
+		electNewLeader(ctx, h, 0)
+		fmt.Println("Electing 0 again DONE")
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
+		timer.Stop()
+	})
+}
+
 func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
@@ -137,30 +245,6 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 	})
 }
 
-func TestNotCountingViewChangeFromTheSameNode(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
-		block1 := mocks.ABlock(interfaces.GenesisBlock)
-		block2 := mocks.ABlock(block1)
-
-		h := NewHarness(ctx, t, LOG_TO_CONSOLE, block1, block2)
-
-		node0 := h.net.Nodes[0]
-		node1 := h.net.Nodes[1]
-		node2 := h.net.Nodes[2]
-
-		// hang the leader (node0)
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
-
-		// sending only 4 view-change from the same node
-		node1.Communication.OnIncomingMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-		node1.Communication.OnIncomingMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-		node1.Communication.OnIncomingMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-		node1.Communication.OnIncomingMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-
-		node1.Communication.CountSentMessages(protocol.LEAN_HELIX_NEW_VIEW)
-	})
-}
-
 func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
@@ -200,88 +284,6 @@ func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 			t.Log("node 1 got a chance to propose a block and did not take it as expected")
 		case <-node1TriesToProposeABlock:
 			t.Fatal("node1 tried to propose a block after receiving only 2 view change messages")
-		}
-	})
-}
-
-// Let each and every node try and be the Leader and finally return to the original leader
-func TestLeaderCircularOrdering(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
-
-		// TL;DR Always fail validation so that the network will never close blocks
-
-		// Set block validation to always fail.
-		// The reason for this is to prevent the Validator (non-leader) nodes
-		// from going into PREPARED phase after validating the block.
-		// If nodes were to go into PREPARED phase, this would "lock" the proposed
-		// block, preventing the next Leader from suggesting a different block
-		// by calling RequestNewBlockProposal.
-		// We DO want node0 to pause on RequestNewBlockProposal because it is our stop signal for the test
-
-		timer := time.AfterFunc(10000*time.Millisecond, func() {
-			t.Fatal("Test is stuck")
-		})
-		h := NewHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
-		h.net.SetNodesToPauseOnRequestNewBlock()
-
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
-		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[0])
-
-		fmt.Println("Electing 1")
-		electNewLeader(ctx, h, 1)
-		fmt.Println("Electing 1 DONE")
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[1])
-		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[1])
-
-		fmt.Println("Electing 2")
-		electNewLeader(ctx, h, 2)
-		fmt.Println("Electing 2 DONE")
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[2])
-		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[2])
-
-		fmt.Println("Electing 3")
-		electNewLeader(ctx, h, 3)
-		fmt.Println("Electing 3 DONE")
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[3])
-		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[3])
-
-		// back to node0 as leader
-		fmt.Println("Electing 0 again")
-		electNewLeader(ctx, h, 0)
-		fmt.Println("Electing 0 again DONE")
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
-		timer.Stop()
-	})
-}
-
-func electNewLeader(ctx context.Context, h *harness, newLeaderIndex int) {
-
-	for i, node := range h.net.Nodes {
-		if i == newLeaderIndex {
-			continue
-		}
-		<-node.TriggerElectionOnNode(ctx)
-	}
-}
-
-func TestDoesNotCloseBlockWhenValidateBlockProposalFails(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
-
-		h := NewHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
-
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
-		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[0])
-
-		c := make(chan struct{})
-		go func() {
-			h.net.WaitForNodesToCommitABlock(ctx)
-			close(c)
-		}()
-
-		select {
-		case <-time.After(50 * time.Millisecond):
-		case <-c:
-			t.Fatal("Block was closed despite validations failing")
 		}
 	})
 }

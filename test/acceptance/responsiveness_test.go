@@ -6,6 +6,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
+	"github.com/orbs-network/lean-helix-go/test/leaderelection"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/orbs-network/lean-helix-go/test/network"
 	"math/rand"
@@ -43,7 +44,7 @@ func (b SimpleMockBlockUtils) ValidateBlockCommitment(blockHeight primitives.Blo
 	return b.Called(blockHeight, block, blockHash).Bool(0)
 }
 
-func TestNodeSyncCompletesImmediatelyWhileBlockedOnRequestNewBlockProposal(t *testing.T) {
+func TestNodeSyncHandledImmediatelyWhileBlockedOnRequestNewBlockProposal(t *testing.T) {
 	// Set to pause on RequestNewBlockProposal of H=1
 	// Call sync with a valid block - how to verify this passed?
 	// Verify node0 reached H=2
@@ -51,7 +52,6 @@ func TestNodeSyncCompletesImmediatelyWhileBlockedOnRequestNewBlockProposal(t *te
 
 	test.WithContext(func(ctx context.Context) {
 		withConsensusRound(ctx, func(net *network.TestNetwork, blockUtilsMocks []*SimpleMockBlockUtils, blockToPropose interfaces.Block) {
-			node0 := net.Nodes[0]
 			leaderBlockUtilsMock := blockUtilsMocks[0]
 
 			createNewBlockProposalEntered := newWaitingGroupWithDelta(1)
@@ -69,25 +69,23 @@ func TestNodeSyncCompletesImmediatelyWhileBlockedOnRequestNewBlockProposal(t *te
 
 			createNewBlockProposalEntered.Wait()
 
-			/*
-				blocksWithProofs := generateProofs(block1, block2, block3)
+			block1 := mocks.ABlock(interfaces.GenesisBlock)
+			block2 := mocks.ABlock(block1)
+			block3 := mocks.ABlock(block1)
 
-				blockToSync := blocksWithProofs[2].block
-				blockProofToSync := blocksWithProofs[2].proof
-				prevBlockProofToSync := blocksWithProofs[1].proof
+			// Run Sync with block H=2 on all nodes
+			bc := leaderelection.GenerateBlockChainFor([]interfaces.Block{block1, block2, block3})
 
-				for _, node := range net.Nodes {
-					node.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync)
-				}
-			*/
+			blockToSync, blockProofToSync := bc.BlockAndProofAt(2)
+			prevBlockProofToSync := bc.BlockProofAt(1)
 
-			go func() {
-				node0.SyncWithoutValidation(ctx, nil, nil) // TODO replace with regular sync with generate block proofs
-			}()
+			for _, node := range net.Nodes {
+				node.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync)
+			}
 
 			test.FailIfNotDoneByTimeout(t, createNewBlockProposalCanceled, TIMEOUT, "RequestNewBlockProposal's ctx was not canceled immediately after NodeSync")
-		})
 
+		})
 	})
 }
 

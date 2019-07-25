@@ -34,7 +34,6 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 		electionTrigger = Electiontrigger.NewTimerBasedElectionTrigger(config.ElectionTimeoutOnV0, config.OnElectionCB)
 	}
 
-	// TODO Create shared State object
 	state := state.NewState()
 
 	return &MainLoop{
@@ -133,7 +132,7 @@ func checkReceivedBlockIsValid(currentHeight primitives.BlockHeight, receivedBlo
 		receivedBlockHeight = receivedBlockWithProof.block.Height()
 	}
 	if receivedBlockHeight < currentHeight {
-		return errors.Errorf("Received block height is %d which is lower than current height of %d", receivedBlockWithProof.block.Height(), currentHeight)
+		return errors.Errorf("Received block height is %d which is lower than current height of %d", receivedBlockHeight, currentHeight)
 	}
 	return nil
 }

@@ -31,17 +31,22 @@ func (bs *InMemoryBlockChain) AppendBlockToChain(block interfaces.Block, blockPr
 	bs.blockChain = append(bs.blockChain, &chainItem{block, blockProof})
 }
 
-func (bs *InMemoryBlockChain) GetLastBlock() interfaces.Block {
+func (bs *InMemoryBlockChain) LastBlock() interfaces.Block {
 	item := bs.blockChain[len(bs.blockChain)-1]
 	return item.block
 }
 
-func (bs *InMemoryBlockChain) GetLastBlockProof() []byte {
+func (bs *InMemoryBlockChain) LastBlockProof() []byte {
 	item := bs.blockChain[len(bs.blockChain)-1]
 	return item.blockProof
 }
 
-func (bs *InMemoryBlockChain) GetBlockProofAt(height primitives.BlockHeight) []byte {
+func (bs *InMemoryBlockChain) BlockProofAt(height primitives.BlockHeight) []byte {
 	item := bs.blockChain[height]
 	return item.blockProof
+}
+
+func (bs *InMemoryBlockChain) BlockAndProofAt(height primitives.BlockHeight) (interfaces.Block, []byte) {
+	item := bs.blockChain[height]
+	return item.block, item.blockProof
 }

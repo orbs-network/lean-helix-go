@@ -38,11 +38,11 @@ func TestNodeSync(t *testing.T) {
 		// node0, node1, and node2 are progressing to block2
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		net.WaitForNodesToCommitASpecificBlock(ctx, block1, node0, node1, node2)
+		net.WaitUntilNodesCommitASpecificBlock(ctx, block1, node0, node1, node2)
 
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		net.WaitForNodesToCommitASpecificBlock(ctx, block2, node0, node1, node2)
+		net.WaitUntilNodesCommitASpecificBlock(ctx, block2, node0, node1, node2)
 
 		// node3 is still "stuck" on the genesis block
 		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)
@@ -61,6 +61,6 @@ func TestNodeSync(t *testing.T) {
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
 		// now that node3 is synced, they all should progress to block3
-		net.WaitForNodesToCommitASpecificBlock(ctx, block3, node0, node1, node2, node3)
+		net.WaitUntilNodesCommitASpecificBlock(ctx, block3, node0, node1, node2, node3)
 	})
 }

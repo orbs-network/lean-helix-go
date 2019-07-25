@@ -83,7 +83,7 @@ func TestHangingNode(t *testing.T) {
 
 		net.ReturnWhenNodesPauseOnValidateBlock(ctx, node1, node2, node3)
 		net.ResumeValidateBlockOnNodes(ctx, node1, node2)
-		net.WaitForNodesToCommitABlock(ctx, node0, node1, node2)
+		net.WaitUntilNodesCommitAnyBlock(ctx, node0, node1, node2)
 		require.True(t, matchers.BlocksAreEqual(node0.GetLatestBlock(), block1))
 		require.True(t, matchers.BlocksAreEqual(node1.GetLatestBlock(), block1))
 		require.True(t, matchers.BlocksAreEqual(node2.GetLatestBlock(), block1))
@@ -91,19 +91,19 @@ func TestHangingNode(t *testing.T) {
 
 		net.ReturnWhenNodesPauseOnValidateBlock(ctx, node1, node2)
 		net.ResumeValidateBlockOnNodes(ctx, node1, node2)
-		net.WaitForNodesToCommitABlock(ctx, node0, node1, node2)
+		net.WaitUntilNodesCommitAnyBlock(ctx, node0, node1, node2)
 		require.True(t, matchers.BlocksAreEqual(node0.GetLatestBlock(), block2))
 		require.True(t, matchers.BlocksAreEqual(node1.GetLatestBlock(), block2))
 		require.True(t, matchers.BlocksAreEqual(node2.GetLatestBlock(), block2))
 		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)
 
 		net.ResumeValidateBlockOnNodes(ctx, node3)
-		net.WaitForNodesToCommitABlock(ctx, node3)
+		net.WaitUntilNodesCommitAnyBlock(ctx, node3)
 		require.True(t, matchers.BlocksAreEqual(node3.GetLatestBlock(), block1))
 
 		net.ReturnWhenNodesPauseOnValidateBlock(ctx, node3)
 		net.ResumeValidateBlockOnNodes(ctx, node3)
-		net.WaitForNodesToCommitABlock(ctx, node3)
+		net.WaitUntilNodesCommitAnyBlock(ctx, node3)
 		require.True(t, matchers.BlocksAreEqual(node3.GetLatestBlock(), block2))
 	})
 }

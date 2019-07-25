@@ -98,6 +98,56 @@ func (net *TestNetwork) WaitForAllNodesToCommitTheSameBlock(ctx context.Context)
 	}
 }
 
+func (net *TestNetwork) WaitUntilNodesCommitAnyBlock(ctx context.Context, nodes ...*Node) interfaces.Block {
+	if nodes == nil {
+		nodes = net.Nodes
+	}
+
+	var nodeState *NodeState = nil
+
+	for _, node := range nodes {
+		fmt.Printf("ID=%s WaitUntilNodesCommitAnyBlock BEFORE\n", node.MemberId)
+		select {
+		case <-ctx.Done():
+			fmt.Printf("ID=%s WaitUntilNodesCommitAnyBlock ctx.Done\n", node.MemberId)
+			return nil
+		case nodeState = <-node.CommittedBlockChannel:
+			fmt.Printf("ID=%s WaitUntilNodesCommitAnyBlock AFTER\n", node.MemberId)
+			continue
+		}
+	}
+
+	if nodeState == nil {
+		return nil
+	}
+	return nodeState.block
+}
+
+func (net *TestNetwork) WaitUntilNodesCommitASpecificBlock(ctx context.Context, block interfaces.Block, nodes ...*Node) {
+	if nodes == nil {
+		nodes = net.Nodes
+	}
+
+	for {
+		var allEqual = true
+		for _, node := range nodes {
+
+			select {
+			case <-ctx.Done():
+				return
+			case nodeState := <-node.CommittedBlockChannel:
+				if !matchers.BlocksAreEqual(block, nodeState.block) {
+					allEqual = false
+					break
+				}
+			}
+		}
+		if allEqual {
+			return
+		}
+	}
+}
+
 func (net *TestNetwork) SetNodesToPauseOnValidateBlock(nodes ...*Node) {
 	if nodes == nil {
 		nodes = net.Nodes
@@ -175,44 +225,6 @@ func (net *TestNetwork) ResumeRequestNewBlockOnNodes(ctx context.Context, node *
 		panic("Node.BlockUtils is not PausableBlockUtils")
 	}
 
-}
-
-func (net *TestNetwork) WaitForNodesToCommitABlock(ctx context.Context, nodes ...*Node) {
-	if nodes == nil {
-		nodes = net.Nodes
-	}
-
-	for _, node := range nodes {
-		fmt.Printf("ID=%s WaitForNodesToCommitABlock BEFORE\n", node.MemberId)
-		select {
-		case <-ctx.Done():
-			fmt.Printf("ID=%s WaitForNodesToCommitABlock ctx.Done\n", node.MemberId)
-			return
-		case <-node.CommittedBlockChannel:
-			fmt.Printf("ID=%s WaitForNodesToCommitABlock AFTER\n", node.MemberId)
-			continue
-		}
-	}
-}
-
-func (net *TestNetwork) WaitForNodesToCommitASpecificBlock(ctx context.Context, block interfaces.Block, nodes ...*Node) bool {
-	if nodes == nil {
-		nodes = net.Nodes
-	}
-
-	for _, node := range nodes {
-
-		select {
-		case <-ctx.Done():
-			return false
-		case nodeState := <-node.CommittedBlockChannel:
-			if matchers.BlocksAreEqual(block, nodeState.block) == false {
-				return false
-			}
-		}
-
-	}
-	return true
 }
 
 func (net *TestNetwork) AllNodesValidatedNoMoreThanOnceBeforeCommit(ctx context.Context) bool {

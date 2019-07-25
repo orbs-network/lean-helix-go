@@ -23,6 +23,10 @@ func NewHarness(ctx context.Context, t *testing.T, logsToConsole bool, blocksPoo
 	//return newHarness(ctx, t, logsToConsole, mocks.NewMockBlockUtils(mocks.NewBlocksPool(blocksPool)))
 }
 
+// This might not be a good idea but it is needed outside this package
+func Net(h *harness) *network.TestNetwork {
+	return h.net
+}
 func NewHarnessWithFailingBlockProposalValidations(ctx context.Context, t *testing.T, logsToConsole bool) *harness {
 	//net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).LogToConsole().Build()
 	return newHarness(ctx, t, logsToConsole, true)
