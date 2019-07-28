@@ -82,8 +82,6 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 	}()
 	lh.logger.Debug("LHFLOW LHMSG WORKERLOOP START LISTENING NOW")
 	for {
-		lh.logger.Debug("LHFLOW WORKERLOOP LISTENING")
-
 		select {
 		case <-ctx.Done(): // system shutdown
 			lh.logger.Info("LHFLOW WORKERLOOP DONE STOPPED LISTENING, Terminating Run()")
@@ -209,17 +207,6 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 
 	return nil
 }
-
-//// TODO Is this for testing only? maybe it shouldn't be here
-//func (lh *WorkerLoop) HandleConsensusMessage(ctx context.Context, message *interfaces.ConsensusRawMessage) {
-//	select {
-//	case <-ctx.Done():
-//		lh.logger.Debug("HandleConsensusRawMessage() ID=%s CONTEXT TERMINATED", termincommittee.Str(lh.config.Membership.MyMemberId()))
-//		return
-//
-//	case lh.MessagesChannel <- &MessageWithContext{ctx: ctx, msg: message}:
-//	}
-//}
 
 func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, blockProofBytes []byte) {
 	lh.logger.Debug("LHFLOW onCommitCallback START from leanhelix.onCommit()")

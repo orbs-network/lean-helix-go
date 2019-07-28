@@ -86,7 +86,6 @@ func (m *MainLoop) run(ctx context.Context) {
 	m.logger.Info("LHFLOW LHMSG MAINLOOP START LISTENING NOW")
 	workerCtx, cancelWorkerContext := context.WithCancel(ctx)
 	for {
-		m.logger.Debug("LHFLOW MAINLOOP LISTENING")
 		select {
 		case <-ctx.Done(): // system shutdown
 			m.logger.Info("LHFLOW LHMSG MAINLOOP DONE STOPPED LISTENING, Terminating Run().")
@@ -151,16 +150,17 @@ func (m *MainLoop) ValidateBlockConsensus(ctx context.Context, block interfaces.
 }
 
 // Called from outside to indicate Node Sync
-func (m *MainLoop) UpdateState(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte) {
+func (m *MainLoop) UpdateState(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte) error {
 
 	select {
 	case <-ctx.Done():
-		m.logger.Debug("UpdateState() ID=%s CONTEXT TERMINATED", termincommittee.Str(m.config.Membership.MyMemberId()))
-		return
+		m.logger.Debug("UpdateState() ID=%s CONTEXT CANCELED", termincommittee.Str(m.config.Membership.MyMemberId()))
+		return errors.Errorf("context canceled")
 	case m.mainUpdateStateChannel <- &blockWithProof{
 		block:               prevBlock,
 		prevBlockProofBytes: prevBlockProofBytes,
 	}:
+		return nil
 	}
 }
 
@@ -168,7 +168,7 @@ func (m *MainLoop) HandleConsensusMessage(ctx context.Context, message *interfac
 
 	select {
 	case <-ctx.Done():
-		m.logger.Debug("HandleConsensusRawMessage() ID=%s CONTEXT TERMINATED", termincommittee.Str(m.config.Membership.MyMemberId()))
+		m.logger.Debug("HandleConsensusRawMessage() ID=%s CONTEXT CANCELED", termincommittee.Str(m.config.Membership.MyMemberId()))
 		return
 
 	case m.messagesChannel <- message:
