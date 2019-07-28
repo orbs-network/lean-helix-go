@@ -722,7 +722,7 @@ func (tic *TermInCommittee) HandleNewView(ctx context.Context, nvm *interfaces.N
 		tic.initView(ctx, nvmHeader.View())
 		tic.processPreprepare(ctx, ppm)
 	} else {
-		tic.logger.Info("LHFLOW LHMSG RECEIVED NEW_VIEW FAILED validation of PPM: %s", err.Error())
+		tic.logger.Info("LHFLOW LHMSG RECEIVED NEW_VIEW FAILED validation of PPM: %s", err)
 	}
 }
 
