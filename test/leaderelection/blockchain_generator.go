@@ -4,15 +4,19 @@ import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
+	"time"
 )
 
-func GenerateBlockChainFor(blocks []interfaces.Block) *mocks.InMemoryBlockChain {
+func GenerateBlockChainFor(blocks []interfaces.Block) *mocks.InMemoryBlockchain {
 
-	ctx := context.Background()
-	h := NewHarness(ctx, nil, false, blocks...)
-	h.net.SetNodesToNotPauseOnRequestNewBlock()
-	h.net.StartConsensus(ctx)
-	h.net.WaitUntilNodesCommitASpecificBlock(ctx, blocks[len(blocks)-1])
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	h := NewStartedHarnessDontPauseOnRequestNewBlock(ctx, nil, true, blocks...)
 
-	return h.net.Nodes[0].BlockChain()
+	h.net.WaitUntilNodesCommitASpecificHeight(ctx, blocks[len(blocks)-1].Height())
+	if ctx.Err() != nil {
+		return nil
+	}
+
+	return h.net.Nodes[0].Blockchain().GetFirstXItems(len(blocks) + 1)
 }

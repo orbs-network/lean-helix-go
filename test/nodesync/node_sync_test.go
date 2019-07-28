@@ -11,6 +11,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
+	"github.com/orbs-network/lean-helix-go/test/leaderelection"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/orbs-network/lean-helix-go/test/network"
 	"github.com/stretchr/testify/require"
@@ -54,10 +55,20 @@ func TestNodeSync(t *testing.T) {
 
 		// TODO Use GetBlockChainFor()
 		// syncing node3
-		latestBlock := node0.GetLatestBlock()
-		latestBlockProof := node0.GetLatestBlockProof()
-		prevBlockProof := node0.GetBlockProofAt(latestBlock.Height())
-		node3.Sync(ctx, latestBlock, latestBlockProof, prevBlockProof)
+		bc := leaderelection.GenerateBlockChainFor([]interfaces.Block{block1, block2, block3})
+		if bc == nil {
+			t.Fatal("Error creating mock blockchain for tests")
+			return
+		}
+		blockToSync, blockProofToSync := bc.BlockAndProofAt(3)
+		prevBlockProofToSync := bc.BlockProofAt(2)
+
+		//latestBlock := node0.GetLatestBlock()
+		//latestBlockProof := node0.GetLatestBlockProof()
+		//prevBlockProof := node0.GetBlockProofAt(latestBlock.Height())
+		if err := node3.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync); err != nil {
+			t.Fatalf("Sync failed for node %s - %s", node3.MemberId, err)
+		}
 
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
 

@@ -14,14 +14,14 @@ import (
 )
 
 func TestGenesisBlock(t *testing.T) {
-	blockChain := mocks.NewInMemoryBlockChain()
+	blockChain := mocks.NewInMemoryBlockchain()
 	actual := blockChain.LastBlock()
 	expected := interfaces.GenesisBlock
 	require.Equal(t, expected, actual, "Did not return the genesis block as the first block")
 }
 
 func TestAppendingToBlockChain(t *testing.T) {
-	blockChain := mocks.NewInMemoryBlockChain()
+	blockChain := mocks.NewInMemoryBlockchain()
 	block := mocks.ABlock(interfaces.GenesisBlock)
 	blockChain.AppendBlockToChain(block, nil)
 
@@ -30,7 +30,7 @@ func TestAppendingToBlockChain(t *testing.T) {
 }
 
 func TestGettingTheLatestBlock(t *testing.T) {
-	blockChain := mocks.NewInMemoryBlockChain()
+	blockChain := mocks.NewInMemoryBlockchain()
 	block1 := mocks.ABlock(interfaces.GenesisBlock)
 	block2 := mocks.ABlock(block1)
 	block3 := mocks.ABlock(block2)
@@ -43,7 +43,7 @@ func TestGettingTheLatestBlock(t *testing.T) {
 }
 
 func TestGettingTheLatestBlockProof(t *testing.T) {
-	blockChain := mocks.NewInMemoryBlockChain()
+	blockChain := mocks.NewInMemoryBlockchain()
 	block1 := mocks.ABlock(interfaces.GenesisBlock)
 	block2 := mocks.ABlock(block1)
 	block3 := mocks.ABlock(block2)

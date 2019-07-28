@@ -134,8 +134,8 @@ func (g *CommunicationMock) addToHistory(rawMessage *interfaces.ConsensusRawMess
 		sender:      msg.SenderMemberId(),
 		receiver:    receiver,
 	}
-	fmt.Printf("ID=%s addToHistory(): H=%d V=%d TYPE=%s sender=%s receiver=%s\n",
-		g.memberId, msgProps.height, msgProps.view, msgProps.messageType, msgProps.sender, msgProps.receiver)
+	//fmt.Printf("ID=%s addToHistory(): H=%d V=%d TYPE=%s sender=%s receiver=%s\n",
+	//	g.memberId, msgProps.height, msgProps.view, msgProps.messageType, msgProps.sender, msgProps.receiver)
 
 	g.messagesHistoryLock.Lock()
 	defer g.messagesHistoryLock.Unlock()

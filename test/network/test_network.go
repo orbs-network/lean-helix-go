@@ -14,6 +14,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/test/matchers"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"math"
+	"sync"
 )
 
 type TestNetwork struct {
@@ -138,6 +139,7 @@ func (net *TestNetwork) WaitUntilNodesCommitASpecificBlock(ctx context.Context, 
 			case nodeState := <-node.CommittedBlockChannel:
 				if !matchers.BlocksAreEqual(block, nodeState.block) {
 					allEqual = false
+					fmt.Printf("Expected: %s Committed: %s\n", block, nodeState.block)
 					break
 				}
 			}
@@ -146,6 +148,37 @@ func (net *TestNetwork) WaitUntilNodesCommitASpecificBlock(ctx context.Context, 
 			return
 		}
 	}
+}
+
+func (net *TestNetwork) WaitUntilNodesCommitASpecificHeight(ctx context.Context, height primitives.BlockHeight, nodes ...*Node) {
+	if nodes == nil {
+		nodes = net.Nodes
+	}
+
+	wg := &sync.WaitGroup{}
+
+	for _, node := range nodes {
+		wg.Add(1)
+		go func() {
+			for {
+				var topBlock interfaces.Block
+				select {
+				case <-ctx.Done():
+					wg.Done()
+					return
+				case nodeState := <-node.CommittedBlockChannel:
+					topBlock = nodeState.block
+				}
+
+				if height == topBlock.Height() {
+					wg.Done()
+					fmt.Printf("ID=%s Expected: %s Committed: %s\n", node.MemberId, height, topBlock.Height())
+					return
+				}
+			}
+		}()
+	}
+	wg.Wait()
 }
 
 func (net *TestNetwork) SetNodesToPauseOnValidateBlock(nodes ...*Node) {
@@ -242,8 +275,17 @@ func (net *TestNetwork) AllNodesValidatedNoMoreThanOnceBeforeCommit(ctx context.
 	return true
 }
 
-func (net *TestNetwork) SetNodesToNotPauseOnTheFirstXTimesOfOnRequestNewBlock(timesNotToPause int) {
-
+func (net *TestNetwork) WaitUntilNewConsensusRoundForBlockHeight(ctx context.Context, height primitives.BlockHeight, node *Node) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case h := <-node.ConsensusRoundChannel():
+			if h == height {
+				return
+			}
+		}
+	}
 }
 
 func NewTestNetwork(instanceId primitives.InstanceId, discovery *mocks.Discovery) *TestNetwork {

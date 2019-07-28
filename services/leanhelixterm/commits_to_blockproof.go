@@ -20,7 +20,8 @@ func CommitsToProof(log logger.LHLogger, blockHeight primitives.BlockHeight, myM
 	return func(ctx context.Context, block interfaces.Block, commitMessages []*interfaces.CommitMessage) {
 		proof := blockproof.GenerateLeanHelixBlockProof(keyManager, commitMessages)
 		committeeStr := commitMessagesToCommitteeMemberIdsStr(commitMessages)
-		log.Debug("Generated block proof with committee-size=%d, committee-members=%s", len(commitMessages), committeeStr)
+		height := block.Height()
+		log.Debug("Generated block proof for H=%d with committee-size=%d, committee-members=%s", height, len(commitMessages), committeeStr)
 		onCommit(ctx, block, proof.Raw())
 	}
 }

@@ -75,6 +75,7 @@ func TestVerifyPreprepareMessageSentByLeader_HappyFlow(t *testing.T) {
 	})
 }
 
+// TODO FLAKY
 func TestPreprepareMessageNotSentByLeaderIfRequestNewBlockProposalContextCancelled(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		nodeCount := 4
@@ -82,6 +83,10 @@ func TestPreprepareMessageNotSentByLeaderIfRequestNewBlockProposalContextCancell
 		block2 := mocks.ABlock(block1)
 		block3 := mocks.ABlock(block2)
 		bc := leaderelection.GenerateBlockChainFor([]interfaces.Block{block1, block2, block3})
+		if bc == nil {
+			t.Fatal("Error creating mock blockchain for tests")
+			return
+		}
 
 		net := network.
 			NewTestNetworkBuilder().
@@ -100,28 +105,25 @@ func TestPreprepareMessageNotSentByLeaderIfRequestNewBlockProposalContextCancell
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
 		net.WaitUntilNodesCommitASpecificBlock(ctx, block1)
+		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
+
 		require.Equal(t, nodeCount-1, node0.Communication.CountMessagesSent(protocol.LEAN_HELIX_PREPREPARE, mocks.BLOCK_HEIGHT_DONT_CARE, mocks.VIEW_DONT_CARE, nil), "node0 sent PREPREPARE despite having its worker context cancelled during RequestNewBlockProposal")
 
 		blockToSync, blockProofToSync := bc.BlockAndProofAt(2)
 		prevBlockProofToSync := bc.BlockProofAt(1)
 
 		require.Equal(t, node0.GetCurrentHeight(), blockToSync.Height())
-		node0.PauseOnNewConsensusRoundUntilReadingFrom(consensusRoundChan)
+		node0.SetPauseOnNewConsensusRoundUntilReadingFrom(consensusRoundChan)
 		for _, node := range net.Nodes {
-			node.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync) // block2 has H=2 so next block is H=3
+			if err := node.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync); err != nil { // block2 has H=2 so next block is H=3
+				t.Fatalf("Sync failed for node %s - %s", node.MemberId, err)
+			}
 		}
 
-		select {
-		case <-ctx.Done():
-			return
-		case h := <-node0.ConsensusRoundChannel():
-			expectedHeightOfNewTermAfterSuccessfulSync := blockToSync.Height() + 1
-			require.Equal(t, expectedHeightOfNewTermAfterSuccessfulSync, h, "Called OnNewConsensusRound with height %d instead of %d", h, expectedHeightOfNewTermAfterSuccessfulSync)
-			ppmSent := node0.Communication.CountMessagesSent(protocol.LEAN_HELIX_PREPREPARE, mocks.BLOCK_HEIGHT_DONT_CARE, mocks.VIEW_DONT_CARE, nil)
-			require.Equal(t, nodeCount-1, ppmSent, "node0 sent PREPREPARE despite having its worker context cancelled by UpdateState during RequestNewBlockProposal")
-		default:
-			t.Fatal("Test did not trigger OnNewConsensusRound (fix the test, probably Sync did not complete successfully)")
-		}
+		expectedHeightOfNewTermAfterSuccessfulSync := blockToSync.Height() + 1
+		net.WaitUntilNewConsensusRoundForBlockHeight(ctx, expectedHeightOfNewTermAfterSuccessfulSync, node0)
+		ppmSent := node0.Communication.CountMessagesSent(protocol.LEAN_HELIX_PREPREPARE, mocks.BLOCK_HEIGHT_DONT_CARE, mocks.VIEW_DONT_CARE, nil)
+		require.Equal(t, nodeCount-1, ppmSent, "node0 sent PREPREPARE despite having its worker context cancelled by UpdateState during RequestNewBlockProposal")
 	})
 }
 
@@ -145,7 +147,18 @@ func TestVerifyWorkerContextNotCancelledIfNodeSyncBlockIsIgnored(t *testing.T) {
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
 		require.True(t, net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block1))
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // pause when proposing block2
-		node0.Sync(ctx, block1, nil, nil)
+		bc := leaderelection.GenerateBlockChainFor([]interfaces.Block{block1, block2, block3})
+		if bc == nil {
+			t.Fatal("Error creating mock blockchain for tests")
+			return
+		}
+
+		blockToSync, blockProofToSync := bc.BlockAndProofAt(1)
+		prevBlockProofToSync := bc.BlockProofAt(0)
+
+		if err := node0.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync); err != nil {
+			t.Fatalf("Sync failed for node %s - %s", node0.MemberId, err)
+		}
 
 		time.Sleep(100 * time.Millisecond) // let the above go func run
 

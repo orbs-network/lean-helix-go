@@ -26,7 +26,7 @@ func TestNewLeaderProposesNewBlockIfPreviousLeaderFailedToBringNetworkIntoPrepar
 	test.WithContext(func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
-		h := NewHarness(ctx, t, LOG_TO_CONSOLE, block1, block2)
+		h := NewStartedHarness(ctx, t, LOG_TO_CONSOLE, block1, block2)
 		node0 := h.net.Nodes[0]
 		node1 := h.net.Nodes[1]
 
@@ -61,7 +61,7 @@ func TestNotCountingViewChangeFromTheSameNode(t *testing.T) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
 
-		h := NewHarness(ctx, t, LOG_TO_CONSOLE, block1, block2)
+		h := NewStartedHarness(ctx, t, LOG_TO_CONSOLE, block1, block2)
 
 		node0 := h.net.Nodes[0]
 		node1 := h.net.Nodes[1]
@@ -93,7 +93,7 @@ func electNewLeader(ctx context.Context, h *harness, newLeaderIndex int) {
 func TestDoesNotCloseBlockWhenValidateBlockProposalFails(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 
-		h := NewHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
+		h := NewStartedHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
 
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
 		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[0])
@@ -131,7 +131,7 @@ func TestLeaderCircularOrdering(t *testing.T) {
 		timer := time.AfterFunc(10000*time.Millisecond, func() {
 			t.Fatal("Test is stuck")
 		})
-		h := NewHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
+		h := NewStartedHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
 		h.net.SetNodesToPauseOnRequestNewBlock()
 
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
@@ -170,7 +170,7 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 		block2 := mocks.ABlock(block1)
 		block3 := mocks.ABlock(block1)
 
-		h := NewHarness(ctx, t, LOG_TO_CONSOLE, block1, block2, block3)
+		h := NewStartedHarness(ctx, t, LOG_TO_CONSOLE, block1, block2, block3)
 
 		node0 := h.net.Nodes[0]
 		node1 := h.net.Nodes[1]
@@ -216,7 +216,7 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 // TODO FLAKY!!!!
 func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		h := NewHarness(ctx, t, LOG_TO_CONSOLE)
+		h := NewStartedHarness(ctx, t, LOG_TO_CONSOLE)
 		node0 := h.net.Nodes[0]
 		node1 := h.net.Nodes[1]
 		node2 := h.net.Nodes[2]
@@ -250,7 +250,7 @@ func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
 
-		h := NewHarness(ctx, t, LOG_TO_CONSOLE, block1, block2)
+		h := NewStartedHarness(ctx, t, LOG_TO_CONSOLE, block1, block2)
 
 		node0 := h.net.Nodes[0]
 		node1 := h.net.Nodes[1]

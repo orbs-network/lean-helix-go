@@ -48,6 +48,7 @@ func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfac
 			termInCommittee:         termInCommittee,
 		}
 	} else {
+		log.Info("OUT OF COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s, isParticipating=%t", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers), isParticipating)
 		return &LeanHelixTerm{
 			ConsensusMessagesFilter: NewConsensusMessagesFilter(nil, config.KeyManager, randomSeed),
 			termInCommittee:         nil,

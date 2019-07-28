@@ -7,6 +7,7 @@
 package mocks
 
 import (
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
@@ -15,38 +16,49 @@ type chainItem struct {
 	block      interfaces.Block
 	blockProof []byte
 }
-type InMemoryBlockChain struct {
-	blockChain []*chainItem
+type InMemoryBlockchain struct {
+	items []*chainItem
 }
 
-func NewInMemoryBlockChain() *InMemoryBlockChain {
-	return &InMemoryBlockChain{
-		blockChain: []*chainItem{
+func NewInMemoryBlockchain() *InMemoryBlockchain {
+	return &InMemoryBlockchain{
+		items: []*chainItem{
 			{interfaces.GenesisBlock, nil},
 		},
 	}
 }
 
-func (bs *InMemoryBlockChain) AppendBlockToChain(block interfaces.Block, blockProof []byte) {
-	bs.blockChain = append(bs.blockChain, &chainItem{block, blockProof})
+func (bs *InMemoryBlockchain) GetFirstXItems(count int) *InMemoryBlockchain {
+	newItems := make([]*chainItem, count, count)
+	copied := copy(newItems, bs.items)
+	if copied != count {
+		panic(fmt.Sprintf("GetFirstXItems(): bad copy: bs.items=%v newItems=%v copied=%d count=%d", bs.items, newItems, copied, count))
+	}
+	return &InMemoryBlockchain{
+		items: newItems,
+	}
 }
 
-func (bs *InMemoryBlockChain) LastBlock() interfaces.Block {
-	item := bs.blockChain[len(bs.blockChain)-1]
+func (bs *InMemoryBlockchain) AppendBlockToChain(block interfaces.Block, blockProof []byte) {
+	bs.items = append(bs.items, &chainItem{block, blockProof})
+}
+
+func (bs *InMemoryBlockchain) LastBlock() interfaces.Block {
+	item := bs.items[len(bs.items)-1]
 	return item.block
 }
 
-func (bs *InMemoryBlockChain) LastBlockProof() []byte {
-	item := bs.blockChain[len(bs.blockChain)-1]
+func (bs *InMemoryBlockchain) LastBlockProof() []byte {
+	item := bs.items[len(bs.items)-1]
 	return item.blockProof
 }
 
-func (bs *InMemoryBlockChain) BlockProofAt(height primitives.BlockHeight) []byte {
-	item := bs.blockChain[height]
+func (bs *InMemoryBlockchain) BlockProofAt(height primitives.BlockHeight) []byte {
+	item := bs.items[height]
 	return item.blockProof
 }
 
-func (bs *InMemoryBlockChain) BlockAndProofAt(height primitives.BlockHeight) (interfaces.Block, []byte) {
-	item := bs.blockChain[height]
+func (bs *InMemoryBlockchain) BlockAndProofAt(height primitives.BlockHeight) (interfaces.Block, []byte) {
+	item := bs.items[height]
 	return item.block, item.blockProof
 }

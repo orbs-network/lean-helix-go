@@ -209,7 +209,9 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 }
 
 func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, blockProofBytes []byte) {
-	lh.logger.Debug("LHFLOW onCommitCallback START from leanhelix.onCommit()")
+	height := block.Height()
+	lh.logger.Debug("LHFLOW onCommitCallback START from leanhelix.onCommit() H=%d", height)
+
 	lh.onCommitCallback(ctx, block, blockProofBytes)
 	lh.logger.Debug("LHFLOW onCommitCallback RETURNED from leanhelix.onCommit()")
 	lh.logger.Debug("Calling onNewConsensusRound() from leanhelix.onCommit()")
@@ -225,8 +227,23 @@ func (lh *WorkerLoop) onNewConsensusRound(ctx context.Context, prevBlock interfa
 		lh.leanHelixTerm = nil
 	}
 	lh.leanHelixTerm = leanhelixterm.NewLeanHelixTerm(ctx, lh.logger, lh.config, lh.state, lh.electionTrigger, lh.onCommit, prevBlock, prevBlockProofBytes, canBeFirstLeader)
+	lh.logger.Debug("onNewConsensusRound() Calling ConsumeCacheMessages", lh.state.Height())
 	lh.filter.ConsumeCacheMessages(ctx, lh.leanHelixTerm)
 	if lh.onNewConsensusRoundCallback != nil {
 		lh.onNewConsensusRoundCallback(ctx, lh.state.Height(), prevBlock, canBeFirstLeader)
 	}
 }
+
+/*
+func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) {
+	lh.currentHeight = blockheight.GetBlockHeight(prevBlock) + 1
+	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "onNewConsensusRound() INCREMENTED HEIGHT TO %d", lh.currentHeight)
+	if lh.leanHelixTerm != nil {
+		lh.leanHelixTerm.Dispose()
+		lh.leanHelixTerm = nil
+	}
+	lh.leanHelixTerm = leanhelixterm.NewLeanHelixTerm(ctx, lh.logger, lh.config, lh.onCommit, prevBlock, prevBlockProofBytes, canBeFirstLeader)
+	lh.filter.SetBlockHeight(ctx, lh.currentHeight, lh.leanHelixTerm)
+}
+
+*/

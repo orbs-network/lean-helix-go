@@ -18,8 +18,13 @@ type harness struct {
 	net *network.TestNetwork
 }
 
-func NewHarness(ctx context.Context, t *testing.T, logsToConsole bool, blocksPool ...interfaces.Block) *harness {
-	return newHarness(ctx, t, logsToConsole, false, blocksPool...)
+func NewStartedHarness(ctx context.Context, t *testing.T, logsToConsole bool, blocksPool ...interfaces.Block) *harness {
+	return newHarness(ctx, t, logsToConsole, false, true, blocksPool...)
+	//return newHarness(ctx, t, logsToConsole, mocks.NewMockBlockUtils(mocks.NewBlocksPool(blocksPool)))
+}
+
+func NewStartedHarnessDontPauseOnRequestNewBlock(ctx context.Context, t *testing.T, logsToConsole bool, blocksPool ...interfaces.Block) *harness {
+	return newHarness(ctx, t, logsToConsole, false, false, blocksPool...)
 	//return newHarness(ctx, t, logsToConsole, mocks.NewMockBlockUtils(mocks.NewBlocksPool(blocksPool)))
 }
 
@@ -27,12 +32,12 @@ func NewHarness(ctx context.Context, t *testing.T, logsToConsole bool, blocksPoo
 func Net(h *harness) *network.TestNetwork {
 	return h.net
 }
-func NewHarnessWithFailingBlockProposalValidations(ctx context.Context, t *testing.T, logsToConsole bool) *harness {
+func NewStartedHarnessWithFailingBlockProposalValidations(ctx context.Context, t *testing.T, logsToConsole bool) *harness {
 	//net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).LogToConsole().Build()
-	return newHarness(ctx, t, logsToConsole, true)
+	return newHarness(ctx, t, logsToConsole, true, true)
 }
 
-func newHarness(ctx context.Context, t *testing.T, logsToConsole bool, withFailingBlockProposalValidations bool, blocksPool ...interfaces.Block) *harness {
+func newHarness(ctx context.Context, t *testing.T, logsToConsole bool, withFailingBlockProposalValidations bool, pauseOnRequestNewBlock bool, blocksPool ...interfaces.Block) *harness {
 	//net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).LogToConsole().Build()
 	networkBuilder := network.ATestNetworkBuilder(4)
 	//if blockUtils != nil {
@@ -52,7 +57,11 @@ func newHarness(ctx context.Context, t *testing.T, logsToConsole bool, withFaili
 		}
 	}
 
-	net.SetNodesToPauseOnRequestNewBlock()
+	if pauseOnRequestNewBlock {
+		net.SetNodesToPauseOnRequestNewBlock()
+	} else {
+		net.SetNodesToNotPauseOnRequestNewBlock()
+	}
 	net.StartConsensus(ctx)
 
 	return &harness{

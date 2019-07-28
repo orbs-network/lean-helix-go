@@ -96,6 +96,7 @@ func (f *RawMessageFilter) pushToCache(height primitives.BlockHeight, message in
 
 func (f *RawMessageFilter) processConsensusMessage(ctx context.Context, message interfaces.ConsensusMessage) {
 	if f.consensusMessagesHandler == nil {
+		f.logger.Debug("LHFILTER consensusMessagesHandler is nil, ignoring message %s", message.MessageType())
 		return
 	}
 
@@ -104,6 +105,7 @@ func (f *RawMessageFilter) processConsensusMessage(ctx context.Context, message 
 
 func (f *RawMessageFilter) ConsumeCacheMessages(ctx context.Context, consensusMessagesHandler ConsensusMessagesHandler) {
 	height := f.state.Height()
+	f.logger.Debug("LHFILTER ConsumeCacheMessages(): updated consensusMessagesHandler is %v", consensusMessagesHandler)
 	f.consensusMessagesHandler = consensusMessagesHandler
 	f.clearCacheEarlierThan(height)
 

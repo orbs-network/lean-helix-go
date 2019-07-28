@@ -75,8 +75,6 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 
 		// node0, node1 and node2 should reach consensus
 		net.WaitUntilNodesCommitASpecificBlock(ctx, block1, node0, node1, node2)
-
-		node0.StartConsensus(ctx)
 	})
 }
 

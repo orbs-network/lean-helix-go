@@ -16,6 +16,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/state"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
+	"github.com/pkg/errors"
 	"time"
 )
 
@@ -26,20 +27,20 @@ type NodeState struct {
 }
 
 type Node struct {
-	instanceId               primitives.InstanceId
-	leanHelix                *leanhelix.MainLoop
-	blockChain               *mocks.InMemoryBlockChain
-	ElectionTrigger          interfaces.ElectionScheduler
-	BlockUtils               interfaces.BlockUtils
-	KeyManager               *mocks.MockKeyManager
-	Storage                  interfaces.Storage
-	Communication            *mocks.CommunicationMock
-	Membership               interfaces.Membership
-	MemberId                 primitives.MemberId
-	CommittedBlockChannel    chan *NodeState
-	NewConsensusRoundChannel chan primitives.BlockHeight
-	WriteToStateChannel      bool
-	OnUpdateStateLatch       *test.Latch
+	instanceId                 primitives.InstanceId
+	leanHelix                  *leanhelix.MainLoop
+	blockChain                 *mocks.InMemoryBlockchain
+	ElectionTrigger            interfaces.ElectionScheduler
+	BlockUtils                 interfaces.BlockUtils
+	KeyManager                 *mocks.MockKeyManager
+	Storage                    interfaces.Storage
+	Communication              *mocks.CommunicationMock
+	Membership                 interfaces.Membership
+	MemberId                   primitives.MemberId
+	CommittedBlockChannel      chan *NodeState
+	OnNewConsensusRoundChannel chan primitives.BlockHeight
+	WriteToStateChannel        bool
+	OnUpdateStateLatch         *test.Latch
 }
 
 func (node *Node) State() state.State {
@@ -99,65 +100,74 @@ func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, 
 	}
 }
 
-func (node *Node) BlockChain() *mocks.InMemoryBlockChain {
+func (node *Node) Blockchain() *mocks.InMemoryBlockchain {
 	return node.blockChain
 }
 
 func (node *Node) onNewConsensusRound(ctx context.Context, newHeight primitives.BlockHeight, prevBlock interfaces.Block, canBeFirstLeader bool) {
 
-	if node.NewConsensusRoundChannel == nil {
+	fmt.Printf("ID=%s onNewConsensusRound() H=%d\n", node.MemberId, newHeight)
+	if node.OnNewConsensusRoundChannel == nil {
 		return
 	}
 
 	select {
 	case <-ctx.Done():
 		return
-	case node.NewConsensusRoundChannel <- newHeight:
+	case node.OnNewConsensusRoundChannel <- newHeight:
 		return
 	}
 }
 
-func (node *Node) PauseOnNewConsensusRoundUntilReadingFrom(c chan primitives.BlockHeight) *Node {
-	node.NewConsensusRoundChannel = c
+func (node *Node) SetPauseOnNewConsensusRoundUntilReadingFrom(c chan primitives.BlockHeight) *Node {
+	node.OnNewConsensusRoundChannel = c
 	return node
 }
 
 func (node *Node) DontPauseOnNewConsensusRound() *Node {
-	node.NewConsensusRoundChannel = nil
+	node.OnNewConsensusRoundChannel = nil
 	return node
 }
 
 func (node *Node) ConsensusRoundChannel() chan primitives.BlockHeight {
-	return node.NewConsensusRoundChannel
+	return node.OnNewConsensusRoundChannel
 }
 
-func (node *Node) StartConsensus(ctx context.Context) {
-	if node.leanHelix != nil {
-		node.leanHelix.Run(ctx)
-		node.leanHelix.UpdateState(ctx, node.GetLatestBlock(), nil)
+func (node *Node) StartConsensus(ctx context.Context) error {
+	if node.leanHelix == nil {
+		panic("StartConsensus(): leanhelix is nil")
 	}
+	node.leanHelix.Run(ctx)
+	height := node.GetCurrentHeight()
+	if height > 0 {
+		panic("Cannot start consensus if height > 0")
+	}
+	fmt.Printf("StartConsensus(): H=%d\n", height)
+	return node.leanHelix.UpdateState(ctx, node.GetLatestBlock(), nil)
 }
 
 func (node *Node) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProof []byte, prevBlockProof []byte) error {
+	if node.leanHelix == nil {
+		panic("ValidateBlockConsensus(): leanhelix is nil")
+	}
 	return node.leanHelix.ValidateBlockConsensus(ctx, block, blockProof, prevBlockProof)
 }
 
-func (node *Node) Sync(ctx context.Context, prevBlock interfaces.Block, blockProofBytes []byte, prevBlockProofBytes []byte) {
+func (node *Node) Sync(ctx context.Context, prevBlock interfaces.Block, blockProofBytes []byte, prevBlockProofBytes []byte) error {
 	if node.leanHelix == nil {
-		return
+		panic("Sync(): leanhelix is nil")
 	}
 	fmt.Printf("ID=%s H=%d B.H=%d NodeSync(): Start, calling ValidateBlockConsensus\n", node.MemberId, node.GetCurrentHeight(), prevBlock.Height())
 	if err := node.ValidateBlockConsensus(ctx, prevBlock, blockProofBytes, prevBlockProofBytes); err == nil {
 		fmt.Printf("ID=%s H=%d B.H=%d NodeSync(): Passed ValidateBlockConsensus, calling UpdateState\n", node.MemberId, node.GetCurrentHeight(), prevBlock.Height())
-		node.leanHelix.UpdateState(ctx, prevBlock, prevBlockProofBytes)
+		if err := node.leanHelix.UpdateState(ctx, prevBlock, prevBlockProofBytes); err != nil {
+			return err
+		}
 		fmt.Printf("ID=%s H=%d B.H=%d NodeSync(): UpdateState returned\n", node.MemberId, node.GetCurrentHeight(), prevBlock.Height())
+		return nil
 	} else {
-		fmt.Printf("ID=%s H=%d B.H=%d NodeSync(): Failed validation: %s\n", node.MemberId, node.GetCurrentHeight(), prevBlock.Height(), err)
+		return errors.Errorf(fmt.Sprintf("ID=%s H=%d B.H=%d NodeSync(): Failed validation: %s", node.MemberId, node.GetCurrentHeight(), prevBlock.Height(), err))
 	}
-}
-
-func (node *Node) SyncWithoutValidation(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte) {
-	node.leanHelix.UpdateState(ctx, prevBlock, prevBlockProofBytes)
 }
 
 func (node *Node) BuildConfig(logger interfaces.Logger) *interfaces.Config {
@@ -192,19 +202,19 @@ func NewNode(
 	memberId := membership.MyMemberId()
 
 	node := &Node{
-		instanceId:               instanceId,
-		blockChain:               mocks.NewInMemoryBlockChain(),
-		ElectionTrigger:          electionTrigger,
-		BlockUtils:               blockUtils,
-		KeyManager:               mocks.NewMockKeyManager(memberId),
-		Storage:                  storage.NewInMemoryStorage(),
-		Communication:            communication,
-		Membership:               membership,
-		MemberId:                 memberId,
-		CommittedBlockChannel:    make(chan *NodeState),
-		NewConsensusRoundChannel: nil,
-		OnUpdateStateLatch:       test.NewLatch(),
-		WriteToStateChannel:      true,
+		instanceId:                 instanceId,
+		blockChain:                 mocks.NewInMemoryBlockchain(),
+		ElectionTrigger:            electionTrigger,
+		BlockUtils:                 blockUtils,
+		KeyManager:                 mocks.NewMockKeyManager(memberId),
+		Storage:                    storage.NewInMemoryStorage(),
+		Communication:              communication,
+		Membership:                 membership,
+		MemberId:                   memberId,
+		CommittedBlockChannel:      make(chan *NodeState),
+		OnNewConsensusRoundChannel: nil,
+		OnUpdateStateLatch:         test.NewLatch(),
+		WriteToStateChannel:        true,
 	}
 	config := node.BuildConfig(logger)
 	config.OverrideElectionTrigger = node.ElectionTrigger

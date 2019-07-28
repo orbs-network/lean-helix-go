@@ -9,7 +9,6 @@ import (
 	"github.com/orbs-network/lean-helix-go/test/leaderelection"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/orbs-network/lean-helix-go/test/network"
-	"math/rand"
 	"sync"
 	"testing"
 	"time"
@@ -75,12 +74,19 @@ func TestNodeSyncHandledImmediatelyWhileBlockedOnRequestNewBlockProposal(t *test
 
 			// Run Sync with block H=2 on all nodes
 			bc := leaderelection.GenerateBlockChainFor([]interfaces.Block{block1, block2, block3})
+			if bc == nil {
+				t.Fatal("Error creating mock blockchain for tests")
+				return
+			}
 
 			blockToSync, blockProofToSync := bc.BlockAndProofAt(2)
 			prevBlockProofToSync := bc.BlockProofAt(1)
 
 			for _, node := range net.Nodes {
-				node.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync)
+				if err := node.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync); err != nil {
+					t.Fatalf("Sync failed for node %s - %s", node.MemberId, err)
+				}
+
 			}
 
 			test.FailIfNotDoneByTimeout(t, createNewBlockProposalCanceled, TIMEOUT, "RequestNewBlockProposal's ctx was not canceled immediately after NodeSync")
@@ -132,7 +138,7 @@ func withConsensusRound(ctx context.Context, test func(net *network.TestNetwork,
 	nodeCount := 4
 
 	block1 := mocks.ABlock(interfaces.GenesisBlock)
-	instanceId := primitives.InstanceId(rand.Uint64())
+	//instanceId := primitives.InstanceId(rand.Uint64())
 
 	var simpleMockBlockUtils []*SimpleMockBlockUtils
 	var blockUtils []interfaces.BlockUtils
@@ -144,7 +150,7 @@ func withConsensusRound(ctx context.Context, test func(net *network.TestNetwork,
 	net := network.NewTestNetworkBuilder().
 		WithNodeCount(nodeCount).
 		WithBlockUtils(blockUtils).
-		InNetwork(instanceId).
+		//InNetwork(instanceId).
 		LogToConsole().
 		Build(ctx)
 

@@ -160,6 +160,8 @@ func (m *MainLoop) UpdateState(ctx context.Context, prevBlock interfaces.Block, 
 		block:               prevBlock,
 		prevBlockProofBytes: prevBlockProofBytes,
 	}:
+		height := m.state.Height()
+		m.logger.Debug("UpdateState() WROTE TO UPDATESTATE MAINLOOP: Block=%v H=%d", prevBlock, height)
 		return nil
 	}
 }

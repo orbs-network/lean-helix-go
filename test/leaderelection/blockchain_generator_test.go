@@ -13,8 +13,13 @@ func TestBlockchainGenerator(t *testing.T) {
 	block1 := mocks.ABlock(interfaces.GenesisBlock)
 	block2 := mocks.ABlock(block1)
 	block3 := mocks.ABlock(block2)
+	block4 := mocks.ABlock(block3)
 
-	bc := GenerateBlockChainFor([]interfaces.Block{block1, block2, block3})
+	bc := GenerateBlockChainFor([]interfaces.Block{block1, block2, block3, block4})
+	if bc == nil {
+		t.Fatal("Error creating mock blockchain for tests")
+		return
+	}
 
-	require.Equal(t, primitives.BlockHeight(3), bc.LastBlock().Height())
+	require.True(t, bc.LastBlock().Height() == primitives.BlockHeight(4))
 }
