@@ -52,6 +52,7 @@ func TestNodeSync(t *testing.T) {
 		// opening node3's network to messages
 		node3.Communication.ClearIncomingWhitelist()
 
+		// TODO Use GetBlockChainFor()
 		// syncing node3
 		latestBlock := node0.GetLatestBlock()
 		latestBlockProof := node0.GetLatestBlockProof()
