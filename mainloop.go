@@ -100,27 +100,29 @@ func (m *MainLoop) run(ctx context.Context) {
 
 			current := m.state.HeightView()
 			if current.Height() != trigger.Hv.Height() || current.View() != trigger.Hv.View() { // stale election message
-				m.logger.Debug("LHFLOW MAINLOOP ELECTION - INVALID HEIGHT/VIEW IGNORED - Current: %s, ElectionTrigger: %s", current, trigger.Hv)
+				m.logger.Debug("LHFLOW ELECTION MAINLOOP - INVALID HEIGHT/VIEW IGNORED - Current: %s, ElectionTrigger: %s", current, trigger.Hv)
 				continue
 			}
 
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
-			m.logger.Debug("LHFLOW MAINLOOP ELECTION - CANCELED WORKER CONTEXT")
+			m.logger.Debug("LHFLOW ELECTION MAINLOOP - CANCELED WORKER CONTEXT")
+			trigger.Ctx = workerCtx
 			m.worker.electionChannel <- trigger
 
 		case receivedBlockWithProof := <-m.mainUpdateStateChannel: // NodeSync
 
 			if err := checkReceivedBlockIsValid(m.state.Height(), receivedBlockWithProof); err != nil {
-				m.logger.Debug("LHFLOW UPDATESTATE - INVALID MAINLOOP BLOCK IGNORED - %s", err)
+				m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - INVALID BLOCK IGNORED - %s", err)
 				continue
 			}
 
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
-			m.logger.Debug("LHFLOW MAINLOOP UPDATESTATE - CANCELED WORKER CONTEXT")
+			receivedBlockWithProof.ctx = workerCtx
+			m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - CANCELED WORKER CONTEXT")
 			m.worker.workerUpdateStateChannel <- receivedBlockWithProof
-			m.logger.Debug("LHFLOW MAINLOOP UPDATESTATE - Wrote to worker UpdateState channel")
+			m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - Wrote to worker UpdateState channel")
 
 		}
 	}
@@ -157,6 +159,7 @@ func (m *MainLoop) UpdateState(ctx context.Context, prevBlock interfaces.Block, 
 		m.logger.Debug("UpdateState() ID=%s CONTEXT CANCELED", termincommittee.Str(m.config.Membership.MyMemberId()))
 		return errors.Errorf("context canceled")
 	case m.mainUpdateStateChannel <- &blockWithProof{
+		ctx:                 nil,
 		block:               prevBlock,
 		prevBlockProofBytes: prevBlockProofBytes,
 	}:

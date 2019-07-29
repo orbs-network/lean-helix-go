@@ -212,7 +212,7 @@ func (g *CommunicationMock) DisableOutgoingCommunication() {
 	g.SetOutgoingWhitelist([]primitives.MemberId{})
 }
 
-func (g *CommunicationMock) EnableOutgoing() {
+func (g *CommunicationMock) EnableOutgoingCommunication() {
 	g.ClearOutgoingWhitelist()
 }
 

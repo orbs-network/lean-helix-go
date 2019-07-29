@@ -7,15 +7,24 @@
 package mocks
 
 import (
-	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/pkg/errors"
 )
 
 type chainItem struct {
 	block      interfaces.Block
 	blockProof []byte
 }
+
+func (i *chainItem) Block() interfaces.Block {
+	return i.block
+}
+
+func (i *chainItem) Proof() []byte {
+	return i.blockProof
+}
+
 type InMemoryBlockchain struct {
 	items []*chainItem
 }
@@ -28,15 +37,18 @@ func NewInMemoryBlockchain() *InMemoryBlockchain {
 	}
 }
 
-func (bs *InMemoryBlockchain) GetFirstXItems(count int) *InMemoryBlockchain {
+func (bs *InMemoryBlockchain) GetFirstXItems(count int) (*InMemoryBlockchain, error) {
+	if bs == nil {
+		return nil, errors.New("GetFirstXItems(): bs in nil")
+	}
 	newItems := make([]*chainItem, count, count)
 	copied := copy(newItems, bs.items)
 	if copied != count {
-		panic(fmt.Sprintf("GetFirstXItems(): bad copy: bs.items=%v newItems=%v copied=%d count=%d", bs.items, newItems, copied, count))
+		return nil, errors.Errorf("GetFirstXItems(): bad copy: bs.items=%v newItems=%v copied=%d count=%d", bs.items, newItems, copied, count)
 	}
 	return &InMemoryBlockchain{
 		items: newItems,
-	}
+	}, nil
 }
 
 func (bs *InMemoryBlockchain) AppendBlockToChain(block interfaces.Block, blockProof []byte) {
@@ -61,4 +73,9 @@ func (bs *InMemoryBlockchain) BlockProofAt(height primitives.BlockHeight) []byte
 func (bs *InMemoryBlockchain) BlockAndProofAt(height primitives.BlockHeight) (interfaces.Block, []byte) {
 	item := bs.items[height]
 	return item.block, item.blockProof
+}
+
+// Do we want to strictly maintain escapulation here? probably only if we decide to RWLock/RLock the "bs.items" field
+func (bs *InMemoryBlockchain) Items() []*chainItem {
+	return bs.items
 }

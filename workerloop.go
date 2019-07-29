@@ -19,12 +19,14 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/rawmessagesfilter"
 	"github.com/orbs-network/lean-helix-go/services/storage"
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/state"
 	"github.com/pkg/errors"
 )
 
 type blockWithProof struct {
+	ctx                 context.Context
 	block               interfaces.Block
 	prevBlockProofBytes []byte
 }
@@ -92,6 +94,7 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 			lh.logger.Debug("LHFLOW LHMSG WORKERLOOP RECEIVED %v from %v for H=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight())
 			lh.filter.HandleConsensusRawMessage(res.ctx, res.msg)
 
+			// TODO Add ctx to trigger
 		case trigger := <-lh.electionChannel:
 			if trigger == nil {
 				// this cannot happen, ignore
@@ -105,12 +108,16 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 			}
 
 			lh.logger.Debug("LHFLOW WORKERLOOP ELECTION")
-			trigger.MoveToNextLeader(ctx)
+			trigger.MoveToNextLeader(trigger.Ctx)
 
 		case receivedBlockWithProof := <-lh.workerUpdateStateChannel: // NodeSync
-			lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP - Received block")
-			lh.HandleUpdateState(ctx, receivedBlockWithProof)
-			lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP - Handled block")
+			var height primitives.BlockHeight
+			if receivedBlockWithProof.block != nil {
+				height = receivedBlockWithProof.block.Height()
+			}
+			lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP - Received block with H=%d", height)
+			lh.HandleUpdateState(receivedBlockWithProof.ctx, receivedBlockWithProof)
+			lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP - Handled block with H=%d", height)
 		}
 	}
 }
@@ -119,12 +126,12 @@ func (lh *WorkerLoop) HandleUpdateState(ctx context.Context, receivedBlockWithPr
 	receivedBlockHeight := blockheight.GetBlockHeight(receivedBlockWithProof.block)
 
 	if receivedBlockHeight >= lh.state.Height() {
-		lh.logger.Debug("LHFLOW WORKERLOOP UPDATESTATE ACCEPTED block with height=%d, calling onNewConsensusRound()", receivedBlockHeight)
+		lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP ACCEPTED block with height=%d, calling onNewConsensusRound() from HandleUpdateState", receivedBlockHeight)
 		// This block is received from external source
 		// Refuse to be leader on V=0 for a block received from block sync, because this block will usually be not be the latest block.
 		lh.onNewConsensusRound(ctx, receivedBlockWithProof.block, receivedBlockWithProof.prevBlockProofBytes, false)
 	} else {
-		lh.logger.Debug("LHFLOW WORKERLOOP UPDATESTATE IGNORE - Received block ignored because its height=%d is less than current height=%d", receivedBlockHeight, lh.state.Height())
+		lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP IGNORE - Received block ignored because its height=%d is less than current height=%d", receivedBlockHeight, lh.state.Height())
 	}
 }
 

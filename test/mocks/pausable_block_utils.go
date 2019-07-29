@@ -18,6 +18,9 @@ import (
 )
 
 func CalculateBlockHash(block interfaces.Block) primitives.BlockHash {
+	if block == nil {
+		return primitives.BlockHash{}
+	}
 	mockBlock := block.(*MockBlock)
 	str := fmt.Sprintf("%d_%s", mockBlock.Height(), mockBlock.Body())
 	hash := sha256.Sum256([]byte(str))
@@ -57,7 +60,7 @@ func (b *PausableBlockUtils) RequestNewBlockProposal(ctx context.Context, blockH
 	if b.PauseOnRequestNewBlockWhenCounterIsZero == 0 {
 		fmt.Printf("ID=%s H=%d RequestNewBlockProposal: Sleeping until latch is resumed\n", b.memberId, blockHeight)
 		b.RequestNewBlockLatch.ReturnWhenLatchIsResumed(ctx, b.memberId)
-		fmt.Printf("ID=%s H=%d RequestNewBlockProposal: Latch has resumed\n", b.memberId, blockHeight)
+		fmt.Printf("ID=%s H=%d RequestNewBlockProposal: Latch has resumed. ctx.Err: %s\n", b.memberId, blockHeight, ctx.Err())
 	} else {
 		b.PauseOnRequestNewBlockWhenCounterIsZero--
 	}

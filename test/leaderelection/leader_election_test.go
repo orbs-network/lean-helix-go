@@ -10,7 +10,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
-	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
@@ -128,11 +127,10 @@ func TestLeaderCircularOrdering(t *testing.T) {
 		// by calling RequestNewBlockProposal.
 		// We DO want node0 to pause on RequestNewBlockProposal because it is our stop signal for the test
 
-		timer := time.AfterFunc(10000*time.Millisecond, func() {
+		timer := time.AfterFunc(2*time.Second, func() {
 			t.Fatal("Test is stuck")
 		})
 		h := NewStartedHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
-		h.net.SetNodesToPauseOnRequestNewBlock()
 
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
 		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[0])
@@ -223,17 +221,17 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 		node3 := h.net.Nodes[3]
 
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
-		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
+		node0.Communication.DisableOutgoingCommunication()
 
 		// Elect node1 as the leader
-		<-node0.TriggerElectionOnNode(ctx)
-		<-node1.TriggerElectionOnNode(ctx)
-		<-node2.TriggerElectionOnNode(ctx)
-		<-node3.TriggerElectionOnNode(ctx)
+		node0.TriggerElectionOnNode(ctx)
+		node1.TriggerElectionOnNode(ctx)
+		node2.TriggerElectionOnNode(ctx)
+		node3.TriggerElectionOnNode(ctx)
 
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node1)
-		node0.Communication.ClearOutgoingWhitelist()
+		node0.Communication.EnableOutgoingCommunication()
 
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node1)
 		h.net.WaitForAllNodesToCommitTheSameBlock(ctx)
@@ -266,7 +264,7 @@ func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 		node1.Communication.OnIncomingMessage(ctx, node2VCMessage.ToConsensusRawMessage())
 
 		// Resume the paused leader (node0)
-		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
+		//h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
 		// Make sure we're on block1
 		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block1))

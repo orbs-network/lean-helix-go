@@ -18,13 +18,13 @@ import (
 	"testing"
 )
 
-func TestNodeSync(t *testing.T) {
+func TestNodeSync_AllNodesReachSameHeight(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
 		block3 := mocks.ABlock(block2)
 
-		net := network.ATestNetworkBuilder(4, block1, block2, block3).Build(ctx)
+		net := network.ATestNetworkBuilder(4, block1, block2, block3).LogToConsole().Build(ctx)
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
@@ -36,43 +36,39 @@ func TestNodeSync(t *testing.T) {
 		// closing node3's network to messages (To make it out of sync)
 		node3.Communication.SetIncomingWhitelist([]primitives.MemberId{})
 
-		// node0, node1, and node2 are progressing to block2
+		// node0, node1, and node2 are closing block1
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		net.WaitUntilNodesCommitASpecificBlock(ctx, block1, node0, node1, node2)
-
-		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
-		net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		net.WaitUntilNodesCommitASpecificBlock(ctx, block2, node0, node1, node2)
+		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, block1, node0, node1, node2)
 
 		// node3 is still "stuck" on the genesis block
 		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)
 
-		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
+		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // hangs on block2
+
+		bc, err := leaderelection.GenerateProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)
+		if err != nil {
+			t.Fatalf("Error creating mock blockchain for tests - %s", err)
+			return
+		}
+		blockToSync, blockProofToSync := bc.BlockAndProofAt(2)
+		prevBlockProofToSync := bc.BlockProofAt(1)
+		if err := node3.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync); err != nil {
+			t.Fatalf("Sync failed for node %s - %s", node3.MemberId, err)
+		}
+		net.WaitUntilCurrentHeightGreaterEqualThan(ctx, 3, node3)
+		require.True(t, node3.GetCurrentHeight() >= block2.Height())
 
 		// opening node3's network to messages
 		node3.Communication.ClearIncomingWhitelist()
 
-		// TODO Use GetBlockChainFor()
-		// syncing node3
-		bc := leaderelection.GenerateBlockChainFor([]interfaces.Block{block1, block2, block3})
-		if bc == nil {
-			t.Fatal("Error creating mock blockchain for tests")
-			return
-		}
-		blockToSync, blockProofToSync := bc.BlockAndProofAt(3)
-		prevBlockProofToSync := bc.BlockProofAt(2)
-
-		//latestBlock := node0.GetLatestBlock()
-		//latestBlockProof := node0.GetLatestBlockProof()
-		//prevBlockProof := node0.GetBlockProofAt(latestBlock.Height())
-		if err := node3.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync); err != nil {
-			t.Fatalf("Sync failed for node %s - %s", node3.MemberId, err)
-		}
-
+		net.SetNodesToNotPauseOnRequestNewBlock()
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
-		// now that node3 is synced, they all should progress to block3
-		net.WaitUntilNodesCommitASpecificBlock(ctx, block3, node0, node1, node2, node3)
+		// Just verify all nodes reached the height of block2, either by commit or by sync.
+		// DON'T try to verify the next block is committed (block3) because sometimes one of the nodes gets left behind
+		// Normally that node would trigger a sync and get the block and continue closing blocks with the other nodes,
+		// but during this test there is no additional sync so the node will never catch up, thus it will never commit block3
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, block2.Height(), node0, node1, node2, node3)
 	})
 }

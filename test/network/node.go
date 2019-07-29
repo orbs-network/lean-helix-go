@@ -41,6 +41,8 @@ type Node struct {
 	OnNewConsensusRoundChannel chan primitives.BlockHeight
 	WriteToStateChannel        bool
 	OnUpdateStateLatch         *test.Latch
+	consensusStarted           bool
+	log                        interfaces.Logger
 }
 
 func (node *Node) State() state.State {
@@ -83,6 +85,7 @@ func (node *Node) TriggerElectionOnNode(ctx context.Context) <-chan struct{} {
 
 func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, blockProof []byte) {
 	node.blockChain.AppendBlockToChain(block, blockProof)
+	node.log.Debug("onCommittedBlock: appended to blockchain")
 
 	if node.WriteToStateChannel {
 		nodeState := &NodeState{
@@ -95,6 +98,7 @@ func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, 
 			return
 
 		case node.CommittedBlockChannel <- nodeState:
+			fmt.Printf("---WROTE--- ID=%s H=%d\n", node.MemberId, block.Height())
 			return
 		}
 	}
@@ -105,6 +109,11 @@ func (node *Node) Blockchain() *mocks.InMemoryBlockchain {
 }
 
 func (node *Node) onNewConsensusRound(ctx context.Context, newHeight primitives.BlockHeight, prevBlock interfaces.Block, canBeFirstLeader bool) {
+
+	// Only on sync flow (if on Commit flow, the block is appended in onCommittedBlock above)
+	if !canBeFirstLeader {
+		node.blockChain.AppendBlockToChain(prevBlock, nil) // We don't have the proof here
+	}
 
 	fmt.Printf("ID=%s onNewConsensusRound() H=%d\n", node.MemberId, newHeight)
 	if node.OnNewConsensusRoundChannel == nil {
@@ -137,12 +146,17 @@ func (node *Node) StartConsensus(ctx context.Context) error {
 	if node.leanHelix == nil {
 		panic("StartConsensus(): leanhelix is nil")
 	}
+	if node.consensusStarted {
+		panic("StartConsensus() already started!")
+	}
+
+	node.consensusStarted = true
 	node.leanHelix.Run(ctx)
 	height := node.GetCurrentHeight()
 	if height > 0 {
 		panic("Cannot start consensus if height > 0")
 	}
-	fmt.Printf("StartConsensus(): H=%d\n", height)
+	node.log.Debug("H=%d ID=%s StartConsensus START", height, node.MemberId)
 	return node.leanHelix.UpdateState(ctx, node.GetLatestBlock(), nil)
 }
 
@@ -211,10 +225,11 @@ func NewNode(
 		Communication:              communication,
 		Membership:                 membership,
 		MemberId:                   memberId,
-		CommittedBlockChannel:      make(chan *NodeState),
+		CommittedBlockChannel:      make(chan *NodeState, 100),
 		OnNewConsensusRoundChannel: nil,
 		OnUpdateStateLatch:         test.NewLatch(),
 		WriteToStateChannel:        true,
+		log:                        logger,
 	}
 	config := node.BuildConfig(logger)
 	config.OverrideElectionTrigger = node.ElectionTrigger

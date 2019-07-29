@@ -75,18 +75,12 @@ func TestVerifyPreprepareMessageSentByLeader_HappyFlow(t *testing.T) {
 	})
 }
 
-// TODO FLAKY
 func TestPreprepareMessageNotSentByLeaderIfRequestNewBlockProposalContextCancelled(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		nodeCount := 4
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
 		block3 := mocks.ABlock(block2)
-		bc := leaderelection.GenerateBlockChainFor([]interfaces.Block{block1, block2, block3})
-		if bc == nil {
-			t.Fatal("Error creating mock blockchain for tests")
-			return
-		}
 
 		net := network.
 			NewTestNetworkBuilder().
@@ -95,6 +89,11 @@ func TestPreprepareMessageNotSentByLeaderIfRequestNewBlockProposalContextCancell
 			LogToConsole().
 			Build(ctx)
 
+		bc, err := leaderelection.GenerateProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)
+		if err != nil {
+			t.Fatalf("Error creating mock blockchain for tests - %s", err)
+			return
+		}
 		node0 := net.Nodes[0]
 		consensusRoundChan := make(chan primitives.BlockHeight, 10)
 
@@ -147,9 +146,9 @@ func TestVerifyWorkerContextNotCancelledIfNodeSyncBlockIsIgnored(t *testing.T) {
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
 		require.True(t, net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block1))
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // pause when proposing block2
-		bc := leaderelection.GenerateBlockChainFor([]interfaces.Block{block1, block2, block3})
-		if bc == nil {
-			t.Fatal("Error creating mock blockchain for tests")
+		bc, err := leaderelection.GenerateProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)
+		if err != nil {
+			t.Fatalf("Error creating mock blockchain for tests - %s", err)
 			return
 		}
 

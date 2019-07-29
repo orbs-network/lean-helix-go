@@ -15,6 +15,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"math"
 	"sync"
+	"time"
 )
 
 type TestNetwork struct {
@@ -150,11 +151,58 @@ func (net *TestNetwork) WaitUntilNodesCommitASpecificBlock(ctx context.Context, 
 	}
 }
 
-func (net *TestNetwork) WaitUntilNodesCommitASpecificHeight(ctx context.Context, height primitives.BlockHeight, nodes ...*Node) {
+func (net *TestNetwork) WaitUntilNodesEventuallyCommitASpecificBlock(ctx context.Context, block interfaces.Block, nodes ...*Node) {
+
 	if nodes == nil {
 		nodes = net.Nodes
 	}
 
+	fmt.Printf("---START---%d\n", len(nodes))
+	wg := &sync.WaitGroup{}
+
+	for _, node := range nodes {
+		wg.Add(1)
+		go func() {
+			eventuallyMatchBlock(ctx, wg, node, block)
+		}()
+	}
+	wg.Wait()
+	fmt.Printf("---DONE ALL---\n")
+
+}
+
+func eventuallyMatchBlock(ctx context.Context, wg *sync.WaitGroup, node *Node, block interfaces.Block) {
+	for {
+		select {
+		case <-ctx.Done():
+			wg.Done()
+			return
+		default:
+			var nodeHeight primitives.BlockHeight
+			if node.blockChain.LastBlock() != nil {
+				nodeHeight = node.blockChain.LastBlock().Height()
+			}
+			if nodeHeight >= block.Height() {
+				fmt.Printf("MATCHER: ID=%s CNT=%d H=%d EXP=%s\n", node.MemberId, len(node.blockChain.Items()), node.GetCurrentHeight(), block)
+				for _, b := range node.blockChain.Items() {
+					if matchers.BlocksAreEqual(block, b.Block()) {
+						wg.Done()
+						return
+					}
+				}
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+	}
+}
+
+func (net *TestNetwork) WaitUntilNodesCommitASpecificHeight(ctx context.Context, height primitives.BlockHeight, nodes ...*Node) {
+
+	if nodes == nil {
+		nodes = net.Nodes
+	}
+
+	fmt.Printf("---START---%d\n", len(nodes))
 	wg := &sync.WaitGroup{}
 
 	for _, node := range nodes {
@@ -168,17 +216,52 @@ func (net *TestNetwork) WaitUntilNodesCommitASpecificHeight(ctx context.Context,
 					return
 				case nodeState := <-node.CommittedBlockChannel:
 					topBlock = nodeState.block
+					fmt.Printf("---READ--- ID=%s H=%d\n", node.MemberId, topBlock.Height())
 				}
-
+				fmt.Printf("ID=%s Expected: %s Committed: %s\n", node.MemberId, height, topBlock.Height())
 				if height == topBlock.Height() {
+					fmt.Printf("---DONE---%s\n", node.MemberId)
 					wg.Done()
-					fmt.Printf("ID=%s Expected: %s Committed: %s\n", node.MemberId, height, topBlock.Height())
 					return
 				}
 			}
 		}()
 	}
 	wg.Wait()
+	fmt.Printf("---DONE ALL---\n")
+
+}
+
+func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context.Context, height primitives.BlockHeight, nodes ...*Node) {
+
+	if nodes == nil {
+		nodes = net.Nodes
+	}
+
+	fmt.Printf("---START---%d\n", len(nodes))
+	wg := &sync.WaitGroup{}
+
+	for _, node := range nodes {
+		wg.Add(1)
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					wg.Done()
+					return
+				default:
+					if node.GetCurrentHeight() >= height {
+						wg.Done()
+						return
+					}
+					time.Sleep(20 * time.Millisecond)
+				}
+			}
+		}()
+	}
+	wg.Wait()
+	fmt.Printf("---DONE ALL---\n")
+
 }
 
 func (net *TestNetwork) SetNodesToPauseOnValidateBlock(nodes ...*Node) {
@@ -232,6 +315,7 @@ func (net *TestNetwork) SetNodesPauseOnRequestNewBlockWhenCounterIsZero(counter 
 	}
 	for _, node := range nodes {
 		if pausableBlockUtils, ok := node.BlockUtils.(*mocks.PausableBlockUtils); ok {
+			node.log.Debug("ID=%s OnRequestNewBlockPauseCounter=%d", node.MemberId, counter)
 			pausableBlockUtils.PauseOnRequestNewBlockWhenCounterIsZero = counter
 		} else {
 			panic("Node.BlockUtils is not PausableBlockUtils")
@@ -275,12 +359,30 @@ func (net *TestNetwork) AllNodesValidatedNoMoreThanOnceBeforeCommit(ctx context.
 	return true
 }
 
+func (net *TestNetwork) WaitUntilCurrentHeightGreaterEqualThan(ctx context.Context, height primitives.BlockHeight, node *Node) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			if node.GetCurrentHeight() >= height {
+				return
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+	}
+}
+
 func (net *TestNetwork) WaitUntilNewConsensusRoundForBlockHeight(ctx context.Context, height primitives.BlockHeight, node *Node) {
+	if node.GetCurrentHeight() >= height {
+		return
+	}
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case h := <-node.ConsensusRoundChannel():
+			fmt.Printf("")
 			if h == height {
 				return
 			}
