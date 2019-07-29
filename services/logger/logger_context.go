@@ -13,7 +13,10 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/state"
 	"math"
+	"time"
 )
+
+const PRINT_TIMESTAMP = true
 
 type _LC struct {
 	h  primitives.BlockHeight
@@ -53,16 +56,25 @@ func (l *lhLogger) ExternalLogger() interfaces.Logger {
 	return l.externalLogger
 }
 
+func nowISO() string {
+	// Full ISO8601 is "2006-01-02T15:04:05.000Z"
+	if PRINT_TIMESTAMP {
+		return time.Now().Format("15:04:05.000Z ")
+	} else {
+		return ""
+	}
+}
+
 func (l *lhLogger) Debug(format string, args ...interface{}) {
-	l.externalLogger.Debug(fmt.Sprintf("%s %s", LC(l.state.Height(), l.state.View(), l.config.Membership.MyMemberId()), format), args...)
+	l.externalLogger.Debug(fmt.Sprintf("%s%s %s", nowISO(), LC(l.state.Height(), l.state.View(), l.config.Membership.MyMemberId()), format), args...)
 }
 
 func (l *lhLogger) Info(format string, args ...interface{}) {
-	l.externalLogger.Info(fmt.Sprintf("%s %s", LC(l.state.Height(), l.state.View(), l.config.Membership.MyMemberId()), format), args...)
+	l.externalLogger.Info(fmt.Sprintf("%s%s %s", nowISO(), LC(l.state.Height(), l.state.View(), l.config.Membership.MyMemberId()), format), args...)
 }
 
 func (l *lhLogger) Error(format string, args ...interface{}) {
-	l.externalLogger.Error(fmt.Sprintf("%s %s", LC(l.state.Height(), l.state.View(), l.config.Membership.MyMemberId()), format), args...)
+	l.externalLogger.Error(fmt.Sprintf("%s%s %s", nowISO(), LC(l.state.Height(), l.state.View(), l.config.Membership.MyMemberId()), format), args...)
 }
 
 func NewLhLogger(config *interfaces.Config, state state.State) LHLogger {
