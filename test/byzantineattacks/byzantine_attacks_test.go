@@ -107,7 +107,7 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
-		require.True(t, net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, goodBlock))
+		require.True(t, net.MAYBE_FLAKY_WaitForAllNodesToCommitABlockAndReturnWhetherEqualToGiven(ctx, goodBlock))
 	})
 }
 

@@ -175,7 +175,7 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block1, should be agreed by all nodes
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block1))
+		require.True(t, h.net.MAYBE_FLAKY_WaitForAllNodesToCommitABlockAndReturnWhetherEqualToGiven(ctx, block1))
 		t.Log("--- BLOCK1 COMMITTED ---")
 		// Thwart Preprepare message sending by node0 for block2
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // pause when proposing block2
@@ -207,7 +207,7 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 		t.Log("--- NODE1 PAUSED ON REQUEST NEW BLOCK ---")
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node1) // processing block 3
 		t.Log("--- NODE1 RESUMED REQUEST NEW BLOCK ---")
-		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block3))
+		require.True(t, h.net.MAYBE_FLAKY_WaitForAllNodesToCommitABlockAndReturnWhetherEqualToGiven(ctx, block3))
 	})
 }
 
@@ -243,7 +243,7 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 	})
 }
 
-func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
+func TestViewNotIncrementedIfLessThan2fPlus1ViewChange(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
@@ -254,10 +254,11 @@ func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 		node1 := h.net.Nodes[1]
 		node2 := h.net.Nodes[2]
 
-		// hang the leader (node0)
+		// Verify leader (node0) indeed starts RequestNewBlockProposal()
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 
-		// sending only 2 view-change (not enough to be elected)
+		// sending only 2 VIEW_CHANGE
+		// This is not enough to be elected as f=1 for 4 nodes, so 2f+1 is 3 nodes
 		node0VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node0.KeyManager, node0.MemberId, 1, 1, nil)
 		node2VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil)
 		node1.Communication.OnIncomingMessage(ctx, node0VCMessage.ToConsensusRawMessage())
@@ -266,22 +267,16 @@ func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
 		// Resume the paused leader (node0)
 		//h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
-		// Make sure we're on block1
-		require.True(t, h.net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block1))
+		h.net.WaitUntilCurrentHeightGreaterEqualThan(ctx, 1, node0)
+		h.net.WaitUntilCurrentHeightGreaterEqualThan(ctx, 1, node1)
 
-		node1TriesToProposeABlock := make(chan struct{})
 		go func() {
+			// Fail if node1 starts RequestNewBlockProposal() because it means it became new leader
 			h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node1)
-			node1TriesToProposeABlock <- struct{}{}
+			t.Fatal("node1 tried to propose a block after receiving only 2 view change messages")
 		}()
 
-		shortCtx, shortCancel := context.WithTimeout(ctx, 100*time.Millisecond)
-		defer shortCancel()
-		select {
-		case <-shortCtx.Done():
-			t.Log("node 1 got a chance to propose a block and did not take it as expected")
-		case <-node1TriesToProposeABlock:
-			t.Fatal("node1 tried to propose a block after receiving only 2 view change messages")
-		}
+		time.Sleep(100 * time.Millisecond)
+		t.Log("node 1 got a chance to propose a block and did not take it as expected")
 	})
 }

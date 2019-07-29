@@ -55,7 +55,7 @@ func (net *TestNetwork) AllNodesChainEndsWithABlock(block interfaces.Block) bool
 	return true
 }
 
-func (net *TestNetwork) WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx context.Context, expectedBlock interfaces.Block) bool {
+func (net *TestNetwork) MAYBE_FLAKY_WaitForAllNodesToCommitABlockAndReturnWhetherEqualToGiven(ctx context.Context, expectedBlock interfaces.Block) bool {
 	for _, node := range net.Nodes {
 		select {
 		case <-ctx.Done():

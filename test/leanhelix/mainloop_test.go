@@ -144,7 +144,7 @@ func TestVerifyWorkerContextNotCancelledIfNodeSyncBlockIsIgnored(t *testing.T) {
 		net.StartConsensus(ctx)
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block1, should be agreed by all nodes
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		require.True(t, net.WaitForAllNodesToCommitBlockAndReturnWhetherEqualToGiven(ctx, block1))
+		require.True(t, net.MAYBE_FLAKY_WaitForAllNodesToCommitABlockAndReturnWhetherEqualToGiven(ctx, block1))
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // pause when proposing block2
 		bc, err := leaderelection.GenerateProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)
 		if err != nil {
