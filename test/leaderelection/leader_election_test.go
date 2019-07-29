@@ -132,32 +132,40 @@ func TestLeaderCircularOrdering(t *testing.T) {
 		})
 		h := NewStartedHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
 
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
+		go func() { h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0]) }()
 		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[0])
 
 		fmt.Println("Electing 1")
 		electNewLeader(ctx, h, 1)
+		time.Sleep(100 * time.Millisecond)
 		fmt.Println("Electing 1 DONE")
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[1])
+		go func() { h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[1]) }()
+		fmt.Println("Paused 1 on RequestNewBlock")
 		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[1])
 
 		fmt.Println("Electing 2")
 		electNewLeader(ctx, h, 2)
+		time.Sleep(100 * time.Millisecond)
 		fmt.Println("Electing 2 DONE")
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[2])
+		go func() { h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[2]) }()
+		fmt.Println("Paused 2 on RequestNewBlock")
 		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[2])
 
 		fmt.Println("Electing 3")
 		electNewLeader(ctx, h, 3)
+		time.Sleep(100 * time.Millisecond)
 		fmt.Println("Electing 3 DONE")
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[3])
+		go func() { h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[3]) }()
+		fmt.Println("Paused 3 on RequestNewBlock")
 		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[3])
 
 		// back to node0 as leader
 		fmt.Println("Electing 0 again")
 		electNewLeader(ctx, h, 0)
+		time.Sleep(100 * time.Millisecond)
 		fmt.Println("Electing 0 again DONE")
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
+		go func() { h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0]) }()
+		fmt.Println("Paused 0 on RequestNewBlock")
 		timer.Stop()
 	})
 }
@@ -211,7 +219,7 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 	})
 }
 
-// TODO FLAKY!!!!
+// TODO FLAKY
 func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewStartedHarness(ctx, t, LOG_TO_CONSOLE)
@@ -223,13 +231,19 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 		node0.Communication.DisableOutgoingCommunication()
 
-		// Elect node1 as the leader
-		node0.TriggerElectionOnNode(ctx)
-		node1.TriggerElectionOnNode(ctx)
-		node2.TriggerElectionOnNode(ctx)
-		node3.TriggerElectionOnNode(ctx)
+		// Wait for H=1 so that election triggers will be sent with H=1
+		// o/w they will sometimes be sent with H=0 and subsequently be ignored
+		// by workerloop's election channel, causing election to not happen,
+		// failing/hanging the test.
+		h.net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 1)
 
-		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
+		// Elect node1 as the leader
+		<-node0.TriggerElectionOnNode(ctx)
+		<-node1.TriggerElectionOnNode(ctx)
+		<-node2.TriggerElectionOnNode(ctx)
+		<-node3.TriggerElectionOnNode(ctx)
+
+		//h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node1)
 		node0.Communication.EnableOutgoingCommunication()
 

@@ -8,7 +8,6 @@ package mocks
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go/instrumentation/metrics"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/state"
@@ -18,7 +17,7 @@ import (
 type ElectionTriggerMock struct {
 	blockHeight     primitives.BlockHeight
 	view            primitives.View
-	electionHandler func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics))
+	electionHandler func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)
 	electionChannel chan *interfaces.ElectionTrigger
 }
 
@@ -36,7 +35,7 @@ func NewMockElectionTrigger() *ElectionTriggerMock {
 	}
 }
 
-func (et *ElectionTriggerMock) RegisterOnElection(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, electionHandler func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics))) {
+func (et *ElectionTriggerMock) RegisterOnElection(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, electionHandler func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)) {
 	et.view = view
 	et.blockHeight = blockHeight
 	et.electionHandler = electionHandler

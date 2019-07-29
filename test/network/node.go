@@ -43,6 +43,7 @@ type Node struct {
 	OnUpdateStateLatch         *test.Latch
 	consensusStarted           bool
 	log                        interfaces.Logger
+	OnElectionCallback         interface{}
 }
 
 func (node *Node) State() state.State {
@@ -80,7 +81,9 @@ func (node *Node) TriggerElectionOnNode(ctx context.Context) <-chan struct{} {
 		panic("You are trying to trigger election with an election trigger that is not the ElectionTriggerMock")
 	}
 
-	return electionTriggerMock.ManualTrigger(ctx, node.State().HeightView())
+	hv := node.State().HeightView()
+	node.log.Debug("ID=%s Calling ManualTrigger with %s", node.MemberId, hv)
+	return electionTriggerMock.ManualTrigger(ctx, hv)
 }
 
 func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, blockProof []byte) {

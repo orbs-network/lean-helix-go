@@ -71,8 +71,8 @@ func NewWorkerLoop(
 	logger.Debug("LHFLOW NewWorkerLoop()")
 	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), logger, state)
 	return &WorkerLoop{
-		MessagesChannel:             make(chan *MessageWithContext, 10),     // TODO what's the correct buffer size?
-		workerUpdateStateChannel:    make(chan *workerUpdateStateMessage),   // TODO what's the correct buffer size?
+		MessagesChannel:             make(chan *MessageWithContext, 10),        // TODO what's the correct buffer size?
+		workerUpdateStateChannel:    make(chan *workerUpdateStateMessage),      // TODO what's the correct buffer size?
 		electionChannel:             make(chan *workerElectionsTriggerMessage), // TODO what's the correct buffer size?
 		electionTrigger:             electionTrigger,
 		state:                       state,
@@ -111,7 +111,8 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 			}
 			current := lh.state.HeightView()
 			if current.Height() != trigger.Hv.Height() || current.View() != trigger.Hv.View() { // stale election message
-				lh.logger.Debug("LHFLOW WORKERLOOP ELECTION - INVALID HEIGHT/VIEW IGNORED - Current: %s, ElectionTrigger: %s", current, trigger.Hv)
+				lh.logger.Debug("LHFLOW WORKERLOOP ELECTION - INVALID HEIGHT/VIEW IGNORED - Current: %s, ElectionTrigger: %s",
+					current, trigger.Hv)
 				continue
 			}
 

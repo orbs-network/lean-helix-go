@@ -224,7 +224,7 @@ func calcLeaderOfViewAndCommittee(view primitives.View, committeeMembersMemberId
 	return committeeMembersMemberIds[index]
 }
 
-func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics)) {
+func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primitives.BlockHeight, view primitives.View, onElectionCallback interfaces.OnElectionCallback) {
 
 	currentHV := tic.State.HeightView()
 	if height != currentHV.Height() || view != currentHV.View() {
@@ -252,8 +252,8 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 			tic.logger.Info("LHMSG SEND VIEW_CHANGE to %s FAILED - %s", newLeader, sendErr)
 		}
 	}
-	if onElectionCB != nil {
-		onElectionCB(metrics.NewElectionMetrics(newLeader, currentHV.View()))
+	if onElectionCallback != nil {
+		onElectionCallback(metrics.NewElectionMetrics(newLeader, currentHV.View()))
 	}
 }
 

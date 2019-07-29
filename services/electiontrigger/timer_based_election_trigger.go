@@ -8,7 +8,6 @@ package Electiontrigger
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go/instrumentation/metrics"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/state"
@@ -23,12 +22,12 @@ type TimerBasedElectionTrigger struct {
 	minTimeout      time.Duration
 	view            primitives.View
 	blockHeight     primitives.BlockHeight
-	electionHandler func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics))
-	onElectionCB    func(m metrics.ElectionMetrics)
+	electionHandler func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)
+	onElectionCB    interfaces.OnElectionCallback
 	timer           *time.Timer
 }
 
-func NewTimerBasedElectionTrigger(minTimeout time.Duration, onElectionCB func(m metrics.ElectionMetrics)) *TimerBasedElectionTrigger {
+func NewTimerBasedElectionTrigger(minTimeout time.Duration, onElectionCB interfaces.OnElectionCallback) *TimerBasedElectionTrigger {
 	return &TimerBasedElectionTrigger{
 		electionChannel: make(chan *interfaces.ElectionTrigger, 0), // Caution - keep 0 to make election channel blocking
 		minTimeout:      minTimeout,
@@ -36,7 +35,7 @@ func NewTimerBasedElectionTrigger(minTimeout time.Duration, onElectionCB func(m 
 	}
 }
 
-func (t *TimerBasedElectionTrigger) RegisterOnElection(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, electionHandler func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics))) {
+func (t *TimerBasedElectionTrigger) RegisterOnElection(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, electionHandler func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)) {
 	if t.electionHandler == nil || t.view != view || t.blockHeight != blockHeight {
 		timeout := t.CalcTimeout(view)
 		t.view = view

@@ -8,7 +8,7 @@ package tests
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go/instrumentation/metrics"
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/state"
 	"github.com/orbs-network/lean-helix-go/test"
@@ -29,7 +29,7 @@ func TestCallingCallback(t *testing.T) {
 		var actualHeight primitives.BlockHeight = 666
 		var expectedView primitives.View = 10
 		var expectedHeight primitives.BlockHeight = 20
-		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics)) {
+		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
 			actualHeight = blockHeight
 			actualView = view
 		}

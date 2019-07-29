@@ -18,6 +18,7 @@ import (
 type OnCommitCallback func(ctx context.Context, block Block, blockProof []byte)
 type OnNewConsensusRoundCallback func(ctx context.Context, newHeight primitives.BlockHeight, prevBlock Block, canBeFirstLeader bool)
 type OnUpdateStateCallback func(ctx context.Context, currentHeight primitives.BlockHeight, receivedBlockHeight primitives.BlockHeight)
+type OnElectionCallback func(m metrics.ElectionMetrics)
 
 type Config struct {
 	InstanceId              primitives.InstanceId
@@ -26,7 +27,7 @@ type Config struct {
 	BlockUtils              BlockUtils
 	KeyManager              KeyManager
 	ElectionTimeoutOnV0     time.Duration
-	OnElectionCB            func(metrics.ElectionMetrics)
+	OnElectionCB            OnElectionCallback
 	Storage                 Storage // optional
 	Logger                  Logger  // optional
 	MsgChanBufLen           uint64
@@ -69,10 +70,10 @@ type ElectionTrigger struct {
 }
 
 type ElectionScheduler interface {
-	RegisterOnElection(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, cb func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics)))
-	Stop()
+	RegisterOnElection(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, cb func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB OnElectionCallback))
 	ElectionChannel() chan *ElectionTrigger
 	CalcTimeout(view primitives.View) time.Duration
+	Stop()
 }
 
 type Storage interface {

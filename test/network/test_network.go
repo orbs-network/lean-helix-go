@@ -316,7 +316,7 @@ func (net *TestNetwork) SetNodesPauseOnRequestNewBlockWhenCounterIsZero(counter 
 	for _, node := range nodes {
 		if pausableBlockUtils, ok := node.BlockUtils.(*mocks.PausableBlockUtils); ok {
 			node.log.Debug("ID=%s OnRequestNewBlockPauseCounter=%d", node.MemberId, counter)
-			pausableBlockUtils.PauseOnRequestNewBlockWhenCounterIsZero = counter
+			pausableBlockUtils.RequestNewBlockCallsLeftUntilItPausesWhenCounterIsZero = counter
 		} else {
 			panic("Node.BlockUtils is not PausableBlockUtils")
 		}
