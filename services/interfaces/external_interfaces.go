@@ -64,7 +64,6 @@ type KeyManager interface {
 }
 
 type ElectionTrigger struct {
-	Ctx              context.Context
 	MoveToNextLeader func(ctx context.Context)
 	Hv               *state.HeightView
 }
