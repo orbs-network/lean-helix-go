@@ -107,8 +107,11 @@ func (m *MainLoop) run(ctx context.Context) {
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
 			m.logger.Debug("LHFLOW ELECTION MAINLOOP - CANCELED WORKER CONTEXT")
-			trigger.Ctx = workerCtx
-			m.worker.electionChannel <- trigger
+			message := &workerElectionsTriggerMessage{
+				ctx:             workerCtx,
+				ElectionTrigger: trigger,
+			}
+			m.worker.electionChannel <- message
 
 		case receivedBlockWithProof := <-m.mainUpdateStateChannel: // NodeSync
 
@@ -119,9 +122,12 @@ func (m *MainLoop) run(ctx context.Context) {
 
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
-			receivedBlockWithProof.ctx = workerCtx
 			m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - CANCELED WORKER CONTEXT")
-			m.worker.workerUpdateStateChannel <- receivedBlockWithProof
+			message := &workerUpdateStateMessage{
+				ctx:            workerCtx,
+				blockWithProof: receivedBlockWithProof,
+			}
+			m.worker.workerUpdateStateChannel <- message
 			m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - Wrote to worker UpdateState channel")
 
 		}
@@ -159,7 +165,6 @@ func (m *MainLoop) UpdateState(ctx context.Context, prevBlock interfaces.Block, 
 		m.logger.Debug("UpdateState() ID=%s CONTEXT CANCELED", termincommittee.Str(m.config.Membership.MyMemberId()))
 		return errors.Errorf("context canceled")
 	case m.mainUpdateStateChannel <- &blockWithProof{
-		ctx:                 nil,
 		block:               prevBlock,
 		prevBlockProofBytes: prevBlockProofBytes,
 	}:

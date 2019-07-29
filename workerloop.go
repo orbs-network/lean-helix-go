@@ -26,9 +26,18 @@ import (
 )
 
 type blockWithProof struct {
-	ctx                 context.Context
 	block               interfaces.Block
 	prevBlockProofBytes []byte
+}
+
+type workerUpdateStateMessage struct {
+	ctx context.Context
+	*blockWithProof
+}
+
+type workerElectionsTriggerMessage struct {
+	ctx context.Context
+	*interfaces.ElectionTrigger
 }
 
 type MessageWithContext struct {
@@ -38,8 +47,8 @@ type MessageWithContext struct {
 
 type WorkerLoop struct {
 	MessagesChannel             chan *MessageWithContext
-	workerUpdateStateChannel    chan *blockWithProof
-	electionChannel             chan *interfaces.ElectionTrigger
+	workerUpdateStateChannel    chan *workerUpdateStateMessage
+	electionChannel             chan *workerElectionsTriggerMessage
 	electionTrigger             interfaces.ElectionScheduler
 	state                       state.State
 	config                      *interfaces.Config
@@ -62,9 +71,9 @@ func NewWorkerLoop(
 	logger.Debug("LHFLOW NewWorkerLoop()")
 	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), logger, state)
 	return &WorkerLoop{
-		MessagesChannel:             make(chan *MessageWithContext, 10),
-		workerUpdateStateChannel:    make(chan *blockWithProof),
-		electionChannel:             make(chan *interfaces.ElectionTrigger),
+		MessagesChannel:             make(chan *MessageWithContext, 10),     // TODO what's the correct buffer size?
+		workerUpdateStateChannel:    make(chan *workerUpdateStateMessage),   // TODO what's the correct buffer size?
+		electionChannel:             make(chan *workerElectionsTriggerMessage), // TODO what's the correct buffer size?
 		electionTrigger:             electionTrigger,
 		state:                       state,
 		config:                      config,
@@ -94,7 +103,6 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 			lh.logger.Debug("LHFLOW LHMSG WORKERLOOP RECEIVED %v from %v for H=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight())
 			lh.filter.HandleConsensusRawMessage(res.ctx, res.msg)
 
-			// TODO Add ctx to trigger
 		case trigger := <-lh.electionChannel:
 			if trigger == nil {
 				// this cannot happen, ignore
@@ -108,15 +116,17 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 			}
 
 			lh.logger.Debug("LHFLOW WORKERLOOP ELECTION")
-			trigger.MoveToNextLeader(trigger.Ctx)
+			trigger.MoveToNextLeader(trigger.ctx)
 
-		case receivedBlockWithProof := <-lh.workerUpdateStateChannel: // NodeSync
+		case receivedBlockWithProofAndContext := <-lh.workerUpdateStateChannel: // NodeSync
 			var height primitives.BlockHeight
+			receivedBlockWithProof := receivedBlockWithProofAndContext.blockWithProof
+
 			if receivedBlockWithProof.block != nil {
 				height = receivedBlockWithProof.block.Height()
 			}
 			lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP - Received block with H=%d", height)
-			lh.HandleUpdateState(receivedBlockWithProof.ctx, receivedBlockWithProof)
+			lh.HandleUpdateState(receivedBlockWithProofAndContext.ctx, receivedBlockWithProof)
 			lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP - Handled block with H=%d", height)
 		}
 	}
