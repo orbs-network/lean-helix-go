@@ -17,6 +17,7 @@ type Latch struct {
 	log           interfaces.Logger
 	pauseChannel  chan bool
 	resumeChannel chan bool
+	primed        bool
 }
 
 func NewLatch() *Latch {
@@ -24,26 +25,33 @@ func NewLatch() *Latch {
 		log:           logger.NewConsoleLogger(),
 		pauseChannel:  make(chan bool),
 		resumeChannel: make(chan bool),
+		primed:        false,
 	}
 }
 
-func (l *Latch) ReturnWhenLatchIsResumed(ctx context.Context, memberId primitives.MemberId) {
-	l.log.Debug("ID=%s Latch.ReturnWhenLatchIsResumed() start, blocked till reading from Pause channel", memberId)
+func (l *Latch) WaitOnPauseThenWaitOnResume(ctx context.Context, memberId primitives.MemberId) {
+	if l.primed {
+		panic("cannot pause channel twice")
+	}
+	l.primed = true
+	l.log.Debug("ID=%s Latch.WaitOnPauseThenWaitOnResume() start, blocked till reading from Pause channel", memberId)
 	select {
 	case <-ctx.Done():
-		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsResumed() ctx.Done (before Pause)", memberId)
+		l.primed = false
+		l.log.Debug("ID=%s Latch.WaitOnPauseThenWaitOnResume() ctx.Done (before Pause)", memberId)
 		return
 	case l.pauseChannel <- true:
-		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsResumed() wrote to paused latch", memberId)
+		l.log.Debug("ID=%s Latch.WaitOnPauseThenWaitOnResume() wrote to paused latch", memberId)
 	}
 
-	l.log.Debug("ID=%s Latch.ReturnWhenLatchIsResumed() blocked till writing to resume channel", memberId)
+	l.log.Debug("ID=%s Latch.WaitOnPauseThenWaitOnResume() blocked till writing to resume channel", memberId)
 	select {
 	case <-ctx.Done():
-		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsResumed() ctx.Done (before Resume)", memberId)
+		l.primed = false
+		l.log.Debug("ID=%s Latch.WaitOnPauseThenWaitOnResume() ctx.Done (before Resume)", memberId)
 		return
 	case <-l.resumeChannel:
-		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsResumed() read from resume channel", memberId)
+		l.log.Debug("ID=%s Latch.WaitOnPauseThenWaitOnResume() read from resume channel", memberId)
 	}
 }
 
@@ -51,6 +59,7 @@ func (l *Latch) ReturnWhenLatchIsPaused(ctx context.Context, memberId primitives
 	l.log.Debug("ID=%s Latch.ReturnWhenLatchIsPaused() start, blocked till writing to pause channel", memberId)
 	select {
 	case <-ctx.Done():
+		l.primed = false
 		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsPaused() ctx.Done", memberId)
 		return
 	case <-l.pauseChannel:
@@ -59,12 +68,17 @@ func (l *Latch) ReturnWhenLatchIsPaused(ctx context.Context, memberId primitives
 }
 
 func (l *Latch) Resume(ctx context.Context, memberId primitives.MemberId) {
+	if !l.primed {
+		panic("cannot call Resume if latch is not paused")
+	}
 	l.log.Debug("ID=%s Latch.Resume() start, blocked till reading from Resume channel", memberId)
 	select {
 	case <-ctx.Done():
+		l.primed = false
 		l.log.Debug("ID=%s Latch.Resume() ctx.Done", memberId)
 		return
 	case l.resumeChannel <- true:
 		l.log.Debug("ID=%s Latch.Resume() wrote to Resume channel", memberId)
 	}
+	l.primed = false
 }
