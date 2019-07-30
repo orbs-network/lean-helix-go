@@ -8,6 +8,7 @@ import (
 	L "github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/state"
 	"github.com/pkg/errors"
 )
@@ -148,6 +149,20 @@ func checkReceivedBlockIsValid(currentHeight primitives.BlockHeight, receivedBlo
 		return errors.Errorf("Received block height is %d which is lower than current height of %d", receivedBlockHeight, currentHeight)
 	}
 	return nil
+}
+
+// Used by orbs-network-go
+func GetMemberIdsFromBlockProof(blockProofBytes []byte) ([]primitives.MemberId, error) {
+	if blockProofBytes == nil || len(blockProofBytes) == 0 {
+		return nil, errors.Errorf("GetMemberIdsFromBlockProof: nil blockProof - cannot deduce members locally")
+	}
+	blockProof := protocol.BlockProofReader(blockProofBytes)
+	sendersIterator := blockProof.NodesIterator()
+	committeeMembers := make([]primitives.MemberId, 0)
+	for sendersIterator.HasNext() {
+		committeeMembers = append(committeeMembers, sendersIterator.NextNodes().MemberId())
+	}
+	return committeeMembers, nil
 }
 
 func (m *MainLoop) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProofBytes []byte, maybePrevBlockProofBytes []byte) error {
