@@ -162,3 +162,18 @@ func TestViewPowTimeout_DidTriggerAfterTimeout(t *testing.T) {
 		require.True(t, wasCalled, "Did not trigger the callback after the required timeout")
 	})
 }
+
+func TestElectionTrigger_Stress_FrequentRegisters(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		et := buildElectionTrigger(ctx, 1*time.Microsecond)
+
+		var counter int32
+		for h := primitives.BlockHeight(1); h < primitives.BlockHeight(1000); h++ {
+			et.RegisterOnElection(ctx, h, 0, nil)
+			counter++
+			time.Sleep(1 * time.Microsecond)
+		}
+		t.Log(counter)
+	})
+
+}
