@@ -72,7 +72,7 @@ func (net *TestNetwork) MAYBE_FLAKY_WaitForAllNodesToCommitABlockAndReturnWhethe
 
 const MINIMUM_NUMBER_OF_NODES_FOR_CONSENSUS = 4
 
-func (net *TestNetwork) WaitForAllNodesToCommitTheSameBlock(ctx context.Context) bool {
+func (net *TestNetwork) MAYBE_FLAKY_WaitForAllNodesToCommitTheSameBlock(ctx context.Context) bool {
 	if len(net.Nodes) < MINIMUM_NUMBER_OF_NODES_FOR_CONSENSUS {
 		panic("Not enough nodes for consensus")
 	}

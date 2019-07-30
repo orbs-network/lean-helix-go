@@ -16,6 +16,7 @@ import (
 
 const LOG_TO_CONSOLE = true
 
+// TODO FLAKY
 func TestMainloopReportsCorrectHeight(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		nodeCount := 4

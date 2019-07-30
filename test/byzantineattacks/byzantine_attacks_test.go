@@ -36,6 +36,7 @@ func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
 	})
 }
 
+// TODO FLAKY
 func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block := mocks.ABlock(interfaces.GenesisBlock)

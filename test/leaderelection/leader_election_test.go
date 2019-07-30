@@ -21,6 +21,7 @@ import (
 
 const LOG_TO_CONSOLE = true
 
+// TODO FLAKY
 func TestNewLeaderProposesNewBlockIfPreviousLeaderFailedToBringNetworkIntoPreparedPhase(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
@@ -245,7 +246,7 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 		node0.Communication.EnableOutgoingCommunication()
 
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node1)
-		h.net.WaitForAllNodesToCommitTheSameBlock(ctx)
+		h.net.MAYBE_FLAKY_WaitForAllNodesToCommitTheSameBlock(ctx)
 
 		require.Equal(t, 1, node0.Communication.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))
 		require.Equal(t, 1, node2.Communication.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))

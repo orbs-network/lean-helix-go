@@ -22,7 +22,7 @@ func TestHappyFlow(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		net := network.ABasicTestNetworkWithConsoleLogs(ctx)
 		net.StartConsensus(ctx)
-		require.True(t, net.WaitForAllNodesToCommitTheSameBlock(ctx))
+		require.True(t, net.MAYBE_FLAKY_WaitForAllNodesToCommitTheSameBlock(ctx))
 	})
 }
 
@@ -37,7 +37,7 @@ func TestHappyFlowMessages(t *testing.T) {
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, net.Nodes[0])
 		net.ResumeRequestNewBlockOnNodes(ctx, net.Nodes[0])
 
-		net.WaitForAllNodesToCommitTheSameBlock(ctx)
+		net.MAYBE_FLAKY_WaitForAllNodesToCommitTheSameBlock(ctx)
 
 		// hang the leader before the next round
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, net.Nodes[0])
@@ -59,11 +59,12 @@ func TestHappyFlowMessages(t *testing.T) {
 	})
 }
 
+// TODO FLAKY Don't use
 func TestConsensusFor8Blocks(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		net := network.ABasicTestNetwork(ctx).StartConsensus(ctx)
 		for i := 0; i < 8; i++ {
-			net.WaitForAllNodesToCommitTheSameBlock(ctx)
+			net.MAYBE_FLAKY_WaitForAllNodesToCommitTheSameBlock(ctx)
 		}
 	})
 }

@@ -28,6 +28,7 @@ import (
 //	require.True(t, bc.LastBlock().Height() == primitives.BlockHeight(4))
 //}
 
+// TODO FLAKY
 func TestGenerateProofsForTest(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)

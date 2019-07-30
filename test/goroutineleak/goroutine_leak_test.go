@@ -24,12 +24,12 @@ func test2HeavyNetworks(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		net1 := network.ATestNetworkBuilder(21).Build().StartConsensus(ctx)
 		for i := 0; i < 100; i++ {
-			net1.WaitForAllNodesToCommitTheSameBlock(ctx)
+			net1.MAYBE_FLAKY_WaitForAllNodesToCommitTheSameBlock(ctx)
 		}
 
 		net2 := network.ATestNetworkBuilder(31).Build().StartConsensus(ctx)
 		for i := 0; i < 100; i++ {
-			net2.WaitForAllNodesToCommitTheSameBlock(ctx)
+			net2.MAYBE_FLAKY_WaitForAllNodesToCommitTheSameBlock(ctx)
 		}
 	})
 }
