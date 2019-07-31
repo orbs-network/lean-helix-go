@@ -11,6 +11,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/state"
 	"github.com/pkg/errors"
+	"sync"
 )
 
 type MainLoop struct {
@@ -53,15 +54,23 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 // LH: goroutineLauncher(func (){m.RunWorkerLoop(ctx)})
 
 func (m *MainLoop) Run(ctx context.Context) {
-	m.RunWorkerLoop(ctx)
-	m.RunMainLoop(ctx)
+	wg := sync.WaitGroup{}
+	m.RunWorkerLoop(ctx, wg)
+	m.RunMainLoop(ctx, wg)
+	//time.Sleep(200*time.Millisecond)
+	wg.Wait()
+	fmt.Println("BLAH")
 }
 
-func (m *MainLoop) RunMainLoop(ctx context.Context) {
-	go m.run(ctx)
+func (m *MainLoop) RunMainLoop(ctx context.Context, wg sync.WaitGroup) {
+	go func() {
+		wg.Add(1)
+		m.run(ctx)
+		wg.Done()
+	}()
 }
 
-func (m *MainLoop) RunWorkerLoop(ctx context.Context) {
+func (m *MainLoop) RunWorkerLoop(ctx context.Context, wg sync.WaitGroup) {
 	m.worker = NewWorkerLoop(
 		m.state,
 		m.config,
@@ -69,7 +78,12 @@ func (m *MainLoop) RunWorkerLoop(ctx context.Context) {
 		m.electionScheduler,
 		m.onCommitCallback,
 		m.onNewConsensusRoundCallback)
-	go m.worker.Run(ctx)
+
+	go func() {
+		wg.Add(1)
+		m.worker.Run(ctx)
+		wg.Done()
+	}()
 }
 
 func (m *MainLoop) run(ctx context.Context) {

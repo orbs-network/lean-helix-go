@@ -8,7 +8,7 @@ import (
 
 // Mutable, goroutine-safe state object
 type State interface {
-	SetHeight(newHeight primitives.BlockHeight) *HeightView
+	SetHeightAndResetView(newHeight primitives.BlockHeight) *HeightView
 	SetView(newView primitives.View) *HeightView
 	SetHeightView(newHeight primitives.BlockHeight, newView primitives.View) *HeightView
 	Height() primitives.BlockHeight
@@ -22,7 +22,7 @@ type state struct {
 	view   primitives.View
 }
 
-func (s *state) SetHeight(newHeight primitives.BlockHeight) *HeightView {
+func (s *state) SetHeightAndResetView(newHeight primitives.BlockHeight) *HeightView {
 	s.Lock()
 	defer s.Unlock()
 
