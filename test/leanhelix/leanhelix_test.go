@@ -59,14 +59,26 @@ func TestHappyFlowMessages(t *testing.T) {
 	})
 }
 
-// TODO FLAKY Don't use
 func TestConsensusFor8Blocks(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		net := network.ABasicTestNetwork(ctx).StartConsensus(ctx)
-		for i := 0; i < 8; i++ {
-			net.MAYBE_FLAKY_WaitForAllNodesToCommitTheSameBlock(ctx)
-		}
+		goPumpCommittedBlockChannels(ctx, net)
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 8)
 	})
+}
+
+func goPumpCommittedBlockChannels(ctx context.Context, net *network.TestNetwork) {
+	for _, node := range net.Nodes {
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-node.CommittedBlockChannel:
+				}
+			}
+		}()
+	}
 }
 
 func TestHangingNode(t *testing.T) {

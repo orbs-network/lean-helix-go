@@ -11,24 +11,6 @@ import (
 	"time"
 )
 
-//func TestBlockchainGenerator(t *testing.T) {
-//	t.Skip()
-//
-//	block1 := mocks.ABlock(interfaces.GenesisBlock)
-//	block2 := mocks.ABlock(block1)
-//	block3 := mocks.ABlock(block2)
-//	block4 := mocks.ABlock(block3)
-//
-//	bc, err := GenerateBlockChainFor([]interfaces.Block{block1, block2, block3, block4})
-//	if err != nil {
-//		t.Fatalf("Error creating mock blockchain for tests: %s", err)
-//		return
-//	}
-//
-//	require.True(t, bc.LastBlock().Height() == primitives.BlockHeight(4))
-//}
-
-// TODO FLAKY
 func TestGenerateProofsForTest(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)

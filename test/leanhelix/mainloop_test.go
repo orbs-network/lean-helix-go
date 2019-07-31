@@ -16,7 +16,6 @@ import (
 
 const LOG_TO_CONSOLE = true
 
-// TODO FLAKY
 func TestMainloopReportsCorrectHeight(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		nodeCount := 4
@@ -33,16 +32,19 @@ func TestMainloopReportsCorrectHeight(t *testing.T) {
 		node0 := net.Nodes[0]
 		net.SetNodesToPauseOnRequestNewBlock()
 		net.StartConsensus(ctx)
-		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block1
-		net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		net.WaitUntilNodesCommitAnyBlock(ctx)
+		//net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 1)
 
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block1
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
 		net.WaitUntilNodesCommitAnyBlock(ctx)
 
-		//net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block2
-		require.Equal(t, block2.Height()+1, node0.GetCurrentHeight(), "node0 should be on height 1")
+		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block2
+		net.ResumeRequestNewBlockOnNodes(ctx, node0)
+		net.WaitUntilNodesCommitAnyBlock(ctx)
+
+		require.True(t, test.Eventually(100 * time.Millisecond, func() bool {
+			return block2.Height()+1 == node0.GetCurrentHeight()
+		}), "node0 should eventually reach height 3")
 
 	})
 }

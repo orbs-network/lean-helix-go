@@ -30,7 +30,14 @@ func (net *TestNetwork) GetNodeCommunication(memberId primitives.MemberId) *mock
 
 func (net *TestNetwork) StartConsensus(ctx context.Context) *TestNetwork {
 	for _, node := range net.Nodes {
-		node.StartConsensus(ctx)
+		err := node.StartConsensus(ctx)
+		if err != nil {
+			panic(fmt.Sprintf("error starting consensus %s", err))
+		}
+	}
+
+	for _, node := range net.Nodes {
+		net.WaitUntilCurrentHeightGreaterEqualThan(ctx, 1, node)
 	}
 
 	return net

@@ -8,7 +8,6 @@ package leaderelection
 
 import (
 	"context"
-	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test"
@@ -128,43 +127,22 @@ func TestLeaderCircularOrdering(t *testing.T) {
 		// by calling RequestNewBlockProposal.
 		// We DO want node0 to pause on RequestNewBlockProposal because it is our stop signal for the test
 
-		timer := time.AfterFunc(2*time.Second, func() {
-			t.Fatal("Test is stuck")
-		})
 		h := NewStartedHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
+		numNodes := len(h.net.Nodes)
 
+		for i:=0; i < numNodes; i++ { // force elections of next node numNodes times
+			currentLeader := i % numNodes
+
+			h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[currentLeader])
+			h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[currentLeader])
+
+			nextLeader := (i + 1) % numNodes
+			electNewLeader(ctx, h, nextLeader)
+		}
+
+		// after electing all nodes verify the first node is reelected and is trying to propose
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
 		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[0])
-
-		fmt.Println("Electing 1")
-		electNewLeader(ctx, h, 1)
-		fmt.Println("Electing 1 DONE")
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[1])
-		fmt.Println("Paused 1 on RequestNewBlock")
-		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[1])
-
-		fmt.Println("Resumed 1, Electing 2")
-		electNewLeader(ctx, h, 2)
-		time.Sleep(100 * time.Millisecond)
-		fmt.Println("Electing 2 DONE")
-		go func() { h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[2]) }()
-		fmt.Println("Paused 2 on RequestNewBlock")
-		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[2])
-
-		fmt.Println("Resumed 2, Electing 3")
-		electNewLeader(ctx, h, 3)
-		fmt.Println("Electing 3 DONE")
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[3])
-		fmt.Println("Paused 3 on RequestNewBlock")
-		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[3])
-
-		// back to node0 as leader
-		fmt.Println("Resumed 3, Electing 0 again")
-		electNewLeader(ctx, h, 0)
-		fmt.Println("Electing 0 again DONE")
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
-		fmt.Println("Paused 0 on RequestNewBlock")
-		timer.Stop()
 	})
 }
 
@@ -285,7 +263,9 @@ func TestViewNotIncrementedIfLessThan2fPlus1ViewChange(t *testing.T) {
 		go func() {
 			// Fail if node1 starts RequestNewBlockProposal() because it means it became new leader
 			h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node1)
-			t.Fatal("node1 tried to propose a block after receiving only 2 view change messages")
+			if ctx.Err() == nil {
+				t.Fatal("node1 tried to propose a block after receiving only 2 view change messages")
+			}
 		}()
 
 		time.Sleep(100 * time.Millisecond)

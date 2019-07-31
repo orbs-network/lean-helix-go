@@ -34,10 +34,11 @@ func (l *Latch) WaitOnPauseThenWaitOnResume(ctx context.Context, memberId primit
 		panic("cannot pause channel twice")
 	}
 	l.primed = true
+	defer func(){l.primed = false}()
+
 	l.log.Debug("ID=%s Latch.WaitOnPauseThenWaitOnResume() start, blocked till reading from Pause channel", memberId)
 	select {
 	case <-ctx.Done():
-		l.primed = false
 		l.log.Debug("ID=%s Latch.WaitOnPauseThenWaitOnResume() ctx.Done (before Pause)", memberId)
 		return
 	case l.pauseChannel <- true:
@@ -47,7 +48,6 @@ func (l *Latch) WaitOnPauseThenWaitOnResume(ctx context.Context, memberId primit
 	l.log.Debug("ID=%s Latch.WaitOnPauseThenWaitOnResume() blocked till writing to resume channel", memberId)
 	select {
 	case <-ctx.Done():
-		l.primed = false
 		l.log.Debug("ID=%s Latch.WaitOnPauseThenWaitOnResume() ctx.Done (before Resume)", memberId)
 		return
 	case <-l.resumeChannel:
@@ -59,7 +59,6 @@ func (l *Latch) ReturnWhenLatchIsPaused(ctx context.Context, memberId primitives
 	l.log.Debug("ID=%s Latch.ReturnWhenLatchIsPaused() start, blocked till writing to pause channel", memberId)
 	select {
 	case <-ctx.Done():
-		l.primed = false
 		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsPaused() ctx.Done", memberId)
 		return
 	case <-l.pauseChannel:
@@ -74,11 +73,9 @@ func (l *Latch) Resume(ctx context.Context, memberId primitives.MemberId) {
 	l.log.Debug("ID=%s Latch.Resume() start, blocked till reading from Resume channel", memberId)
 	select {
 	case <-ctx.Done():
-		l.primed = false
 		l.log.Debug("ID=%s Latch.Resume() ctx.Done", memberId)
 		return
 	case l.resumeChannel <- true:
 		l.log.Debug("ID=%s Latch.Resume() wrote to Resume channel", memberId)
 	}
-	l.primed = false
 }
