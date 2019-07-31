@@ -147,7 +147,9 @@ func (lh *WorkerLoop) handleUpdateState(ctx context.Context, receivedBlockWithPr
 }
 
 func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProofBytes []byte, maybePrevBlockProofBytes []byte) error {
-
+	if ctx.Err() != nil {
+		return errors.New("context canceled")
+	}
 	if block == nil {
 		return errors.Errorf("ValidateBlockConsensus: nil block")
 	}

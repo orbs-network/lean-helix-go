@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-const PRINT_TIMESTAMP = true
+const PRINT_TIMESTAMP = false
 
 type _LC struct {
 	h  primitives.BlockHeight
