@@ -9,6 +9,7 @@ package byzantineattacks
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/services/quorum"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
@@ -38,20 +39,26 @@ func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
 // TODO FLAKY
 func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
+
 		block := mocks.ABlock(interfaces.GenesisBlock)
+		totalNodes := 7
+		honestNodes := quorum.CalcQuorumSize(totalNodes)
 		net := network.
 			NewTestNetworkBuilder().
 			LogToConsole(t).
-			WithNodeCount(7).
+			WithNodeCount(totalNodes).
 			WithBlocks(block).
 			Build(ctx)
 
-		net.Nodes[1].Communication.SetIncomingWhitelist([]primitives.MemberId{})
-		net.Nodes[2].Communication.SetIncomingWhitelist([]primitives.MemberId{})
+		byzantines := net.Nodes[honestNodes:totalNodes]
+		for _, b := range byzantines {
+			b.Communication.SetIncomingWhitelist([]primitives.MemberId{})
+		}
 
+		honest := net.Nodes[:honestNodes]
 		net.StartConsensus(ctx)
 
-		net.WaitUntilNodesCommitAnyBlock(ctx, net.Nodes[0], net.Nodes[3], net.Nodes[4], net.Nodes[5], net.Nodes[6])
+		net.WaitUntilNodesCommitAnyBlock(ctx, honest...)
 	})
 }
 
