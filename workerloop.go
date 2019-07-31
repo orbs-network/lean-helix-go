@@ -127,17 +127,17 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 				height = receivedBlockWithProof.block.Height()
 			}
 			lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP - Received block with H=%d", height)
-			lh.HandleUpdateState(receivedBlockWithProofAndContext.ctx, receivedBlockWithProof)
+			lh.handleUpdateState(receivedBlockWithProofAndContext.ctx, receivedBlockWithProof)
 			lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP - Handled block with H=%d", height)
 		}
 	}
 }
 
-func (lh *WorkerLoop) HandleUpdateState(ctx context.Context, receivedBlockWithProof *blockWithProof) {
+func (lh *WorkerLoop) handleUpdateState(ctx context.Context, receivedBlockWithProof *blockWithProof) {
 	receivedBlockHeight := blockheight.GetBlockHeight(receivedBlockWithProof.block)
 
 	if receivedBlockHeight >= lh.state.Height() {
-		lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP ACCEPTED block with height=%d, calling onNewConsensusRound() from HandleUpdateState", receivedBlockHeight)
+		lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP ACCEPTED block with height=%d, calling onNewConsensusRound() from handleUpdateState", receivedBlockHeight)
 		// This block is received from external source
 		// Refuse to be leader on V=0 for a block received from block sync, because this block will usually be not be the latest block.
 		lh.onNewConsensusRound(ctx, receivedBlockWithProof.block, receivedBlockWithProof.prevBlockProofBytes, false)
@@ -238,7 +238,7 @@ func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, bloc
 
 func (lh *WorkerLoop) onNewConsensusRound(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) {
 
-	lh.state.SetHeight(blockheight.GetBlockHeight(prevBlock) + 1)
+	lh.state.SetHeightAndResetView(blockheight.GetBlockHeight(prevBlock) + 1)
 	lh.logger.Debug("onNewConsensusRound() INCREMENTED HEIGHT TO %d", lh.state.Height())
 	if lh.leanHelixTerm != nil {
 		lh.leanHelixTerm.Dispose()
