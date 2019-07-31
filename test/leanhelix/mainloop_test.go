@@ -26,7 +26,7 @@ func TestMainloopReportsCorrectHeight(t *testing.T) {
 			NewTestNetworkBuilder().
 			WithNodeCount(nodeCount).
 			WithBlocks(block1, block2).
-			LogToConsole().
+			LogToConsole(t).
 			Build(ctx)
 
 		node0 := net.Nodes[0]
@@ -59,7 +59,7 @@ func TestVerifyPreprepareMessageSentByLeader_HappyFlow(t *testing.T) {
 			NewTestNetworkBuilder().
 			WithNodeCount(nodeCount).
 			WithBlocks(block1, block2).
-			LogToConsole().
+			LogToConsole(t).
 			Build(ctx)
 
 		node0 := net.Nodes[0]
@@ -89,7 +89,7 @@ func TestPreprepareMessageNotSentByLeaderIfRequestNewBlockProposalContextCancell
 			NewTestNetworkBuilder().
 			WithNodeCount(nodeCount).
 			WithBlocks(block1, block2, block3).
-			LogToConsole().
+			LogToConsole(t).
 			Build(ctx)
 
 		bc, err := leaderelection.GenerateProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)
@@ -139,7 +139,7 @@ func TestVerifyWorkerContextNotCancelledIfNodeSyncBlockIsIgnored(t *testing.T) {
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
 			WithBlocks(block1, block2, block3).
-			LogToConsole().
+			LogToConsole(t).
 			Build(ctx)
 
 		node0 := net.Nodes[0]
@@ -147,7 +147,7 @@ func TestVerifyWorkerContextNotCancelledIfNodeSyncBlockIsIgnored(t *testing.T) {
 		net.StartConsensus(ctx)
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block1, should be agreed by all nodes
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		require.True(t, net.MAYBE_FLAKY_WaitForAllNodesToCommitABlockAndReturnWhetherEqualToGiven(ctx, block1))
+		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, block1)
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // pause when proposing block2
 		bc, err := leaderelection.GenerateProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)
 		if err != nil {

@@ -9,7 +9,6 @@ package test
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
-	"github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
@@ -20,9 +19,9 @@ type Latch struct {
 	primed        bool
 }
 
-func NewLatch() *Latch {
+func NewLatch(logger interfaces.Logger) *Latch {
 	return &Latch{
-		log:           logger.NewConsoleLogger(),
+		log:           logger,
 		pauseChannel:  make(chan bool),
 		resumeChannel: make(chan bool),
 		primed:        false,

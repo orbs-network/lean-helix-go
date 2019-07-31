@@ -230,7 +230,7 @@ func NewNode(
 		MemberId:                   memberId,
 		CommittedBlockChannel:      make(chan *NodeState, 100),
 		OnNewConsensusRoundChannel: nil,
-		OnUpdateStateLatch:         test.NewLatch(),
+		OnUpdateStateLatch:         test.NewLatch(logger),
 		WriteToStateChannel:        true,
 		log:                        logger,
 	}

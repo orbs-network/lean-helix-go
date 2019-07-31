@@ -91,8 +91,8 @@ func TestIgnoreSameViewOrHeight(t *testing.T) {
 
 func TestNotTriggeredIfSameViewButDifferentHeight(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		sleep := 10 * time.Millisecond
-		et := buildElectionTrigger(ctx, 5*sleep)
+		registrationInterval := 10 * time.Millisecond
+		et := buildElectionTrigger(ctx, 5*registrationInterval)
 
 		callCount := 0
 		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
@@ -101,7 +101,7 @@ func TestNotTriggeredIfSameViewButDifferentHeight(t *testing.T) {
 
 		for i := primitives.BlockHeight(0); i < 10; i++ {
 			et.RegisterOnElection(ctx, 10+i, 0, cb)
-			time.Sleep(sleep)
+			time.Sleep(registrationInterval)
 		}
 
 		require.Exactly(t, 0, callCount, "Trigger callback called")
@@ -110,7 +110,7 @@ func TestNotTriggeredIfSameViewButDifferentHeight(t *testing.T) {
 
 func TestNotTriggerIfSameHeightButDifferentView(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		et := buildElectionTrigger(ctx, 30*time.Millisecond)
+		et := buildElectionTrigger(ctx, 50*time.Millisecond)
 
 		callCount := 0
 		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
@@ -128,6 +128,9 @@ func TestNotTriggerIfSameHeightButDifferentView(t *testing.T) {
 		et.RegisterOnElection(ctx, 10, 4, cb)
 		time.Sleep(time.Duration(10) * time.Millisecond)
 		et.RegisterOnElection(ctx, 10, 5, cb)
+		time.Sleep(time.Duration(10) * time.Millisecond)
+		et.RegisterOnElection(ctx, 10, 5, cb)
+		time.Sleep(time.Duration(10) * time.Millisecond)
 
 		require.Exactly(t, 0, callCount, "Trigger callback called")
 	})
@@ -152,14 +155,15 @@ func TestViewPowTimeout_DidTriggerAfterTimeout(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		et := buildElectionTrigger(ctx, 1*time.Millisecond)
 
-		wasCalled := false
+		triggered := false
 		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
-			wasCalled = true
+			triggered = true
 		}
 
 		et.RegisterOnElection(ctx, 10, 2, cb) // 2 ** 2 * 1ms = 4ms
-		time.Sleep(time.Duration(30) * time.Millisecond)
-		require.True(t, wasCalled, "Did not trigger the callback after the required timeout")
+		require.True(t, test.Eventually(1*time.Second, func() bool {
+			return triggered
+		}), "Did not trigger the callback after the required timeout")
 	})
 }
 

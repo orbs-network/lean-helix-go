@@ -44,7 +44,7 @@ func newHarness(ctx context.Context, t *testing.T, logsToConsole bool, withFaili
 	//	networkBuilder = networkBuilder.WithBlockUtils(blockUtils)
 	//}
 	if logsToConsole {
-		networkBuilder = networkBuilder.LogToConsole()
+		networkBuilder = networkBuilder.LogToConsole(t)
 	}
 	net := networkBuilder.
 		WithMaybeFailingBlockProposalValidations(withFailingBlockProposalValidations, blocksPool...).

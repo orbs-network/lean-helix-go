@@ -14,7 +14,6 @@ import (
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/orbs-network/lean-helix-go/test/network"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
@@ -42,6 +41,7 @@ func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 		block := mocks.ABlock(interfaces.GenesisBlock)
 		net := network.
 			NewTestNetworkBuilder().
+			LogToConsole(t).
 			WithNodeCount(7).
 			WithBlocks(block).
 			Build(ctx)
@@ -108,7 +108,7 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
-		require.True(t, net.MAYBE_FLAKY_WaitForAllNodesToCommitABlockAndReturnWhetherEqualToGiven(ctx, goodBlock))
+		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, goodBlock)
 	})
 }
 
@@ -121,7 +121,7 @@ func TestThatAByzantineLeaderCannotCauseAFork(t *testing.T) {
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
 			WithBlocks(block1, block2).
-			LogToConsole().
+			LogToConsole(t).
 			Build(ctx)
 
 		node0 := net.Nodes[0]

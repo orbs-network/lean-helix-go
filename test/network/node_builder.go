@@ -18,10 +18,10 @@ type NodeBuilder struct {
 	instanceId      primitives.InstanceId
 	communication   *mocks.CommunicationMock
 	membership      interfaces.Membership
-	logsToConsole   bool
 	memberId        primitives.MemberId
 	electionTrigger interfaces.ElectionScheduler
 	blockUtils      interfaces.BlockUtils
+	l interfaces.Logger
 }
 
 func NewNodeBuilder() *NodeBuilder {
@@ -61,8 +61,8 @@ func (builder *NodeBuilder) WithElectionTrigger(electionTrigger interfaces.Elect
 	return builder
 }
 
-func (builder *NodeBuilder) ThatLogsToConsole() *NodeBuilder {
-	builder.logsToConsole = true
+func (builder *NodeBuilder) WithLogger(logger interfaces.Logger) *NodeBuilder {
+	builder.l = logger
 	return builder
 }
 
@@ -77,23 +77,22 @@ func (builder *NodeBuilder) Build() *Node {
 		memberId = primitives.MemberId(fmt.Sprintf("Dummy MemberId"))
 	}
 
-	if builder.blockUtils == nil {
-		builder.blockUtils = mocks.NewMockBlockUtils(builder.memberId, mocks.NewBlocksPool(nil))
+
+	if builder.l == nil {
+		builder.l = logger.NewSilentLogger()
 	}
 
-	var l interfaces.Logger
-	if builder.logsToConsole {
-		l = logger.NewConsoleLogger()
-	} else {
-		l = logger.NewSilentLogger()
+	if builder.blockUtils == nil {
+		builder.blockUtils = mocks.NewMockBlockUtils(builder.memberId, mocks.NewBlocksPool(nil), builder.l)
 	}
+
 	return NewNode(
 		builder.instanceId,
 		builder.membership,
 		builder.communication,
 		builder.blockUtils,
 		builder.electionTrigger,
-		l,
+		builder.l,
 	)
 }
 

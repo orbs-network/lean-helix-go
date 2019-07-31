@@ -24,7 +24,7 @@ func TestNodeSync_AllNodesReachSameHeight(t *testing.T) {
 		block2 := mocks.ABlock(block1)
 		block3 := mocks.ABlock(block2)
 
-		net := network.ATestNetworkBuilder(4, block1, block2, block3).LogToConsole().Build(ctx)
+		net := network.ATestNetworkBuilder(4, block1, block2, block3).LogToConsole(t).Build(ctx)
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
@@ -39,7 +39,7 @@ func TestNodeSync_AllNodesReachSameHeight(t *testing.T) {
 		// node0, node1, and node2 are closing block1
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, block1, node0, node1, node2)
+		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, block1, node0, node1, node2)
 
 		// node3 is still "stuck" on the genesis block
 		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)

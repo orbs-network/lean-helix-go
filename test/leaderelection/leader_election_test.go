@@ -159,7 +159,8 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block1, should be agreed by all nodes
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		require.True(t, h.net.MAYBE_FLAKY_WaitForAllNodesToCommitABlockAndReturnWhetherEqualToGiven(ctx, block1))
+		h.net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, block1)
+
 		t.Log("--- BLOCK1 COMMITTED ---")
 		// Thwart Preprepare message sending by node0 for block2
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // pause when proposing block2
@@ -191,7 +192,7 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 		t.Log("--- NODE1 PAUSED ON REQUEST NEW BLOCK ---")
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node1) // processing block 3
 		t.Log("--- NODE1 RESUMED REQUEST NEW BLOCK ---")
-		require.True(t, h.net.MAYBE_FLAKY_WaitForAllNodesToCommitABlockAndReturnWhetherEqualToGiven(ctx, block3))
+		h.net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, block3)
 	})
 }
 

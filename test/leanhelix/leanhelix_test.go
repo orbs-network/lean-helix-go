@@ -20,9 +20,10 @@ import (
 
 func TestHappyFlow(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := network.ABasicTestNetworkWithConsoleLogs(ctx)
+		net := network.ABasicTestNetworkWithConsoleLogs(ctx, t)
 		net.StartConsensus(ctx)
-		require.True(t, net.MAYBE_FLAKY_WaitForAllNodesToCommitTheSameBlock(ctx))
+		net.WaitUntilQuorumCommitsHeight(ctx, 1)
+		//net.WaitUntilNodesCommitASpecificHeight(ctx, 1)
 	})
 }
 
@@ -62,23 +63,8 @@ func TestHappyFlowMessages(t *testing.T) {
 func TestConsensusFor8Blocks(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		net := network.ABasicTestNetwork(ctx).StartConsensus(ctx)
-		goPumpCommittedBlockChannels(ctx, net)
 		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 8)
 	})
-}
-
-func goPumpCommittedBlockChannels(ctx context.Context, net *network.TestNetwork) {
-	for _, node := range net.Nodes {
-		go func() {
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case <-node.CommittedBlockChannel:
-				}
-			}
-		}()
-	}
 }
 
 func TestHangingNode(t *testing.T) {

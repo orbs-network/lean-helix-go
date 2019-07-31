@@ -55,7 +55,7 @@ func TestNodeSyncIsStillHandledDespiteBlockedOnRequestNewBlockProposal(t *testin
 		block2 := mocks.ABlock(block1)
 		block3 := mocks.ABlock(block2)
 
-		net := network.ATestNetworkBuilder(4, block1, block2, block3).LogToConsole().Build(ctx)
+		net := network.ATestNetworkBuilder(4, block1, block2, block3).LogToConsole(t).Build(ctx)
 		node0 := net.Nodes[0]
 
 		net.SetNodesToPauseOnRequestNewBlock()
@@ -126,7 +126,7 @@ func TestNodeSyncIsStillHandledDespiteBlockedOnRequestNewBlockProposal(t *testin
 
 func TestRequestNewBlockDoesNotHangElectionsTrigger(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		withConsensusRound(ctx, func(net *network.TestNetwork, blockUtilsMocks []*SimpleMockBlockUtils, blockToPropose interfaces.Block) {
+		withConsensusRound(ctx, t, func(net *network.TestNetwork, blockUtilsMocks []*SimpleMockBlockUtils, blockToPropose interfaces.Block) {
 			node0 := net.Nodes[0]
 			blockUtilsMock := blockUtilsMocks[0]
 
@@ -165,7 +165,7 @@ func newWaitingGroupWithDelta(delta int) *sync.WaitGroup {
 	return &createNewBlockProposalEntered
 }
 
-func withConsensusRound(ctx context.Context, test func(net *network.TestNetwork, blockUtilsMock []*SimpleMockBlockUtils, blockToPropose interfaces.Block)) {
+func withConsensusRound(ctx context.Context, tb testing.TB, test func(net *network.TestNetwork, blockUtilsMock []*SimpleMockBlockUtils, blockToPropose interfaces.Block)) {
 	nodeCount := 4
 
 	block1 := mocks.ABlock(interfaces.GenesisBlock)
@@ -182,7 +182,7 @@ func withConsensusRound(ctx context.Context, test func(net *network.TestNetwork,
 		WithNodeCount(nodeCount).
 		WithBlockUtils(blockUtils).
 		//InNetwork(instanceId).
-		LogToConsole().
+		LogToConsole(tb).
 		Build(ctx)
 
 	test(net, simpleMockBlockUtils, block1)

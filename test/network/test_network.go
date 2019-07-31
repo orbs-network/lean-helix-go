@@ -10,11 +10,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/services/quorum"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/matchers"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"math"
 	"sync"
+	"testing"
 	"time"
 )
 
@@ -62,21 +64,6 @@ func (net *TestNetwork) AllNodesChainEndsWithABlock(block interfaces.Block) bool
 	return true
 }
 
-func (net *TestNetwork) MAYBE_FLAKY_WaitForAllNodesToCommitABlockAndReturnWhetherEqualToGiven(ctx context.Context, expectedBlock interfaces.Block) bool {
-	for _, node := range net.Nodes {
-		select {
-		case <-ctx.Done():
-			return false
-		case nodeState := <-node.CommittedBlockChannel:
-			blockAreEqual := matchers.BlocksAreEqual(expectedBlock, nodeState.block)
-			if blockAreEqual == false {
-				return false
-			}
-		}
-	}
-	return true
-}
-
 const MINIMUM_NUMBER_OF_NODES_FOR_CONSENSUS = 4
 
 func (net *TestNetwork) MAYBE_FLAKY_WaitForAllNodesToCommitTheSameBlock(ctx context.Context) bool {
@@ -107,6 +94,7 @@ func (net *TestNetwork) MAYBE_FLAKY_WaitForAllNodesToCommitTheSameBlock(ctx cont
 	}
 }
 
+// TODO this function hides the fact that nodes don't necessarily produced the same block. and we old blocks may also be returned. the last node's block is always returned and all the other's ignored.
 func (net *TestNetwork) WaitUntilNodesCommitAnyBlock(ctx context.Context, nodes ...*Node) interfaces.Block {
 	if nodes == nil {
 		nodes = net.Nodes
@@ -158,7 +146,7 @@ func (net *TestNetwork) WaitUntilNodesCommitASpecificBlock(ctx context.Context, 
 	}
 }
 
-func (net *TestNetwork) WaitUntilNodesEventuallyCommitASpecificBlock(ctx context.Context, block interfaces.Block, nodes ...*Node) {
+func (net *TestNetwork) WaitUntilNodesEventuallyCommitASpecificBlock(ctx context.Context, t *testing.T, block interfaces.Block, nodes ...*Node) {
 
 	if nodes == nil {
 		nodes = net.Nodes
@@ -169,38 +157,74 @@ func (net *TestNetwork) WaitUntilNodesEventuallyCommitASpecificBlock(ctx context
 
 	for _, node := range nodes {
 		wg.Add(1)
-		go func() {
-			eventuallyMatchBlock(ctx, wg, node, block)
-		}()
+		go func(node *Node) {
+			if b := waitForCommittedBlockAtHeight(ctx, node, block.Height()); b != nil { // NOTE - if ctx is cancelled we will never be wg.Done()
+				if !matchers.BlocksAreEqual(block, b) {
+					t.Fatalf("expected block at height %d to equal %v. found %v", block.Height(), block, b)
+				}
+				wg.Done()
+			}
+		}(node)
 	}
 	wg.Wait()
 	fmt.Printf("---DONE ALL---\n")
 
 }
 
-func eventuallyMatchBlock(ctx context.Context, wg *sync.WaitGroup, node *Node, block interfaces.Block) {
-	for {
-		select {
-		case <-ctx.Done():
-			wg.Done()
-			return
-		default:
-			var nodeHeight primitives.BlockHeight
-			if node.blockChain.LastBlock() != nil {
-				nodeHeight = node.blockChain.LastBlock().Height()
-			}
-			if nodeHeight >= block.Height() {
-				fmt.Printf("MATCHER: ID=%s CNT=%d H=%d EXP=%s\n", node.MemberId, len(node.blockChain.Items()), node.GetCurrentHeight(), block)
-				for _, b := range node.blockChain.Items() {
-					if matchers.BlocksAreEqual(block, b.Block()) {
-						wg.Done()
-						return
-					}
+func waitForCommittedBlockAtHeight(ctx context.Context, node *Node, targetHeight primitives.BlockHeight) interfaces.Block {
+	nextItemToCheck := 0
+	for ;ctx.Err() == nil; time.Sleep(10 * time.Millisecond) { // while context not cancelled
+		var topBlockHeight primitives.BlockHeight
+		if node.blockChain.LastBlock() != nil {
+			topBlockHeight = node.blockChain.LastBlock().Height()
+		}
+		if topBlockHeight >= targetHeight { // if consensus reached for new blocks
+			for ; nextItemToCheck < len(node.blockChain.Items()); nextItemToCheck++ { // scan all newly appended blocks
+				b := node.blockChain.Items()[nextItemToCheck]
+				if b.Block() != nil && targetHeight == b.Block().Height() { // if target height reached, return the block
+					return b.Block()
 				}
 			}
-			time.Sleep(20 * time.Millisecond)
 		}
 	}
+	return nil
+}
+
+func (net *TestNetwork) WaitUntilQuorumCommitsHeight(ctx context.Context, height primitives.BlockHeight) {
+
+	nodes := net.Nodes
+
+	fmt.Printf("---START---%d\n", len(nodes))
+	wg := &sync.WaitGroup{}
+
+	wg.Add(quorum.CalcQuorumSize(len(nodes)))
+
+	for _, node := range nodes {
+		go func(node *Node) {
+			for {
+				var topBlock interfaces.Block
+				select {
+				case <-ctx.Done():
+					return
+				case nodeState := <-node.CommittedBlockChannel:
+					topBlock = nodeState.block
+					fmt.Printf("---READ--- ID=%s H=%d\n", node.MemberId, topBlock.Height())
+				}
+				fmt.Printf("ID=%s Expected: %s Committed: %s\n", node.MemberId, height, topBlock.Height())
+				if height == topBlock.Height() {
+					fmt.Printf("---DONE---%s\n", node.MemberId)
+					go func(){
+						defer func(){recover()}()
+						wg.Done()
+					}() // may panic but we're cool
+					return
+				}
+			}
+		}(node)
+	}
+	wg.Wait()
+	fmt.Printf("---DONE QUROM---\n")
+
 }
 
 func (net *TestNetwork) WaitUntilNodesCommitASpecificHeight(ctx context.Context, height primitives.BlockHeight, nodes ...*Node) {
@@ -214,7 +238,7 @@ func (net *TestNetwork) WaitUntilNodesCommitASpecificHeight(ctx context.Context,
 
 	for _, node := range nodes {
 		wg.Add(1)
-		go func() {
+		go func(node *Node) {
 			for {
 				var topBlock interfaces.Block
 				select {
@@ -232,7 +256,7 @@ func (net *TestNetwork) WaitUntilNodesCommitASpecificHeight(ctx context.Context,
 					return
 				}
 			}
-		}()
+		}(node)
 	}
 	wg.Wait()
 	fmt.Printf("---DONE ALL---\n")
@@ -250,7 +274,7 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 
 	for _, node := range nodes {
 		wg.Add(1)
-		go func() {
+		go func(node *Node) {
 			for {
 				select {
 				case <-ctx.Done():
@@ -264,7 +288,7 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 					time.Sleep(20 * time.Millisecond)
 				}
 			}
-		}()
+		}(node)
 	}
 	wg.Wait()
 	fmt.Printf("---DONE ALL---\n")

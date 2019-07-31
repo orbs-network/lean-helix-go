@@ -39,14 +39,14 @@ type PausableBlockUtils struct {
 	failBlockProposalValidations                           bool
 }
 
-func NewMockBlockUtils(memberId primitives.MemberId, blocksPool *BlocksPool) *PausableBlockUtils {
+func NewMockBlockUtils(memberId primitives.MemberId, blocksPool *BlocksPool, logger interfaces.Logger) *PausableBlockUtils {
 	return &PausableBlockUtils{
 		memberId:   memberId,
 		blocksPool: blocksPool,
 		RequestNewBlockCallsLeftUntilItPausesWhenCounterIsZero: math.MaxInt64, // no pause by default
-		RequestNewBlockLatch: test.NewLatch(),
+		RequestNewBlockLatch: test.NewLatch(logger),
 
-		ValidationLatch:      test.NewLatch(),
+		ValidationLatch:      test.NewLatch(logger),
 		PauseOnValidateBlock: false,
 	}
 }

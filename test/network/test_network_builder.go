@@ -11,15 +11,18 @@ import (
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/electiontrigger"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
+	"testing"
 	"time"
 )
 
 type TestNetworkBuilder struct {
 	instanceId                          primitives.InstanceId
 	NodeCount                           int
-	logToConsole                        bool
+	logger                              interfaces.Logger
 	upcomingBlocks                      []interfaces.Block
 	keyManager                          interfaces.KeyManager
 	blockUtils                          []interfaces.BlockUtils
@@ -59,8 +62,8 @@ func (tb *TestNetworkBuilder) GossipMessagesMaxDelay(duration time.Duration) *Te
 	return tb
 }
 
-func (tb *TestNetworkBuilder) LogToConsole() *TestNetworkBuilder {
-	tb.logToConsole = true
+func (tb *TestNetworkBuilder) LogToConsole(t testing.TB) *TestNetworkBuilder {
+	tb.logger = logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
 	return tb
 }
 
@@ -70,9 +73,15 @@ func (tb *TestNetworkBuilder) OrderCommitteeByHeight() *TestNetworkBuilder {
 }
 
 func (tb *TestNetworkBuilder) Build(ctx context.Context) *TestNetwork {
+
+
+	if tb.logger == nil {
+		tb.logger = logger.NewSilentLogger()
+	}
+
 	blocksPool := tb.buildBlocksPool()
 	discovery := mocks.NewDiscovery()
-	nodes := tb.createNodes(discovery, blocksPool, tb.logToConsole, tb.withFailingBlockProposalValidations)
+	nodes := tb.createNodes(discovery, blocksPool)
 	testNetwork := NewTestNetwork(tb.instanceId, discovery)
 	testNetwork.RegisterNodes(nodes)
 
@@ -108,8 +117,6 @@ func (tb *TestNetworkBuilder) buildNode(
 	memberId primitives.MemberId,
 	discovery *mocks.Discovery,
 	blockUtils interfaces.BlockUtils,
-	logToConsole bool,
-	withFailingBlockProposalValidations bool,
 ) *Node {
 
 	communicationInstance := mocks.NewCommunication(memberId, discovery)
@@ -124,15 +131,8 @@ func (tb *TestNetworkBuilder) buildNode(
 		CommunicatesVia(communicationInstance).
 		ThatIsPartOf(membership).
 		WithBlockUtils(blockUtils).
-		WithMemberId(memberId)
-
-	//if tb.blockUtils != nil {
-	//	b.WithBlockUtils(tb.blockUtils)
-	//}
-
-	if logToConsole {
-		b.ThatLogsToConsole()
-	}
+		WithMemberId(memberId).
+		WithLogger(tb.logger)
 
 	if tb.useTimeBasedElectionTrigger {
 		et := Electiontrigger.NewTimerBasedElectionTrigger(tb.electionTriggerTimeout, nil)
@@ -141,7 +141,7 @@ func (tb *TestNetworkBuilder) buildNode(
 	return b.Build()
 }
 
-func (tb *TestNetworkBuilder) createNodes(discovery *mocks.Discovery, blocksPool *mocks.BlocksPool, logToConsole bool, withFailingBlockProposalValidations bool) []*Node {
+func (tb *TestNetworkBuilder) createNodes(discovery *mocks.Discovery, blocksPool *mocks.BlocksPool) []*Node {
 	var nodes []*Node
 	for i := 0; i < tb.NodeCount; i++ {
 
@@ -150,15 +150,15 @@ func (tb *TestNetworkBuilder) createNodes(discovery *mocks.Discovery, blocksPool
 		if i < len(tb.blockUtils) {
 			blockUtils = tb.blockUtils[i]
 		} else {
-			pausableBlockUtils := mocks.NewMockBlockUtils(memberId, blocksPool)
-			if withFailingBlockProposalValidations {
+			pausableBlockUtils := mocks.NewMockBlockUtils(memberId, blocksPool, tb.logger)
+			if tb.withFailingBlockProposalValidations {
 				pausableBlockUtils.WithFailingBlockProposalValidations()
 			}
 			blockUtils = pausableBlockUtils
 		}
 
 		nodeBuilder := NewNodeBuilder()
-		node := tb.buildNode(nodeBuilder, memberId, discovery, blockUtils, logToConsole, withFailingBlockProposalValidations)
+		node := tb.buildNode(nodeBuilder, memberId, discovery, blockUtils)
 		nodes = append(nodes, node)
 	}
 
@@ -197,8 +197,8 @@ func ABasicTestNetwork(ctx context.Context) *TestNetwork {
 	return ATestNetworkBuilder(4).Build(ctx)
 }
 
-func ABasicTestNetworkWithConsoleLogs(ctx context.Context) *TestNetwork {
-	return ATestNetworkBuilder(4).LogToConsole().Build(ctx)
+func ABasicTestNetworkWithConsoleLogs(ctx context.Context, tb testing.TB) *TestNetwork {
+	return ATestNetworkBuilder(4).LogToConsole(tb).Build(ctx)
 }
 
 func ATestNetworkBuilder(countOfNodes int, blocksPool ...interfaces.Block) *TestNetworkBuilder {

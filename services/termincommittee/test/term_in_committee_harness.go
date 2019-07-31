@@ -16,6 +16,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
+	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/matchers"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
@@ -48,7 +49,7 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 	myNode := net.Nodes[0]
 	var logOutput interfaces.Logger
 	if TERM_IN_COMMITTEE_HARNESS_LOGS_TO_CONSOLE {
-		logOutput = logger.NewConsoleLogger()
+		logOutput = logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
 	} else {
 		logOutput = logger.NewSilentLogger()
 	}
