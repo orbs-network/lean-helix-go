@@ -99,7 +99,7 @@ func (m *MainLoop) run(ctx context.Context) {
 
 		case message := <-m.messagesChannel:
 			parsedMessage := interfaces.ToConsensusMessage(message)
-			m.logger.Debug("LHFLOW LHMSG MAINLOOP RECEIVED %v from %v for H=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight())
+			m.logger.Debug("LHFLOW LHMSG MAINLOOP RECEIVED %v from %v for H=%d V=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight(), parsedMessage.View())
 			m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}
 
 		case trigger := <-m.electionScheduler.ElectionChannel():

@@ -488,6 +488,7 @@ func (tic *TermInCommittee) HandleCommit(ctx context.Context, cm *interfaces.Com
 		tic.logger.Info("LHMSG RECEIVED COMMIT IGNORE - verification failed for Commit block-height=%d view=%d block-hash=%s err=%v", header.BlockHeight(), header.View(), header.BlockHash(), err)
 		return
 	}
+	tic.logger.Debug("LHMSG RECEIVED COMMIT STORE")
 	tic.storage.StoreCommit(cm)
 	tic.checkCommitted(ctx, header.BlockHeight(), header.View(), header.BlockHash())
 }
@@ -503,10 +504,10 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 	}
 	commits, ok := tic.storage.GetCommitMessages(blockHeight, view, blockHash)
 	if !ok || len(commits) < tic.QuorumSize {
-		tic.logger.Debug("LHMSG RECEIVED COMMIT STORE - received %d of %d required quorum commits", len(commits), tic.QuorumSize)
+		tic.logger.Debug("LHMSG RECEIVED COMMIT - received %d of %d required quorum commits", len(commits), tic.QuorumSize)
 		return
 	}
-	tic.logger.Debug("LHMSG RECEIVED COMMIT STORE - received %d of %d required quorum commits", len(commits), tic.QuorumSize)
+	tic.logger.Debug("LHMSG RECEIVED COMMIT - received %d of %d required quorum commits", len(commits), tic.QuorumSize)
 	ppm, ok := tic.storage.GetPreprepareMessage(blockHeight, view)
 	if !ok {
 		// log
@@ -706,19 +707,19 @@ func (tic *TermInCommittee) HandleNewView(ctx context.Context, nvm *interfaces.N
 	if latestVote == nil {
 		err := tic.blockUtils.ValidateBlockProposal(ctx, ppm.BlockHeight(), ppm.Block(), ppm.Content().SignedHeader().BlockHash(), tic.prevBlock)
 		if ctx.Err() != nil {
-			tic.logger.Info("LHFLOW HandleNewView() ValidateBlockProposal - %s", ctx.Err())
+			tic.logger.Info("LHFLOW LHMSG RECEIVED NEW_VIEW IGNORE - ValidateBlockProposal - %s", ctx.Err())
 			return
 		}
 
 		if err != nil {
-			tic.logger.Info("LHFLOW Proposed block failed ValidateBlockProposal: %s", err)
+			tic.logger.Info("LHFLOW LHMSG RECEIVED NEW_VIEW IGNORE - Proposed block failed ValidateBlockProposal: %s", err)
 			return
 		}
 	}
 
 	if err := tic.validatePreprepare(ctx, ppm); err == nil {
 		tic.latestViewThatProcessedVCMOrNVM = nvmHeader.View()
-		tic.logger.Debug("LHFLOW latestViewThatProcessedVCMOrNVM set to V=%d (handleNewViewMessage), calling SetView()", tic.latestViewThatProcessedVCMOrNVM)
+		tic.logger.Debug("LHFLOW LHMSG RECEIVED NEW_VIEW OK - calling initView(). latestViewThatProcessedVCMOrNVM set to V=%d", tic.latestViewThatProcessedVCMOrNVM)
 		tic.initView(ctx, nvmHeader.View())
 		tic.processPreprepare(ctx, ppm)
 	} else {

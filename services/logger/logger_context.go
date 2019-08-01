@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-const PRINT_TIMESTAMP = false
+const PRINT_TIMESTAMP = true
 
 type _LC struct {
 	h  primitives.BlockHeight
@@ -66,14 +66,17 @@ func nowISO() string {
 }
 
 func (l *lhLogger) Debug(format string, args ...interface{}) {
+	//fmt.Printf(fmt.Sprintf("%s%s %s\n", nowISO(), LC(l.state.Height(), l.state.View(), l.config.Membership.MyMemberId()), format), args...)
 	l.externalLogger.Debug(fmt.Sprintf("%s%s %s", nowISO(), LC(l.state.Height(), l.state.View(), l.config.Membership.MyMemberId()), format), args...)
 }
 
 func (l *lhLogger) Info(format string, args ...interface{}) {
+	//fmt.Printf(fmt.Sprintf("%s%s %s\n", nowISO(), LC(l.state.Height(), l.state.View(), l.config.Membership.MyMemberId()), format), args...)
 	l.externalLogger.Info(fmt.Sprintf("%s%s %s", nowISO(), LC(l.state.Height(), l.state.View(), l.config.Membership.MyMemberId()), format), args...)
 }
 
 func (l *lhLogger) Error(format string, args ...interface{}) {
+	//fmt.Printf(fmt.Sprintf("%s%s %s\n", nowISO(), LC(l.state.Height(), l.state.View(), l.config.Membership.MyMemberId()), format), args...)
 	l.externalLogger.Error(fmt.Sprintf("%s%s %s", nowISO(), LC(l.state.Height(), l.state.View(), l.config.Membership.MyMemberId()), format), args...)
 }
 
