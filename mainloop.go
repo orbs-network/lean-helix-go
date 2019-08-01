@@ -11,7 +11,6 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/state"
 	"github.com/pkg/errors"
-	"sync"
 )
 
 type MainLoop struct {
@@ -51,26 +50,19 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 }
 
 // ORBS: LeanHelix.Run(ctx, goroutineLauncher func(f func()) { GoForever(f) }))
-// LH: goroutineLauncher(func (){m.RunWorkerLoop(ctx)})
+// LH: goroutineLauncher(func (){m.runWorkerLoop(ctx)})
 
-func (m *MainLoop) Run(ctx context.Context) {
-	wg := sync.WaitGroup{}
-	m.RunWorkerLoop(ctx, wg)
-	m.RunMainLoop(ctx, wg)
-	//time.Sleep(200*time.Millisecond)
-	wg.Wait()
-	fmt.Println("BLAH")
-}
-
-func (m *MainLoop) RunMainLoop(ctx context.Context, wg sync.WaitGroup) {
+func (m *MainLoop) Run(ctx context.Context) <-chan struct{} {
+	done := make(chan struct{})
+	// TODO Replace wih supervised.GoForever()
 	go func() {
-		wg.Add(1)
 		m.run(ctx)
-		wg.Done()
+		close(done)
 	}()
+	return done
 }
 
-func (m *MainLoop) RunWorkerLoop(ctx context.Context, wg sync.WaitGroup) {
+func (m *MainLoop) runWorkerLoop(ctx context.Context) {
 	m.worker = NewWorkerLoop(
 		m.state,
 		m.config,
@@ -79,11 +71,8 @@ func (m *MainLoop) RunWorkerLoop(ctx context.Context, wg sync.WaitGroup) {
 		m.onCommitCallback,
 		m.onNewConsensusRoundCallback)
 
-	go func() {
-		wg.Add(1)
-		m.worker.Run(ctx)
-		wg.Done()
-	}()
+	// TODO Replace wih supervised.GoForever()
+	go m.worker.Run(ctx)
 }
 
 func (m *MainLoop) run(ctx context.Context) {
@@ -98,6 +87,8 @@ func (m *MainLoop) run(ctx context.Context) {
 		panic("Election trigger was not configured, cannot run Lean Helix (mainloop.run)")
 	}
 
+	m.runWorkerLoop(ctx)
+
 	m.logger.Info("LHFLOW LHMSG MAINLOOP START LISTENING NOW")
 	workerCtx, cancelWorkerContext := context.WithCancel(ctx)
 	for {
@@ -108,7 +99,7 @@ func (m *MainLoop) run(ctx context.Context) {
 
 		case message := <-m.messagesChannel:
 			parsedMessage := interfaces.ToConsensusMessage(message)
-			m.logger.Debug("LHFLOW LHMSG MAINLOOP RECEIVED %v from %v for H=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight())
+			m.logger.Debug("LHFLOW LHMSG MAINLOOP RECEIVED %v from %v for H=%d V=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight(), parsedMessage.View())
 			m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}
 
 		case trigger := <-m.electionScheduler.ElectionChannel():
