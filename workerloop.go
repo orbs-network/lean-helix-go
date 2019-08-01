@@ -100,7 +100,7 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 
 		case res := <-lh.MessagesChannel:
 			parsedMessage := interfaces.ToConsensusMessage(res.msg)
-			lh.logger.Debug("LHFLOW LHMSG WORKERLOOP RECEIVED %v from %v for H=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight())
+			lh.logger.Debug("LHFLOW LHMSG WORKERLOOP RECEIVED %v from %v for H=%d and V=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight(), parsedMessage.View())
 			lh.filter.HandleConsensusRawMessage(res.ctx, res.msg)
 
 		case trigger := <-lh.electionChannel:
@@ -230,7 +230,7 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 
 func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, blockProofBytes []byte) {
 	height := block.Height()
-	lh.logger.Debug("LHFLOW onCommitCallback START from leanhelix.onCommit() H=%d", height)
+	lh.logger.Debug("LHFLOW onCommitCallback START from leanhelix.onCommit() ID=%s H=%d", lh.config.Membership.MyMemberId(), height)
 
 	lh.onCommitCallback(ctx, block, blockProofBytes)
 	lh.logger.Debug("LHFLOW onCommitCallback RETURNED from leanhelix.onCommit()")
@@ -253,17 +253,3 @@ func (lh *WorkerLoop) onNewConsensusRound(ctx context.Context, prevBlock interfa
 		lh.onNewConsensusRoundCallback(ctx, lh.state.Height(), prevBlock, canBeFirstLeader)
 	}
 }
-
-/*
-func (lh *LeanHelix) onNewConsensusRound(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) {
-	lh.currentHeight = blockheight.GetBlockHeight(prevBlock) + 1
-	lh.logger.Debug(L.LC(lh.currentHeight, math.MaxUint64, lh.config.Membership.MyMemberId()), "onNewConsensusRound() INCREMENTED HEIGHT TO %d", lh.currentHeight)
-	if lh.leanHelixTerm != nil {
-		lh.leanHelixTerm.Dispose()
-		lh.leanHelixTerm = nil
-	}
-	lh.leanHelixTerm = leanhelixterm.NewLeanHelixTerm(ctx, lh.logger, lh.config, lh.onCommit, prevBlock, prevBlockProofBytes, canBeFirstLeader)
-	lh.filter.SetBlockHeight(ctx, lh.currentHeight, lh.leanHelixTerm)
-}
-
-*/
