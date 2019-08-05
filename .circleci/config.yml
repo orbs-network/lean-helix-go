@@ -1,11 +1,11 @@
 version: 2
 jobs:
   build:
-    machine: true
+    docker:
+      - image: circleci/golang:1.12.6
     steps:
       - checkout
-      - run: ./git-submodule-checkout.sh
-      - run: ./.circleci/main.sh
+      - run: go test -count=1 -v ./...
 
 workflows:
   version: 2
