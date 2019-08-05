@@ -211,7 +211,7 @@ func (net *TestNetwork) WaitUntilQuorumCommitsHeight(ctx context.Context, height
 				if height == topBlock.Height() {
 					fmt.Printf("---DONE---%s\n", node.MemberId)
 					go func() {
-						defer func() { recover() }()
+						defer func() { _ = recover() }()
 						wg.Done()
 					}() // may panic but we're cool
 					return
