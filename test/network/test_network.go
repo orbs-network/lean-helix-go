@@ -103,13 +103,10 @@ func (net *TestNetwork) WaitUntilNodesCommitAnyBlock(ctx context.Context, nodes 
 	var nodeState *NodeState = nil
 
 	for _, node := range nodes {
-		fmt.Printf("ID=%s WaitUntilNodesCommitAnyBlock BEFORE\n", node.MemberId)
 		select {
 		case <-ctx.Done():
-			fmt.Printf("ID=%s WaitUntilNodesCommitAnyBlock ctx.Done\n", node.MemberId)
 			return nil
 		case nodeState = <-node.CommittedBlockChannel:
-			fmt.Printf("ID=%s WaitUntilNodesCommitAnyBlock AFTER\n", node.MemberId)
 			continue
 		}
 	}
@@ -173,7 +170,7 @@ func (net *TestNetwork) WaitUntilNodesEventuallyCommitASpecificBlock(ctx context
 
 func waitForCommittedBlockAtHeight(ctx context.Context, node *Node, targetHeight primitives.BlockHeight) interfaces.Block {
 	nextItemToCheck := 0
-	for ;ctx.Err() == nil; time.Sleep(10 * time.Millisecond) { // while context not cancelled
+	for ; ctx.Err() == nil; time.Sleep(10 * time.Millisecond) { // while context not cancelled
 		var topBlockHeight primitives.BlockHeight
 		if node.blockChain.LastBlock() != nil {
 			topBlockHeight = node.blockChain.LastBlock().Height()
@@ -213,8 +210,8 @@ func (net *TestNetwork) WaitUntilQuorumCommitsHeight(ctx context.Context, height
 				fmt.Printf("ID=%s Expected: %s Committed: %s\n", node.MemberId, height, topBlock.Height())
 				if height == topBlock.Height() {
 					fmt.Printf("---DONE---%s\n", node.MemberId)
-					go func(){
-						defer func(){recover()}()
+					go func() {
+						defer func() { recover() }()
 						wg.Done()
 					}() // may panic but we're cool
 					return
@@ -346,7 +343,6 @@ func (net *TestNetwork) SetNodesPauseOnRequestNewBlockWhenCounterIsZero(counter 
 	}
 	for _, node := range nodes {
 		if pausableBlockUtils, ok := node.BlockUtils.(*mocks.PausableBlockUtils); ok {
-			node.log.Debug("ID=%s OnRequestNewBlockPauseCounter=%d", node.MemberId, counter)
 			pausableBlockUtils.RequestNewBlockCallsLeftUntilItPausesWhenCounterIsZero = counter
 		} else {
 			panic("Node.BlockUtils is not PausableBlockUtils")

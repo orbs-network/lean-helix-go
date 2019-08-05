@@ -117,7 +117,6 @@ func (node *Node) onNewConsensusRound(ctx context.Context, newHeight primitives.
 		node.blockChain.AppendBlockToChain(prevBlock, nil) // We don't have the proof here
 	}
 
-	fmt.Printf("ID=%s onNewConsensusRound() H=%d\n", node.MemberId, newHeight)
 	if node.OnNewConsensusRoundChannel == nil {
 		return
 	}
@@ -158,7 +157,6 @@ func (node *Node) StartConsensus(ctx context.Context) error {
 	if height > 0 {
 		panic("Cannot start consensus if height > 0")
 	}
-	node.log.Debug("H=%d ID=%s StartConsensus START", height, node.MemberId)
 	return node.leanHelix.UpdateState(ctx, node.GetLatestBlock(), nil)
 }
 
@@ -173,13 +171,10 @@ func (node *Node) Sync(ctx context.Context, prevBlock interfaces.Block, blockPro
 	if node.leanHelix == nil {
 		panic("Sync(): leanhelix is nil")
 	}
-	fmt.Printf("ID=%s H=%d B.H=%d NodeSync(): Start, calling ValidateBlockConsensus\n", node.MemberId, node.GetCurrentHeight(), prevBlock.Height())
 	if err := node.ValidateBlockConsensus(ctx, prevBlock, blockProofBytes, prevBlockProofBytes); err == nil {
-		fmt.Printf("ID=%s H=%d B.H=%d NodeSync(): Passed ValidateBlockConsensus, calling UpdateState\n", node.MemberId, node.GetCurrentHeight(), prevBlock.Height())
 		if err := node.leanHelix.UpdateState(ctx, prevBlock, prevBlockProofBytes); err != nil {
 			return err
 		}
-		fmt.Printf("ID=%s H=%d B.H=%d NodeSync(): UpdateState returned\n", node.MemberId, node.GetCurrentHeight(), prevBlock.Height())
 		return nil
 	} else {
 		return errors.Errorf(fmt.Sprintf("ID=%s H=%d B.H=%d NodeSync(): Failed validation: %s", node.MemberId, node.GetCurrentHeight(), prevBlock.Height(), err))
