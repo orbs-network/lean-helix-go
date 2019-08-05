@@ -25,3 +25,6 @@
 [submodule "vendor/github.com/go-playground/ansi"]
 	path = vendor/github.com/go-playground/ansi
 	url = https://github.com/go-playground/ansi
+[submodule "vendor/github.com/orbs-network/gojay"]
+	path = vendor/github.com/orbs-network/gojay
+	url = https://github.com/orbs-network/gojay
