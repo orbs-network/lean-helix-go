@@ -5,7 +5,7 @@ jobs:
       - image: circleci/golang:1.12.6
     steps:
       - checkout
-      - run: go test -count=1 -v ./...
+      - run: go test -count=1 -timeout=3m -v ./...
 
 workflows:
   version: 2
