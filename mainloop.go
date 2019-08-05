@@ -11,6 +11,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/state"
+	"github.com/orbs-network/scribe/log"
 	"github.com/pkg/errors"
 )
 
@@ -54,10 +55,10 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 // LH: goroutineLauncher(func (){m.runWorkerLoop(ctx)})
 
 func (m *MainLoop) Run(ctx context.Context) govnr.ContextEndedChan {
-	go func() {
+	logger := log.GetLogger().WithTags(log.Node(m.config.InstanceId.String()), log.String("event_loop", "LHMain"))
+	return govnr.GoForever(ctx, logger, func() {
 		m.run(ctx)
-	}()
-	return nil
+	})
 }
 
 func (m *MainLoop) runWorkerLoop(ctx context.Context) {
@@ -69,9 +70,10 @@ func (m *MainLoop) runWorkerLoop(ctx context.Context) {
 		m.onCommitCallback,
 		m.onNewConsensusRoundCallback)
 
-	go func() {
+	logger := log.GetLogger().WithTags(log.Node(m.config.InstanceId.String()), log.String("event_loop", "LHWorker"))
+	govnr.GoForever(ctx, logger, func() {
 		m.worker.Run(ctx)
-	}()
+	})
 }
 
 func (m *MainLoop) run(ctx context.Context) {
