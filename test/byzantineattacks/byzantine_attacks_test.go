@@ -20,7 +20,6 @@ import (
 )
 
 func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
-	t.Skip("Maybe flaky")
 	test.WithContext(func(ctx context.Context) {
 		block := mocks.ABlock(interfaces.GenesisBlock)
 		net := network.
@@ -38,7 +37,6 @@ func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
 }
 
 func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
-	t.Skip("Maybe flaky")
 	test.WithContext(func(ctx context.Context) {
 
 		block := mocks.ABlock(interfaces.GenesisBlock)
@@ -65,7 +63,6 @@ func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 }
 
 func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
-	t.Skip("Maybe flaky")
 	test.WithContext(func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		net := network.
@@ -90,7 +87,6 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 }
 
 func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
-	t.Skip("Maybe flaky")
 	test.WithContext(func(ctx context.Context) {
 		goodBlock := mocks.ABlock(interfaces.GenesisBlock)
 		fakeBlock := mocks.ABlock(interfaces.GenesisBlock)
@@ -124,7 +120,6 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 }
 
 func TestThatAByzantineLeaderCannotCauseAFork(t *testing.T) {
-	t.Skip("Maybe flaky")
 	test.WithContext(func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(interfaces.GenesisBlock)
