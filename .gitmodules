@@ -19,3 +19,6 @@
 [submodule "vendor/github.com/orbs-network/govnr"]
 	path = vendor/github.com/orbs-network/govnr
 	url = https://github.com/orbs-network/govnr
+[submodule "vendor/github.com/orbs-network/scribe"]
+	path = vendor/github.com/orbs-network/scribe
+	url = https://github.com/orbs-network/scribe
