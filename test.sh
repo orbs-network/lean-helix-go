@@ -6,4 +6,4 @@
     echo ""
 } 2> /dev/null
 
-go test ./... -test.v
+go test ./... -test.v -test.timeout 3m
