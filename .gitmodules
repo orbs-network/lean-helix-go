@@ -22,3 +22,6 @@
 [submodule "vendor/github.com/orbs-network/scribe"]
 	path = vendor/github.com/orbs-network/scribe
 	url = https://github.com/orbs-network/scribe
+[submodule "vendor/github.com/go-playground/ansi"]
+	path = vendor/github.com/go-playground/ansi
+	url = https://github.com/go-playground/ansi
