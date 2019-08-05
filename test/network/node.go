@@ -101,7 +101,6 @@ func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, 
 			return
 
 		case node.CommittedBlockChannel <- nodeState:
-			fmt.Printf("---WROTE--- ID=%s H=%d\n", node.MemberId, block.Height())
 			return
 		}
 	}
