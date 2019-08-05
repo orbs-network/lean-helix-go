@@ -3,7 +3,6 @@ package leanhelix
 import (
 	"context"
 	"fmt"
-	"github.com/orbs-network/govnr"
 	"github.com/orbs-network/lean-helix-go/services/electiontrigger"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	L "github.com/orbs-network/lean-helix-go/services/logger"
@@ -53,7 +52,7 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 // ORBS: LeanHelix.Run(ctx, goroutineLauncher func(f func()) { GoForever(f) }))
 // LH: goroutineLauncher(func (){m.runWorkerLoop(ctx)})
 
-func (m *MainLoop) Run(ctx context.Context) govnr.ContextEndedChan {
+func (m *MainLoop) Run(ctx context.Context) chan struct{} {
 	go func() {
 		m.run(ctx)
 	}()
