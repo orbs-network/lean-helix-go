@@ -74,7 +74,6 @@ func (tb *TestNetworkBuilder) OrderCommitteeByHeight() *TestNetworkBuilder {
 
 func (tb *TestNetworkBuilder) Build(ctx context.Context) *TestNetwork {
 
-
 	if tb.logger == nil {
 		tb.logger = logger.NewSilentLogger()
 	}
@@ -198,7 +197,9 @@ func ABasicTestNetwork(ctx context.Context) *TestNetwork {
 }
 
 func ABasicTestNetworkWithConsoleLogs(ctx context.Context, tb testing.TB) *TestNetwork {
-	return ATestNetworkBuilder(4).LogToConsole(tb).Build(ctx)
+	return ATestNetworkBuilder(4).
+		//LogToConsole(tb).
+		Build(ctx)
 }
 
 func ATestNetworkBuilder(countOfNodes int, blocksPool ...interfaces.Block) *TestNetworkBuilder {

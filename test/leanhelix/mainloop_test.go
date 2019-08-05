@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-const LOG_TO_CONSOLE = true
+const LOG_TO_CONSOLE = false
 
 func TestMainloopReportsCorrectHeight(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
@@ -26,7 +26,7 @@ func TestMainloopReportsCorrectHeight(t *testing.T) {
 			NewTestNetworkBuilder().
 			WithNodeCount(nodeCount).
 			WithBlocks(block1, block2).
-			LogToConsole(t).
+			//LogToConsole(t).
 			Build(ctx)
 
 		node0 := net.Nodes[0]
@@ -42,7 +42,7 @@ func TestMainloopReportsCorrectHeight(t *testing.T) {
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
 		net.WaitUntilNodesCommitAnyBlock(ctx)
 
-		require.True(t, test.Eventually(100 * time.Millisecond, func() bool {
+		require.True(t, test.Eventually(100*time.Millisecond, func() bool {
 			return block2.Height()+1 == node0.GetCurrentHeight()
 		}), "node0 should eventually reach height 3")
 
@@ -59,7 +59,7 @@ func TestVerifyPreprepareMessageSentByLeader_HappyFlow(t *testing.T) {
 			NewTestNetworkBuilder().
 			WithNodeCount(nodeCount).
 			WithBlocks(block1, block2).
-			LogToConsole(t).
+			//LogToConsole(t).
 			Build(ctx)
 
 		node0 := net.Nodes[0]
@@ -89,7 +89,7 @@ func TestPreprepareMessageNotSentByLeaderIfRequestNewBlockProposalContextCancell
 			NewTestNetworkBuilder().
 			WithNodeCount(nodeCount).
 			WithBlocks(block1, block2, block3).
-			LogToConsole(t).
+			//LogToConsole(t).
 			Build(ctx)
 
 		bc, err := leaderelection.GenerateProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)
@@ -139,7 +139,7 @@ func TestVerifyWorkerContextNotCancelledIfNodeSyncBlockIsIgnored(t *testing.T) {
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
 			WithBlocks(block1, block2, block3).
-			LogToConsole(t).
+			//LogToConsole(t).
 			Build(ctx)
 
 		node0 := net.Nodes[0]

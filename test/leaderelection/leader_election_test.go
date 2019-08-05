@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-const LOG_TO_CONSOLE = true
+const LOG_TO_CONSOLE = false
 
 // TODO FLAKY
 func TestNewLeaderProposesNewBlockIfPreviousLeaderFailedToBringNetworkIntoPreparedPhase(t *testing.T) {
@@ -130,7 +130,7 @@ func TestLeaderCircularOrdering(t *testing.T) {
 		h := NewStartedHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
 		numNodes := len(h.net.Nodes)
 
-		for i:=0; i < numNodes; i++ { // force elections of next node numNodes times
+		for i := 0; i < numNodes; i++ { // force elections of next node numNodes times
 			currentLeader := i % numNodes
 
 			h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[currentLeader])

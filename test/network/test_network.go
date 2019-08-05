@@ -132,7 +132,7 @@ func (net *TestNetwork) WaitUntilNodesCommitASpecificBlock(ctx context.Context, 
 			case nodeState := <-node.CommittedBlockChannel:
 				if !matchers.BlocksAreEqual(block, nodeState.block) {
 					allEqual = false
-					fmt.Printf("Expected: %s Committed: %s\n", block, nodeState.block)
+					//fmt.Printf("Expected: %s Committed: %s\n", block, nodeState.block)
 					break
 				}
 			}
@@ -149,7 +149,7 @@ func (net *TestNetwork) WaitUntilNodesEventuallyCommitASpecificBlock(ctx context
 		nodes = net.Nodes
 	}
 
-	fmt.Printf("---START---%d\n", len(nodes))
+	//fmt.Printf("---START---%d\n", len(nodes))
 	wg := &sync.WaitGroup{}
 
 	for _, node := range nodes {
@@ -164,7 +164,7 @@ func (net *TestNetwork) WaitUntilNodesEventuallyCommitASpecificBlock(ctx context
 		}(node)
 	}
 	wg.Wait()
-	fmt.Printf("---DONE ALL---\n")
+	//fmt.Printf("---DONE ALL---\n")
 
 }
 
@@ -191,7 +191,7 @@ func (net *TestNetwork) WaitUntilQuorumCommitsHeight(ctx context.Context, height
 
 	nodes := net.Nodes
 
-	fmt.Printf("---START---%d\n", len(nodes))
+	//fmt.Printf("---START---%d\n", len(nodes))
 	wg := &sync.WaitGroup{}
 
 	wg.Add(quorum.CalcQuorumSize(len(nodes)))
@@ -205,11 +205,11 @@ func (net *TestNetwork) WaitUntilQuorumCommitsHeight(ctx context.Context, height
 					return
 				case nodeState := <-node.CommittedBlockChannel:
 					topBlock = nodeState.block
-					fmt.Printf("---READ--- ID=%s H=%d\n", node.MemberId, topBlock.Height())
+					//fmt.Printf("---READ--- ID=%s H=%d\n", node.MemberId, topBlock.Height())
 				}
-				fmt.Printf("ID=%s Expected: %s Committed: %s\n", node.MemberId, height, topBlock.Height())
+				//fmt.Printf("ID=%s Expected: %s Committed: %s\n", node.MemberId, height, topBlock.Height())
 				if height == topBlock.Height() {
-					fmt.Printf("---DONE---%s\n", node.MemberId)
+					//fmt.Printf("---DONE---%s\n", node.MemberId)
 					go func() {
 						defer func() { _ = recover() }()
 						wg.Done()
@@ -220,7 +220,7 @@ func (net *TestNetwork) WaitUntilQuorumCommitsHeight(ctx context.Context, height
 		}(node)
 	}
 	wg.Wait()
-	fmt.Printf("---DONE QUROM---\n")
+	//fmt.Printf("---DONE QUROM---\n")
 
 }
 
@@ -230,7 +230,7 @@ func (net *TestNetwork) WaitUntilNodesCommitASpecificHeight(ctx context.Context,
 		nodes = net.Nodes
 	}
 
-	fmt.Printf("---START---%d\n", len(nodes))
+	//fmt.Printf("---START---%d\n", len(nodes))
 	wg := &sync.WaitGroup{}
 
 	for _, node := range nodes {
@@ -244,11 +244,11 @@ func (net *TestNetwork) WaitUntilNodesCommitASpecificHeight(ctx context.Context,
 					return
 				case nodeState := <-node.CommittedBlockChannel:
 					topBlock = nodeState.block
-					fmt.Printf("---READ--- ID=%s H=%d\n", node.MemberId, topBlock.Height())
+					//fmt.Printf("---READ--- ID=%s H=%d\n", node.MemberId, topBlock.Height())
 				}
-				fmt.Printf("ID=%s Expected: %s Committed: %s\n", node.MemberId, height, topBlock.Height())
+				//fmt.Printf("ID=%s Expected: %s Committed: %s\n", node.MemberId, height, topBlock.Height())
 				if height == topBlock.Height() {
-					fmt.Printf("---DONE---%s\n", node.MemberId)
+					//fmt.Printf("---DONE---%s\n", node.MemberId)
 					wg.Done()
 					return
 				}
@@ -256,7 +256,7 @@ func (net *TestNetwork) WaitUntilNodesCommitASpecificHeight(ctx context.Context,
 		}(node)
 	}
 	wg.Wait()
-	fmt.Printf("---DONE ALL---\n")
+	//fmt.Printf("---DONE ALL---\n")
 
 }
 
@@ -266,7 +266,7 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 		nodes = net.Nodes
 	}
 
-	fmt.Printf("---START---%d\n", len(nodes))
+	//fmt.Printf("---START---%d\n", len(nodes))
 	wg := &sync.WaitGroup{}
 
 	for _, node := range nodes {
@@ -288,7 +288,7 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 		}(node)
 	}
 	wg.Wait()
-	fmt.Printf("---DONE ALL---\n")
+	//fmt.Printf("---DONE ALL---\n")
 
 }
 

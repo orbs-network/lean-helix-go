@@ -24,7 +24,9 @@ func TestNodeSync_AllNodesReachSameHeight(t *testing.T) {
 		block2 := mocks.ABlock(block1)
 		block3 := mocks.ABlock(block2)
 
-		net := network.ATestNetworkBuilder(4, block1, block2, block3).LogToConsole(t).Build(ctx)
+		net := network.ATestNetworkBuilder(4, block1, block2, block3).
+			//LogToConsole(t).
+			Build(ctx)
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]

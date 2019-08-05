@@ -44,7 +44,7 @@ func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 		honestNodes := quorum.CalcQuorumSize(totalNodes)
 		net := network.
 			NewTestNetworkBuilder().
-			LogToConsole(t).
+			//LogToConsole(t).
 			WithNodeCount(totalNodes).
 			WithTimeBasedElectionTrigger(100 * time.Millisecond). // reducing the timeout is flaky since sync is not performed and nodes may drop out if interrupted too frequently
 			WithBlocks(block).
@@ -128,7 +128,7 @@ func TestThatAByzantineLeaderCannotCauseAFork(t *testing.T) {
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
 			WithBlocks(block1, block2).
-			LogToConsole(t).
+			//LogToConsole(t).
 			Build(ctx)
 
 		node0 := net.Nodes[0]

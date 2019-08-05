@@ -55,7 +55,9 @@ func TestNodeSyncIsStillHandledDespiteBlockedOnRequestNewBlockProposal(t *testin
 		block2 := mocks.ABlock(block1)
 		block3 := mocks.ABlock(block2)
 
-		net := network.ATestNetworkBuilder(4, block1, block2, block3).LogToConsole(t).Build(ctx)
+		net := network.ATestNetworkBuilder(4, block1, block2, block3).
+			//LogToConsole(t).
+			Build(ctx)
 		node0 := net.Nodes[0]
 
 		net.SetNodesToPauseOnRequestNewBlock()
@@ -182,7 +184,7 @@ func withConsensusRound(ctx context.Context, tb testing.TB, test func(net *netwo
 		WithNodeCount(nodeCount).
 		WithBlockUtils(blockUtils).
 		//InNetwork(instanceId).
-		LogToConsole(tb).
+		//LogToConsole(tb).
 		Build(ctx)
 
 	test(net, simpleMockBlockUtils, block1)
