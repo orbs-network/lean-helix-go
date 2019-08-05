@@ -9,7 +9,7 @@ package mocks
 import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
-	"github.com/pkg/errors"
+	"sync"
 )
 
 type chainItem struct {
@@ -27,6 +27,7 @@ func (i *chainItem) Proof() []byte {
 
 type InMemoryBlockchain struct {
 	items []*chainItem
+	lock  sync.RWMutex
 }
 
 func NewInMemoryBlockchain() *InMemoryBlockchain {
@@ -37,42 +38,48 @@ func NewInMemoryBlockchain() *InMemoryBlockchain {
 	}
 }
 
-func (bs *InMemoryBlockchain) GetFirstXItems(count int) (*InMemoryBlockchain, error) {
-	if bs == nil {
-		return nil, errors.New("GetFirstXItems(): bs in nil")
-	}
-	newItems := make([]*chainItem, count, count)
-	copied := copy(newItems, bs.items)
-	if copied != count {
-		return nil, errors.Errorf("GetFirstXItems(): bad copy: bs.items=%v newItems=%v copied=%d count=%d", bs.items, newItems, copied, count)
-	}
-	return &InMemoryBlockchain{
-		items: newItems,
-	}, nil
-}
-
 func (bs *InMemoryBlockchain) AppendBlockToChain(block interfaces.Block, blockProof []byte) {
+	bs.lock.Lock()
+	defer bs.lock.Unlock()
 	bs.items = append(bs.items, &chainItem{block, blockProof})
 }
 
 func (bs *InMemoryBlockchain) LastBlock() interfaces.Block {
+	bs.lock.RLock()
+	defer bs.lock.RUnlock()
+
 	item := bs.items[len(bs.items)-1]
 	return item.block
 }
 
 func (bs *InMemoryBlockchain) LastBlockProof() []byte {
+	bs.lock.RLock()
+	defer bs.lock.RUnlock()
+
 	item := bs.items[len(bs.items)-1]
 	return item.blockProof
 }
 
 func (bs *InMemoryBlockchain) BlockProofAt(height primitives.BlockHeight) []byte {
+	bs.lock.RLock()
+	defer bs.lock.RUnlock()
+
 	item := bs.items[height]
 	return item.blockProof
 }
 
 func (bs *InMemoryBlockchain) BlockAndProofAt(height primitives.BlockHeight) (interfaces.Block, []byte) {
+	bs.lock.RLock()
+	defer bs.lock.RUnlock()
+
 	item := bs.items[height]
 	return item.block, item.blockProof
+}
+
+func (bs *InMemoryBlockchain) Count() int {
+	bs.lock.RLock()
+	defer bs.lock.RUnlock()
+	return len(bs.items)
 }
 
 // Do we want to strictly maintain escapulation here? probably only if we decide to RWLock/RLock the "bs.items" field

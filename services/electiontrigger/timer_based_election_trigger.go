@@ -12,6 +12,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/state"
 	"math"
+	"sync"
 	"time"
 )
 
@@ -20,11 +21,15 @@ var TIMEOUT_EXP_BASE = 2.0
 type TimerBasedElectionTrigger struct {
 	electionChannel chan *interfaces.ElectionTrigger
 	minTimeout      time.Duration
-	view            primitives.View
-	blockHeight     primitives.BlockHeight
 	electionHandler func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)
 	onElectionCB    interfaces.OnElectionCallback
 	timer           *time.Timer
+
+	// mutable, mutex protected - better refactor into separate obj
+	inRegister  bool
+	blockHeight primitives.BlockHeight
+	view        primitives.View
+	lock        sync.RWMutex
 }
 
 func NewTimerBasedElectionTrigger(minTimeout time.Duration, onElectionCB interfaces.OnElectionCallback) *TimerBasedElectionTrigger {
@@ -36,6 +41,13 @@ func NewTimerBasedElectionTrigger(minTimeout time.Duration, onElectionCB interfa
 }
 
 func (t *TimerBasedElectionTrigger) RegisterOnElection(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, electionHandler func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)) {
+	if t.inRegister {
+		return
+	}
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	t.inRegister = true
+
 	if t.electionHandler == nil || t.view != view || t.blockHeight != blockHeight {
 		timeout := t.CalcTimeout(view)
 		t.view = view
@@ -48,6 +60,7 @@ func (t *TimerBasedElectionTrigger) RegisterOnElection(ctx context.Context, bloc
 		})
 	}
 	t.electionHandler = electionHandler
+	t.inRegister = false
 }
 
 func (t *TimerBasedElectionTrigger) ElectionChannel() chan *interfaces.ElectionTrigger {
@@ -69,20 +82,31 @@ func (t *TimerBasedElectionTrigger) Stop() {
 }
 
 func (t *TimerBasedElectionTrigger) runOnReadElectionChannel(ctx context.Context) {
-	if t.electionHandler != nil {
-		t.electionHandler(ctx, t.blockHeight, t.view, t.onElectionCB)
+	t.lock.RLock()
+	h := t.blockHeight
+	v := t.view
+	handler := t.electionHandler
+	t.lock.RUnlock()
+
+	if handler != nil {
+		handler(ctx, h, v, t.onElectionCB)
 	}
 }
 
 func (t *TimerBasedElectionTrigger) onTimerTimeout() {
+	t.lock.RLock()
+	h := t.blockHeight
+	v := t.view
+	t.lock.RUnlock()
+
 	t.electionChannel <- &interfaces.ElectionTrigger{
 		MoveToNextLeader: t.runOnReadElectionChannel,
-		Hv:               state.NewHeightView(t.blockHeight, t.view),
+		Hv:               state.NewHeightView(h, v),
 	}
 
 }
 
 func (t *TimerBasedElectionTrigger) CalcTimeout(view primitives.View) time.Duration {
-	timeoutMultiplier := time.Duration(int64(math.Pow(2, float64(view))))
+	timeoutMultiplier := time.Duration(int64(math.Pow(TIMEOUT_EXP_BASE, float64(view))))
 	return timeoutMultiplier * t.minTimeout
 }

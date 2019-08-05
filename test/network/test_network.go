@@ -117,16 +117,26 @@ func (net *TestNetwork) WaitUntilNodesCommitAnyBlock(ctx context.Context, nodes 
 	return nodeState.block
 }
 
-func (net *TestNetwork) WaitUntilNodesCommitASpecificBlock(ctx context.Context, block interfaces.Block, nodes ...*Node) {
+func (net *TestNetwork) WaitUntilNodesCommitASpecificBlock(ctx context.Context, t *testing.T, timeout time.Duration, block interfaces.Block, nodes ...*Node) {
 	if nodes == nil {
 		nodes = net.Nodes
 	}
+
+	if timeout == 0 {
+		timeout = 2 * time.Second
+	}
+
+	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	for {
 		var allEqual = true
 		for _, node := range nodes {
 
 			select {
+			case <-timeoutCtx.Done():
+				t.Fatal("WaitUntilNodesCommitASpecificBlock timed out")
+				return
 			case <-ctx.Done():
 				return
 			case nodeState := <-node.CommittedBlockChannel:
@@ -155,7 +165,7 @@ func (net *TestNetwork) WaitUntilNodesEventuallyCommitASpecificBlock(ctx context
 	for _, node := range nodes {
 		wg.Add(1)
 		go func(node *Node) {
-			if b := waitForCommittedBlockAtHeight(ctx, node, block.Height()); b != nil { // NOTE - if ctx is cancelled we will never be wg.Done()
+			if b := waitForAndReturnCommittedBlockAtHeight(ctx, node, block.Height()); b != nil { // NOTE - if ctx is cancelled we will never be wg.Done()
 				if !matchers.BlocksAreEqual(block, b) {
 					t.Fatalf("expected block at height %d to equal %v. found %v", block.Height(), block, b)
 				}
@@ -168,7 +178,7 @@ func (net *TestNetwork) WaitUntilNodesEventuallyCommitASpecificBlock(ctx context
 
 }
 
-func waitForCommittedBlockAtHeight(ctx context.Context, node *Node, targetHeight primitives.BlockHeight) interfaces.Block {
+func waitForAndReturnCommittedBlockAtHeight(ctx context.Context, node *Node, targetHeight primitives.BlockHeight) interfaces.Block {
 	nextItemToCheck := 0
 	for ; ctx.Err() == nil; time.Sleep(10 * time.Millisecond) { // while context not cancelled
 		var topBlockHeight primitives.BlockHeight
@@ -176,10 +186,11 @@ func waitForCommittedBlockAtHeight(ctx context.Context, node *Node, targetHeight
 			topBlockHeight = node.blockChain.LastBlock().Height()
 		}
 		if topBlockHeight >= targetHeight { // if consensus reached for new blocks
-			for ; nextItemToCheck < len(node.blockChain.Items()); nextItemToCheck++ { // scan all newly appended blocks
-				b := node.blockChain.Items()[nextItemToCheck]
-				if b.Block() != nil && targetHeight == b.Block().Height() { // if target height reached, return the block
-					return b.Block()
+			count := node.blockChain.Count()
+			for ; nextItemToCheck < count; nextItemToCheck++ { // scan all newly appended blocks
+				b, _ := node.blockChain.BlockAndProofAt(primitives.BlockHeight(nextItemToCheck))
+				if b != nil && targetHeight == b.Height() { // if target height reached, return the block
+					return b
 				}
 			}
 		}

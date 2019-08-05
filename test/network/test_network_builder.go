@@ -119,7 +119,7 @@ func (tb *TestNetworkBuilder) buildNode(
 ) *Node {
 
 	communicationInstance := mocks.NewCommunication(memberId, discovery)
-	if tb.communicationMaxDelay > time.Duration(0) {
+	if tb.communicationMaxDelay > 0 {
 		communicationInstance.SetMessagesMaxDelay(tb.communicationMaxDelay)
 	}
 	discovery.RegisterCommunication(memberId, communicationInstance)
@@ -193,7 +193,8 @@ func NewTestNetworkBuilder() *TestNetworkBuilder {
 }
 
 func ABasicTestNetwork(ctx context.Context) *TestNetwork {
-	return ATestNetworkBuilder(4).Build(ctx)
+	return ATestNetworkBuilder(4).
+		Build(ctx)
 }
 
 func ABasicTestNetworkWithConsoleLogs(ctx context.Context, tb testing.TB) *TestNetwork {
@@ -208,5 +209,5 @@ func ATestNetworkBuilder(countOfNodes int, blocksPool ...interfaces.Block) *Test
 		WithNodeCount(countOfNodes).
 		WithBlocks(blocksPool...)
 	//InNetwork(instanceId) // generates a random InstanceID, not needed for most tests
-	//LogToConsole().
+
 }

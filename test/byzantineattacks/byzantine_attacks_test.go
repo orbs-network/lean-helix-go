@@ -19,6 +19,7 @@ import (
 	"time"
 )
 
+// TODO FLAKY
 func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block := mocks.ABlock(interfaces.GenesisBlock)
@@ -82,7 +83,7 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 		net.StartConsensus(ctx)
 
 		// node0, node1 and node2 should reach consensus
-		net.WaitUntilNodesCommitASpecificBlock(ctx, block1, node0, node1, node2)
+		net.WaitUntilNodesCommitASpecificBlock(ctx, t, 0, block1, node0, node1, node2)
 	})
 }
 
@@ -145,7 +146,7 @@ func TestThatAByzantineLeaderCannotCauseAFork(t *testing.T) {
 		// Because we only allow node0 (The leader) to talk to node1 and node2
 		// and node1 only to talk to node2,
 		// we can expect (only) node2 to be prepared on block1
-		test.Eventually(time.Duration(100)*time.Millisecond, func() bool {
+		test.Eventually(100*time.Millisecond, func() bool {
 			_, ppOk := node2.Storage.GetPreprepareMessage(1, 1)
 			p, _ := node2.Storage.GetPrepareMessages(1, 1, mocks.CalculateBlockHash(block1))
 			return ppOk && len(p) == 2
@@ -168,6 +169,6 @@ func TestThatAByzantineLeaderCannotCauseAFork(t *testing.T) {
 		node2.TriggerElectionOnNode(ctx)
 		node3.TriggerElectionOnNode(ctx)
 
-		net.WaitUntilNodesCommitASpecificBlock(ctx, block2, node0, node1, node3)
+		net.WaitUntilNodesCommitASpecificBlock(ctx, t, 0, block2, node0, node1, node3)
 	})
 }

@@ -62,11 +62,12 @@ func TestHappyFlowMessages(t *testing.T) {
 
 func TestConsensusFor8Blocks(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := network.ABasicTestNetwork(ctx).StartConsensus(ctx)
+		net := network.ABasicTestNetworkWithConsoleLogs(ctx, t).StartConsensus(ctx)
 		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 8)
 	})
 }
 
+// TODO Flaky
 func TestHangingNode(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
@@ -90,19 +91,19 @@ func TestHangingNode(t *testing.T) {
 
 		net.ReturnWhenNodesPauseOnValidateBlock(ctx, node1, node2)
 		net.ResumeValidateBlockOnNodes(ctx, node1, node2)
-		net.WaitUntilNodesCommitAnyBlock(ctx, node0, node1, node2)
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 3, node0, node1, node2)
 		require.True(t, matchers.BlocksAreEqual(node0.GetLatestBlock(), block2))
 		require.True(t, matchers.BlocksAreEqual(node1.GetLatestBlock(), block2))
 		require.True(t, matchers.BlocksAreEqual(node2.GetLatestBlock(), block2))
 		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)
 
 		net.ResumeValidateBlockOnNodes(ctx, node3)
-		net.WaitUntilNodesCommitAnyBlock(ctx, node3)
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 2, node3)
 		require.True(t, matchers.BlocksAreEqual(node3.GetLatestBlock(), block1))
 
 		net.ReturnWhenNodesPauseOnValidateBlock(ctx, node3)
 		net.ResumeValidateBlockOnNodes(ctx, node3)
-		net.WaitUntilNodesCommitAnyBlock(ctx, node3)
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 3, node3)
 		require.True(t, matchers.BlocksAreEqual(node3.GetLatestBlock(), block2))
 	})
 }

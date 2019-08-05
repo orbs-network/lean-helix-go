@@ -68,12 +68,12 @@ func TestVerifyPreprepareMessageSentByLeader_HappyFlow(t *testing.T) {
 
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block1, should be agreed by all nodes
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		net.WaitUntilNodesCommitASpecificBlock(ctx, block1)
+		net.WaitUntilNodesCommitASpecificBlock(ctx, t, 0, block1)
 		require.Equal(t, nodeCount-1, node0.Communication.CountMessagesSent(protocol.LEAN_HELIX_PREPREPARE, mocks.BLOCK_HEIGHT_DONT_CARE, mocks.VIEW_DONT_CARE, nil), "node0 should have sent %d PREPREPARE messages", nodeCount-1)
 
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block2, should be agreed by all nodes
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		net.WaitUntilNodesCommitASpecificBlock(ctx, block2)
+		net.WaitUntilNodesCommitASpecificBlock(ctx, t, 0, block2)
 		require.Equal(t, (nodeCount-1)*2, node0.Communication.CountMessagesSent(protocol.LEAN_HELIX_PREPREPARE, mocks.BLOCK_HEIGHT_DONT_CARE, mocks.VIEW_DONT_CARE, nil), "node0 should have sent total of %d PREPREPARE messages", (nodeCount-1)*2)
 	})
 }
@@ -106,7 +106,7 @@ func TestPreprepareMessageNotSentByLeaderIfRequestNewBlockProposalContextCancell
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block1, should be agreed by all nodes
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
-		net.WaitUntilNodesCommitASpecificBlock(ctx, block1)
+		net.WaitUntilNodesCommitASpecificBlock(ctx, t, 0, block1)
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 
 		require.Equal(t, nodeCount-1, node0.Communication.CountMessagesSent(protocol.LEAN_HELIX_PREPREPARE, mocks.BLOCK_HEIGHT_DONT_CARE, mocks.VIEW_DONT_CARE, nil), "node0 sent PREPREPARE despite having its worker context cancelled during RequestNewBlockProposal")

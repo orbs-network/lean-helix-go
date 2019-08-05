@@ -21,8 +21,8 @@ func TestThatWeReachConsensusEventIfWeDelayAllTheGossipMessages(t *testing.T) {
 		net := network.
 			NewTestNetworkBuilder().
 			WithBlocks().
-			WithTimeBasedElectionTrigger(time.Duration(200) * time.Millisecond).
-			GossipMessagesMaxDelay(time.Duration(100) * time.Millisecond).
+			WithTimeBasedElectionTrigger(200 * time.Millisecond).
+			GossipMessagesMaxDelay(100 * time.Millisecond).
 			WithNodeCount(4).
 			//LogToConsole().
 			Build(ctx)
@@ -34,7 +34,7 @@ func TestThatWeReachConsensusEventIfWeDelayAllTheGossipMessages(t *testing.T) {
 
 		net.StartConsensus(ctx)
 
-		time.Sleep(time.Duration(1) * time.Second)
+		time.Sleep(1 * time.Second)
 		// todo add a watch to the nods blockchain, and wait for 100 blocks
 	})
 }

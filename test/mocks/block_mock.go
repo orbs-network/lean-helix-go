@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"sync/atomic"
 )
 
 // MockBlock
@@ -47,13 +48,13 @@ func ABlock(previousBlock interfaces.Block) interfaces.Block {
 	return block
 }
 
-var blocksCounter = 0
+var blocksCounter uint64 = 0
 
 func genBody(height primitives.BlockHeight) string {
-	body := fmt.Sprintf("SN=%d,H=%d", blocksCounter, height)
+	body := fmt.Sprintf("SN=%d,H=%d", atomic.LoadUint64(&blocksCounter), height)
 	if height == 0 {
 		body = body + " (Genesis)"
 	}
-	blocksCounter++
+	atomic.AddUint64(&blocksCounter, 1)
 	return body
 }
