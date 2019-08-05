@@ -15,6 +15,7 @@ import (
 )
 
 func TestCallValidateBlockDuringConsensus(t *testing.T) {
+	t.Skip()
 	test.WithContext(func(ctx context.Context) {
 		net := network.ABasicTestNetwork(ctx)
 
