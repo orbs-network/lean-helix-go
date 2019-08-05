@@ -213,6 +213,7 @@ func (net *TestNetwork) WaitUntilQuorumCommitsHeight(ctx context.Context, height
 				var topBlock interfaces.Block
 				select {
 				case <-ctx.Done():
+					wg.Done()
 					return
 				case nodeState := <-node.CommittedBlockChannel:
 					topBlock = nodeState.block
