@@ -247,7 +247,7 @@ func (lh *WorkerLoop) onNewConsensusRound(ctx context.Context, prevBlock interfa
 		lh.leanHelixTerm = nil
 	}
 	lh.leanHelixTerm = leanhelixterm.NewLeanHelixTerm(ctx, lh.logger, lh.config, lh.state, lh.electionTrigger, lh.onCommit, prevBlock, prevBlockProofBytes, canBeFirstLeader)
-	lh.logger.Debug("onNewConsensusRound() Calling ConsumeCacheMessages", lh.state.Height())
+	lh.logger.Debug("onNewConsensusRound() Calling ConsumeCacheMessages for H=%d", lh.state.Height())
 	lh.filter.ConsumeCacheMessages(ctx, lh.leanHelixTerm)
 	if lh.onNewConsensusRoundCallback != nil {
 		lh.onNewConsensusRoundCallback(ctx, lh.state.Height(), prevBlock, canBeFirstLeader)

@@ -46,7 +46,7 @@ func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 			NewTestNetworkBuilder().
 			LogToConsole(t).
 			WithNodeCount(totalNodes).
-			WithTimeBasedElectionTrigger(100*time.Millisecond). // reducing the timeout is flaky since sync is not performed and nodes may drop out if interrupted too frequently
+			WithTimeBasedElectionTrigger(100 * time.Millisecond). // reducing the timeout is flaky since sync is not performed and nodes may drop out if interrupted too frequently
 			WithBlocks(block).
 			Build(ctx)
 
