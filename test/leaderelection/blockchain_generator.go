@@ -1,6 +1,7 @@
 package leaderelection
 
 import (
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/blockproof"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
@@ -12,8 +13,10 @@ import (
 
 func GenerateProofsForTest(blocks []interfaces.Block, nodes []*network.Node) (*mocks.InMemoryBlockchain, error) {
 
-	bc := mocks.NewInMemoryBlockchain()
+	bc := mocks.NewInMemoryBlockchain().WithMemberId(primitives.MemberId(fmt.Sprintf("XXX")))
 
+	var genesisProof []byte = nil
+	bc.AppendBlockToChain(interfaces.GenesisBlock, genesisProof)
 	for _, b := range blocks {
 		proof := generateProof(b, nodes)
 		bc.AppendBlockToChain(b, proof.Raw())
