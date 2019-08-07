@@ -106,7 +106,7 @@ func TestPreprepareMessageNotSentByLeaderIfRequestNewBlockProposalContextCancell
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block1, should be agreed by all nodes
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
-		net.WaitUntilNodesCommitASpecificBlock(ctx, t, 0, block1)
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 2)
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 
 		require.Equal(t, nodeCount-1, node0.Communication.CountMessagesSent(protocol.LEAN_HELIX_PREPREPARE, mocks.BLOCK_HEIGHT_DONT_CARE, mocks.VIEW_DONT_CARE, nil), "node0 sent PREPREPARE despite having its worker context cancelled during RequestNewBlockProposal")
@@ -114,7 +114,7 @@ func TestPreprepareMessageNotSentByLeaderIfRequestNewBlockProposalContextCancell
 		blockToSync, blockProofToSync := bc.BlockAndProofAt(2)
 		prevBlockProofToSync := bc.BlockProofAt(1)
 
-		require.Equal(t, node0.GetCurrentHeight(), blockToSync.Height())
+		require.Equal(t, blockToSync.Height(), node0.GetCurrentHeight())
 		node0.SetPauseOnNewConsensusRoundUntilReadingFrom(consensusRoundChan)
 		for _, node := range net.Nodes {
 			if err := node.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync); err != nil { // block2 has H=2 so next block is H=3

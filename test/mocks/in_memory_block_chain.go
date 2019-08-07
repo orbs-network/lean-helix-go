@@ -7,6 +7,7 @@
 package mocks
 
 import (
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"sync"
@@ -26,28 +27,37 @@ func (i *chainItem) Proof() []byte {
 }
 
 type InMemoryBlockchain struct {
-	items []*chainItem
-	lock  sync.RWMutex
+	memberId primitives.MemberId
+	items    []*chainItem
+	lock     sync.RWMutex
 }
 
 func NewInMemoryBlockchain() *InMemoryBlockchain {
 	return &InMemoryBlockchain{
 		items: []*chainItem{
-			{interfaces.GenesisBlock, nil},
+			//{interfaces.GenesisBlock, nil},
 		},
 	}
 }
 
+func (bs *InMemoryBlockchain) WithMemberId(memberId primitives.MemberId) *InMemoryBlockchain {
+	bs.memberId = memberId
+	return bs
+}
 func (bs *InMemoryBlockchain) AppendBlockToChain(block interfaces.Block, blockProof []byte) {
 	bs.lock.Lock()
 	defer bs.lock.Unlock()
 	bs.items = append(bs.items, &chainItem{block, blockProof})
+	fmt.Printf("Node %s appended block %s (blochchain has %d blocks)\n", bs.memberId, block, len(bs.items))
 }
 
 func (bs *InMemoryBlockchain) LastBlock() interfaces.Block {
 	bs.lock.RLock()
 	defer bs.lock.RUnlock()
 
+	if len(bs.items) == 0 {
+		return nil
+	}
 	item := bs.items[len(bs.items)-1]
 	return item.block
 }
@@ -56,6 +66,9 @@ func (bs *InMemoryBlockchain) LastBlockProof() []byte {
 	bs.lock.RLock()
 	defer bs.lock.RUnlock()
 
+	if len(bs.items) == 0 {
+		return nil
+	}
 	item := bs.items[len(bs.items)-1]
 	return item.blockProof
 }

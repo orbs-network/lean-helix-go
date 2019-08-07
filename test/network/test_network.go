@@ -198,6 +198,11 @@ func waitForAndReturnCommittedBlockAtHeight(ctx context.Context, node *Node, tar
 	return nil
 }
 
+func nonPanickingDone(wg *sync.WaitGroup) {
+	defer func() { _ = recover() }()
+	wg.Done()
+}
+
 func (net *TestNetwork) WaitUntilQuorumCommitsHeight(ctx context.Context, height primitives.BlockHeight) {
 
 	nodes := net.Nodes
@@ -213,7 +218,7 @@ func (net *TestNetwork) WaitUntilQuorumCommitsHeight(ctx context.Context, height
 				var topBlock interfaces.Block
 				select {
 				case <-ctx.Done():
-					wg.Done()
+					nonPanickingDone(wg)
 					return
 				case nodeState := <-node.CommittedBlockChannel:
 					topBlock = nodeState.block
@@ -222,10 +227,7 @@ func (net *TestNetwork) WaitUntilQuorumCommitsHeight(ctx context.Context, height
 				//fmt.Printf("ID=%s Expected: %s Committed: %s\n", node.MemberId, height, topBlock.Height())
 				if height == topBlock.Height() {
 					//fmt.Printf("---DONE---%s\n", node.MemberId)
-					go func() {
-						defer func() { _ = recover() }()
-						wg.Done()
-					}() // may panic but we're cool
+					nonPanickingDone(wg)
 					return
 				}
 			}
@@ -278,7 +280,6 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 		nodes = net.Nodes
 	}
 
-	//fmt.Printf("---START---%d\n", len(nodes))
 	wg := &sync.WaitGroup{}
 
 	for _, node := range nodes {
@@ -291,6 +292,7 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 					return
 				default:
 					if node.GetCurrentHeight() >= height {
+						fmt.Printf("Node %s reached H=%d\n", node.MemberId, node.GetCurrentHeight())
 						wg.Done()
 						return
 					}
@@ -300,8 +302,6 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 		}(node)
 	}
 	wg.Wait()
-	//fmt.Printf("---DONE ALL---\n")
-
 }
 
 func (net *TestNetwork) SetNodesToPauseOnValidateBlock(nodes ...*Node) {

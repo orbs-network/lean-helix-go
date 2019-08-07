@@ -214,7 +214,7 @@ func NewNode(
 
 	node := &Node{
 		instanceId:                 instanceId,
-		blockChain:                 mocks.NewInMemoryBlockchain(),
+		blockChain:                 mocks.NewInMemoryBlockchain().WithMemberId(memberId),
 		ElectionTrigger:            electionTrigger,
 		BlockUtils:                 blockUtils,
 		KeyManager:                 mocks.NewMockKeyManager(memberId),

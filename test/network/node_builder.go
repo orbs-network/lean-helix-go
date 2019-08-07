@@ -21,7 +21,7 @@ type NodeBuilder struct {
 	memberId        primitives.MemberId
 	electionTrigger interfaces.ElectionScheduler
 	blockUtils      interfaces.BlockUtils
-	l interfaces.Logger
+	l               interfaces.Logger
 }
 
 func NewNodeBuilder() *NodeBuilder {
@@ -74,9 +74,8 @@ func (builder *NodeBuilder) WithBlockUtils(utils interfaces.BlockUtils) *NodeBui
 func (builder *NodeBuilder) Build() *Node {
 	memberId := builder.memberId
 	if memberId == nil {
-		memberId = primitives.MemberId(fmt.Sprintf("Dummy MemberId"))
+		memberId = primitives.MemberId(fmt.Sprintf("XXX"))
 	}
-
 
 	if builder.l == nil {
 		builder.l = logger.NewSilentLogger()

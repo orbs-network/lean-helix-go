@@ -16,6 +16,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/test/network"
 	"github.com/stretchr/testify/require"
 	"testing"
+	"time"
 )
 
 func TestHappyFlow(t *testing.T) {
@@ -61,7 +62,7 @@ func TestHappyFlowMessages(t *testing.T) {
 }
 
 func TestConsensusFor8Blocks(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
+	test.WithContextWithTimeout(3*time.Second, func(ctx context.Context) {
 		net := network.ABasicTestNetworkWithConsoleLogs(ctx, t).StartConsensus(ctx)
 		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 8)
 	})
@@ -69,24 +70,26 @@ func TestConsensusFor8Blocks(t *testing.T) {
 
 // TODO Flaky
 func TestHangingNode(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
+	test.WithContextWithTimeout(1*time.Second, func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
 
-		net := network.ATestNetworkBuilder(4, block1, block2).Build(ctx)
+		net := network.ATestNetworkBuilder(4, block1, block2).
+			LogToConsole(t).
+			Build(ctx)
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
 		node3 := net.Nodes[3]
 		net.SetNodesToPauseOnValidateBlock()
 		net.StartConsensus(ctx)
-
+		// TODO This hangs, maybe impl is bad, compare to RequestNewBlockProposal
 		net.ReturnWhenNodesPauseOnValidateBlock(ctx, node1, node2, node3)
 		net.ResumeValidateBlockOnNodes(ctx, node1, node2)
-		net.WaitUntilNodesCommitAnyBlock(ctx, node0, node1, node2)
-		require.True(t, matchers.BlocksAreEqual(node0.GetLatestBlock(), block1))
-		require.True(t, matchers.BlocksAreEqual(node1.GetLatestBlock(), block1))
-		require.True(t, matchers.BlocksAreEqual(node2.GetLatestBlock(), block1))
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 2, node0, node1, node2)
+		require.True(t, matchers.BlocksAreEqual(node0.GetLatestBlock(), block1), "%s should be equal to %s", node0.GetLatestBlock(), block1)
+		require.True(t, matchers.BlocksAreEqual(node1.GetLatestBlock(), block1), "%s should be equal to %s", node1.GetLatestBlock(), block1)
+		require.True(t, matchers.BlocksAreEqual(node2.GetLatestBlock(), block1), "%s should be equal to %s", node2.GetLatestBlock(), block1)
 		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)
 
 		net.ReturnWhenNodesPauseOnValidateBlock(ctx, node1, node2)

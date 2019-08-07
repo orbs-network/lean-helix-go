@@ -232,6 +232,8 @@ func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, bloc
 	height := block.Height()
 	lh.logger.Debug("LHFLOW onCommitCallback START from leanhelix.onCommit() ID=%s H=%d", lh.config.Membership.MyMemberId(), height)
 
+	// TODO Gad: Should this check for errors and not call onNewConsensusRound
+
 	lh.onCommitCallback(ctx, block, blockProofBytes)
 	lh.logger.Debug("LHFLOW onCommitCallback RETURNED from leanhelix.onCommit()")
 	lh.logger.Debug("Calling onNewConsensusRound() from leanhelix.onCommit()")
