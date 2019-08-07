@@ -97,21 +97,17 @@ func TestIgnoreSameViewOrHeight(t *testing.T) {
 
 func TestNotTriggeredIfSameViewButDifferentHeight(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		registrationInterval := 10 * time.Millisecond
-		et := buildElectionTrigger(ctx, 5*registrationInterval)
+		registrationInterval := 5 * time.Millisecond
+		et := buildElectionTrigger(ctx, 20*registrationInterval)
 
-		var callCount int32 = 0
 		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
-			atomic.AddInt32(&callCount, 1)
+			t.Fatalf("Callback for H=%d V=%d", blockHeight, view)
 		}
 
 		for i := primitives.BlockHeight(0); i < 10; i++ {
 			et.RegisterOnElection(ctx, 10+i, 0, cb)
 			time.Sleep(registrationInterval)
 		}
-
-		atomic.LoadInt32(&callCount)
-		require.Exactly(t, 0, int(callCount), "Trigger callback called")
 	})
 }
 
