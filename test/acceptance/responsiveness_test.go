@@ -16,22 +16,12 @@ import (
 
 const TIMEOUT = 1 * time.Second
 
-// TODO -  a workaround for a bug in go-mock. when passing nil interface type to Call() implementation - Mock.Called() fails to invoke the Call function.
-type nilBlock struct{}
-
-func (nb *nilBlock) Height() primitives.BlockHeight {
-	panic("I'm a mock object for a nil value and this would throw nil pointer exception")
-}
-
 type SimpleMockBlockUtils struct {
 	mock.Mock
 }
 
-func (b *SimpleMockBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
-	if prevBlock == nil {
-		prevBlock = &nilBlock{} // mock object cannot handle nil interfaces
-	}
-	res := b.Called(ctx, blockHeight, prevBlock)
+func (b *SimpleMockBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, _ interfaces.Block) (interfaces.Block, primitives.BlockHash) {
+	res := b.Called(ctx, blockHeight) // go-mock chokes on nil values, we don't need it, so don't pass it
 	return res.Get(0).(interfaces.Block), res.Get(1).(primitives.BlockHash)
 }
 
@@ -135,7 +125,7 @@ func TestRequestNewBlockDoesNotHangElectionsTrigger(t *testing.T) {
 			createNewBlockProposalEntered := newWaitingGroupWithDelta(1)
 			createNewBlockProposalCanceled := newWaitingGroupWithDelta(1)
 			blockUtilsMock.
-				When("RequestNewBlockProposal", mock.Any, mock.Any, mock.Any).
+				When("RequestNewBlockProposal", mock.Any, mock.Any).
 				Call(func(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
 					createNewBlockProposalEntered.Done()
 					<-ctx.Done() // block until context cancellation
