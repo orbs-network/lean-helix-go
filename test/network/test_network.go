@@ -14,6 +14,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/matchers"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
+	"github.com/pkg/errors"
 	"math"
 	"sync"
 	"testing"
@@ -24,6 +25,55 @@ type TestNetwork struct {
 	InstanceId primitives.InstanceId
 	Nodes      []*Node
 	Discovery  *mocks.Discovery
+}
+
+// Based on: https://stackoverflow.com/questions/52227954/waitgroup-on-subset-of-go-routines
+type SubsetWaitGroup struct {
+	remaining int
+	mu        sync.RWMutex
+	accChan   chan struct{}
+}
+
+func NewSubsetWaitGroup(total int, remaining int) *SubsetWaitGroup {
+	if total-remaining <= 0 {
+		panic("NewSubsetWaitGroup(): must have total > remaining")
+	}
+	return &SubsetWaitGroup{
+		remaining: remaining,
+		accChan:   make(chan struct{}, total-remaining),
+	}
+}
+
+func (w *SubsetWaitGroup) Done() int {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	w.remaining--
+	w.accChan <- struct{}{}
+	return w.remaining
+}
+
+func (w *SubsetWaitGroup) Remaining() int {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+
+	return w.remaining
+}
+
+func (w *SubsetWaitGroup) WaitWithTimeout(timeout time.Duration) error {
+	ch := make(chan struct{})
+	timer := time.AfterFunc(timeout, func() {
+		close(ch)
+	})
+	for doneCount := 0; doneCount < w.remaining; doneCount += 1 {
+		select {
+		case <-ch:
+			return errors.Errorf("timed out with remaining=%d", w.Remaining())
+		case <-w.accChan:
+		}
+	}
+	timer.Stop()
+	return nil
 }
 
 func (net *TestNetwork) GetNodeCommunication(memberId primitives.MemberId) *mocks.CommunicationMock {
@@ -198,8 +248,8 @@ func waitForAndReturnCommittedBlockAtHeight(ctx context.Context, node *Node, tar
 	return nil
 }
 
-func nonPanickingDone(wg *sync.WaitGroup) {
-	defer func() { _ = recover() }()
+func doneAndSetZeroWhenReachingCount(wg *sync.WaitGroup, counter *int32) {
+	//defer func() { _ = recover() }()
 	wg.Done()
 }
 
@@ -208,9 +258,14 @@ func (net *TestNetwork) WaitUntilQuorumCommitsHeight(ctx context.Context, height
 	nodes := net.Nodes
 
 	//fmt.Printf("---START---%d\n", len(nodes))
-	wg := &sync.WaitGroup{}
+	//wg := &sync.WaitGroup{}
 
-	wg.Add(quorum.CalcQuorumSize(len(nodes)))
+	// Should wait for "remaining" nodes and not for allNodeCount
+
+	allNodeCount := len(nodes)
+	var remaining int = quorum.CalcQuorumSize(allNodeCount)
+	wg := NewSubsetWaitGroup(len(nodes), remaining)
+	//wg.Add(allNodeCount)
 
 	for _, node := range nodes {
 		go func(node *Node) {
@@ -218,7 +273,8 @@ func (net *TestNetwork) WaitUntilQuorumCommitsHeight(ctx context.Context, height
 				var topBlock interfaces.Block
 				select {
 				case <-ctx.Done():
-					nonPanickingDone(wg)
+					wg.Done()
+					//doneAndSetZeroWhenReachingCount(wg, &remaining)
 					return
 				case nodeState := <-node.CommittedBlockChannel:
 					topBlock = nodeState.block
@@ -227,13 +283,15 @@ func (net *TestNetwork) WaitUntilQuorumCommitsHeight(ctx context.Context, height
 				//fmt.Printf("ID=%s Expected: %s Committed: %s\n", node.MemberId, height, topBlock.Height())
 				if height == topBlock.Height() {
 					//fmt.Printf("---DONE---%s\n", node.MemberId)
-					nonPanickingDone(wg)
+					//doneAndSetZeroWhenReachingCount(wg, &remaining)
+					wg.Done()
+					//fmt.Printf("---DONE---%s remaining=%d\n", node.MemberId, remaining)
 					return
 				}
 			}
 		}(node)
 	}
-	wg.Wait()
+	wg.WaitWithTimeout(1 * time.Second)
 	//fmt.Printf("---DONE QUROM---\n")
 
 }
