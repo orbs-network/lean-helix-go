@@ -19,7 +19,6 @@ import (
 	"time"
 )
 
-// TODO FLAKY
 func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block := mocks.ABlock(interfaces.GenesisBlock)
@@ -27,17 +26,18 @@ func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
 			WithBlocks(block).
+			LogToConsole(t).
 			Build(ctx)
 
 		net.Nodes[3].Communication.SetIncomingWhitelist([]primitives.MemberId{})
 
 		net.StartConsensus(ctx)
 
-		net.WaitUntilNodesCommitAnyBlock(ctx, net.Nodes[0], net.Nodes[1], net.Nodes[2])
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 4, net.Nodes[0], net.Nodes[1], net.Nodes[2])
 	})
 }
 
-func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
+func TestNetworkReachesConsensusWhen2of7NodesAreByzantine(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 
 		block := mocks.ABlock(interfaces.GenesisBlock)
@@ -53,13 +53,13 @@ func TestThatWeReachConsensusWhere2OutOf7NodesAreByzantine(t *testing.T) {
 
 		byzantines := net.Nodes[honestNodes:totalNodes]
 		for _, b := range byzantines {
-			b.Communication.SetIncomingWhitelist([]primitives.MemberId{})
+			b.Communication.ClearIncomingWhitelist()
 		}
 
 		honest := net.Nodes[:honestNodes]
 		net.StartConsensus(ctx)
 
-		net.WaitUntilNodesCommitAnyBlock(ctx, honest...)
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 3, honest...)
 	})
 }
 
@@ -75,7 +75,6 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
-		//node3 := net.Nodes[3]
 
 		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{node1.MemberId, node2.MemberId})
 
@@ -83,7 +82,7 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 		net.StartConsensus(ctx)
 
 		// node0, node1 and node2 should reach consensus
-		net.WaitUntilNodesCommitASpecificBlock(ctx, t, 0, block1, node0, node1, node2)
+		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, block1, node0, node1, node2)
 	})
 }
 
@@ -169,6 +168,6 @@ func TestThatAByzantineLeaderCannotCauseAFork(t *testing.T) {
 		node2.TriggerElectionOnNode(ctx)
 		node3.TriggerElectionOnNode(ctx)
 
-		net.WaitUntilNodesCommitASpecificBlock(ctx, t, 0, block2, node0, node1, node3)
+		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, block2, node0, node1, node3)
 	})
 }

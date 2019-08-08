@@ -44,11 +44,12 @@ func TestNodeSync_AllNodesReachSameHeight(t *testing.T) {
 		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, block1, node0, node1, node2)
 
 		// node3 is still "stuck" on the genesis block
-		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)
+		node3LatestBlock := node3.GetLatestBlock()
+		require.True(t, node3LatestBlock == interfaces.GenesisBlock, "node3 should have been on genesis but its latest block is %s", node3LatestBlock)
 
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // hangs on block2
 
-		bc, err := leaderelection.GenerateProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)
+		bc, err := leaderelection.GenerateBlocksWithProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)
 		if err != nil {
 			t.Fatalf("Error creating mock blockchain for tests - %s", err)
 			return
@@ -58,7 +59,7 @@ func TestNodeSync_AllNodesReachSameHeight(t *testing.T) {
 		if err := node3.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync); err != nil {
 			t.Fatalf("Sync failed for node %s - %s", node3.MemberId, err)
 		}
-		net.WaitUntilCurrentHeightGreaterEqualThan(ctx, 3, node3)
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 3, node3)
 		require.True(t, node3.GetCurrentHeight() >= block2.Height())
 
 		// opening node3's network to messages

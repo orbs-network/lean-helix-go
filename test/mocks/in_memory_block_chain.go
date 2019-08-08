@@ -94,7 +94,10 @@ func (bs *InMemoryBlockchain) Count() int {
 	return len(bs.items)
 }
 
-// Do we want to strictly maintain escapulation here? probably only if we decide to RWLock/RLock the "bs.items" field
-func (bs *InMemoryBlockchain) Items() []*chainItem {
-	return bs.items
+func (bs *InMemoryBlockchain) Blocks() []interfaces.Block {
+	blocks := make([]interfaces.Block, 0)
+	for _, item := range bs.items {
+		blocks = append(blocks, item.Block())
+	}
+	return blocks
 }

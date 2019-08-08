@@ -39,7 +39,7 @@ func TestHappyFlowMessages(t *testing.T) {
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, net.Nodes[0])
 		net.ResumeRequestNewBlockOnNodes(ctx, net.Nodes[0])
 
-		net.MAYBE_FLAKY_WaitForAllNodesToCommitTheSameBlock(ctx)
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 2)
 
 		// hang the leader before the next round
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, net.Nodes[0])

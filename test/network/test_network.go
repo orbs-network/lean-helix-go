@@ -89,7 +89,7 @@ func (net *TestNetwork) StartConsensus(ctx context.Context) *TestNetwork {
 	}
 
 	for _, node := range net.Nodes {
-		net.WaitUntilCurrentHeightGreaterEqualThan(ctx, 1, node)
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 1, node)
 	}
 
 	return net
@@ -116,156 +116,31 @@ func (net *TestNetwork) AllNodesChainEndsWithABlock(block interfaces.Block) bool
 
 const MINIMUM_NUMBER_OF_NODES_FOR_CONSENSUS = 4
 
-func (net *TestNetwork) MAYBE_FLAKY_WaitForAllNodesToCommitTheSameBlock(ctx context.Context) bool {
-	if len(net.Nodes) < MINIMUM_NUMBER_OF_NODES_FOR_CONSENSUS {
-		panic("Not enough nodes for consensus")
-	}
-
-	select {
-	case <-ctx.Done():
-		return false
-	case firstNodeStateChannel := <-net.Nodes[0].CommittedBlockChannel:
-		firstNodeBlock := firstNodeStateChannel.block
-		for i := 1; i < len(net.Nodes); i++ {
-			node := net.Nodes[i]
-
-			select {
-			case <-ctx.Done():
-				return false
-
-			case nodeState := <-node.CommittedBlockChannel:
-				if matchers.BlocksAreEqual(firstNodeBlock, nodeState.block) == false {
-					return false
-				}
-			}
-
-		}
-		return true
-	}
-}
-
-// TODO this function hides the fact that nodes don't necessarily produced the same block. and we old blocks may also be returned. the last node's block is always returned and all the other's ignored.
-func (net *TestNetwork) WaitUntilNodesCommitAnyBlock(ctx context.Context, nodes ...*Node) interfaces.Block {
-	if nodes == nil {
-		nodes = net.Nodes
-	}
-
-	var nodeState *NodeState = nil
-
-	for _, node := range nodes {
-		select {
-		case <-ctx.Done():
-			return nil
-		case nodeState = <-node.CommittedBlockChannel:
-			continue
-		}
-	}
-
-	if nodeState == nil {
-		return nil
-	}
-	return nodeState.block
-}
-
-func (net *TestNetwork) WaitUntilNodesCommitASpecificBlock(ctx context.Context, t *testing.T, timeout time.Duration, block interfaces.Block, nodes ...*Node) {
-	if nodes == nil {
-		nodes = net.Nodes
-	}
-
-	if timeout == 0 {
-		timeout = 2 * time.Second
-	}
-
-	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
-	for {
-		var allEqual = true
-		for _, node := range nodes {
-
-			select {
-			case <-timeoutCtx.Done():
-				t.Fatal("WaitUntilNodesCommitASpecificBlock timed out")
-				return
-			case <-ctx.Done():
-				return
-			case nodeState := <-node.CommittedBlockChannel:
-				if !matchers.BlocksAreEqual(block, nodeState.block) {
-					allEqual = false
-					//fmt.Printf("Expected: %s Committed: %s\n", block, nodeState.block)
-					break
-				}
-			}
-		}
-		if allEqual {
-			return
-		}
-	}
-}
-
 func (net *TestNetwork) WaitUntilNodesEventuallyCommitASpecificBlock(ctx context.Context, t *testing.T, block interfaces.Block, nodes ...*Node) {
 
 	if nodes == nil {
 		nodes = net.Nodes
 	}
 
-	//fmt.Printf("---START---%d\n", len(nodes))
-	wg := &sync.WaitGroup{}
-
+	h := block.Height()
+	net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, h+1, nodes...)
 	for _, node := range nodes {
-		wg.Add(1)
-		go func(node *Node) {
-			if b := waitForAndReturnCommittedBlockAtHeight(ctx, node, block.Height()); b != nil { // NOTE - if ctx is cancelled we will never be wg.Done()
-				if !matchers.BlocksAreEqual(block, b) {
-					t.Fatalf("expected block at height %d to equal %v. found %v", block.Height(), block, b)
-				}
-				wg.Done()
-			}
-		}(node)
-	}
-	wg.Wait()
-	//fmt.Printf("---DONE ALL---\n")
-
-}
-
-func waitForAndReturnCommittedBlockAtHeight(ctx context.Context, node *Node, targetHeight primitives.BlockHeight) interfaces.Block {
-	nextItemToCheck := 0
-	for ; ctx.Err() == nil; time.Sleep(10 * time.Millisecond) { // while context not cancelled
-		var topBlockHeight primitives.BlockHeight
-		if node.blockChain.LastBlock() != nil {
-			topBlockHeight = node.blockChain.LastBlock().Height()
-		}
-		if topBlockHeight >= targetHeight { // if consensus reached for new blocks
-			count := node.blockChain.Count()
-			for ; nextItemToCheck < count; nextItemToCheck++ { // scan all newly appended blocks
-				b, _ := node.blockChain.BlockAndProofAt(primitives.BlockHeight(nextItemToCheck))
-				if b != nil && targetHeight == b.Height() { // if target height reached, return the block
-					return b
-				}
-			}
+		b, _ := node.blockChain.BlockAndProofAt(h)
+		if !matchers.BlocksAreEqual(block, b) {
+			t.Fatalf("Node %s: Height=%d: Expected block %s but found %s",
+				node.MemberId, h, block, b)
 		}
 	}
-	return nil
-}
-
-func doneAndSetZeroWhenReachingCount(wg *sync.WaitGroup, counter *int32) {
-	//defer func() { _ = recover() }()
-	wg.Done()
 }
 
 func (net *TestNetwork) WaitUntilQuorumCommitsHeight(ctx context.Context, height primitives.BlockHeight) {
 
 	nodes := net.Nodes
 
-	//fmt.Printf("---START---%d\n", len(nodes))
-	//wg := &sync.WaitGroup{}
-
 	// Should wait for "remaining" nodes and not for allNodeCount
-
 	allNodeCount := len(nodes)
 	var remaining int = quorum.CalcQuorumSize(allNodeCount)
 	wg := NewSubsetWaitGroup(len(nodes), remaining)
-	//wg.Add(allNodeCount)
 
 	for _, node := range nodes {
 		go func(node *Node) {
@@ -278,31 +153,21 @@ func (net *TestNetwork) WaitUntilQuorumCommitsHeight(ctx context.Context, height
 					return
 				case nodeState := <-node.CommittedBlockChannel:
 					topBlock = nodeState.block
-					//fmt.Printf("---READ--- ID=%s H=%d\n", node.MemberId, topBlock.Height())
 				}
-				//fmt.Printf("ID=%s Expected: %s Committed: %s\n", node.MemberId, height, topBlock.Height())
 				if height == topBlock.Height() {
-					//fmt.Printf("---DONE---%s\n", node.MemberId)
-					//doneAndSetZeroWhenReachingCount(wg, &remaining)
 					wg.Done()
-					//fmt.Printf("---DONE---%s remaining=%d\n", node.MemberId, remaining)
 					return
 				}
 			}
 		}(node)
 	}
 	wg.WaitWithTimeout(1 * time.Second)
-	//fmt.Printf("---DONE QUROM---\n")
-
 }
 
 func (net *TestNetwork) WaitUntilNodesCommitASpecificHeight(ctx context.Context, height primitives.BlockHeight, nodes ...*Node) {
-
 	if nodes == nil {
 		nodes = net.Nodes
 	}
-
-	//fmt.Printf("---START---%d\n", len(nodes))
 	wg := &sync.WaitGroup{}
 
 	for _, node := range nodes {
@@ -316,11 +181,8 @@ func (net *TestNetwork) WaitUntilNodesCommitASpecificHeight(ctx context.Context,
 					return
 				case nodeState := <-node.CommittedBlockChannel:
 					topBlock = nodeState.block
-					//fmt.Printf("---READ--- ID=%s H=%d\n", node.MemberId, topBlock.Height())
 				}
-				//fmt.Printf("ID=%s Expected: %s Committed: %s\n", node.MemberId, height, topBlock.Height())
 				if height == topBlock.Height() {
-					//fmt.Printf("---DONE---%s\n", node.MemberId)
 					wg.Done()
 					return
 				}
@@ -328,8 +190,6 @@ func (net *TestNetwork) WaitUntilNodesCommitASpecificHeight(ctx context.Context,
 		}(node)
 	}
 	wg.Wait()
-	//fmt.Printf("---DONE ALL---\n")
-
 }
 
 // Wait for H=1 so that election triggers will be sent with H=1
@@ -349,6 +209,9 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 	wg := &sync.WaitGroup{}
 
 	for _, node := range nodes {
+		if node.GetCurrentHeight() >= height {
+			continue
+		}
 		wg.Add(1)
 		go func(node *Node) {
 			for {
@@ -358,7 +221,6 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 					return
 				default:
 					if node.GetCurrentHeight() >= height {
-						fmt.Printf("Node %s reached H=%d\n", node.MemberId, node.GetCurrentHeight())
 						wg.Done()
 						return
 					}
@@ -462,37 +324,6 @@ func (net *TestNetwork) AllNodesValidatedNoMoreThanOnceBeforeCommit(ctx context.
 		}
 	}
 	return true
-}
-
-func (net *TestNetwork) WaitUntilCurrentHeightGreaterEqualThan(ctx context.Context, height primitives.BlockHeight, node *Node) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			if node.GetCurrentHeight() >= height {
-				return
-			}
-			time.Sleep(20 * time.Millisecond)
-		}
-	}
-}
-
-func (net *TestNetwork) WaitUntilNewConsensusRoundForBlockHeight(ctx context.Context, height primitives.BlockHeight, node *Node) {
-	if node.GetCurrentHeight() >= height {
-		return
-	}
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case h := <-node.ConsensusRoundChannel():
-			fmt.Printf("")
-			if h == height {
-				return
-			}
-		}
-	}
 }
 
 func (net *TestNetwork) TriggerElectionsOnAllNodes(ctx context.Context) {

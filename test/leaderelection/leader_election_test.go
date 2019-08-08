@@ -42,24 +42,20 @@ func TestNewLeaderProposesNewBlock_IfPreviousLeaderFailedToBringNetworkIntoPrepa
 func TestNotCountingViewChangeFromTheSameNode(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewStartedHarness(ctx, t, LOG_TO_CONSOLE)
-
 		node0 := h.net.Nodes[0]
 		node1 := h.net.Nodes[1]
 		node2 := h.net.Nodes[2]
-
-		// hang the leader (node0)
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 
 		// sending only 4 view-change from the same node
 		for i := 0; i < 4; i++ {
 			node1.Communication.OnIncomingMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
 		}
-
 		require.Zero(t, node1.Communication.CountSentMessages(protocol.LEAN_HELIX_NEW_VIEW), "node1 sent new view although it didn't receive enough valid votes")
 	})
 }
 
-func TestDoesNotCloseBlockWhenValidateBlockProposalFails(t *testing.T) {
+func TestDoesNotReachConsensusOnBlockWhenValidateBlockProposalFails(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 
 		h := NewStartedHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
@@ -69,14 +65,14 @@ func TestDoesNotCloseBlockWhenValidateBlockProposalFails(t *testing.T) {
 
 		c := make(chan struct{})
 		go func() {
-			h.net.WaitUntilNodesCommitAnyBlock(ctx)
+			h.net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 2)
 			close(c)
 		}()
 
 		select {
 		case <-time.After(50 * time.Millisecond):
 		case <-c:
-			t.Fatal("Block was closed despite validations failing")
+			t.Fatal("Reached consensus on block despite validations failing")
 		}
 	})
 }
@@ -185,8 +181,8 @@ func TestViewNotIncrementedIfLessThan2fPlus1ViewChange(t *testing.T) {
 		// Resume the paused leader (node0)
 		//h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
-		h.net.WaitUntilCurrentHeightGreaterEqualThan(ctx, 1, node0)
-		h.net.WaitUntilCurrentHeightGreaterEqualThan(ctx, 1, node1)
+		h.net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 1, node0)
+		h.net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 1, node1)
 
 		go func() {
 			// Fail if node1 starts RequestNewBlockProposal() because it means it became new leader
