@@ -332,6 +332,14 @@ func (net *TestNetwork) WaitUntilNodesCommitASpecificHeight(ctx context.Context,
 
 }
 
+// Wait for H=1 so that election triggers will be sent with H=1
+// o/w they will sometimes be sent with H=0 and subsequently be ignored
+// by workerloop's election channel, causing election to not happen,
+// failing/hanging the test.
+func (net *TestNetwork) WaitUntilNetworkIsRunning(ctx context.Context) {
+	net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 1)
+}
+
 func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context.Context, height primitives.BlockHeight, nodes ...*Node) {
 
 	if nodes == nil {
@@ -484,6 +492,12 @@ func (net *TestNetwork) WaitUntilNewConsensusRoundForBlockHeight(ctx context.Con
 				return
 			}
 		}
+	}
+}
+
+func (net *TestNetwork) TriggerElectionsOnAllNodes(ctx context.Context) {
+	for _, n := range net.Nodes {
+		<-n.TriggerElectionOnNode(ctx)
 	}
 }
 

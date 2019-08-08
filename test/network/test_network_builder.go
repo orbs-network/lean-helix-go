@@ -123,7 +123,7 @@ func (tb *TestNetworkBuilder) buildNode(
 		communicationInstance.SetMessagesMaxDelay(tb.communicationMaxDelay)
 	}
 	discovery.RegisterCommunication(memberId, communicationInstance)
-	membership := mocks.NewMockMembership(memberId, discovery, tb.orderCommitteeByHeight)
+	membership := mocks.NewFakeMembership(memberId, discovery, tb.orderCommitteeByHeight)
 
 	b := nodeBuilder.
 		AsInstanceId(tb.instanceId).

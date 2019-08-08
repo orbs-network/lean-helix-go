@@ -99,7 +99,7 @@ func ADummyNode() *Node {
 	memberId := primitives.MemberId("Dummy")
 	return NewNodeBuilder().
 		WithMemberId(memberId).
-		ThatIsPartOf(mocks.NewMockMembership(memberId, nil, false)).
+		ThatIsPartOf(mocks.NewFakeMembership(memberId, nil, false)).
 		CommunicatesVia(mocks.NewCommunication(memberId, nil)).
 		Build()
 }
