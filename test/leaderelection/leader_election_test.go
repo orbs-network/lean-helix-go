@@ -227,7 +227,7 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node1)
 		h.net.MAYBE_FLAKY_WaitForAllNodesToCommitTheSameBlock(ctx)
 
-		require.Equal(t, 1, node0.Communication.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))
+		require.Equal(t, 1, node0.Communication.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE)) // node0's send of view change will be counted even though its comms are down, since we count *attempts* to send messages rather than *successful* sends
 		require.Equal(t, 1, node2.Communication.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))
 		require.Equal(t, 1, node3.Communication.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))
 		require.Equal(t, 1, node1.Communication.CountSentMessages(protocol.LEAN_HELIX_NEW_VIEW))
