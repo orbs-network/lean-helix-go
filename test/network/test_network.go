@@ -116,7 +116,7 @@ func (net *TestNetwork) AllNodesChainEndsWithABlock(block interfaces.Block) bool
 
 const MINIMUM_NUMBER_OF_NODES_FOR_CONSENSUS = 4
 
-func (net *TestNetwork) WaitUntilNodesEventuallyCommitASpecificBlock(ctx context.Context, t *testing.T, block interfaces.Block, nodes ...*Node) {
+func (net *TestNetwork) WaitUntilNodesEventuallyCommitASpecificBlock(ctx context.Context, t *testing.T, timeout time.Duration, block interfaces.Block, nodes ...*Node) {
 
 	if nodes == nil {
 		nodes = net.Nodes
@@ -206,9 +206,11 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 		nodes = net.Nodes
 	}
 
-	wg := &sync.WaitGroup{}
+	wg := sync.WaitGroup{}
 
 	for _, node := range nodes {
+		// TODO Trying to use node.blockChain.Count() instead of node.GetCurrentHeight()
+		// hangs - need to understand why, as it seems more correct.
 		if node.GetCurrentHeight() >= height {
 			continue
 		}

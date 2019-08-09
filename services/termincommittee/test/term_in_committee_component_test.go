@@ -581,7 +581,6 @@ func TestAValidPreparedProofIsSentOnViewChange(t *testing.T) {
 		pBlockRef := preparedProof.PrepareBlockRef()
 
 		var pSendersIds []primitives.MemberId
-		t.Logf("preparedProof: %+v\n", preparedProof)
 		pSendersIter := preparedProof.PrepareSendersIterator()
 		for {
 			if !pSendersIter.HasNext() {

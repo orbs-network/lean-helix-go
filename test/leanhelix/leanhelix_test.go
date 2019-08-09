@@ -8,6 +8,7 @@ package leanhelix
 
 import (
 	"context"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test"
@@ -68,14 +69,13 @@ func TestConsensusFor8Blocks(t *testing.T) {
 	})
 }
 
-// TODO Flaky
 func TestHangingNode(t *testing.T) {
 	test.WithContextWithTimeout(1*time.Second, func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
 
 		net := network.ATestNetworkBuilder(4, block1, block2).
-			LogToConsole(t).
+			//LogToConsole(t).
 			Build(ctx)
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
@@ -87,7 +87,13 @@ func TestHangingNode(t *testing.T) {
 		net.ReturnWhenNodesPauseOnValidateBlock(ctx, node1, node2, node3)
 		net.ResumeValidateBlockOnNodes(ctx, node1, node2)
 		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 2, node0, node1, node2)
-		require.True(t, matchers.BlocksAreEqual(node0.GetLatestBlock(), block1), "%s should be equal to %s", node0.GetLatestBlock(), block1)
+
+		node0LatestBlock := node0.GetLatestBlock()
+		if node0LatestBlock == nil {
+			fmt.Printf("Weird: node0 latest is nil!")
+			t.Fatal("node0Latest is nil")
+		}
+		require.True(t, matchers.BlocksAreEqual(node0LatestBlock, block1), "%s should be equal to %s", node0LatestBlock, block1)
 		require.True(t, matchers.BlocksAreEqual(node1.GetLatestBlock(), block1), "%s should be equal to %s", node1.GetLatestBlock(), block1)
 		require.True(t, matchers.BlocksAreEqual(node2.GetLatestBlock(), block1), "%s should be equal to %s", node2.GetLatestBlock(), block1)
 		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)
@@ -95,7 +101,8 @@ func TestHangingNode(t *testing.T) {
 		net.ReturnWhenNodesPauseOnValidateBlock(ctx, node1, node2)
 		net.ResumeValidateBlockOnNodes(ctx, node1, node2)
 		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 3, node0, node1, node2)
-		require.True(t, matchers.BlocksAreEqual(node0.GetLatestBlock(), block2))
+		node0LatestBlock = node0.GetLatestBlock()
+		require.True(t, matchers.BlocksAreEqual(node0LatestBlock, block2))
 		require.True(t, matchers.BlocksAreEqual(node1.GetLatestBlock(), block2))
 		require.True(t, matchers.BlocksAreEqual(node2.GetLatestBlock(), block2))
 		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)

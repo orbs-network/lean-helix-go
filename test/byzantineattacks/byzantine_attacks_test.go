@@ -19,14 +19,14 @@ import (
 	"time"
 )
 
-func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
+func TestThatWeReachConsensusWhere1of4NodeIsByzantine(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block := mocks.ABlock(interfaces.GenesisBlock)
 		net := network.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
 			WithBlocks(block).
-			LogToConsole(t).
+			//LogToConsole(t).
 			Build(ctx)
 
 		net.Nodes[3].Communication.SetIncomingWhitelist([]primitives.MemberId{})
@@ -38,7 +38,7 @@ func TestThatWeReachConsensusWhere1OutOf4NodeIsByzantine(t *testing.T) {
 }
 
 func TestNetworkReachesConsensusWhen2of7NodesAreByzantine(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
+	test.WithContextWithTimeout(1*time.Second, func(ctx context.Context) {
 
 		block := mocks.ABlock(interfaces.GenesisBlock)
 		totalNodes := 7
@@ -63,6 +63,9 @@ func TestNetworkReachesConsensusWhen2of7NodesAreByzantine(t *testing.T) {
 	})
 }
 
+// TODO This is a weak test, it only tests that 3 nodes out of 4 can close a block.
+// It does not test what happens if the leader sends block1a to node1,node2 and block1b to node3
+// where block1a and block1b both have height=1 but different contents.
 func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
@@ -76,13 +79,16 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
 
-		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{node1.MemberId, node2.MemberId})
+		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{
+			node1.MemberId,
+			node2.MemberId,
+		})
 
 		// the leader (node0) is suggesting block1 to node1 and node2 (not to node3)
 		net.StartConsensus(ctx)
 
 		// node0, node1 and node2 should reach consensus
-		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, block1, node0, node1, node2)
+		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, 0, block1, node0, node1, node2)
 	})
 }
 
@@ -115,7 +121,7 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
-		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, goodBlock)
+		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, 0, goodBlock)
 	})
 }
 
@@ -168,6 +174,6 @@ func TestThatAByzantineLeaderCannotCauseAFork(t *testing.T) {
 		node2.TriggerElectionOnNode(ctx)
 		node3.TriggerElectionOnNode(ctx)
 
-		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, block2, node0, node1, node3)
+		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, 0, block2, node0, node1, node3)
 	})
 }

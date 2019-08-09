@@ -41,7 +41,7 @@ func TestNodeSync_AllNodesReachSameHeight(t *testing.T) {
 		// node0, node1, and node2 are closing block1
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, block1, node0, node1, node2)
+		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, 0, block1, node0, node1, node2)
 
 		// node3 is still "stuck" on the genesis block
 		node3LatestBlock := node3.GetLatestBlock()
