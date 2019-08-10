@@ -43,8 +43,8 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 		config:                      config,
 		onCommitCallback:            onCommitCallback,
 		onNewConsensusRoundCallback: onNewConsensusRoundCallback,
-		messagesChannel:             make(chan *interfaces.ConsensusRawMessage, 10), // TODO use config.MsgChanBufLen
-		mainUpdateStateChannel:      make(chan *blockWithProof, 10),                 // TODO use config.UpdateStateChanBufLen
+		messagesChannel:             make(chan *interfaces.ConsensusRawMessage), // TODO use config.MsgChanBufLen
+		mainUpdateStateChannel:      make(chan *blockWithProof),                 // TODO use config.UpdateStateChanBufLen
 		electionScheduler:           electionTrigger,
 		state:                       state,
 		logger:                      L.NewLhLogger(config, state),
@@ -92,6 +92,8 @@ func (m *MainLoop) run(ctx context.Context) {
 
 	m.logger.Info("LHFLOW LHMSG MAINLOOP START LISTENING NOW")
 	workerCtx, cancelWorkerContext := context.WithCancel(ctx)
+	defer cancelWorkerContext()
+
 	for {
 		select {
 		case <-ctx.Done(): // system shutdown
@@ -100,8 +102,18 @@ func (m *MainLoop) run(ctx context.Context) {
 
 		case message := <-m.messagesChannel:
 			parsedMessage := interfaces.ToConsensusMessage(message)
+
+			current := m.state.HeightView()
+			if current.Height() > parsedMessage.BlockHeight() || (current.Height() == parsedMessage.BlockHeight() && current.View() > parsedMessage.View()) { // stale message
+				m.logger.Debug("LHFLOW LHMSG MAINLOOP - INVALID HEIGHT/VIEW IGNORED - Current: %s, Message Height: %d, Message View: $d", current, parsedMessage.BlockHeight(), parsedMessage.View())
+				continue
+			}
+
 			m.logger.Debug("LHFLOW LHMSG MAINLOOP RECEIVED %v from %v for H=%d V=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight(), parsedMessage.View())
-			m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}
+			select {
+			case m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}:
+			default: // never block the main loop
+			}
 
 		case trigger := <-m.electionScheduler.ElectionChannel():
 
@@ -136,7 +148,6 @@ func (m *MainLoop) run(ctx context.Context) {
 			}
 			m.worker.workerUpdateStateChannel <- message
 			m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - Wrote to worker UpdateState channel")
-
 		}
 	}
 }

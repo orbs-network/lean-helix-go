@@ -52,7 +52,7 @@ func (lh *LH) cancelTerm() {
 }
 
 func (lh *LH) startNewTerm(parentCtx context.Context, block *Block) {
-	termMessagesChannel := make(chan *Message, 0)
+	termMessagesChannel := make(chan *Message)
 	term := NewTerm(block.h, termMessagesChannel)
 	ctx, cancel := context.WithCancel(parentCtx)
 	term.cancel = cancel

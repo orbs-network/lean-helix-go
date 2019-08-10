@@ -338,20 +338,18 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 		nodes = net.Nodes
 	}
 
-	wg := &sync.WaitGroup{}
-
+	doneChan := make(chan struct{})
 	for _, node := range nodes {
-		wg.Add(1)
 		go func(node *Node) {
 			for {
 				select {
 				case <-ctx.Done():
-					wg.Done()
+					doneChan <- struct{}{}
 					return
 				default:
 					if node.GetCurrentHeight() >= height {
 						fmt.Printf("Node %s reached H=%d\n", node.MemberId, node.GetCurrentHeight())
-						wg.Done()
+						doneChan <- struct{}{}
 						return
 					}
 					time.Sleep(20 * time.Millisecond)
@@ -359,7 +357,9 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 			}
 		}(node)
 	}
-	wg.Wait()
+	for i := 0; i < len(nodes); i++ {
+		<- doneChan
+	}
 }
 
 func (net *TestNetwork) SetNodesToPauseOnValidateBlock(nodes ...*Node) {

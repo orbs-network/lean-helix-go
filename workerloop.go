@@ -71,7 +71,7 @@ func NewWorkerLoop(
 	logger.Debug("LHFLOW NewWorkerLoop()")
 	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), logger, state)
 	return &WorkerLoop{
-		MessagesChannel:             make(chan *MessageWithContext, 10),        // TODO what's the correct buffer size?
+		MessagesChannel:             make(chan *MessageWithContext, 100),       // TODO what's the correct buffer size?
 		workerUpdateStateChannel:    make(chan *workerUpdateStateMessage),      // TODO what's the correct buffer size?
 		electionChannel:             make(chan *workerElectionsTriggerMessage), // TODO what's the correct buffer size?
 		electionTrigger:             electionTrigger,
@@ -98,7 +98,44 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 			lh.logger.Info("LHFLOW WORKERLOOP DONE STOPPED LISTENING, Terminating Run()")
 			return
 
+		case trigger := <-lh.electionChannel:
+			if trigger == nil {
+				// this cannot happen, ignore
+				lh.logger.Info("XXXXXX LHFLOW WORKERLOOP ELECTION, OMG trigger is nil, not triggering election!")
+				continue
+			}
+			current := lh.state.HeightView()
+			if current.Height() != trigger.Hv.Height() || current.View() != trigger.Hv.View() { // stale election message
+				lh.logger.Debug("LHFLOW WORKERLOOP ELECTION - INVALID HEIGHT/VIEW IGNORED - Current: %s, ElectionTrigger: %s",
+					current, trigger.Hv)
+				continue
+			}
+
+			lh.logger.Debug("LHFLOW WORKERLOOP ELECTION")
+			trigger.MoveToNextLeader(trigger.ctx)
+
+		case receivedBlockWithProofAndContext := <-lh.workerUpdateStateChannel: // NodeSync
+			var height primitives.BlockHeight
+			receivedBlockWithProof := receivedBlockWithProofAndContext.blockWithProof
+
+			if receivedBlockWithProof.block != nil {
+				height = receivedBlockWithProof.block.Height()
+			}
+			lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP - Received block with H=%d", height)
+			lh.handleUpdateState(receivedBlockWithProofAndContext.ctx, receivedBlockWithProof)
+			lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP - Handled block with H=%d", height)
+		default: // proceed to check message channel:
+		}
+
+		select {
+		case <-ctx.Done(): // system shutdown
+			lh.logger.Info("LHFLOW WORKERLOOP DONE STOPPED LISTENING, Terminating Run()")
+			return
+
 		case res := <-lh.MessagesChannel:
+			if res.ctx.Err() != nil { // message already cancelled
+				continue
+			}
 			parsedMessage := interfaces.ToConsensusMessage(res.msg)
 			lh.logger.Debug("LHFLOW LHMSG WORKERLOOP RECEIVED %v from %v for H=%d V=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight(), parsedMessage.View())
 			lh.filter.HandleConsensusRawMessage(res.ctx, res.msg)
