@@ -63,14 +63,14 @@ func TestHappyFlowMessages(t *testing.T) {
 }
 
 func TestConsensusFor8Blocks(t *testing.T) {
-	test.WithContextWithTimeout(3*time.Second, func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 3*time.Second, func(ctx context.Context) {
 		net := network.ABasicTestNetworkWithConsoleLogs(ctx, t).StartConsensus(ctx)
 		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 8)
 	})
 }
 
 func TestHangingNode(t *testing.T) {
-	test.WithContextWithTimeout(1*time.Second, func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 3*time.Second, func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
 

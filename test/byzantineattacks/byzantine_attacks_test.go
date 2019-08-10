@@ -20,7 +20,7 @@ import (
 )
 
 func TestThatWeReachConsensusWhere1of4NodeIsByzantine(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 3*time.Second, func(ctx context.Context) {
 		block := mocks.ABlock(interfaces.GenesisBlock)
 		net := network.
 			NewTestNetworkBuilder().
@@ -38,7 +38,7 @@ func TestThatWeReachConsensusWhere1of4NodeIsByzantine(t *testing.T) {
 }
 
 func TestNetworkReachesConsensusWhen2of7NodesAreByzantine(t *testing.T) {
-	test.WithContextWithTimeout(1*time.Second, func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 3*time.Second, func(ctx context.Context) {
 
 		block := mocks.ABlock(interfaces.GenesisBlock)
 		totalNodes := 7
@@ -67,7 +67,7 @@ func TestNetworkReachesConsensusWhen2of7NodesAreByzantine(t *testing.T) {
 // It does not test what happens if the leader sends block1a to node1,node2 and block1b to node3
 // where block1a and block1b both have height=1 but different contents.
 func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 3*time.Second, func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		net := network.
 			NewTestNetworkBuilder().
@@ -93,7 +93,7 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 }
 
 func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 3*time.Second, func(ctx context.Context) {
 		goodBlock := mocks.ABlock(interfaces.GenesisBlock)
 		fakeBlock := mocks.ABlock(interfaces.GenesisBlock)
 		net := network.
@@ -126,7 +126,7 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 }
 
 func TestThatAByzantineLeaderCannotCauseAFork(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 1*time.Second, func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(interfaces.GenesisBlock)
 

@@ -21,7 +21,7 @@ import (
 const LOG_TO_CONSOLE = false
 
 func TestNewLeaderProposesNewBlock_IfPreviousLeaderFailedToBringNetworkIntoPreparedPhase(t *testing.T) {
-	test.WithContextWithTimeout(1*time.Second, func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 3*time.Second, func(ctx context.Context) {
 		h := NewStartedHarness(ctx, t, LOG_TO_CONSOLE)
 
 		node0 := h.net.Nodes[0]
