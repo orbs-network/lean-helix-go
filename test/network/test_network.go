@@ -168,39 +168,7 @@ func (net *TestNetwork) WaitUntilNodesCommitAnyBlock(ctx context.Context, nodes 
 }
 
 func (net *TestNetwork) WaitUntilNodesCommitASpecificBlock(ctx context.Context, t *testing.T, timeout time.Duration, block interfaces.Block, nodes ...*Node) {
-	if nodes == nil {
-		nodes = net.Nodes
-	}
-
-	if timeout == 0 {
-		timeout = 2 * time.Second
-	}
-
-	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
-	for {
-		var allEqual = true
-		for _, node := range nodes {
-
-			select {
-			case <-timeoutCtx.Done():
-				t.Fatal("WaitUntilNodesCommitASpecificBlock timed out")
-				return
-			case <-ctx.Done():
-				return
-			case nodeState := <-node.CommittedBlockChannel:
-				if !matchers.BlocksAreEqual(block, nodeState.block) {
-					allEqual = false
-					//fmt.Printf("Expected: %s Committed: %s\n", block, nodeState.block)
-					break
-				}
-			}
-		}
-		if allEqual {
-			return
-		}
-	}
+	net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, block, nodes...)
 }
 
 func (net *TestNetwork) WaitUntilNodesEventuallyCommitASpecificBlock(ctx context.Context, t *testing.T, block interfaces.Block, nodes ...*Node) {
@@ -210,20 +178,21 @@ func (net *TestNetwork) WaitUntilNodesEventuallyCommitASpecificBlock(ctx context
 	}
 
 	//fmt.Printf("---START---%d\n", len(nodes))
-	wg := &sync.WaitGroup{}
+	doneChan := make(chan struct{})
 
 	for _, node := range nodes {
-		wg.Add(1)
 		go func(node *Node) {
-			if b := waitForAndReturnCommittedBlockAtHeight(ctx, node, block.Height()); b != nil { // NOTE - if ctx is cancelled we will never be wg.Done()
+			if b := waitForAndReturnCommittedBlockAtHeight(ctx, node, block.Height()); b != nil {
 				if !matchers.BlocksAreEqual(block, b) {
 					t.Fatalf("expected block at height %d to equal %v. found %v", block.Height(), block, b)
 				}
-				wg.Done()
 			}
+			doneChan <- struct{}{}
 		}(node)
 	}
-	wg.Wait()
+	for i := 0; i < len(nodes); i++ {
+		<- doneChan
+	}
 	//fmt.Printf("---DONE ALL---\n")
 
 }
@@ -338,20 +307,18 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 		nodes = net.Nodes
 	}
 
-	wg := &sync.WaitGroup{}
-
+	doneChan := make(chan struct{})
 	for _, node := range nodes {
-		wg.Add(1)
 		go func(node *Node) {
 			for {
 				select {
 				case <-ctx.Done():
-					wg.Done()
+					doneChan <- struct{}{}
 					return
 				default:
 					if node.GetCurrentHeight() >= height {
 						fmt.Printf("Node %s reached H=%d\n", node.MemberId, node.GetCurrentHeight())
-						wg.Done()
+						doneChan <- struct{}{}
 						return
 					}
 					time.Sleep(20 * time.Millisecond)
@@ -359,7 +326,9 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 			}
 		}(node)
 	}
-	wg.Wait()
+	for i := 0; i < len(nodes); i++ {
+		<- doneChan
+	}
 }
 
 func (net *TestNetwork) SetNodesToPauseOnValidateBlock(nodes ...*Node) {

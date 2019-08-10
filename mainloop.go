@@ -13,6 +13,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/state"
 	"github.com/orbs-network/scribe/log"
 	"github.com/pkg/errors"
+	"sync"
 )
 
 type MainLoop struct {
@@ -43,8 +44,8 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 		config:                      config,
 		onCommitCallback:            onCommitCallback,
 		onNewConsensusRoundCallback: onNewConsensusRoundCallback,
-		messagesChannel:             make(chan *interfaces.ConsensusRawMessage, 10), // TODO use config.MsgChanBufLen
-		mainUpdateStateChannel:      make(chan *blockWithProof, 10),                 // TODO use config.UpdateStateChanBufLen
+		messagesChannel:             make(chan *interfaces.ConsensusRawMessage), // TODO use config.MsgChanBufLen
+		mainUpdateStateChannel:      make(chan *blockWithProof),                 // TODO use config.UpdateStateChanBufLen
 		electionScheduler:           electionTrigger,
 		state:                       state,
 		logger:                      L.NewLhLogger(config, state),
@@ -91,17 +92,35 @@ func (m *MainLoop) run(ctx context.Context) {
 	m.runWorkerLoop(ctx)
 
 	m.logger.Info("LHFLOW LHMSG MAINLOOP START LISTENING NOW")
+
 	workerCtx, cancelWorkerContext := context.WithCancel(ctx)
+	defer cancelWorkerContext()
+
+	mcLogger := log.GetLogger().WithTags(log.Node(m.config.InstanceId.String()), log.String("event_loop", "LHMessageContextualize"))
+	workerCtxLock := &sync.Mutex{}
+	mcCtx, mcCancel := context.WithCancel(ctx)
+	defer mcCancel()
+	govnr.GoForever(ctx, mcLogger, func() {
+		for {
+			select {
+			case <-mcCtx.Done(): // system shutdown or main loop exits
+				m.logger.Info("LHFLOW LHMSG MCLOOP DONE STOPPED LISTENING, Terminating Run().")
+				return
+			case message := <-m.messagesChannel:
+				parsedMessage := interfaces.ToConsensusMessage(message)
+				m.logger.Debug("LHFLOW LHMSG MCLOOP RECEIVED %v from %v for H=%d V=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight(), parsedMessage.View())
+				workerCtxLock.Lock()
+				m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}
+				workerCtxLock.Unlock()
+			}
+		}
+	})
+
 	for {
 		select {
 		case <-ctx.Done(): // system shutdown
 			m.logger.Info("LHFLOW LHMSG MAINLOOP DONE STOPPED LISTENING, Terminating Run().")
 			return
-
-		case message := <-m.messagesChannel:
-			parsedMessage := interfaces.ToConsensusMessage(message)
-			m.logger.Debug("LHFLOW LHMSG MAINLOOP RECEIVED %v from %v for H=%d V=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight(), parsedMessage.View())
-			m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}
 
 		case trigger := <-m.electionScheduler.ElectionChannel():
 
@@ -112,13 +131,16 @@ func (m *MainLoop) run(ctx context.Context) {
 			}
 
 			cancelWorkerContext()
+			workerCtxLock.Lock()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
+
 			m.logger.Debug("LHFLOW ELECTION MAINLOOP - CANCELED WORKER CONTEXT")
 			message := &workerElectionsTriggerMessage{
 				ctx:             workerCtx,
 				ElectionTrigger: trigger,
 			}
 			m.worker.electionChannel <- message
+			workerCtxLock.Unlock()
 
 		case receivedBlockWithProof := <-m.mainUpdateStateChannel: // NodeSync
 
@@ -128,15 +150,17 @@ func (m *MainLoop) run(ctx context.Context) {
 			}
 
 			cancelWorkerContext()
+			workerCtxLock.Lock()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
+
 			m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - CANCELED WORKER CONTEXT")
 			message := &workerUpdateStateMessage{
 				ctx:            workerCtx,
 				blockWithProof: receivedBlockWithProof,
 			}
 			m.worker.workerUpdateStateChannel <- message
+			workerCtxLock.Unlock()
 			m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - Wrote to worker UpdateState channel")
-
 		}
 	}
 }

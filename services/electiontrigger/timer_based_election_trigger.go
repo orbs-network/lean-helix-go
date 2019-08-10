@@ -34,7 +34,7 @@ type TimerBasedElectionTrigger struct {
 
 func NewTimerBasedElectionTrigger(minTimeout time.Duration, onElectionCB interfaces.OnElectionCallback) *TimerBasedElectionTrigger {
 	return &TimerBasedElectionTrigger{
-		electionChannel: make(chan *interfaces.ElectionTrigger, 0), // Caution - keep 0 to make election channel blocking
+		electionChannel: make(chan *interfaces.ElectionTrigger), // Caution - keep 0 to make election channel blocking
 		minTimeout:      minTimeout,
 		onElectionCB:    onElectionCB,
 	}
