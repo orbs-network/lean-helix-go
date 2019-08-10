@@ -199,7 +199,7 @@ func ABasicTestNetwork(ctx context.Context) *TestNetwork {
 
 func ABasicTestNetworkWithConsoleLogs(ctx context.Context, tb testing.TB) *TestNetwork {
 	return ATestNetworkBuilder(4).
-		//LogToConsole(tb).
+		LogToConsole(tb).
 		Build(ctx)
 }
 

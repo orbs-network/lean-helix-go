@@ -26,10 +26,10 @@ func TestThatWeReachConsensusWhere1of4NodeIsByzantine(t *testing.T) {
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
 			WithBlocks(block).
-			//LogToConsole(t).
+			LogToConsole(t).
 			Build(ctx)
 
-		net.Nodes[3].Communication.SetIncomingWhitelist([]primitives.MemberId{})
+		net.Nodes[3].Communication.DisableIncomingCommunication()
 
 		net.StartConsensus(ctx)
 
@@ -38,22 +38,22 @@ func TestThatWeReachConsensusWhere1of4NodeIsByzantine(t *testing.T) {
 }
 
 func TestNetworkReachesConsensusWhen2of7NodesAreByzantine(t *testing.T) {
-	test.WithContextWithTimeout(t, 3*time.Second, func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 5*time.Second, func(ctx context.Context) {
 
-		block := mocks.ABlock(interfaces.GenesisBlock)
+		//block := mocks.ABlock(interfaces.GenesisBlock)
 		totalNodes := 7
 		honestNodes := quorum.CalcQuorumSize(totalNodes)
 		net := network.
 			NewTestNetworkBuilder().
-			//LogToConsole(t).
+			LogToConsole(t).
 			WithNodeCount(totalNodes).
 			WithTimeBasedElectionTrigger(100 * time.Millisecond). // reducing the timeout is flaky since sync is not performed and nodes may drop out if interrupted too frequently
-			WithBlocks(block).
+			//WithBlocks(block).
 			Build(ctx)
 
 		byzantines := net.Nodes[honestNodes:totalNodes]
 		for _, b := range byzantines {
-			b.Communication.ClearIncomingWhitelist()
+			b.Communication.DisableIncomingCommunication()
 		}
 
 		honest := net.Nodes[:honestNodes]
@@ -126,6 +126,7 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 }
 
 func TestThatAByzantineLeaderCannotCauseAFork(t *testing.T) {
+	t.Skip("This purpose of this test needs to be clarified, it must be rewritten and become shorter than it is now")
 	test.WithContextWithTimeout(t, 1*time.Second, func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(interfaces.GenesisBlock)
@@ -160,10 +161,10 @@ func TestThatAByzantineLeaderCannotCauseAFork(t *testing.T) {
 		// now that node2 is prepared on block1, we'll close any communication
 		// to it, and open all the other nodes communication.
 		// then, we trigger an election. Node2's prepared block will not get sent in a view-change
-		node0.Communication.ClearOutgoingWhitelist()
-		node1.Communication.ClearOutgoingWhitelist()
-		node2.Communication.ClearOutgoingWhitelist()
-		node3.Communication.ClearOutgoingWhitelist()
+		node0.Communication.EnableOutgoingCommunication()
+		node1.Communication.EnableOutgoingCommunication()
+		node2.Communication.EnableOutgoingCommunication()
+		node3.Communication.EnableOutgoingCommunication()
 
 		node2.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
 		node2.Communication.SetIncomingWhitelist([]primitives.MemberId{})

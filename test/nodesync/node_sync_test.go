@@ -9,7 +9,6 @@ package test
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
-	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/leaderelection"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
@@ -36,7 +35,7 @@ func TestNodeSync_AllNodesReachSameHeight(t *testing.T) {
 		net.StartConsensus(ctx)
 
 		// closing node3's network to messages (To make it out of sync)
-		node3.Communication.SetIncomingWhitelist([]primitives.MemberId{})
+		node3.Communication.DisableIncomingCommunication()
 
 		// node0, node1, and node2 are closing block1
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
@@ -63,7 +62,7 @@ func TestNodeSync_AllNodesReachSameHeight(t *testing.T) {
 		require.True(t, node3.GetCurrentHeight() >= block2.Height())
 
 		// opening node3's network to messages
-		node3.Communication.ClearIncomingWhitelist()
+		node3.Communication.EnableIncomingCommunication()
 
 		net.SetNodesToNotPauseOnRequestNewBlock()
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)

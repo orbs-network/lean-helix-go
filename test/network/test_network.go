@@ -48,9 +48,9 @@ func (w *SubsetWaitGroup) Done() int {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	w.remaining--
+	remaining := w.DecrementRemaining()
 	w.accChan <- struct{}{}
-	return w.remaining
+	return remaining
 }
 
 func (w *SubsetWaitGroup) Remaining() int {
@@ -65,15 +65,23 @@ func (w *SubsetWaitGroup) WaitWithTimeout(timeout time.Duration) error {
 	timer := time.AfterFunc(timeout, func() {
 		close(ch)
 	})
-	for doneCount := 0; doneCount < w.remaining; doneCount += 1 {
+	remaining := w.Remaining()
+	for doneCount := 0; doneCount < remaining; doneCount += 1 {
 		select {
 		case <-ch:
-			return errors.Errorf("timed out with remaining=%d", w.Remaining())
+			return errors.Errorf("timed out with remaining=%d", remaining)
 		case <-w.accChan:
 		}
 	}
 	timer.Stop()
 	return nil
+}
+
+func (w *SubsetWaitGroup) DecrementRemaining() int {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.remaining--
+	return w.remaining
 }
 
 func (net *TestNetwork) GetNodeCommunication(memberId primitives.MemberId) *mocks.CommunicationMock {
