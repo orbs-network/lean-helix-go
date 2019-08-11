@@ -216,22 +216,20 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 
 	doneChan := make(chan struct{})
 	for _, node := range nodes {
+		// TODO Trying to use node.blockChain.Count() instead of node.GetCurrentHeight()
+		// hangs - need to understand why, as it seems more correct.
+
 		go func(node *Node) {
-			for {
+			for node.GetCurrentHeight() < height {
 				iterationTimeout, _ := context.WithTimeout(ctx, 20 * time.Millisecond)
-				<- iterationTimeout.Done() // sleep for timeout
+				<- iterationTimeout.Done() // sleep or get cancelled
 
-				if  ctx.Err() != nil { // parent context was cancelled, we're shutting down
-					doneChan <- struct{}{}
-					return
-				}
-
-				if node.GetCurrentHeight() >= height { // check height
-					fmt.Printf("Node %s reached H=%d\n", node.MemberId, node.GetCurrentHeight())
-					doneChan <- struct{}{}
-					return
+				if  ctx.Err() != nil {
+					break // shutting down
 				}
 			}
+			fmt.Printf("Node %s reached H=%d\n", node.MemberId, node.GetCurrentHeight())
+			doneChan <- struct{}{}
 		}(node)
 	}
 	for i := 0; i < len(nodes); i++ {
