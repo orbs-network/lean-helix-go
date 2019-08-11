@@ -78,6 +78,7 @@ func (g *CommunicationMock) SendConsensusMessage(ctx context.Context, targets []
 	for _, target := range targets {
 		channel := g.outgoingChannelsMap[target.String()]
 		select {
+		default: // never block. ignore message if buffer is full
 		case <-ctx.Done():
 			return errors.Errorf("ID=%s context canceled for outgoing channel of %v", g.memberId, target)
 		case channel <- &outgoingMessage{target, message}:
@@ -189,7 +190,7 @@ func (g *CommunicationMock) ReturnAndMaybeCreateOutgoingChannelByTarget(ctx cont
 
 	channel := g.outgoingChannelsMap[target.String()]
 	if channel == nil {
-		channel = make(chan *outgoingMessage, 100)
+		channel = make(chan *outgoingMessage, 1000)
 		g.outgoingChannelsMap[target.String()] = channel
 		go g.messageSenderLoop(ctx, channel)
 	}
