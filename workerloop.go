@@ -8,7 +8,6 @@ package leanhelix
 
 import (
 	"context"
-	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/blockheight"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/leanhelixterm"
@@ -71,9 +70,9 @@ func NewWorkerLoop(
 	logger.Debug("LHFLOW NewWorkerLoop()")
 	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), logger, state)
 	return &WorkerLoop{
-		MessagesChannel:             make(chan *MessageWithContext, 1000),       // TODO what's the correct buffer size?
-		workerUpdateStateChannel:    make(chan *workerUpdateStateMessage),      // TODO what's the correct buffer size?
-		electionChannel:             make(chan *workerElectionsTriggerMessage), // TODO what's the correct buffer size?
+		MessagesChannel:             make(chan *MessageWithContext, 1000),
+		workerUpdateStateChannel:    make(chan *workerUpdateStateMessage),
+		electionChannel:             make(chan *workerElectionsTriggerMessage),
 		electionTrigger:             electionTrigger,
 		state:                       state,
 		config:                      config,
@@ -85,12 +84,6 @@ func NewWorkerLoop(
 }
 
 func (lh *WorkerLoop) Run(ctx context.Context) {
-	defer func() {
-		if e := recover(); e != nil {
-			fmt.Printf("WORKERLOOP PANIC: %v\n", e) // keep this raw print - can be useful if everything breaks
-			lh.logger.Info("WORKERLOOP PANIC: %v", e)
-		}
-	}()
 	lh.logger.Debug("LHFLOW LHMSG WORKERLOOP START LISTENING NOW")
 	for {
 		select {
