@@ -342,17 +342,18 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 	for _, node := range nodes {
 		go func(node *Node) {
 			for {
-				select {
-				case <-ctx.Done():
+				iterationTimeout, _ := context.WithTimeout(ctx, 20 * time.Millisecond)
+				<- iterationTimeout.Done() // sleep for timeout
+
+				if  ctx.Err() != nil { // parent context was cancelled, we're shutting down
 					doneChan <- struct{}{}
 					return
-				default:
-					if node.GetCurrentHeight() >= height {
-						fmt.Printf("Node %s reached H=%d\n", node.MemberId, node.GetCurrentHeight())
-						doneChan <- struct{}{}
-						return
-					}
-					time.Sleep(20 * time.Millisecond)
+				}
+
+				if node.GetCurrentHeight() >= height { // check height
+					fmt.Printf("Node %s reached H=%d\n", node.MemberId, node.GetCurrentHeight())
+					doneChan <- struct{}{}
+					return
 				}
 			}
 		}(node)
