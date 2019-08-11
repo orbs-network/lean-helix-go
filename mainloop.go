@@ -2,7 +2,6 @@ package leanhelix
 
 import (
 	"context"
-	"fmt"
 	"github.com/orbs-network/govnr"
 	"github.com/orbs-network/lean-helix-go/services/electiontrigger"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
@@ -77,13 +76,6 @@ func (m *MainLoop) runWorkerLoop(ctx context.Context) {
 }
 
 func (m *MainLoop) run(ctx context.Context) {
-	defer func() {
-		if e := recover(); e != nil {
-			fmt.Printf("MAINLOOP PANIC: %v\n", e) // keep this raw print - can be useful if everything breaks
-			m.logger.Info("MAINLOOP PANIC: %v", e)
-		}
-	}()
-
 	if m.electionScheduler == nil {
 		panic("Election trigger was not configured, cannot run Lean Helix (mainloop.run)")
 	}
@@ -93,7 +85,7 @@ func (m *MainLoop) run(ctx context.Context) {
 	m.logger.Info("LHFLOW LHMSG MAINLOOP START LISTENING NOW")
 	workerCtx, cancelWorkerContext := context.WithCancel(ctx)
 	defer cancelWorkerContext()
-
+	var lastSyncedHeight primitives.BlockHeight
 	for {
 		select {
 		case <-ctx.Done(): // system shutdown
@@ -132,7 +124,11 @@ func (m *MainLoop) run(ctx context.Context) {
 
 		case receivedBlockWithProof := <-m.mainUpdateStateChannel: // NodeSync
 
-			if err := checkReceivedBlockIsValid(m.state.Height(), receivedBlockWithProof); err != nil {
+			effectiveLastHeight := m.state.Height()
+			if effectiveLastHeight < lastSyncedHeight {
+				effectiveLastHeight = lastSyncedHeight
+			}
+			if err := checkReceivedBlockIsValid(effectiveLastHeight, receivedBlockWithProof); err != nil {
 				m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - INVALID BLOCK IGNORED - %s", err)
 				continue
 			}
@@ -148,6 +144,11 @@ func (m *MainLoop) run(ctx context.Context) {
 			case <-ctx.Done(): // system shutdown
 			case m.worker.workerUpdateStateChannel <- message:
 			}
+
+			if receivedBlockWithProof.block != nil {
+				lastSyncedHeight = receivedBlockWithProof.block.Height()
+			}
+
 			m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - Wrote to worker UpdateState channel")
 		}
 	}
