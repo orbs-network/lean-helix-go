@@ -103,16 +103,11 @@ func (m *MainLoop) run(ctx context.Context) {
 		case message := <-m.messagesChannel:
 			parsedMessage := interfaces.ToConsensusMessage(message)
 
-			current := m.state.HeightView()
-			if current.Height() > parsedMessage.BlockHeight() || (current.Height() == parsedMessage.BlockHeight() && current.View() > parsedMessage.View()) { // stale message
-				m.logger.Debug("LHFLOW LHMSG MAINLOOP - INVALID HEIGHT/VIEW IGNORED - Current: %s, Message Height: %d, Message View: $d", current, parsedMessage.BlockHeight(), parsedMessage.View())
-				continue
-			}
-
 			m.logger.Debug("LHFLOW LHMSG MAINLOOP RECEIVED %v from %v for H=%d V=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight(), parsedMessage.View())
 			select {
-			case m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}:
 			default: // never block the main loop
+			case <-ctx.Done(): // here for uniformity, made redundant by default:
+			case m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}:
 			}
 
 		case trigger := <-m.electionScheduler.ElectionChannel():
@@ -130,7 +125,10 @@ func (m *MainLoop) run(ctx context.Context) {
 				ctx:             workerCtx,
 				ElectionTrigger: trigger,
 			}
-			m.worker.electionChannel <- message
+			select {
+			case <-ctx.Done(): // system shutdown
+			case m.worker.electionChannel <- message:
+			}
 
 		case receivedBlockWithProof := <-m.mainUpdateStateChannel: // NodeSync
 
@@ -146,7 +144,10 @@ func (m *MainLoop) run(ctx context.Context) {
 				ctx:            workerCtx,
 				blockWithProof: receivedBlockWithProof,
 			}
-			m.worker.workerUpdateStateChannel <- message
+			select {
+			case <-ctx.Done(): // system shutdown
+			case m.worker.workerUpdateStateChannel <- message:
+			}
 			m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - Wrote to worker UpdateState channel")
 		}
 	}
