@@ -7,9 +7,7 @@ import (
 	"time"
 )
 
-// TODO Fix this test
 func TestRunEndsAfterGoroutinesEnd(t *testing.T) {
-	t.Skip()
 	ctx, cancelGoRoutines := context.WithCancel(context.Background())
 
 	mainloop := NewLeanHelix(mocks.NewMockConfig(), nil, nil)
@@ -18,9 +16,9 @@ func TestRunEndsAfterGoroutinesEnd(t *testing.T) {
 		cancelGoRoutines()
 		t.Log("Canceled now")
 	}
-	timer := time.AfterFunc(200*time.Millisecond, cancelWrapper)
-	timerBeforeCancelContext, _ := context.WithTimeout(context.Background(), 100*time.Millisecond)
-	timerAfterCancelContext, _ := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	timer := time.AfterFunc(100*time.Millisecond, cancelWrapper)
+	timerBeforeCancelContext, _ := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	timerAfterCancelContext, _ := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer func() {
 		cancelGoRoutines()
 		timer.Stop()
@@ -30,7 +28,8 @@ func TestRunEndsAfterGoroutinesEnd(t *testing.T) {
 	go func() {
 		t.Log("Start Run")
 		startTime := time.Now()
-		mainloop.Run(ctx)
+		done := mainloop.Run(ctx)
+		<-done
 		t.Logf("End Run: %fs", time.Now().Sub(startTime).Seconds())
 		close(runDone)
 	}()
