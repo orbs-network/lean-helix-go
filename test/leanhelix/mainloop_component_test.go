@@ -18,34 +18,20 @@ const LOG_TO_CONSOLE = false
 
 func TestMainloopReportsCorrectHeight(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		nodeCount := 4
-		block1 := mocks.ABlock(interfaces.GenesisBlock)
-		block2 := mocks.ABlock(block1)
 
-		net := network.
-			NewTestNetworkBuilder().
-			WithNodeCount(nodeCount).
-			WithBlocks(block1, block2).
-			//LogToConsole(t).
-			Build(ctx)
-
+		net := network.ABasicTestNetwork(ctx)
 		node0 := net.Nodes[0]
+
 		net.SetNodesToPauseOnRequestNewBlock()
 		net.StartConsensus(ctx)
-		//net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 1)
 
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block1
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		net.WaitUntilNodesCommitAnyBlock(ctx)
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 2)
 
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block2
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		net.WaitUntilNodesCommitAnyBlock(ctx)
-
-		require.True(t, test.Eventually(100*time.Millisecond, func() bool {
-			return block2.Height()+1 == node0.GetCurrentHeight()
-		}), "node0 should eventually reach height 3")
-
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 3)
 	})
 }
 
@@ -68,12 +54,12 @@ func TestVerifyPreprepareMessageSentByLeader_HappyFlow(t *testing.T) {
 
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block1, should be agreed by all nodes
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		net.WaitUntilNodesCommitASpecificBlock(ctx, t, 0, block1)
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 2)
 		require.Equal(t, nodeCount-1, node0.Communication.CountMessagesSent(protocol.LEAN_HELIX_PREPREPARE, mocks.BLOCK_HEIGHT_DONT_CARE, mocks.VIEW_DONT_CARE, nil), "node0 should have sent %d PREPREPARE messages", nodeCount-1)
 
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block2, should be agreed by all nodes
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		net.WaitUntilNodesCommitASpecificBlock(ctx, t, 0, block2)
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 3)
 		require.Equal(t, (nodeCount-1)*2, node0.Communication.CountMessagesSent(protocol.LEAN_HELIX_PREPREPARE, mocks.BLOCK_HEIGHT_DONT_CARE, mocks.VIEW_DONT_CARE, nil), "node0 should have sent total of %d PREPREPARE messages", (nodeCount-1)*2)
 	})
 }
@@ -92,7 +78,7 @@ func TestPreprepareMessageNotSentByLeaderIfRequestNewBlockProposalContextCancell
 			//LogToConsole(t).
 			Build(ctx)
 
-		bc, err := leaderelection.GenerateProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)
+		bc, err := leaderelection.GenerateBlocksWithProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)
 		if err != nil {
 			t.Fatalf("Error creating mock blockchain for tests - %s", err)
 			return
@@ -123,7 +109,7 @@ func TestPreprepareMessageNotSentByLeaderIfRequestNewBlockProposalContextCancell
 		}
 
 		expectedHeightOfNewTermAfterSuccessfulSync := blockToSync.Height() + 1
-		net.WaitUntilNewConsensusRoundForBlockHeight(ctx, expectedHeightOfNewTermAfterSuccessfulSync, node0)
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, expectedHeightOfNewTermAfterSuccessfulSync, node0)
 		ppmSent := node0.Communication.CountMessagesSent(protocol.LEAN_HELIX_PREPREPARE, mocks.BLOCK_HEIGHT_DONT_CARE, mocks.VIEW_DONT_CARE, nil)
 		require.Equal(t, nodeCount-1, ppmSent, "node0 sent PREPREPARE despite having its worker context cancelled by UpdateState during RequestNewBlockProposal")
 	})
@@ -147,9 +133,9 @@ func TestVerifyWorkerContextNotCancelledIfNodeSyncBlockIsIgnored(t *testing.T) {
 		net.StartConsensus(ctx)
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block1, should be agreed by all nodes
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, block1)
+		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, 0, block1)
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // pause when proposing block2
-		bc, err := leaderelection.GenerateProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)
+		bc, err := leaderelection.GenerateBlocksWithProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)
 		if err != nil {
 			t.Fatalf("Error creating mock blockchain for tests - %s", err)
 			return

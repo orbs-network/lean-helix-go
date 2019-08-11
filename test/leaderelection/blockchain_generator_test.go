@@ -22,7 +22,7 @@ func TestGenerateProofsForTest(t *testing.T) {
 	block3 := mocks.ABlock(block2)
 	block4 := mocks.ABlock(block3)
 
-	bc, err := GenerateProofsForTest([]interfaces.Block{block1, block2, block3, block4}, net.Nodes)
+	bc, err := GenerateBlocksWithProofsForTest([]interfaces.Block{block1, block2, block3, block4}, net.Nodes)
 
 	if err != nil {
 		t.Fatalf("Error creating mock blockchain for tests: %s", err)

@@ -20,20 +20,17 @@ import (
 
 const LOG_TO_CONSOLE = false
 
-// TODO FLAKY
-func TestNewLeaderProposesNewBlockIfPreviousLeaderFailedToBringNetworkIntoPreparedPhase(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
-		block1 := mocks.ABlock(interfaces.GenesisBlock)
-		block2 := mocks.ABlock(block1)
-		h := NewStartedHarness(ctx, t, LOG_TO_CONSOLE, block1, block2)
+func TestNewLeaderProposesNewBlock_IfPreviousLeaderFailedToBringNetworkIntoPreparedPhase(t *testing.T) {
+	test.WithContextWithTimeout(t, 3*time.Second, func(ctx context.Context) {
+		h := NewStartedHarness(ctx, t, LOG_TO_CONSOLE)
+
 		node0 := h.net.Nodes[0]
 		node1 := h.net.Nodes[1]
 
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
-
 		node0.Communication.DisableOutgoingCommunication()
 
-		manuallyElectNode1AsNewLeader(ctx, h)
+		h.net.TriggerElectionsOnAllNodes(ctx)
 
 		// Now that we caused node1 to be the new leader, it will ask for a new block.
 		// BTW the test doesn't care which block it actually is
@@ -41,55 +38,23 @@ func TestNewLeaderProposesNewBlockIfPreviousLeaderFailedToBringNetworkIntoPrepar
 	})
 }
 
-func manuallyElectNode1AsNewLeader(ctx context.Context, h *harness) {
-	node0 := h.net.Nodes[0]
-	node1 := h.net.Nodes[1]
-	node2 := h.net.Nodes[2]
-	node3 := h.net.Nodes[3]
-
-	node0VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node0.KeyManager, node0.MemberId, 1, 1, nil)
-	node2VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil)
-	node3VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node3.KeyManager, node3.MemberId, 1, 1, nil)
-	node1.Communication.OnIncomingMessage(ctx, node0VCMessage.ToConsensusRawMessage())
-	node1.Communication.OnIncomingMessage(ctx, node2VCMessage.ToConsensusRawMessage())
-	node1.Communication.OnIncomingMessage(ctx, node3VCMessage.ToConsensusRawMessage())
-}
-
 func TestNotCountingViewChangeFromTheSameNode(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		block1 := mocks.ABlock(interfaces.GenesisBlock)
-		block2 := mocks.ABlock(block1)
-
-		h := NewStartedHarness(ctx, t, LOG_TO_CONSOLE, block1, block2)
-
+		h := NewStartedHarness(ctx, t, LOG_TO_CONSOLE)
 		node0 := h.net.Nodes[0]
 		node1 := h.net.Nodes[1]
 		node2 := h.net.Nodes[2]
-
-		// hang the leader (node0)
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 
 		// sending only 4 view-change from the same node
-		node1.Communication.OnIncomingMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-		node1.Communication.OnIncomingMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-		node1.Communication.OnIncomingMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-		node1.Communication.OnIncomingMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-
-		node1.Communication.CountSentMessages(protocol.LEAN_HELIX_NEW_VIEW)
+		for i := 0; i < 4; i++ {
+			node1.Communication.OnIncomingMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
+		}
+		require.Zero(t, node1.Communication.CountSentMessages(protocol.LEAN_HELIX_NEW_VIEW), "node1 sent new view although it didn't receive enough valid votes")
 	})
 }
 
-func electNewLeader(ctx context.Context, h *harness, newLeaderIndex int) {
-
-	for i, node := range h.net.Nodes {
-		if i == newLeaderIndex {
-			continue
-		}
-		<-node.TriggerElectionOnNode(ctx)
-	}
-}
-
-func TestDoesNotCloseBlockWhenValidateBlockProposalFails(t *testing.T) {
+func TestDoesNotReachConsensusOnBlockWhenValidateBlockProposalFails(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 
 		h := NewStartedHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
@@ -99,50 +64,15 @@ func TestDoesNotCloseBlockWhenValidateBlockProposalFails(t *testing.T) {
 
 		c := make(chan struct{})
 		go func() {
-			h.net.WaitUntilNodesCommitAnyBlock(ctx)
+			h.net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 2)
 			close(c)
 		}()
 
 		select {
 		case <-time.After(50 * time.Millisecond):
 		case <-c:
-			t.Fatal("Block was closed despite validations failing")
+			t.Fatal("Reached consensus on block despite validations failing")
 		}
-	})
-}
-
-//////////////////////////
-
-// Let each and every node try and be the Leader and finally return to the original leader
-func TestLeaderCircularOrdering(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
-
-		// TL;DR Always fail validation so that the network will never close blocks
-
-		// Set block validation to always fail.
-		// The reason for this is to prevent the Validator (non-leader) nodes
-		// from going into PREPARED phase after validating the block.
-		// If nodes were to go into PREPARED phase, this would "lock" the proposed
-		// block, preventing the next Leader from suggesting a different block
-		// by calling RequestNewBlockProposal.
-		// We DO want node0 to pause on RequestNewBlockProposal because it is our stop signal for the test
-
-		h := NewStartedHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
-		numNodes := len(h.net.Nodes)
-
-		for i := 0; i < numNodes; i++ { // force elections of next node numNodes times
-			currentLeader := i % numNodes
-
-			h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[currentLeader])
-			h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[currentLeader])
-
-			nextLeader := (i + 1) % numNodes
-			electNewLeader(ctx, h, nextLeader)
-		}
-
-		// after electing all nodes verify the first node is reelected and is trying to propose
-		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
-		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[0])
 	})
 }
 
@@ -159,12 +89,10 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block1, should be agreed by all nodes
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		h.net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, block1)
+		h.net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, 0, block1)
 
-		t.Log("--- BLOCK1 COMMITTED ---")
 		// Thwart Preprepare message sending by node0 for block2
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // pause when proposing block2
-		t.Log("--- NODE0 PAUSED ON REQUEST NEW BLOCK ---")
 
 		// increment view - this selects node1 as the leader
 		/*
@@ -179,24 +107,17 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 		<-h.net.Nodes[2].TriggerElectionOnNode(ctx)
 		<-h.net.Nodes[3].TriggerElectionOnNode(ctx)
 
-		t.Log("--- TRIGGERED ELECTION ON NODES 1 2 3 ---")
-
 		// free the first leader to send stale PREPREPARE now when the others are in next view
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
-		t.Log("--- NODE0 RESUMED REQUEST NEW BLOCK ---")
 		// tell the old leader to advance it's view so it can join the others in view 1
 		<-h.net.Nodes[0].TriggerElectionOnNode(ctx)
-		t.Log("--- TRIGGERED ELECTION ON NODE0")
 		// sync with new leader on block proposal
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node1)
-		t.Log("--- NODE1 PAUSED ON REQUEST NEW BLOCK ---")
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node1) // processing block 3
-		t.Log("--- NODE1 RESUMED REQUEST NEW BLOCK ---")
-		h.net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, block3)
+		h.net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, 0, block3)
 	})
 }
 
-// TODO FLAKY
 func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewStartedHarness(ctx, t, LOG_TO_CONSOLE)
@@ -208,24 +129,17 @@ func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 		node0.Communication.DisableOutgoingCommunication()
 
-		// Wait for H=1 so that election triggers will be sent with H=1
-		// o/w they will sometimes be sent with H=0 and subsequently be ignored
-		// by workerloop's election channel, causing election to not happen,
-		// failing/hanging the test.
-		h.net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 1)
+		h.net.WaitUntilNetworkIsRunning(ctx)
 
-		// Elect node1 as the leader
-		<-node0.TriggerElectionOnNode(ctx)
-		<-node1.TriggerElectionOnNode(ctx)
-		<-node2.TriggerElectionOnNode(ctx)
-		<-node3.TriggerElectionOnNode(ctx)
+		// will elect node1 as the leader (because nodes are elected sequentially)
+		h.net.TriggerElectionsOnAllNodes(ctx)
 
 		//h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node1)
 		node0.Communication.EnableOutgoingCommunication()
 
 		h.net.ResumeRequestNewBlockOnNodes(ctx, node1)
-		h.net.MAYBE_FLAKY_WaitForAllNodesToCommitTheSameBlock(ctx)
+		h.net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 2)
 
 		require.Equal(t, 1, node0.Communication.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE)) // node0's send of view change will be counted even though its comms are down, since we count *attempts* to send messages rather than *successful* sends
 		require.Equal(t, 1, node2.Communication.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))
@@ -258,8 +172,8 @@ func TestViewNotIncrementedIfLessThan2fPlus1ViewChange(t *testing.T) {
 		// Resume the paused leader (node0)
 		//h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
-		h.net.WaitUntilCurrentHeightGreaterEqualThan(ctx, 1, node0)
-		h.net.WaitUntilCurrentHeightGreaterEqualThan(ctx, 1, node1)
+		h.net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 1, node0)
+		h.net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 1, node1)
 
 		go func() {
 			// Fail if node1 starts RequestNewBlockProposal() because it means it became new leader
@@ -270,6 +184,6 @@ func TestViewNotIncrementedIfLessThan2fPlus1ViewChange(t *testing.T) {
 		}()
 
 		time.Sleep(100 * time.Millisecond)
-		t.Log("node 1 got a chance to propose a block and did not take it as expected")
+		// node 1 got a chance to propose a block and did not take it as expected
 	})
 }
