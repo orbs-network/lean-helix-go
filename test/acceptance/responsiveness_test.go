@@ -53,7 +53,7 @@ func TestNodeSyncIsStillHandledDespiteBlockedOnRequestNewBlockProposal(t *testin
 		net.SetNodesToPauseOnRequestNewBlock()
 		net.StartConsensus(ctx)
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
-		bc, err := leaderelection.GenerateProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)
+		bc, err := leaderelection.GenerateBlocksWithProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)
 		if err != nil {
 			t.Fatalf("Error creating mock blockchain for tests - %s", err)
 			return
@@ -63,7 +63,7 @@ func TestNodeSyncIsStillHandledDespiteBlockedOnRequestNewBlockProposal(t *testin
 		if err := node0.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync); err != nil {
 			t.Fatalf("Sync failed for node %s - %s", node0.MemberId, err)
 		}
-		net.WaitUntilCurrentHeightGreaterEqualThan(ctx, 3, node0)
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 3, node0)
 		//net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 	})
 
@@ -96,7 +96,7 @@ func TestNodeSyncIsStillHandledDespiteBlockedOnRequestNewBlockProposal(t *testin
 				block3 := mocks.ABlock(block1)
 
 				// Run Sync with block H=2 on all nodes
-				bc, err := leaderelection.GenerateProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)
+				bc, err := leaderelection.GenerateBlocksWithProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)
 				if err != nil {
 					t.Fatalf("Error creating mock blockchain for tests: %s", err)
 					return

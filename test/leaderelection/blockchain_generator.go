@@ -11,7 +11,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/test/network"
 )
 
-func GenerateProofsForTest(blocks []interfaces.Block, nodes []*network.Node) (*mocks.InMemoryBlockchain, error) {
+func GenerateBlocksWithProofsForTest(blocks []interfaces.Block, nodes []*network.Node) (*mocks.InMemoryBlockchain, error) {
 
 	bc := mocks.NewInMemoryBlockchain().WithMemberId(primitives.MemberId(fmt.Sprintf("XXX")))
 

@@ -19,10 +19,13 @@ func WithContext(f func(ctx context.Context)) {
 	f(ctx)
 }
 
-func WithContextWithTimeout(d time.Duration, f func(ctx context.Context)) {
+func WithContextWithTimeout(t *testing.T, d time.Duration, f func(ctx context.Context)) {
 	ctx, cancel := context.WithTimeout(context.Background(), d)
 	defer cancel()
 	f(ctx)
+	if ctx.Err() != nil {
+		panic("WithContextWithTimeout() timed out")
+	}
 }
 
 func FailIfNotDoneByTimeout(t *testing.T, waitGroup *sync.WaitGroup, timeout time.Duration, format string, args ...interface{}) {

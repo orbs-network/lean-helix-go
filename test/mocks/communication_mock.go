@@ -50,7 +50,7 @@ type CommunicationMock struct {
 	nextSubscriptionKey int
 	subscriptions       map[int]*SubscriptionValue
 
-	outgoingWhitelist          []primitives.MemberId
+	outgoingWhitelistMemberIds []primitives.MemberId
 	incomingWhiteListMemberIds []primitives.MemberId
 	statsSentMessages          []*interfaces.ConsensusRawMessage
 	maxDelayDuration           time.Duration
@@ -65,7 +65,7 @@ func NewCommunication(memberId primitives.MemberId, discovery *Discovery) *Commu
 		outgoingChannelsMap:        make(map[string]chan *outgoingMessage),
 		nextSubscriptionKey:        0,
 		subscriptions:              make(map[int]*SubscriptionValue),
-		outgoingWhitelist:          nil,
+		outgoingWhitelistMemberIds: nil,
 		incomingWhiteListMemberIds: nil,
 		statsSentMessages:          []*interfaces.ConsensusRawMessage{},
 		maxDelayDuration:           time.Duration(0),
@@ -143,10 +143,8 @@ func (g *CommunicationMock) addToHistory(rawMessage *interfaces.ConsensusRawMess
 }
 
 func (g *CommunicationMock) SendToNode(ctx context.Context, receiverMemberId primitives.MemberId, consensusRawMessage *interfaces.ConsensusRawMessage) {
-	if g.outgoingWhitelist != nil {
-		if !g.inOutgoingWhitelist(receiverMemberId) {
-			return
-		}
+	if g.bannedReceiver(receiverMemberId) {
+		return
 	}
 
 	if receiverCommunication := g.discovery.GetCommunicationById(receiverMemberId); receiverCommunication != nil {
@@ -156,6 +154,33 @@ func (g *CommunicationMock) SendToNode(ctx context.Context, receiverMemberId pri
 		return
 	}
 	return
+}
+
+func (g *CommunicationMock) bannedReceiver(receiverMemberId primitives.MemberId) bool {
+	if g.outgoingWhitelistMemberIds == nil {
+		return false
+	}
+
+	for _, currentId := range g.outgoingWhitelistMemberIds {
+		if currentId.Equal(receiverMemberId) {
+			return false
+		}
+	}
+	return true
+}
+
+func (g *CommunicationMock) bannedSender(rawMessage *interfaces.ConsensusRawMessage) bool {
+	if g.incomingWhiteListMemberIds == nil {
+		return false
+	}
+
+	senderMemberId := interfaces.ToConsensusMessage(rawMessage).SenderMemberId()
+	for _, currentId := range g.incomingWhiteListMemberIds {
+		if currentId.Equal(senderMemberId) {
+			return false
+		}
+	}
+	return true
 }
 
 func (g *CommunicationMock) ReturnAndMaybeCreateOutgoingChannelByTarget(ctx context.Context, target primitives.MemberId) chan *outgoingMessage {
@@ -180,27 +205,8 @@ func (g *CommunicationMock) RegisterIncomingMessageHandler(cb func(ctx context.C
 	g.subscriptions[g.nextSubscriptionKey] = &SubscriptionValue{cb}
 }
 
-func (g *CommunicationMock) bannedSender(rawMessage *interfaces.ConsensusRawMessage) bool {
-	if g.incomingWhiteListMemberIds != nil {
-		senderMemberId := interfaces.ToConsensusMessage(rawMessage).SenderMemberId()
-		if !g.inIncomingWhitelist(senderMemberId) {
-			return true
-		}
-	}
-	return false
-}
-
-func (g *CommunicationMock) inIncomingWhitelist(memberId primitives.MemberId) bool {
-	for _, currentId := range g.incomingWhiteListMemberIds {
-		if currentId.Equal(memberId) {
-			return true
-		}
-	}
-	return false
-}
-
 func (g *CommunicationMock) inOutgoingWhitelist(memberId primitives.MemberId) bool {
-	for _, currentId := range g.outgoingWhitelist {
+	for _, currentId := range g.outgoingWhitelistMemberIds {
 		if currentId.Equal(memberId) {
 			return true
 		}
@@ -209,27 +215,33 @@ func (g *CommunicationMock) inOutgoingWhitelist(memberId primitives.MemberId) bo
 }
 
 func (g *CommunicationMock) DisableOutgoingCommunication() {
-	g.SetOutgoingWhitelist([]primitives.MemberId{})
+	g.outgoingWhitelistMemberIds = []primitives.MemberId{}
 }
 
 func (g *CommunicationMock) EnableOutgoingCommunication() {
-	g.ClearOutgoingWhitelist()
+	g.outgoingWhitelistMemberIds = nil
 }
 
 func (g *CommunicationMock) SetOutgoingWhitelist(outgoingWhitelist []primitives.MemberId) {
-	g.outgoingWhitelist = outgoingWhitelist
+	if len(outgoingWhitelist) == 0 {
+		panic("Instead of setting nil, use EnableOutgoingCommunication(). Instead of setting empty array use DisableOutgoingCommunication()")
+	}
+	g.outgoingWhitelistMemberIds = outgoingWhitelist
 }
 
-func (g *CommunicationMock) ClearOutgoingWhitelist() {
-	g.SetOutgoingWhitelist(nil)
+func (g *CommunicationMock) DisableIncomingCommunication() {
+	g.incomingWhiteListMemberIds = []primitives.MemberId{}
+}
+
+func (g *CommunicationMock) EnableIncomingCommunication() {
+	g.incomingWhiteListMemberIds = nil
 }
 
 func (g *CommunicationMock) SetIncomingWhitelist(incomingWhitelist []primitives.MemberId) {
+	if len(incomingWhitelist) == 0 {
+		panic("Instead of setting nil, use EnableIncomingCommunication(). Instead of setting empty array use DisableIncomingCommunication()")
+	}
 	g.incomingWhiteListMemberIds = incomingWhitelist
-}
-
-func (g *CommunicationMock) ClearIncomingWhitelist() {
-	g.SetIncomingWhitelist(nil)
 }
 
 // TODO REMOVE THIS REDUNDANT METHOD

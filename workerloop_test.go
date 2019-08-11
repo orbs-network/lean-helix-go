@@ -20,7 +20,7 @@ func DummyWorkerConfig() *interfaces.Config {
 	return &interfaces.Config{
 		InstanceId:            123,
 		Communication:         nil,
-		Membership:            mocks.NewMockMembership(primitives.MemberId{0, 1, 2}, nil, true),
+		Membership:            mocks.NewFakeMembership(primitives.MemberId{0, 1, 2}, nil, true),
 		BlockUtils:            nil,
 		KeyManager:            nil,
 		ElectionTimeoutOnV0:   10 * time.Millisecond,

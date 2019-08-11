@@ -123,7 +123,7 @@ func (tb *TestNetworkBuilder) buildNode(
 		communicationInstance.SetMessagesMaxDelay(tb.communicationMaxDelay)
 	}
 	discovery.RegisterCommunication(memberId, communicationInstance)
-	membership := mocks.NewMockMembership(memberId, discovery, tb.orderCommitteeByHeight)
+	membership := mocks.NewFakeMembership(memberId, discovery, tb.orderCommitteeByHeight)
 
 	b := nodeBuilder.
 		AsInstanceId(tb.instanceId).
@@ -199,7 +199,7 @@ func ABasicTestNetwork(ctx context.Context) *TestNetwork {
 
 func ABasicTestNetworkWithConsoleLogs(ctx context.Context, tb testing.TB) *TestNetwork {
 	return ATestNetworkBuilder(4).
-		//LogToConsole(tb).
+		LogToConsole(tb).
 		Build(ctx)
 }
 

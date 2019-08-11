@@ -12,25 +12,25 @@ import (
 	"sort"
 )
 
-type MockMembership struct {
+type FakeMembership struct {
 	myMemberId             primitives.MemberId
 	discovery              *Discovery
 	orderCommitteeByHeight bool
 }
 
-func NewMockMembership(myMemberId primitives.MemberId, discovery *Discovery, orderCommitteeByHeight bool) *MockMembership {
-	return &MockMembership{
+func NewFakeMembership(myMemberId primitives.MemberId, discovery *Discovery, orderCommitteeByHeight bool) *FakeMembership {
+	return &FakeMembership{
 		myMemberId:             myMemberId,
 		discovery:              discovery,
 		orderCommitteeByHeight: orderCommitteeByHeight,
 	}
 }
 
-func (m *MockMembership) MyMemberId() primitives.MemberId {
+func (m *FakeMembership) MyMemberId() primitives.MemberId {
 	return m.myMemberId
 }
 
-func (m *MockMembership) RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64) ([]primitives.MemberId, error) {
+func (m *FakeMembership) RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64) ([]primitives.MemberId, error) {
 	result := m.discovery.AllCommunicationsMemberIds()
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].KeyForMap() < result[j].KeyForMap()

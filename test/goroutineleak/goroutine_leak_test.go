@@ -22,14 +22,21 @@ import (
 
 func test2HeavyNetworks(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net1 := network.ATestNetworkBuilder(21).Build().StartConsensus(ctx)
-		net1.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 100)
+		net1 := network.ATestNetworkBuilder(21).
+			LogToConsole(t). // This is a very long test, running with logs lets you view progress
+			Build(ctx).
+			StartConsensus(ctx)
+		net1.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 20)
 
-		net2 := network.ATestNetworkBuilder(31).Build().StartConsensus(ctx)
-		net2.WaitUntilNodesCommitASpecificHeight(ctx, 100)
+		net2 := network.ATestNetworkBuilder(31).
+			LogToConsole(t).
+			Build(ctx).
+			StartConsensus(ctx)
+		net2.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 20)
 	})
 }
 
+// TODO Incorrect test, it should be updated to take into consideration there are now mainloop and workerloop goroutines
 func TestGoroutinesLeaks(t *testing.T) {
 	before, _ := os.Create("/tmp/leanhelix-goroutine-shutdown-before.out")
 	defer before.Close()

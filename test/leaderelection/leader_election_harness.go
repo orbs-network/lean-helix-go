@@ -20,12 +20,10 @@ type harness struct {
 
 func NewStartedHarness(ctx context.Context, t *testing.T, logsToConsole bool, blocksPool ...interfaces.Block) *harness {
 	return newHarness(ctx, t, logsToConsole, false, true, blocksPool...)
-	//return newHarness(ctx, t, logsToConsole, mocks.NewMockBlockUtils(mocks.NewBlocksPool(blocksPool)))
 }
 
 func NewStartedHarnessDontPauseOnRequestNewBlock(ctx context.Context, t *testing.T, logsToConsole bool, blocksPool ...interfaces.Block) *harness {
 	return newHarness(ctx, t, logsToConsole, false, false, blocksPool...)
-	//return newHarness(ctx, t, logsToConsole, mocks.NewMockBlockUtils(mocks.NewBlocksPool(blocksPool)))
 }
 
 // This might not be a good idea but it is needed outside this package
@@ -33,16 +31,11 @@ func Net(h *harness) *network.TestNetwork {
 	return h.net
 }
 func NewStartedHarnessWithFailingBlockProposalValidations(ctx context.Context, t *testing.T, logsToConsole bool) *harness {
-	//net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).LogToConsole().Build()
 	return newHarness(ctx, t, logsToConsole, true, true)
 }
 
 func newHarness(ctx context.Context, t *testing.T, logsToConsole bool, withFailingBlockProposalValidations bool, pauseOnRequestNewBlock bool, blocksPool ...interfaces.Block) *harness {
-	//net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).LogToConsole().Build()
 	networkBuilder := network.ATestNetworkBuilder(4)
-	//if blockUtils != nil {
-	//	networkBuilder = networkBuilder.WithBlockUtils(blockUtils)
-	//}
 	if logsToConsole {
 		networkBuilder = networkBuilder.LogToConsole(t)
 	}
