@@ -110,7 +110,12 @@ func (m *MainLoop) run(ctx context.Context) {
 				parsedMessage := interfaces.ToConsensusMessage(message)
 				m.logger.Debug("LHFLOW LHMSG MCLOOP RECEIVED %v from %v for H=%d V=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight(), parsedMessage.View())
 				workerCtxLock.Lock()
-				m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}
+				select {
+				case m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}:
+				case <-mcCtx.Done():
+					m.logger.Info("LHFLOW LHMSG MCLOOP DONE STOPPED LISTENING, Terminating Run().")
+					return
+				}
 				workerCtxLock.Unlock()
 			}
 		}
