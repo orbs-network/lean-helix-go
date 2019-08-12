@@ -35,10 +35,10 @@ func NewMockElectionTrigger() *ElectionTriggerMock {
 	}
 }
 
-func (et *ElectionTriggerMock) RegisterOnElection(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, electionHandler func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)) {
+func (et *ElectionTriggerMock) RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, cb func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)) {
 	et.view = view
 	et.blockHeight = blockHeight
-	et.electionHandler = electionHandler
+	et.electionHandler = cb
 }
 
 func (et *ElectionTriggerMock) Stop() {

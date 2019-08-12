@@ -70,7 +70,7 @@ type ElectionTrigger struct {
 }
 
 type ElectionScheduler interface {
-	RegisterOnElection(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, cb func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB OnElectionCallback))
+	RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, cb func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB OnElectionCallback))
 	ElectionChannel() chan *ElectionTrigger
 	CalcTimeout(view primitives.View) time.Duration
 	Stop()

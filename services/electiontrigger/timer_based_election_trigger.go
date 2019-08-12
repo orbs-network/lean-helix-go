@@ -26,10 +26,9 @@ type TimerBasedElectionTrigger struct {
 	timer           *time.Timer
 
 	// mutable, mutex protected - better refactor into separate obj
-	inRegister  bool
+	lock        sync.RWMutex
 	blockHeight primitives.BlockHeight
 	view        primitives.View
-	lock        sync.RWMutex
 }
 
 func NewTimerBasedElectionTrigger(minTimeout time.Duration, onElectionCB interfaces.OnElectionCallback) *TimerBasedElectionTrigger {
@@ -40,27 +39,23 @@ func NewTimerBasedElectionTrigger(minTimeout time.Duration, onElectionCB interfa
 	}
 }
 
-func (t *TimerBasedElectionTrigger) RegisterOnElection(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, electionHandler func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)) {
-	if t.inRegister {
-		return
-	}
+func (t *TimerBasedElectionTrigger) RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, cb func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
-	t.inRegister = true
 
-	if t.electionHandler == nil || t.view != view || t.blockHeight != blockHeight {
-		timeout := t.CalcTimeout(view)
-		t.view = view
-		t.blockHeight = blockHeight
-		t.Stop()
-		t.timer = time.AfterFunc(timeout, func() {
-			if ctx.Err() == nil {
-				t.onTimerTimeout() // prevent running this after test code is complete (due to test error: "Log in goroutine after test has completed")
-			}
-		})
+	if t.electionHandler != nil && t.view == view && t.blockHeight == blockHeight {
+		return
 	}
-	t.electionHandler = electionHandler
-	t.inRegister = false
+
+	timeout := t.CalcTimeout(view)
+	t.view = view
+	t.blockHeight = blockHeight
+	t.Stop()
+	t.timer = time.AfterFunc(timeout, func() {
+		t.onTimerTimeout()
+	})
+
+	t.electionHandler = cb
 }
 
 func (t *TimerBasedElectionTrigger) ElectionChannel() chan *interfaces.ElectionTrigger {

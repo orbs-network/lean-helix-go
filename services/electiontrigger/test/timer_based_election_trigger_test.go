@@ -44,7 +44,7 @@ func TestCallbackTriggerOnce(t *testing.T) {
 		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
 			atomic.AddInt32(&callCount, 1)
 		}
-		et.RegisterOnElection(ctx, 10, 0, cb)
+		et.RegisterOnElection(10, 0, cb)
 
 		time.Sleep(25 * time.Millisecond)
 
@@ -61,11 +61,11 @@ func TestCallbackTriggerTwiceInARow(t *testing.T) {
 		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
 			atomic.AddInt32(&callCount, 1)
 		}
-		et.RegisterOnElection(ctx, 10, 0, cb)
+		et.RegisterOnElection(10, 0, cb)
 
 		time.Sleep(25 * time.Millisecond)
 
-		et.RegisterOnElection(ctx, 11, 0, cb)
+		et.RegisterOnElection(11, 0, cb)
 		time.Sleep(25 * time.Millisecond)
 
 		atomic.LoadInt32(&callCount)
@@ -82,13 +82,13 @@ func TestIgnoreSameViewOrHeight(t *testing.T) {
 			atomic.AddInt32(&callCount, 1)
 		}
 
-		et.RegisterOnElection(ctx, 10, 0, cb)
+		et.RegisterOnElection(10, 0, cb)
 		time.Sleep(10 * time.Millisecond)
-		et.RegisterOnElection(ctx, 10, 0, cb)
+		et.RegisterOnElection(10, 0, cb)
 		time.Sleep(10 * time.Millisecond)
-		et.RegisterOnElection(ctx, 10, 0, cb)
+		et.RegisterOnElection(10, 0, cb)
 		time.Sleep(20 * time.Millisecond)
-		et.RegisterOnElection(ctx, 10, 0, cb)
+		et.RegisterOnElection(10, 0, cb)
 
 		atomic.LoadInt32(&callCount)
 		require.Exactly(t, 1, int(callCount), "Trigger callback called more than once")
@@ -105,7 +105,7 @@ func TestNotTriggeredIfSameViewButDifferentHeight(t *testing.T) {
 		}
 
 		for i := primitives.BlockHeight(0); i < 10; i++ {
-			et.RegisterOnElection(ctx, 10+i, 0, cb)
+			et.RegisterOnElection(10+i, 0, cb)
 			time.Sleep(registrationInterval)
 		}
 	})
@@ -120,19 +120,19 @@ func TestNotTriggerIfSameHeightButDifferentView(t *testing.T) {
 			atomic.AddInt32(&callCount, 1)
 		}
 
-		et.RegisterOnElection(ctx, 10, 0, cb)
+		et.RegisterOnElection(10, 0, cb)
 		time.Sleep(10 * time.Millisecond)
-		et.RegisterOnElection(ctx, 10, 1, cb)
+		et.RegisterOnElection(10, 1, cb)
 		time.Sleep(10 * time.Millisecond)
-		et.RegisterOnElection(ctx, 10, 2, cb)
+		et.RegisterOnElection(10, 2, cb)
 		time.Sleep(10 * time.Millisecond)
-		et.RegisterOnElection(ctx, 10, 3, cb)
+		et.RegisterOnElection(10, 3, cb)
 		time.Sleep(10 * time.Millisecond)
-		et.RegisterOnElection(ctx, 10, 4, cb)
+		et.RegisterOnElection(10, 4, cb)
 		time.Sleep(10 * time.Millisecond)
-		et.RegisterOnElection(ctx, 10, 5, cb)
+		et.RegisterOnElection(10, 5, cb)
 		time.Sleep(10 * time.Millisecond)
-		et.RegisterOnElection(ctx, 10, 5, cb)
+		et.RegisterOnElection(10, 5, cb)
 		time.Sleep(10 * time.Millisecond)
 
 		atomic.LoadInt32(&callCount)
@@ -149,7 +149,7 @@ func TestTimerBasedElectionTrigger_DidNotTriggerBeforeTimeout(t *testing.T) {
 			atomic.StoreInt32(&wasCalled, 1)
 		}
 
-		et.RegisterOnElection(ctx, 10, 2, cb) // 2 ** 2 * 10h = 40h
+		et.RegisterOnElection(10, 2, cb) // 2 ** 2 * 10h = 40h
 		time.Sleep(30 * time.Millisecond)
 		atomic.LoadInt32(&wasCalled)
 		require.Equal(t, 0, int(wasCalled), "Triggered the callback too early")
@@ -165,7 +165,7 @@ func TestViewPowTimeout_DidTriggerAfterTimeout(t *testing.T) {
 			close(triggered)
 		}
 
-		et.RegisterOnElection(ctx, 10, 2, cb) // 2 ** 2 * 1ms = 4ms
+		et.RegisterOnElection(10, 2, cb) // 2 ** 2 * 1ms = 4ms
 
 		timeoutCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
 		defer cancel()
@@ -186,7 +186,7 @@ func TestElectionTrigger_Stress_FrequentRegisters(t *testing.T) {
 		et := buildElectionTrigger(ctx, 1*time.Microsecond)
 		var counter int32
 		for h := primitives.BlockHeight(1); h < primitives.BlockHeight(1000); h++ {
-			et.RegisterOnElection(ctx, h, 0, nil)
+			et.RegisterOnElection(h, 0, nil)
 			counter++
 			time.Sleep(1 * time.Microsecond)
 		}

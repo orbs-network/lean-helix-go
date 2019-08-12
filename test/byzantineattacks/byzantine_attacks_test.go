@@ -52,18 +52,18 @@ func TestNetworkReachesConsensusWhen2of7NodesAreByzantine(t *testing.T) {
 			//WithBlocks(block).
 			Build(ctx)
 
-		byzantines := net.Nodes[honestNodes:totalNodes]
-		for _, b := range byzantines {
+		byzantineNodes := net.Nodes[honestNodes:totalNodes]
+		for _, b := range byzantineNodes {
 			b.Communication.DisableIncomingCommunication()
 		}
 
-		honest := net.Nodes[:honestNodes]
 		net.StartConsensus(ctx)
 
-		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 3, honest...)
+		net.WaitUntilQuorumOfNodesEventuallyReachASpecificHeight(ctx, 3)
 	})
 }
 
+// TODO Flaky
 // TODO This is a weak test, it only tests that 3 nodes out of 4 can close a block.
 // It does not test what happens if the leader sends block1a to node1,node2 and block1b to node3
 // where block1a and block1b both have height=1 but different contents.

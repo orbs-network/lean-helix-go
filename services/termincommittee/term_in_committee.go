@@ -205,7 +205,7 @@ func (tic *TermInCommittee) initView(ctx context.Context, newView primitives.Vie
 	tic.State.SetView(newView)
 	current := tic.State.HeightView()
 
-	tic.electionTrigger.RegisterOnElection(ctx, current.Height(), current.View(), tic.moveToNextLeader)
+	tic.electionTrigger.RegisterOnElection(current.Height(), current.View(), tic.moveToNextLeader)
 	tic.logger.Debug("LHFLOW initView() set leader to %s, incremented view to %d, election-timeout=%s, members=%s, goroutines#=%d",
 		Str(tic.calcLeaderMemberId(current.View())), current.View(), tic.electionTrigger.CalcTimeout(current.View()),
 		ToCommitteeMembersStr(tic.committeeMembersMemberIds), runtime.NumGoroutine())

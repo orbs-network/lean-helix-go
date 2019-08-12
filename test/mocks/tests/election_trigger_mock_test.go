@@ -33,7 +33,7 @@ func TestCallingCallback(t *testing.T) {
 			actualHeight = blockHeight
 			actualView = view
 		}
-		et.RegisterOnElection(ctx, expectedHeight, expectedView, cb)
+		et.RegisterOnElection(expectedHeight, expectedView, cb)
 
 		go et.ManualTrigger(ctx, state.NewHeightView(actualHeight, actualView))
 		trigger := <-et.ElectionChannel()

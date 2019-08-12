@@ -19,7 +19,7 @@ func TestStress_FrequentRegisters(t *testing.T) {
 		et := buildElectionTrigger(ctx, 1*time.Microsecond)
 
 		for h := primitives.BlockHeight(1); h < primitives.BlockHeight(1000); h++ {
-			et.RegisterOnElection(ctx, h, 0, nil)
+			et.RegisterOnElection(h, 0, nil)
 			time.Sleep(1 * time.Microsecond)
 		}
 	})
