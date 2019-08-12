@@ -96,10 +96,7 @@ func (net *TestNetwork) StartConsensus(ctx context.Context) *TestNetwork {
 		}
 	}
 
-	for _, node := range net.Nodes {
-		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 1, node)
-	}
-
+	net.WaitUntilNetworkIsRunning(ctx)
 	return net
 }
 
@@ -172,34 +169,6 @@ func (net *TestNetwork) WaitUntilQuorumCommitsHeight(ctx context.Context, height
 	wg.WaitWithTimeout(1 * time.Second)
 }
 
-func (net *TestNetwork) WaitUntilNodesCommitASpecificHeight(ctx context.Context, height primitives.BlockHeight, nodes ...*Node) {
-	if nodes == nil {
-		nodes = net.Nodes
-	}
-	wg := &sync.WaitGroup{}
-
-	for _, node := range nodes {
-		wg.Add(1)
-		go func(node *Node) {
-			for {
-				var topBlock interfaces.Block
-				select {
-				case <-ctx.Done():
-					wg.Done()
-					return
-				case nodeState := <-node.CommittedBlockChannel:
-					topBlock = nodeState.block
-				}
-				if height == topBlock.Height() {
-					wg.Done()
-					return
-				}
-			}
-		}(node)
-	}
-	wg.Wait()
-}
-
 // Wait for H=1 so that election triggers will be sent with H=1
 // o/w they will sometimes be sent with H=0 and subsequently be ignored
 // by workerloop's election channel, causing election to not happen,
@@ -219,21 +188,21 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 		// TODO Trying to use node.blockChain.Count() instead of node.GetCurrentHeight()
 		// hangs - need to understand why, as it seems more correct.
 
-		go func(node *Node) {
-			for node.GetCurrentHeight() < height {
-				iterationTimeout, _ := context.WithTimeout(ctx, 20 * time.Millisecond)
-				<- iterationTimeout.Done() // sleep or get cancelled
+		go func(n *Node) {
+			for n.GetCurrentHeight() < height {
+				iterationTimeout, _ := context.WithTimeout(ctx, 20*time.Millisecond)
+				<-iterationTimeout.Done() // sleep or get cancelled
 
-				if  ctx.Err() != nil {
+				if ctx.Err() != nil {
 					break // shutting down
 				}
 			}
-			fmt.Printf("Node %s reached H=%d\n", node.MemberId, node.GetCurrentHeight())
+			fmt.Printf("Node %s reached H=%d\n", n.MemberId, n.GetCurrentHeight())
 			doneChan <- struct{}{}
 		}(node)
 	}
 	for i := 0; i < len(nodes); i++ {
-		<- doneChan
+		<-doneChan
 	}
 }
 
