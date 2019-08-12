@@ -197,8 +197,9 @@ func ABasicTestNetwork(ctx context.Context) *TestNetwork {
 		Build(ctx)
 }
 
-func ABasicTestNetworkWithConsoleLogs(ctx context.Context, tb testing.TB) *TestNetwork {
+func ABasicTestNetworkWithTimeBasedElectionsAndConsoleLogs(ctx context.Context, tb testing.TB) *TestNetwork {
 	return ATestNetworkBuilder(4).
+		WithTimeBasedElectionTrigger(100 * time.Millisecond).
 		LogToConsole(tb).
 		Build(ctx)
 }

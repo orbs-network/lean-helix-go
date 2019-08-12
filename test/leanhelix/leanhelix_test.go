@@ -22,10 +22,9 @@ import (
 
 func TestHappyFlow(t *testing.T) {
 	test.WithContextWithTimeout(t, 3*time.Second, func(ctx context.Context) {
-		net := network.ABasicTestNetworkWithConsoleLogs(ctx, t)
+		net := network.ABasicTestNetworkWithTimeBasedElectionsAndConsoleLogs(ctx, t)
 		net.StartConsensus(ctx)
-		net.WaitUntilQuorumCommitsHeight(ctx, 1)
-		//net.WaitUntilNodesCommitASpecificHeight(ctx, 1)
+		net.WaitUntilQuorumOfNodesEventuallyReachASpecificHeight(ctx, 1)
 	})
 }
 
@@ -63,11 +62,11 @@ func TestHappyFlowMessages(t *testing.T) {
 }
 
 func TestConsensusFor8Blocks(t *testing.T) {
-	test.WithContextWithTimeout(t, 10*time.Second, func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 5*time.Second, func(ctx context.Context) {
 		net := network.
-			ABasicTestNetworkWithConsoleLogs(ctx, t).
+			ABasicTestNetworkWithTimeBasedElectionsAndConsoleLogs(ctx, t).
 			StartConsensus(ctx)
-		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 8)
+		net.WaitUntilQuorumOfNodesEventuallyReachASpecificHeight(ctx, 8) // We must not wait for ALL nodes to commit H=8 as sometimes one of the nodes will start after PREPREPARE is sent so it will be left behind for good (there is no NodeSync to save it as in production case)
 	})
 }
 
