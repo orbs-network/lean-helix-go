@@ -179,7 +179,8 @@ func (tic *TermInCommittee) startTerm(ctx context.Context, canBeFirstLeader bool
 	ppm := tic.messageFactory.CreatePreprepareMessage(currentHV.Height(), currentHV.View(), block, blockHash)
 
 	tic.storage.StorePreprepare(ppm)
-	tic.logger.Debug("LHMSG SEND PREPREPARE")
+	tic.logger.Debug("LHMSG SEND PREPREPARE (msg: H=%d V=%d sender=%s)",
+		ppm.BlockHeight(), ppm.View(), Str(ppm.SenderMemberId()))
 	if err := tic.sendConsensusMessage(ctx, ppm); err != nil {
 		tic.logger.Info("LHMSG SEND PREPREPARE FAILED - %s", err)
 	}
@@ -247,7 +248,8 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 		tic.storage.StoreViewChange(vcm)
 		tic.checkElected(ctx, currentHV.Height(), currentHV.View())
 	} else {
-		tic.logger.Debug("LHMSG SEND VIEW_CHANGE (I'm not leader) to %s (%s)", newLeader, err)
+		tic.logger.Debug("LHMSG SEND VIEW_CHANGE (I'm not leader) to %s (%s) (msg: H=%d V=%d sender=%s)",
+			newLeader, err, vcm.BlockHeight(), vcm.View(), Str(vcm.SenderMemberId()))
 		if sendErr := tic.sendConsensusMessageToSpecificMember(ctx, newLeader, vcm); sendErr != nil {
 			tic.logger.Info("LHMSG SEND VIEW_CHANGE to %s FAILED - %s", newLeader, sendErr)
 		}
@@ -312,7 +314,8 @@ func (tic *TermInCommittee) onElected(ctx context.Context, view primitives.View,
 	confirmations := interfaces.ExtractConfirmationsFromViewChangeMessages(viewChangeMessages)
 	nvm := tic.messageFactory.CreateNewViewMessage(tic.State.Height(), view, ppmContentBuilder, confirmations, block)
 	tic.storage.StorePreprepare(ppm)
-	tic.logger.Debug("LHMSG SEND NEW_VIEW")
+	tic.logger.Debug("LHMSG SEND NEW_VIEW (msg: H=%d V=%d sender=%s)",
+		nvm.BlockHeight(), nvm.View(), Str(nvm.SenderMemberId()))
 	if err := tic.sendConsensusMessage(ctx, nvm); err != nil {
 		tic.logger.Info("LHMSG SEND NEW_VIEW FAILED - %s", err)
 	}
@@ -389,7 +392,8 @@ func (tic *TermInCommittee) processPreprepare(ctx context.Context, ppm *interfac
 	pm := tic.messageFactory.CreatePrepareMessage(header.BlockHeight(), header.View(), header.BlockHash())
 	tic.storage.StorePreprepare(ppm)
 	tic.storage.StorePrepare(pm)
-	tic.logger.Debug("LHMSG SEND PREPARE")
+	tic.logger.Debug("LHMSG SEND PREPARE (msg: H=%d V=%d sender=%s)",
+		pm.BlockHeight(), pm.View(), Str(pm.SenderMemberId()))
 	if err := tic.sendConsensusMessage(ctx, pm); err != nil {
 		tic.logger.Info("LHMSG SEND PREPARE FAILED - %s", err)
 	}
@@ -471,7 +475,8 @@ func (tic *TermInCommittee) onPreparedLocally(ctx context.Context, blockHeight p
 	tic.logger.Debug("LHFLOW PHASE PREPARED, PreparedLocally set to V=%d", view)
 	cm := tic.messageFactory.CreateCommitMessage(blockHeight, view, blockHash)
 	tic.storage.StoreCommit(cm)
-	tic.logger.Debug("LHMSG SEND COMMIT")
+	tic.logger.Debug("LHMSG SEND COMMIT (msg: H=%d V=%d sender=%s)",
+		cm.BlockHeight(), cm.View(), Str(cm.SenderMemberId()))
 	if err := tic.sendConsensusMessage(ctx, cm); err != nil {
 		tic.logger.Info("LHMSG SEND COMMIT FAILED - %s", err)
 	}

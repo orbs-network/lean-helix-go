@@ -21,7 +21,7 @@ import (
 )
 
 func TestHappyFlow(t *testing.T) {
-	test.WithContextWithTimeout(t, 3*time.Second, func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 15*time.Second, func(ctx context.Context) {
 		net := network.ABasicTestNetworkWithTimeBasedElectionsAndConsoleLogs(ctx, t)
 		net.StartConsensus(ctx)
 		net.WaitUntilQuorumOfNodesEventuallyReachASpecificHeight(ctx, 1)
@@ -29,7 +29,7 @@ func TestHappyFlow(t *testing.T) {
 }
 
 func TestHappyFlowMessages(t *testing.T) {
-	test.WithContextWithTimeout(t, 3*time.Second, func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 15*time.Second, func(ctx context.Context) {
 		net := network.ABasicTestNetwork(ctx)
 		net.SetNodesToPauseOnRequestNewBlock()
 
@@ -62,7 +62,7 @@ func TestHappyFlowMessages(t *testing.T) {
 }
 
 func TestConsensusFor8Blocks(t *testing.T) {
-	test.WithContextWithTimeout(t, 5*time.Second, func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 15*time.Second, func(ctx context.Context) {
 		net := network.
 			ABasicTestNetworkWithTimeBasedElectionsAndConsoleLogs(ctx, t).
 			StartConsensus(ctx)
@@ -71,7 +71,7 @@ func TestConsensusFor8Blocks(t *testing.T) {
 }
 
 func TestHangingNode(t *testing.T) {
-	test.WithContextWithTimeout(t, 3*time.Second, func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 15*time.Second, func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
 

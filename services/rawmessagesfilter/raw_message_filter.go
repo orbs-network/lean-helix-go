@@ -37,6 +37,7 @@ func NewConsensusMessageFilter(instanceId primitives.InstanceId, myMemberId prim
 	return res
 }
 
+// TODO Consider passing ConsensusMessage instead of *interfaces.ConsensusRawMessage
 func (f *RawMessageFilter) HandleConsensusRawMessage(ctx context.Context, rawMessage *interfaces.ConsensusRawMessage) {
 	message := interfaces.ToConsensusMessage(rawMessage)
 	if f.isMyMessage(message) {
@@ -100,7 +101,9 @@ func (f *RawMessageFilter) processConsensusMessage(ctx context.Context, message 
 		return
 	}
 
-	f.consensusMessagesHandler.HandleConsensusMessage(ctx, message)
+	if err := f.consensusMessagesHandler.HandleConsensusMessage(ctx, message); err != nil {
+		f.logger.Info("LHFILTER LHMSG Failed in HandleConsensusMessage(): %s", err)
+	}
 }
 
 func (f *RawMessageFilter) ConsumeCacheMessages(ctx context.Context, consensusMessagesHandler ConsensusMessagesHandler) {

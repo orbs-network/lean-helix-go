@@ -104,7 +104,6 @@ func (net *TestNetwork) _waitUntilQuorumOfNodesEventuallyReachASpecificHeight(ct
 					break // shutting down
 				}
 			}
-			fmt.Printf("Node %s reached H=%d\n", n.MemberId, n.GetCurrentHeight())
 			doneChan <- struct{}{}
 		}(node)
 	}

@@ -20,12 +20,13 @@ import (
 )
 
 func TestThatWeReachConsensusWhere1of4NodeIsByzantine(t *testing.T) {
-	test.WithContextWithTimeout(t, 3*time.Second, func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 15*time.Second, func(ctx context.Context) {
 		block := mocks.ABlock(interfaces.GenesisBlock)
 		net := network.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
 			WithBlocks(block).
+			WithTimeBasedElectionTrigger(100 * time.Millisecond).
 			LogToConsole(t).
 			Build(ctx)
 
@@ -38,7 +39,7 @@ func TestThatWeReachConsensusWhere1of4NodeIsByzantine(t *testing.T) {
 }
 
 func TestNetworkReachesConsensusWhen2of7NodesAreByzantine(t *testing.T) {
-	test.WithContextWithTimeout(t, 5*time.Second, func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 15*time.Second, func(ctx context.Context) {
 
 		//block := mocks.ABlock(interfaces.GenesisBlock)
 		totalNodes := 7
@@ -67,11 +68,12 @@ func TestNetworkReachesConsensusWhen2of7NodesAreByzantine(t *testing.T) {
 // It does not test what happens if the leader sends block1a to node1,node2 and block1b to node3
 // where block1a and block1b both have height=1 but different contents.
 func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
-	test.WithContextWithTimeout(t, 3*time.Second, func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 15*time.Second, func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		net := network.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
+			WithTimeBasedElectionTrigger(100 * time.Millisecond).
 			WithBlocks(block1).
 			Build(ctx)
 
@@ -93,12 +95,13 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 }
 
 func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
-	test.WithContextWithTimeout(t, 3*time.Second, func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 15*time.Second, func(ctx context.Context) {
 		goodBlock := mocks.ABlock(interfaces.GenesisBlock)
 		fakeBlock := mocks.ABlock(interfaces.GenesisBlock)
 		net := network.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
+			WithTimeBasedElectionTrigger(100 * time.Millisecond).
 			WithBlocks(goodBlock).
 			//LogToConsole().
 			Build(ctx)
@@ -127,7 +130,7 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 
 func TestThatAByzantineLeaderCannotCauseAFork(t *testing.T) {
 	t.Skip("This purpose of this test needs to be clarified, it must be rewritten and become shorter than it is now")
-	test.WithContextWithTimeout(t, 1*time.Second, func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 15*time.Second, func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(interfaces.GenesisBlock)
 
@@ -144,8 +147,8 @@ func TestThatAByzantineLeaderCannotCauseAFork(t *testing.T) {
 		node3 := net.Nodes[3]
 		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{node1.MemberId, node2.MemberId})
 		node1.Communication.SetOutgoingWhitelist([]primitives.MemberId{node2.MemberId})
-		node2.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
-		node3.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
+		node2.Communication.DisableIncomingCommunication()
+		node3.Communication.DisableIncomingCommunication()
 
 		net.StartConsensus(ctx)
 
@@ -166,8 +169,8 @@ func TestThatAByzantineLeaderCannotCauseAFork(t *testing.T) {
 		node2.Communication.EnableOutgoingCommunication()
 		node3.Communication.EnableOutgoingCommunication()
 
-		node2.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
-		node2.Communication.SetIncomingWhitelist([]primitives.MemberId{})
+		node2.Communication.DisableOutgoingCommunication()
+		node2.Communication.DisableIncomingCommunication()
 
 		// selection node 1 as the leader
 		node0.TriggerElectionOnNode(ctx)
