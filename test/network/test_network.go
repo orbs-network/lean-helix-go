@@ -94,9 +94,22 @@ func (net *TestNetwork) _waitUntilQuorumOfNodesEventuallyReachASpecificHeight(ct
 		// TODO Trying to use node.blockChain.Count() instead of node.GetCurrentHeight()
 		// hangs - need to understand why, as it seems more correct.
 
-		go func(n *Node) {
-			defer func() { _ = recover() }()
-			for n.GetCurrentHeight() < height {
+		go func(node *Node) { // shadowing node on purpose
+			defer func() {
+				if e := recover(); e != nil {
+					s, ok := e.(error)
+					if ok && s.Error() != "send on closed channel" {
+						node.log.Debug("H=%d ID=%s _waitUntilQuorumOfNodesEventuallyReachASpecificHeight exited with error: %s", node.GetCurrentHeight(), node.Membership.MyMemberId(), height, s)
+					}
+					if ok && s.Error() == "send on closed channel" {
+						node.log.Debug("H=%d ID=%s _waitUntilQuorumOfNodesEventuallyReachASpecificHeight exited with error: %s AFTER QUORUM REACHED", node.GetCurrentHeight(), node.Membership.MyMemberId(), height, s)
+					}
+					if !ok {
+						node.log.Debug("H=%d ID=%s _waitUntilQuorumOfNodesEventuallyReachASpecificHeight exited with error: %v UNKNOWN ERROR", node.GetCurrentHeight(), node.Membership.MyMemberId(), height, e)
+					}
+				}
+			}()
+			for node.GetCurrentHeight() < height {
 				iterationTimeout, _ := context.WithTimeout(ctx, 20*time.Millisecond)
 				<-iterationTimeout.Done() // sleep or get cancelled
 
@@ -104,6 +117,10 @@ func (net *TestNetwork) _waitUntilQuorumOfNodesEventuallyReachASpecificHeight(ct
 					break // shutting down
 				}
 			}
+			if height > 1 {
+				node.log.Debug("H=%d ID=%s _waitUntilQuorumOfNodesEventuallyReachASpecificHeight (target height %d)", node.GetCurrentHeight(), node.Membership.MyMemberId(), height)
+			}
+
 			doneChan <- struct{}{}
 		}(node)
 	}
