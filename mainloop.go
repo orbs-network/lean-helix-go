@@ -11,10 +11,13 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/state"
+	"github.com/orbs-network/scribe/log"
 	"github.com/pkg/errors"
+	"runtime/debug"
 )
 
 type MainLoop struct {
+	govnr.TreeSupervisor
 	messagesChannel             chan *interfaces.ConsensusRawMessage
 	mainUpdateStateChannel      chan *blockWithProof
 	electionScheduler           interfaces.ElectionScheduler
@@ -26,6 +29,19 @@ type MainLoop struct {
 	worker                      *WorkerLoop
 }
 
+type govnrErrorer struct {
+	logger log.Logger
+}
+
+func (h *govnrErrorer) Error(err error) {
+	h.logger.Error("recovered panic", log.Error(err), log.String("panic", "true"), log.String("stack-trace", string(debug.Stack())))
+}
+
+func GovnrErrorer(logger log.Logger) govnr.Errorer {
+	return &govnrErrorer{logger}
+}
+
+// TODO Pass logger from Orbs
 func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommitCallback, onNewConsensusRoundCallback interfaces.OnNewConsensusRoundCallback) *MainLoop {
 
 	var electionTrigger interfaces.ElectionScheduler
@@ -60,14 +76,22 @@ func (s stdoutErrorer) Error(err error) {
 	fmt.Printf("%s\n", err)
 }
 
-func (m *MainLoop) Run(ctx context.Context) govnr.ContextEndedChan {
-	//logger := log.GetLogger().WithTags(log.Node(m.config.InstanceId.String()), log.String("event_loop", "LHMain"))
-	return govnr.GoForever(ctx, &stdoutErrorer{}, func() {
+func (m *MainLoop) Run(ctx context.Context) {
+
+	m.Supervise(m.runMainLoop(ctx))
+
+	m.Supervise(m.runWorkerLoop(ctx))
+}
+
+func (m *MainLoop) runMainLoop(ctx context.Context) *govnr.ForeverHandle {
+	logger := log.GetLogger().WithTags(log.Node(m.config.InstanceId.String()), log.String("event_loop", "LHMain"))
+	return govnr.Forever(ctx, "lh-mainloop", GovnrErrorer(logger), func() {
 		m.run(ctx)
 	})
 }
 
-func (m *MainLoop) runWorkerLoop(ctx context.Context) govnr.ContextEndedChan {
+// TODO Pass logger from mainloop
+func (m *MainLoop) runWorkerLoop(ctx context.Context) govnr.ShutdownWaiter {
 	m.worker = NewWorkerLoop(
 		m.state,
 		m.config,
@@ -76,8 +100,8 @@ func (m *MainLoop) runWorkerLoop(ctx context.Context) govnr.ContextEndedChan {
 		m.onCommitCallback,
 		m.onNewConsensusRoundCallback)
 
-	//logger := log.GetLogger().WithTags(log.Node(m.config.InstanceId.String()), log.String("event_loop", "LHWorker"))
-	return govnr.GoForever(ctx, &stdoutErrorer{}, func() {
+	logger := log.GetLogger().WithTags(log.Node(m.config.InstanceId.String()), log.String("event_loop", "LHWorker"))
+	return govnr.Forever(ctx, "lh-workerloop", GovnrErrorer(logger), func() {
 		m.worker.Run(ctx)
 	})
 }
@@ -87,8 +111,6 @@ func (m *MainLoop) run(ctx context.Context) {
 		panic("Election trigger was not configured, cannot run Lean Helix (mainloop.run)")
 	}
 
-	doneWorker := m.runWorkerLoop(ctx)
-
 	m.logger.Info("LHFLOW LHMSG MAINLOOP START LISTENING NOW")
 	workerCtx, cancelWorkerContext := context.WithCancel(ctx)
 	defer cancelWorkerContext()
@@ -97,10 +119,6 @@ func (m *MainLoop) run(ctx context.Context) {
 		select {
 		case <-ctx.Done(): // system shutdown
 			m.logger.Info("LHFLOW LHMSG MAINLOOP DONE STOPPED LISTENING, Terminating Run().")
-			return
-
-		case <-doneWorker:
-			m.logger.Info("LHFLOW LHMSG MAINLOOP WORKERLOOP GOROUTINE RETURNED")
 			return
 		case message := <-m.messagesChannel:
 			parsedMessage := interfaces.ToConsensusMessage(message)
