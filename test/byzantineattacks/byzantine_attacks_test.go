@@ -34,7 +34,7 @@ func TestThatWeReachConsensusWhere1of4NodeIsByzantine(t *testing.T) {
 
 		net.StartConsensus(ctx)
 
-		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 4, net.Nodes[0], net.Nodes[1], net.Nodes[2])
+		net.WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx, 2, 1)
 	})
 }
 
@@ -59,7 +59,7 @@ func TestNetworkReachesConsensusWhen2of7NodesAreByzantine(t *testing.T) {
 
 		net.StartConsensus(ctx)
 
-		net.WaitUntilQuorumOfNodesEventuallyReachASpecificHeight(ctx, 3)
+		net.WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx, 2, 1)
 	})
 }
 
