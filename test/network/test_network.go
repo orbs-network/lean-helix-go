@@ -81,14 +81,17 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 	if nodes == nil {
 		nodes = net.Nodes
 	}
-	net._waitUntilQuorumOfNodesEventuallyReachASpecificHeight(ctx, height, len(nodes), nodes...)
+	net.WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx, height, len(nodes), nodes...)
 }
 
 func (net *TestNetwork) WaitUntilQuorumOfNodesEventuallyReachASpecificHeight(ctx context.Context, height primitives.BlockHeight) {
 	quorum := quorum.CalcQuorumSize(len(net.Nodes))
-	net._waitUntilQuorumOfNodesEventuallyReachASpecificHeight(ctx, height, quorum, net.Nodes...)
+	net.WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx, height, quorum, net.Nodes...)
 }
-func (net *TestNetwork) _waitUntilQuorumOfNodesEventuallyReachASpecificHeight(ctx context.Context, height primitives.BlockHeight, quorum int, nodes ...*Node) {
+func (net *TestNetwork) WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx context.Context, height primitives.BlockHeight, subset int, nodes ...*Node) {
+	if nodes == nil {
+		nodes = net.Nodes
+	}
 	doneChan := make(chan struct{})
 	for _, node := range nodes {
 		// TODO Trying to use node.blockChain.Count() instead of node.GetCurrentHeight()
@@ -99,13 +102,13 @@ func (net *TestNetwork) _waitUntilQuorumOfNodesEventuallyReachASpecificHeight(ct
 				if e := recover(); e != nil {
 					s, ok := e.(error)
 					if ok && s.Error() != "send on closed channel" {
-						node.log.Debug("H=%d ID=%s _waitUntilQuorumOfNodesEventuallyReachASpecificHeight exited with error: %s", node.GetCurrentHeight(), node.Membership.MyMemberId(), height, s)
+						node.log.Debug("H=%d ID=%s WaitUntilSubsetOfNodesEventuallyReachASpecificHeight exited with error: %s", node.GetCurrentHeight(), node.Membership.MyMemberId(), height, s)
 					}
 					if ok && s.Error() == "send on closed channel" {
-						node.log.Debug("H=%d ID=%s _waitUntilQuorumOfNodesEventuallyReachASpecificHeight exited with error: %s AFTER QUORUM REACHED", node.GetCurrentHeight(), node.Membership.MyMemberId(), height, s)
+						node.log.Debug("H=%d ID=%s WaitUntilSubsetOfNodesEventuallyReachASpecificHeight exited with error: %s AFTER QUORUM REACHED", node.GetCurrentHeight(), node.Membership.MyMemberId(), height, s)
 					}
 					if !ok {
-						node.log.Debug("H=%d ID=%s _waitUntilQuorumOfNodesEventuallyReachASpecificHeight exited with error: %v UNKNOWN ERROR", node.GetCurrentHeight(), node.Membership.MyMemberId(), height, e)
+						node.log.Debug("H=%d ID=%s WaitUntilSubsetOfNodesEventuallyReachASpecificHeight exited with error: %v UNKNOWN ERROR", node.GetCurrentHeight(), node.Membership.MyMemberId(), height, e)
 					}
 				}
 			}()
@@ -118,13 +121,13 @@ func (net *TestNetwork) _waitUntilQuorumOfNodesEventuallyReachASpecificHeight(ct
 				}
 			}
 			if height > 1 {
-				node.log.Debug("H=%d ID=%s _waitUntilQuorumOfNodesEventuallyReachASpecificHeight (target height %d)", node.GetCurrentHeight(), node.Membership.MyMemberId(), height)
+				node.log.Debug("H=%d ID=%s WaitUntilSubsetOfNodesEventuallyReachASpecificHeight (target height %d)", node.GetCurrentHeight(), node.Membership.MyMemberId(), height)
 			}
 
 			doneChan <- struct{}{}
 		}(node)
 	}
-	for i := 0; i < quorum; i++ {
+	for i := 0; i < subset; i++ {
 		<-doneChan
 	}
 	close(doneChan)

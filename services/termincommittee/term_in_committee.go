@@ -200,8 +200,6 @@ func (tic *TermInCommittee) initView(ctx context.Context, newView primitives.Vie
 		return
 	}
 
-	tic.logger.Debug("LHFLOW PreparedLocally set to false")
-
 	tic.State.SetView(newView)
 	current := tic.State.HeightView()
 
