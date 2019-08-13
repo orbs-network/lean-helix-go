@@ -61,12 +61,12 @@ func TestHappyFlowMessages(t *testing.T) {
 	})
 }
 
-func TestConsensusFor8Blocks(t *testing.T) {
+func TestConsensusFor2Blocks(t *testing.T) {
 	test.WithContextWithTimeout(t, 15*time.Second, func(ctx context.Context) {
 		net := network.
 			ABasicTestNetworkWithTimeBasedElectionsAndConsoleLogs(ctx, t).
 			StartConsensus(ctx)
-		net.WaitUntilQuorumOfNodesEventuallyReachASpecificHeight(ctx, 8) // We must not wait for ALL nodes to commit H=8 as sometimes one of the nodes will start after PREPREPARE is sent so it will be left behind for good (there is no NodeSync to save it as in production case)
+		net.WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx, 2, 1) // We must not wait for ALL nodes to commit H=8 as sometimes one of the nodes will start after PREPREPARE is sent so it will be left behind for good (there is no NodeSync to save it as in production case)
 	})
 }
 
