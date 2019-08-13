@@ -88,7 +88,7 @@ func (node *Node) TriggerElectionOnNode(ctx context.Context) <-chan struct{} {
 
 func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, blockProof []byte) {
 	node.blockChain.AppendBlockToChain(block, blockProof)
-	node.log.Debug("ID=%s BH=%d onCommittedBlock: appended to blockchain", node.MemberId, block.Height())
+	node.log.Debug("ID=%s onCommittedBlock: appended to blockchain %s", node.MemberId, block.Height(), block)
 
 	if node.WriteToStateChannel {
 		nodeState := &NodeState{

@@ -7,6 +7,7 @@
 package mocks
 
 import (
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"sync"
@@ -47,7 +48,7 @@ func (bs *InMemoryBlockchain) AppendBlockToChain(block interfaces.Block, blockPr
 	bs.lock.Lock()
 	defer bs.lock.Unlock()
 	bs.items = append(bs.items, &chainItem{block, blockProof})
-	//fmt.Printf("Node %s appended block %s (blochchain has %d blocks)\n", bs.memberId, block, len(bs.items))
+	fmt.Printf("Node %s appended block %s (blochchain has %d blocks)\n", bs.memberId, block, len(bs.items))
 }
 
 func (bs *InMemoryBlockchain) LastBlock() interfaces.Block {
