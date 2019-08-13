@@ -13,8 +13,10 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
+	"github.com/orbs-network/lean-helix-go/test/matchers"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/orbs-network/lean-helix-go/test/network"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
@@ -26,7 +28,7 @@ func TestThatWeReachConsensusWhere1of4NodeIsByzantine(t *testing.T) {
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
 			WithBlocks(block).
-			WithTimeBasedElectionTrigger(100 * time.Millisecond).
+			WithTimeBasedElectionTrigger(200 * time.Millisecond).
 			LogToConsole(t).
 			Build(ctx)
 
@@ -48,7 +50,7 @@ func TestNetworkReachesConsensusWhen2of7NodesAreByzantine(t *testing.T) {
 			NewTestNetworkBuilder().
 			LogToConsole(t).
 			WithNodeCount(totalNodes).
-			WithTimeBasedElectionTrigger(100 * time.Millisecond). // reducing the timeout is flaky since sync is not performed and nodes may drop out if interrupted too frequently
+			WithTimeBasedElectionTrigger(200 * time.Millisecond). // reducing the timeout is flaky since sync is not performed and nodes may drop out if interrupted too frequently
 			//WithBlocks(block).
 			Build(ctx)
 
@@ -73,7 +75,7 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 		net := network.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
-			WithTimeBasedElectionTrigger(100 * time.Millisecond).
+			WithTimeBasedElectionTrigger(200 * time.Millisecond).
 			WithBlocks(block1).
 			Build(ctx)
 
@@ -98,10 +100,13 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 	test.WithContextWithTimeout(t, 15*time.Second, func(ctx context.Context) {
 		goodBlock := mocks.ABlock(interfaces.GenesisBlock)
 		fakeBlock := mocks.ABlock(interfaces.GenesisBlock)
+
+		require.False(t, matchers.BlocksAreEqual(goodBlock, fakeBlock))
+
 		net := network.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
-			WithTimeBasedElectionTrigger(100 * time.Millisecond).
+			WithTimeBasedElectionTrigger(200 * time.Millisecond).
 			WithBlocks(goodBlock).
 			//LogToConsole().
 			Build(ctx)
@@ -117,10 +122,10 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 
 		// fake a preprepare message from node3 (byzantineNode) that points to a unrelated block (Should be ignored)
 		ppm := builders.APreprepareMessage(net.InstanceId, byzantineNode.KeyManager, byzantineNode.MemberId, 1, 1, fakeBlock)
-		byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
-		byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
-		byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
-		byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
+		_ = byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
+		_ = byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
+		_ = byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
+		_ = byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
 
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
 

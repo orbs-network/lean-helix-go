@@ -49,12 +49,10 @@ func ABlock(previousBlock interfaces.Block) interfaces.Block {
 }
 
 var blocksCounter uint64 = 0
-
 func genBody(height primitives.BlockHeight) string {
-	body := fmt.Sprintf("SN=%d,H=%d", atomic.LoadUint64(&blocksCounter), height)
+	body := fmt.Sprintf("SN=%d,H=%d", atomic.AddUint64(&blocksCounter, 1), height)
 	if height == 0 {
 		body = body + " (Genesis)"
 	}
-	atomic.AddUint64(&blocksCounter, 1)
 	return body
 }

@@ -18,7 +18,7 @@ func TestRunEndsAfterGoroutinesEnd(t *testing.T) {
 	}
 	timer := time.AfterFunc(100*time.Millisecond, cancelWrapper)
 	timerBeforeCancelContext, _ := context.WithTimeout(context.Background(), 50*time.Millisecond)
-	timerAfterCancelContext, _ := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	timerAfterCancelContext, _ := context.WithTimeout(context.Background(), 3*time.Second)
 	defer func() {
 		cancelGoRoutines()
 		timer.Stop()
