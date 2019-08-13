@@ -147,8 +147,8 @@ func TestThatAByzantineLeaderCannotCauseAFork(t *testing.T) {
 		node3 := net.Nodes[3]
 		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{node1.MemberId, node2.MemberId})
 		node1.Communication.SetOutgoingWhitelist([]primitives.MemberId{node2.MemberId})
-		node2.Communication.DisableIncomingCommunication()
-		node3.Communication.DisableIncomingCommunication()
+		node2.Communication.DisableOutgoingCommunication()
+		node3.Communication.DisableOutgoingCommunication()
 
 		net.StartConsensus(ctx)
 
