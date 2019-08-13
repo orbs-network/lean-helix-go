@@ -60,7 +60,7 @@ func (m *MainLoop) Run(ctx context.Context) govnr.ContextEndedChan {
 	})
 }
 
-func (m *MainLoop) runWorkerLoop(ctx context.Context) govnr.ContextEndedChan {
+func (m *MainLoop) runWorkerLoop(ctx context.Context) {
 	m.worker = NewWorkerLoop(
 		m.state,
 		m.config,
@@ -70,7 +70,7 @@ func (m *MainLoop) runWorkerLoop(ctx context.Context) govnr.ContextEndedChan {
 		m.onNewConsensusRoundCallback)
 
 	logger := log.GetLogger().WithTags(log.Node(m.config.InstanceId.String()), log.String("event_loop", "LHWorker"))
-	return govnr.GoForever(ctx, logger, func() {
+	govnr.GoForever(ctx, logger, func() {
 		m.worker.Run(ctx)
 	})
 }
@@ -80,7 +80,7 @@ func (m *MainLoop) run(ctx context.Context) {
 		panic("Election trigger was not configured, cannot run Lean Helix (mainloop.run)")
 	}
 
-	doneWorker := m.runWorkerLoop(ctx)
+	m.runWorkerLoop(ctx)
 
 	m.logger.Info("LHFLOW LHMSG MAINLOOP START LISTENING NOW")
 	workerCtx, cancelWorkerContext := context.WithCancel(ctx)
@@ -92,17 +92,10 @@ func (m *MainLoop) run(ctx context.Context) {
 			m.logger.Info("LHFLOW LHMSG MAINLOOP DONE STOPPED LISTENING, Terminating Run().")
 			return
 
-		case <-doneWorker:
-			m.logger.Info("LHFLOW LHMSG MAINLOOP WORKERLOOP GOROUTINE RETURNED")
-			return
 		case message := <-m.messagesChannel:
 			parsedMessage := interfaces.ToConsensusMessage(message)
 
-			m.logger.Debug("LHFLOW LHMSG MAINLOOP RECEIVED %v from %v for H=%d V=%d",
-				parsedMessage.MessageType(),
-				parsedMessage.SenderMemberId(),
-				parsedMessage.BlockHeight(),
-				parsedMessage.View())
+			m.logger.Debug("LHFLOW LHMSG MAINLOOP RECEIVED %v from %v for H=%d V=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight(), parsedMessage.View())
 			select {
 			default: // never block the main loop
 			case <-ctx.Done(): // here for uniformity, made redundant by default:
