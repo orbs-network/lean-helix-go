@@ -93,10 +93,6 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 
 		case res := <-lh.MessagesChannel:
 			parsedMessage := interfaces.ToConsensusMessage(res.msg)
-			if res.ctx.Err() != nil { // message already cancelled
-				lh.logger.Debug("LHFLOW LHMSG WORKERLOOP MESSAGE CANCELED - %v (not handling it)", parsedMessage.MessageType())
-				continue
-			}
 			lh.logger.Debug("LHFLOW LHMSG WORKERLOOP RECEIVED %v from %v for H=%d V=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight(), parsedMessage.View())
 			lh.filter.HandleConsensusRawMessage(res.ctx, res.msg)
 

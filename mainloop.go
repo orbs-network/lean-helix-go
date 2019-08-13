@@ -101,7 +101,7 @@ func (m *MainLoop) runWorkerLoop(ctx context.Context) govnr.ShutdownWaiter {
 		m.onNewConsensusRoundCallback)
 
 	logger := log.GetLogger().WithTags(log.Node(m.config.InstanceId.String()), log.String("event_loop", "LHWorker"))
-	return govnr.Forever(ctx, "lh-workerloop", GovnrErrorer(logger), func() {
+	govnr.Forever(ctx, "lh-workerloop", GovnrErrorer(logger), func() {
 		m.worker.Run(ctx)
 	})
 }
@@ -123,11 +123,7 @@ func (m *MainLoop) run(ctx context.Context) {
 		case message := <-m.messagesChannel:
 			parsedMessage := interfaces.ToConsensusMessage(message)
 
-			m.logger.Debug("LHFLOW LHMSG MAINLOOP RECEIVED %v from %v for H=%d V=%d",
-				parsedMessage.MessageType(),
-				parsedMessage.SenderMemberId(),
-				parsedMessage.BlockHeight(),
-				parsedMessage.View())
+			m.logger.Debug("LHFLOW LHMSG MAINLOOP RECEIVED %v from %v for H=%d V=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight(), parsedMessage.View())
 			select {
 			default: // never block the main loop
 			case <-ctx.Done(): // here for uniformity, made redundant by default:

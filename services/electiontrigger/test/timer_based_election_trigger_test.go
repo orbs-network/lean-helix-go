@@ -40,16 +40,23 @@ func TestCallbackTriggerOnce(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		et := buildElectionTrigger(ctx, 1*time.Nanosecond)
 
-		var callCount int32 = 0
+		triggerReached := make(chan struct{})
 		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
-			atomic.AddInt32(&callCount, 1)
+			triggerReached <- struct{}{}
 		}
 		et.RegisterOnElection(10, 0, cb)
 
-		time.Sleep(25 * time.Millisecond)
+		<-triggerReached
 
-		atomic.LoadInt32(&callCount)
-		require.Exactly(t, 1, int(callCount), "Trigger callback called more than once")
+		timeoutCtx, cancelTimeout := context.WithTimeout(ctx, 25*time.Millisecond)
+		defer cancelTimeout()
+
+		select {
+		case <-triggerReached:
+			t.Fatal("Trigger callback called more than once")
+		case <-timeoutCtx.Done():
+
+		}
 	})
 }
 
@@ -57,19 +64,27 @@ func TestCallbackTriggerTwiceInARow(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		et := buildElectionTrigger(ctx, 1*time.Nanosecond)
 
-		var callCount int32 = 0
+
+		triggerReached := make(chan struct{})
 		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
-			atomic.AddInt32(&callCount, 1)
+			triggerReached <- struct{}{}
 		}
 		et.RegisterOnElection(10, 0, cb)
 
-		time.Sleep(25 * time.Millisecond)
+		<-triggerReached
 
 		et.RegisterOnElection(11, 0, cb)
-		time.Sleep(25 * time.Millisecond)
 
-		atomic.LoadInt32(&callCount)
-		require.Exactly(t, 2, int(callCount), "Trigger callback twice without getting stuck")
+		<-triggerReached
+
+		timeoutCtx, cancelTimeout := context.WithTimeout(ctx, 25*time.Millisecond)
+		defer cancelTimeout()
+
+		select {
+		case <-triggerReached:
+			t.Fatal("Trigger callback called more than once")
+		case <-timeoutCtx.Done():
+		}
 	})
 }
 
@@ -97,17 +112,20 @@ func TestIgnoreSameViewOrHeight(t *testing.T) {
 
 func TestNotTriggeredIfSameViewButDifferentHeight(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		registrationInterval := 5 * time.Millisecond
-		et := buildElectionTrigger(ctx, 20*registrationInterval)
+		electionTimeout := 10 * time.Millisecond
+		et := buildElectionTrigger(ctx, electionTimeout)
 
-		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+		cbNeverTriggered := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
 			t.Fatalf("Callback for H=%d V=%d", blockHeight, view)
 		}
 
-		for i := primitives.BlockHeight(0); i < 10; i++ {
-			et.RegisterOnElection(10+i, 0, cb)
-			time.Sleep(registrationInterval)
+		cbNoop := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
 		}
+
+		et.RegisterOnElection(1, 0, cbNeverTriggered)
+		et.RegisterOnElection(2, 0, cbNoop)
+
+		time.Sleep(2 * electionTimeout)
 	})
 }
 
