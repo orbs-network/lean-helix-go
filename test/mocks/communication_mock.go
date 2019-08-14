@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/pkg/errors"
@@ -42,6 +43,7 @@ type messageProps struct {
 type CommunicationMock struct {
 	memberId  primitives.MemberId
 	discovery *Discovery
+	logger    interfaces.Logger
 
 	outgoingLock        sync.Mutex
 	outgoingChannelsMap map[string]chan *outgoingMessage
@@ -62,10 +64,16 @@ type CommunicationMock struct {
 	messagesHistory     []*messageProps
 }
 
-func NewCommunication(memberId primitives.MemberId, discovery *Discovery) *CommunicationMock {
+func NewCommunication(memberId primitives.MemberId, discovery *Discovery, log interfaces.Logger) *CommunicationMock {
+
+	if log == nil {
+		log = logger.NewConsoleLogger("XXX")
+	}
+
 	return &CommunicationMock{
 		memberId:                   memberId,
 		discovery:                  discovery,
+		logger:                     log,
 		outgoingChannelsMap:        make(map[string]chan *outgoingMessage),
 		nextSubscriptionKey:        0,
 		subscriptions:              make(map[int]*SubscriptionValue),
@@ -86,6 +94,9 @@ func (g *CommunicationMock) SendConsensusMessage(ctx context.Context, targets []
 		case <-ctx.Done():
 			return errors.Errorf("ID=%s context canceled for outgoing channel of %v", g.memberId, target)
 		case channel <- &outgoingMessage{target, message}:
+			msg := interfaces.ToConsensusMessage(message)
+			g.logger.Debug("COMM: ID=%s Sent message %s to %s H=%d V=%d", msg.SenderMemberId(), msg.MessageType(), target,
+				msg.BlockHeight(), msg.View())
 			continue
 		}
 	}

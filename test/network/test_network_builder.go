@@ -118,7 +118,7 @@ func (tb *TestNetworkBuilder) buildNode(
 	blockUtils interfaces.BlockUtils,
 ) *Node {
 
-	communicationInstance := mocks.NewCommunication(memberId, discovery)
+	communicationInstance := mocks.NewCommunication(memberId, discovery, tb.logger)
 	if tb.communicationMaxDelay > 0 {
 		communicationInstance.SetMessagesMaxDelay(tb.communicationMaxDelay)
 	}
