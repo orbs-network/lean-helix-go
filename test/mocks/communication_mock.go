@@ -50,12 +50,16 @@ type CommunicationMock struct {
 	nextSubscriptionKey int
 	subscriptions       map[int]*SubscriptionValue
 
+	muOut                      sync.RWMutex
 	outgoingWhitelistMemberIds []primitives.MemberId
+
+	muIn                       sync.RWMutex
 	incomingWhiteListMemberIds []primitives.MemberId
-	statsSentMessages          []*interfaces.ConsensusRawMessage
-	maxDelayDuration           time.Duration
-	messagesHistoryLock        sync.Mutex
-	messagesHistory            []*messageProps
+
+	statsSentMessages   []*interfaces.ConsensusRawMessage
+	maxDelayDuration    time.Duration
+	messagesHistoryLock sync.Mutex
+	messagesHistory     []*messageProps
 }
 
 func NewCommunication(memberId primitives.MemberId, discovery *Discovery) *CommunicationMock {
@@ -158,6 +162,8 @@ func (g *CommunicationMock) SendToNode(ctx context.Context, receiverMemberId pri
 }
 
 func (g *CommunicationMock) bannedReceiver(receiverMemberId primitives.MemberId) bool {
+	g.muOut.RLock()
+	defer g.muOut.RUnlock()
 	if g.outgoingWhitelistMemberIds == nil {
 		return false
 	}
@@ -171,6 +177,9 @@ func (g *CommunicationMock) bannedReceiver(receiverMemberId primitives.MemberId)
 }
 
 func (g *CommunicationMock) bannedSender(rawMessage *interfaces.ConsensusRawMessage) bool {
+	g.muIn.RLock()
+	defer g.muIn.RUnlock()
+
 	if g.incomingWhiteListMemberIds == nil {
 		return false
 	}
@@ -207,6 +216,9 @@ func (g *CommunicationMock) RegisterIncomingMessageHandler(cb func(ctx context.C
 }
 
 func (g *CommunicationMock) inOutgoingWhitelist(memberId primitives.MemberId) bool {
+	g.muOut.RLock()
+	defer g.muOut.RUnlock()
+
 	for _, currentId := range g.outgoingWhitelistMemberIds {
 		if currentId.Equal(memberId) {
 			return true
@@ -216,14 +228,20 @@ func (g *CommunicationMock) inOutgoingWhitelist(memberId primitives.MemberId) bo
 }
 
 func (g *CommunicationMock) DisableOutgoingCommunication() {
+	g.muOut.Lock()
+	defer g.muOut.Unlock()
 	g.outgoingWhitelistMemberIds = []primitives.MemberId{}
 }
 
 func (g *CommunicationMock) EnableOutgoingCommunication() {
+	g.muOut.Lock()
+	defer g.muOut.Unlock()
 	g.outgoingWhitelistMemberIds = nil
 }
 
 func (g *CommunicationMock) SetOutgoingWhitelist(outgoingWhitelist []primitives.MemberId) {
+	g.muOut.Lock()
+	defer g.muOut.Unlock()
 	if len(outgoingWhitelist) == 0 {
 		panic("Instead of setting nil, use EnableOutgoingCommunication(). Instead of setting empty array use DisableOutgoingCommunication()")
 	}
@@ -231,14 +249,23 @@ func (g *CommunicationMock) SetOutgoingWhitelist(outgoingWhitelist []primitives.
 }
 
 func (g *CommunicationMock) DisableIncomingCommunication() {
+	g.muIn.Lock()
+	defer g.muIn.Unlock()
+
 	g.incomingWhiteListMemberIds = []primitives.MemberId{}
 }
 
 func (g *CommunicationMock) EnableIncomingCommunication() {
+	g.muIn.Lock()
+	defer g.muIn.Unlock()
+
 	g.incomingWhiteListMemberIds = nil
 }
 
 func (g *CommunicationMock) SetIncomingWhitelist(incomingWhitelist []primitives.MemberId) {
+	g.muIn.Lock()
+	defer g.muIn.Unlock()
+
 	if len(incomingWhitelist) == 0 {
 		panic("Instead of setting nil, use EnableIncomingCommunication(). Instead of setting empty array use DisableIncomingCommunication()")
 	}
