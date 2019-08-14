@@ -66,9 +66,6 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 	}
 }
 
-// ORBS: LeanHelix.Run(ctx, goroutineLauncher func(f func()) { GoForever(f) }))
-// LH: goroutineLauncher(func (){m.runWorkerLoop(ctx)})
-
 type stdoutErrorer struct {
 }
 

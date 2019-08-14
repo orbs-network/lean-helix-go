@@ -23,6 +23,7 @@ type TestNetwork struct {
 	InstanceId primitives.InstanceId
 	Nodes      []*Node
 	Discovery  *mocks.Discovery
+	log        interfaces.Logger
 }
 
 func (net *TestNetwork) GetNodeCommunication(memberId primitives.MemberId) *mocks.CommunicationMock {
@@ -30,6 +31,7 @@ func (net *TestNetwork) GetNodeCommunication(memberId primitives.MemberId) *mock
 }
 
 func (net *TestNetwork) StartConsensus(ctx context.Context) *TestNetwork {
+	net.log.Debug("StartConsensus() start")
 	for _, node := range net.Nodes {
 		err := node.StartConsensus(ctx)
 		if err != nil {
@@ -39,7 +41,7 @@ func (net *TestNetwork) StartConsensus(ctx context.Context) *TestNetwork {
 
 	net.WaitUntilNetworkIsRunning(ctx)
 
-	net.Nodes[0].log.Debug("StartConsensus: NETWORK IS READY")
+	net.log.Debug("StartConsensus: NETWORK IS READY")
 	return net
 }
 
@@ -95,6 +97,7 @@ func (net *TestNetwork) WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx
 	if nodes == nil {
 		nodes = net.Nodes
 	}
+	net.log.Debug("WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(): start: height=%d subset=%d numNodes=%d ", height, subset, len(nodes))
 	doneChan := make(chan struct{})
 	for _, node := range nodes {
 		// TODO Trying to use node.blockChain.Count() instead of node.GetCurrentHeight()
@@ -118,6 +121,7 @@ func (net *TestNetwork) WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx
 		case <-ctx.Done():
 		}
 	}
+	net.log.Debug("WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(): end: height=%d subset=%d numNodes=%d ", height, subset, len(nodes))
 }
 
 // Wait for H=1 so that election triggers will be sent with H=1
@@ -224,10 +228,19 @@ func (net *TestNetwork) TriggerElectionsOnAllNodes(ctx context.Context) {
 	}
 }
 
-func NewTestNetwork(instanceId primitives.InstanceId, discovery *mocks.Discovery) *TestNetwork {
+func (net *TestNetwork) WaitForShutdown(ctx context.Context) {
+	net.log.Debug("WaitForShutdown() start")
+	for _, node := range net.Nodes {
+		node.leanHelix.WaitUntilShutdown(ctx)
+	}
+	net.log.Debug("WaitForShutdown() DONE")
+}
+
+func NewTestNetwork(instanceId primitives.InstanceId, discovery *mocks.Discovery, log interfaces.Logger) *TestNetwork {
 	return &TestNetwork{
 		InstanceId: instanceId,
 		Nodes:      []*Node{},
 		Discovery:  discovery,
+		log:        log,
 	}
 }

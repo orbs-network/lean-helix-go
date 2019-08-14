@@ -81,7 +81,7 @@ func (tb *TestNetworkBuilder) Build(ctx context.Context) *TestNetwork {
 	blocksPool := tb.buildBlocksPool()
 	discovery := mocks.NewDiscovery()
 	nodes := tb.createNodes(discovery, blocksPool)
-	testNetwork := NewTestNetwork(tb.instanceId, discovery)
+	testNetwork := NewTestNetwork(tb.instanceId, discovery, tb.logger)
 	testNetwork.RegisterNodes(nodes)
 
 	tb.setupCommChannels(ctx, testNetwork)

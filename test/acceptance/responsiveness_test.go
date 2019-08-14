@@ -63,7 +63,7 @@ func TestNodeSyncIsStillHandledDespiteBlockedOnRequestNewBlockProposal(t *testin
 		if err := node0.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync); err != nil {
 			t.Fatalf("Sync failed for node %s - %s", node0.MemberId, err)
 		}
-		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 3, node0)
+		net.WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx, 3, 1)
 	})
 }
 
