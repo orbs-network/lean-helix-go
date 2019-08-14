@@ -38,6 +38,8 @@ func (net *TestNetwork) StartConsensus(ctx context.Context) *TestNetwork {
 	}
 
 	net.WaitUntilNetworkIsRunning(ctx)
+
+	net.Nodes[0].log.Debug("StartConsensus: NETWORK IS READY")
 	return net
 }
 
@@ -82,6 +84,7 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 		nodes = net.Nodes
 	}
 	net.WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx, height, len(nodes), nodes...)
+
 }
 
 func (net *TestNetwork) WaitUntilQuorumOfNodesEventuallyReachASpecificHeight(ctx context.Context, height primitives.BlockHeight) {
@@ -175,11 +178,7 @@ func (net *TestNetwork) SetNodesPauseOnRequestNewBlockWhenCounterIsZero(counter 
 		nodes = net.Nodes
 	}
 	for _, node := range nodes {
-		if pausableBlockUtils, ok := node.BlockUtils.(*mocks.PausableBlockUtils); ok {
-			pausableBlockUtils.RequestNewBlockCallsLeftUntilItPausesWhenCounterIsZero = counter
-		} else {
-			panic("Node.BlockUtils is not PausableBlockUtils")
-		}
+		node.SetRequestNewBlockCallsLeftUntilItPausesWhenCounterIsZero(counter)
 	}
 }
 

@@ -76,7 +76,7 @@ func (s stdoutErrorer) Error(err error) {
 	fmt.Printf("%s\n", err)
 }
 
-func (m *MainLoop) Run(ctx context.Context) {
+func (m *MainLoop) Run(ctx context.Context) govnr.ShutdownWaiter {
 
 	m.worker = NewWorkerLoop(
 		m.state,
@@ -92,6 +92,8 @@ func (m *MainLoop) Run(ctx context.Context) {
 	m.Supervise(govnr.Forever(ctx, "lh-workerloop", GovnrErrorer(logger), func() {
 		m.worker.Run(ctx)
 	}))
+
+	return m
 
 }
 
