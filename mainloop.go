@@ -140,7 +140,7 @@ func (m *MainLoop) run(ctx context.Context) {
 
 			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
-			m.logger.Debug("LHFLOW ELECTION MAINLOOP - CANCELED WORKER CONTEXT")
+			m.logger.Debug("LHFLOW ELECTION MAINLOOP - CANCELED WORKER CONTEXT (received election trigger with H=%d V=%d)", trigger.Hv.Height(), trigger.Hv.View())
 			message := &workerElectionsTriggerMessage{
 				ctx:             workerCtx,
 				ElectionTrigger: trigger,
