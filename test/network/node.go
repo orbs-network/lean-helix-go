@@ -66,14 +66,6 @@ func (node *Node) GetLatestBlock() interfaces.Block {
 	return node.blockChain.LastBlock()
 }
 
-func (node *Node) GetLatestBlockProof() []byte {
-	return node.blockChain.LastBlockProof()
-}
-
-func (node *Node) GetBlockProofAt(height primitives.BlockHeight) []byte {
-	return node.blockChain.BlockProofAt(height)
-}
-
 func (node *Node) TriggerElectionOnNode(ctx context.Context) <-chan struct{} {
 
 	electionTriggerMock, ok := node.ElectionTrigger.(*mocks.ElectionTriggerMock)

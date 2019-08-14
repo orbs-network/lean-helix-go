@@ -73,14 +73,6 @@ func (bs *InMemoryBlockchain) LastBlockProof() []byte {
 	return item.blockProof
 }
 
-func (bs *InMemoryBlockchain) BlockProofAt(height primitives.BlockHeight) []byte {
-	bs.lock.RLock()
-	defer bs.lock.RUnlock()
-
-	item := bs.items[height]
-	return item.blockProof
-}
-
 func (bs *InMemoryBlockchain) BlockAndProofAt(height primitives.BlockHeight) (interfaces.Block, []byte) {
 	bs.lock.RLock()
 	defer bs.lock.RUnlock()
