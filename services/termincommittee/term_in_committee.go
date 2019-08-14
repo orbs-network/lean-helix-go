@@ -49,14 +49,14 @@ type TermInCommittee struct {
 	logger                          L.LHLogger
 	prevBlock                       interfaces.Block
 	QuorumSize                      int
-	State                           state.State
+	State                           *state.State
 }
 
 func NewTermInCommittee(
 	ctx context.Context,
 	log L.LHLogger,
 	config *interfaces.Config,
-	state state.State,
+	state *state.State,
 	messageFactory *messagesfactory.MessageFactory,
 	electionTrigger interfaces.ElectionScheduler,
 	committeeMembers []primitives.MemberId,
@@ -194,16 +194,16 @@ func shouldInitView(currentView primitives.View, newView primitives.View) bool {
 	return currentView != newView || newView == 0
 }
 
+// update view and reset election trigger
 func (tic *TermInCommittee) initView(ctx context.Context, newView primitives.View) {
 
-	if !shouldInitView(tic.State.View(), newView) {
+	current, err := tic.State.SetView(ctx, newView)
+	if err != nil {
+		tic.logger.Debug("LHFLOW initView() aborted: %s", err)
 		return
 	}
 
-	tic.State.SetView(newView)
-	current := tic.State.HeightView()
-
-	tic.electionTrigger.RegisterOnElection(current.Height(), current.View(), tic.moveToNextLeader)
+	tic.electionTrigger.RegisterOnElection(current.Height(), current.View(), tic.moveToNextLeaderByElection)
 	tic.logger.Debug("LHFLOW initView() set leader to %s, incremented view to %d, election-timeout=%s, members=%s, goroutines#=%d",
 		Str(tic.calcLeaderMemberId(current.View())), current.View(), tic.electionTrigger.CalcTimeout(current.View()),
 		ToCommitteeMembersStr(tic.committeeMembersMemberIds), runtime.NumGoroutine())
@@ -223,18 +223,18 @@ func calcLeaderOfViewAndCommittee(view primitives.View, committeeMembersMemberId
 	return committeeMembersMemberIds[index]
 }
 
-func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primitives.BlockHeight, view primitives.View, onElectionCallback interfaces.OnElectionCallback) {
+func (tic *TermInCommittee) moveToNextLeaderByElection(ctx context.Context, height primitives.BlockHeight, view primitives.View, onElectionCallback interfaces.OnElectionCallback) {
 
 	currentHV := tic.State.HeightView()
 	if height != currentHV.Height() || view != currentHV.View() {
 		return
 	}
-	tic.logger.Debug("LHFLOW moveToNextLeader() calling initView(), incrementing view to V=%d", currentHV.View()+1)
+	tic.logger.Debug("LHFLOW moveToNextLeaderByElection() calling initView(), incrementing view to V=%d", currentHV.View()+1)
 	tic.initView(ctx, currentHV.View()+1)
 
 	currentHV = tic.State.HeightView()
 	newLeader := tic.calcLeaderMemberId(currentHV.View())
-	tic.logger.Debug("LHFLOW moveToNextLeader() newLeader=%s", Str(newLeader))
+	tic.logger.Debug("LHFLOW moveToNextLeaderByElection() newLeader=%s", Str(newLeader))
 	var preparedMessages *preparedmessages.PreparedMessages
 	if tic.preparedLocally != nil && tic.preparedLocally.isPreparedLocally {
 		preparedMessages = preparedmessages.ExtractPreparedMessages(currentHV.Height(), tic.preparedLocally.latestView, tic.storage, tic.QuorumSize)
@@ -242,7 +242,7 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 	vcm := tic.messageFactory.CreateViewChangeMessage(currentHV.Height(), currentHV.View(), preparedMessages)
 
 	if err := tic.isLeader(tic.myMemberId, currentHV.View()); err == nil {
-		tic.logger.Debug("LHFLOW moveToNextLeader() I will be leader if I get enough VIEW_CHANGE votes. My leadership of V=%d will time out in %s", currentHV.View(), tic.electionTrigger.CalcTimeout(currentHV.View()))
+		tic.logger.Debug("LHFLOW moveToNextLeaderByElection() I will be leader if I get enough VIEW_CHANGE votes. My leadership of V=%d will time out in %s", currentHV.View(), tic.electionTrigger.CalcTimeout(currentHV.View()))
 		tic.storage.StoreViewChange(vcm)
 		tic.checkElected(ctx, currentHV.Height(), currentHV.View())
 	} else {
@@ -287,25 +287,25 @@ func (tic *TermInCommittee) checkElected(ctx context.Context, height primitives.
 		return
 	}
 	tic.logger.Debug("checkElected() stored %d of %d VIEW_CHANGE messages", len(vcms), minimumNodes)
-	tic.logger.Debug("checkElected() has enough VIEW_CHANGE messages, proceeding to onElected() with V=%d", view)
-	tic.onElected(ctx, view, vcms[:minimumNodes])
+	tic.logger.Debug("checkElected() has enough VIEW_CHANGE messages, proceeding to onElectedByViewChange() with V=%d", view)
+	tic.onElectedByViewChange(ctx, view, vcms[:minimumNodes])
 }
 
-func (tic *TermInCommittee) onElected(ctx context.Context, view primitives.View, viewChangeMessages []*interfaces.ViewChangeMessage) {
+func (tic *TermInCommittee) onElectedByViewChange(ctx context.Context, view primitives.View, viewChangeMessages []*interfaces.ViewChangeMessage) {
 	tic.latestViewThatProcessedVCMOrNVM = view
-	tic.logger.Debug("LHFLOW onElected() I AM THE LEADER BY VIEW CHANGE for V=%d, now calling SetView()", view)
+	tic.logger.Debug("LHFLOW onElectedByViewChange() I AM THE LEADER BY VIEW CHANGE for V=%d, now calling SetView()", view)
 	tic.initView(ctx, view)
 	block, blockHash := blockextractor.GetLatestBlockFromViewChangeMessages(viewChangeMessages)
 	if block == nil {
-		tic.logger.Debug("LHFLOW onElected() MISSING BLOCK IN VIEW_CHANGE, calling RequestNewBlockProposal()")
+		tic.logger.Debug("LHFLOW onElectedByViewChange() MISSING BLOCK IN VIEW_CHANGE, calling RequestNewBlockProposal()")
 		block, blockHash = tic.blockUtils.RequestNewBlockProposal(ctx, tic.State.Height(), tic.prevBlock)
 		if ctx.Err() != nil {
-			tic.logger.Debug("LHFLOW onElected() RequestNewBlockProposal() context canceled, not sending NEW_VIEW - %s", ctx.Err())
+			tic.logger.Debug("LHFLOW onElectedByViewChange() RequestNewBlockProposal() context canceled, not sending NEW_VIEW - %s", ctx.Err())
 			return
 		}
-		tic.logger.Debug("LHFLOW onElected() returned from RequestNewBlockProposal(), sending the new block as part of NEW_VIEW")
+		tic.logger.Debug("LHFLOW onElectedByViewChange() returned from RequestNewBlockProposal(), sending the new block as part of NEW_VIEW")
 	} else {
-		tic.logger.Debug("LHFLOW onElected() found block with H=%d in VIEW_CHANGE messages, so sending it as part of NEW_VIEW", block.Height())
+		tic.logger.Debug("LHFLOW onElectedByViewChange() found block with H=%d in VIEW_CHANGE messages, so sending it as part of NEW_VIEW", block.Height())
 	}
 	ppmContentBuilder := tic.messageFactory.CreatePreprepareMessageContentBuilder(tic.State.Height(), view, block, blockHash)
 	ppm := tic.messageFactory.CreatePreprepareMessageFromContentBuilder(ppmContentBuilder, block)

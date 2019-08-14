@@ -17,7 +17,7 @@ import (
 
 type RawMessageFilter struct {
 	instanceId               primitives.InstanceId
-	state                    state.State
+	state                    *state.State
 	consensusMessagesHandler ConsensusMessagesHandler
 	myMemberId               primitives.MemberId
 	futureCache              map[primitives.BlockHeight][]interfaces.ConsensusMessage
@@ -25,7 +25,7 @@ type RawMessageFilter struct {
 	latestFutureBlockHeight  primitives.BlockHeight // needed for limiting future cache to 1 term (potential memory leak)
 }
 
-func NewConsensusMessageFilter(instanceId primitives.InstanceId, myMemberId primitives.MemberId, logger L.LHLogger, state state.State) *RawMessageFilter {
+func NewConsensusMessageFilter(instanceId primitives.InstanceId, myMemberId primitives.MemberId, logger L.LHLogger, state *state.State) *RawMessageFilter {
 	res := &RawMessageFilter{
 		instanceId:  instanceId,
 		myMemberId:  myMemberId,

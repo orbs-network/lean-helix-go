@@ -49,7 +49,7 @@ func (lc *_LC) String() string {
 
 type lhLogger struct {
 	config         *interfaces.Config
-	state          state.State
+	state          *state.State
 	externalLogger interfaces.Logger
 }
 
@@ -104,7 +104,7 @@ func (l *lhLogger) Error(format string, args ...interface{}) {
 	l.log(LOG_LEVEL_ERROR, format, args...)
 }
 
-func NewLhLogger(config *interfaces.Config, state state.State) LHLogger {
+func NewLhLogger(config *interfaces.Config, state *state.State) LHLogger {
 	var logger interfaces.Logger
 	if config.Logger == nil {
 		logger = NewSilentLogger()

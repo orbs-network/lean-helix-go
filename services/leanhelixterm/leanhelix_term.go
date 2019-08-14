@@ -26,7 +26,7 @@ type LeanHelixTerm struct {
 	termInCommittee *termincommittee.TermInCommittee
 }
 
-func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfaces.Config, state state.State, electionTrigger interfaces.ElectionScheduler, onCommit interfaces.OnCommitCallback, prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) *LeanHelixTerm {
+func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfaces.Config, state *state.State, electionTrigger interfaces.ElectionScheduler, onCommit interfaces.OnCommitCallback, prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) *LeanHelixTerm {
 	prevBlockProof := protocol.BlockProofReader(prevBlockProofBytes)
 	randomSeed := randomseed.CalculateRandomSeed(prevBlockProof.RandomSeedSignature())
 	blockHeight := blockheight.GetBlockHeight(prevBlock) + 1

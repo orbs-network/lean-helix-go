@@ -75,7 +75,7 @@ func TestPreprepareMessageNotSentByLeaderIfRequestNewBlockProposalContextCancell
 			NewTestNetworkBuilder().
 			WithNodeCount(nodeCount).
 			WithBlocks(block1, block2, block3).
-			//LogToConsole(t).
+			LogToConsole(t).
 			Build(ctx)
 
 		bc, err := leaderelection.GenerateBlocksWithProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)

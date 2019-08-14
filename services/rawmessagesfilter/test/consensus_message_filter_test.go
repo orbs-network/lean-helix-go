@@ -21,7 +21,7 @@ import (
 	"testing"
 )
 
-func testLogger(state state.State) L.LHLogger {
+func testLogger(state *state.State) L.LHLogger {
 	return L.NewLhLogger(mocks.NewMockConfig(), state)
 }
 
@@ -64,7 +64,7 @@ func TestGettingAMessage(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		instanceId := primitives.InstanceId(rand.Uint64())
 		state := mocks.NewMockState().WithHeightView(10, 20)
-		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state), state)
+		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state.State), state.State)
 		messagesHandler := NewTermMessagesHandlerMock()
 		filter.ConsumeCacheMessages(ctx, messagesHandler)
 
@@ -90,7 +90,7 @@ func TestFilterMessagesFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		instanceId := primitives.InstanceId(rand.Uint64())
 		state := mocks.NewMockState().WithHeightView(10, 0)
-		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state), state)
+		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state.State), state.State)
 		messagesHandler := NewTermMessagesHandlerMock()
 		filter.ConsumeCacheMessages(ctx, messagesHandler)
 
@@ -109,7 +109,7 @@ func TestFilterMessagesFromThePast(t *testing.T) {
 func TestFilterMessagesWithBadInstanceId(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		state := mocks.NewMockState().WithHeightView(10, 0)
-		filter := rawmessagesfilter.NewConsensusMessageFilter(777, primitives.MemberId("My MemberId"), testLogger(state), state)
+		filter := rawmessagesfilter.NewConsensusMessageFilter(777, primitives.MemberId("My MemberId"), testLogger(state.State), state.State)
 		messagesHandler := NewTermMessagesHandlerMock()
 		filter.ConsumeCacheMessages(ctx, messagesHandler)
 
@@ -129,7 +129,7 @@ func TestCacheMessagesFromTheFuture(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		instanceId := primitives.InstanceId(rand.Uint64())
 		state := mocks.NewMockState().WithHeightView(10, 0)
-		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state), state)
+		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state.State), state.State)
 		messagesHandler := NewTermMessagesHandlerMock()
 		filter.ConsumeCacheMessages(ctx, messagesHandler)
 
@@ -149,7 +149,7 @@ func TestFilterMessagesWithMyMemberId(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		instanceId := primitives.InstanceId(rand.Uint64())
 		state := mocks.NewMockState().WithHeightView(10, 0)
-		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state), state)
+		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state.State), state.State)
 		messagesHandler := NewTermMessagesHandlerMock()
 		filter.ConsumeCacheMessages(ctx, messagesHandler)
 

@@ -46,7 +46,7 @@ type Node struct {
 	OnElectionCallback         interface{}
 }
 
-func (node *Node) State() state.State {
+func (node *Node) State() *state.State {
 	return node.leanHelix.State()
 }
 

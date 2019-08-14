@@ -22,7 +22,7 @@ type MainLoop struct {
 	logger                      L.LHLogger
 	onCommitCallback            interfaces.OnCommitCallback
 	onNewConsensusRoundCallback interfaces.OnNewConsensusRoundCallback
-	state                       state.State
+	state                       *state.State
 	worker                      *WorkerLoop
 }
 
@@ -92,7 +92,7 @@ func (m *MainLoop) run(ctx context.Context) {
 	m.logger.Info("LHFLOW LHMSG MAINLOOP START LISTENING NOW")
 	workerCtx, cancelWorkerContext := context.WithCancel(ctx)
 	defer cancelWorkerContext()
-	var lastSyncedHeight primitives.BlockHeight
+	var lastReceivedHeight primitives.BlockHeight
 	for {
 		select {
 		case <-ctx.Done(): // system shutdown
@@ -111,13 +111,12 @@ func (m *MainLoop) run(ctx context.Context) {
 
 		case trigger := <-m.electionScheduler.ElectionChannel():
 
-			current := m.state.HeightView()
-			if current.Height() != trigger.Hv.Height() || current.View() != trigger.Hv.View() { // stale election message
+			current, canceled := m.state.CompareHeightViewAndCancel(cancelWorkerContext, trigger.Hv.Height(), trigger.Hv.View())
+			if !canceled {
 				m.logger.Debug("LHFLOW ELECTION MAINLOOP - INVALID HEIGHT/VIEW IGNORED - Current: %s, ElectionTrigger: %s", current, trigger.Hv)
 				continue
 			}
 
-			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
 			m.logger.Debug("LHFLOW ELECTION MAINLOOP - CANCELED WORKER CONTEXT (received election trigger with H=%d V=%d)", trigger.Hv.Height(), trigger.Hv.View())
 			message := &workerElectionsTriggerMessage{
@@ -131,12 +130,20 @@ func (m *MainLoop) run(ctx context.Context) {
 
 		case receivedBlockWithProof := <-m.mainUpdateStateChannel: // NodeSync
 
-			effectiveLastHeight := m.state.Height()
-			if effectiveLastHeight < lastSyncedHeight {
-				effectiveLastHeight = lastSyncedHeight
+			if receivedBlockWithProof == nil {
+				m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - INVALID BLOCK IGNORED - receivedBlockWithProof is nil")
+				continue
 			}
-			if err := checkReceivedBlockIsValid(effectiveLastHeight, receivedBlockWithProof); err != nil {
-				m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - INVALID BLOCK IGNORED - %s", err)
+			var receivedBlockHeight primitives.BlockHeight
+			if receivedBlockWithProof.block == nil {
+				receivedBlockHeight = 0
+			} else {
+				receivedBlockHeight = receivedBlockWithProof.block.Height()
+			}
+
+			current, canceled := m.state.CompareMaxHeightAndCancel(cancelWorkerContext, lastReceivedHeight, receivedBlockHeight)
+			if !canceled {
+				m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - INVALID BLOCK IGNORED - Received block height is %d which is lower than current height of %d or lastReceivedHeight of %d", receivedBlockHeight, current.Height(), lastReceivedHeight)
 				continue
 			}
 
@@ -153,28 +160,12 @@ func (m *MainLoop) run(ctx context.Context) {
 			}
 
 			if receivedBlockWithProof.block != nil {
-				lastSyncedHeight = receivedBlockWithProof.block.Height()
+				lastReceivedHeight = receivedBlockWithProof.block.Height()
 			}
 
 			m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - Wrote to worker UpdateState channel")
 		}
 	}
-}
-
-func checkReceivedBlockIsValid(currentHeight primitives.BlockHeight, receivedBlockWithProof *blockWithProof) error {
-	if receivedBlockWithProof == nil {
-		return errors.Errorf("receivedBlockWithProof is nil")
-	}
-	var receivedBlockHeight primitives.BlockHeight
-	if receivedBlockWithProof.block == nil {
-		receivedBlockHeight = 0
-	} else {
-		receivedBlockHeight = receivedBlockWithProof.block.Height()
-	}
-	if receivedBlockHeight < currentHeight {
-		return errors.Errorf("Received block height is %d which is lower than current height of %d", receivedBlockHeight, currentHeight)
-	}
-	return nil
 }
 
 // Used by orbs-network-go
@@ -228,6 +219,6 @@ func (m *MainLoop) HandleConsensusMessage(ctx context.Context, message *interfac
 	//	m.worker.HandleConsensusMessage(ctx, message)
 }
 
-func (m *MainLoop) State() state.State {
+func (m *MainLoop) State() *state.State {
 	return m.state
 }

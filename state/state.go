@@ -1,76 +1,118 @@
 package state
 
 import (
+	"context"
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/pkg/errors"
 	"sync"
 )
 
-// Mutable, goroutine-safe state object
-type State interface {
-	SetHeightAndResetView(newHeight primitives.BlockHeight) *HeightView
-	SetView(newView primitives.View) *HeightView
-	SetHeightView(newHeight primitives.BlockHeight, newView primitives.View) *HeightView
-	Height() primitives.BlockHeight
-	View() primitives.View
-	HeightView() *HeightView
-}
-
-type state struct {
+// Mutable, goroutine-safe State object
+type State struct {
 	sync.RWMutex
 	height primitives.BlockHeight
 	view   primitives.View
 }
 
-func (s *state) SetHeightAndResetView(newHeight primitives.BlockHeight) *HeightView {
+func (s *State) CompareMaxHeightAndCancel(cancel func(), max primitives.BlockHeight, height primitives.BlockHeight) (*HeightView, bool) {
+	s.RLock()
+	defer s.RUnlock()
+
+	hv := NewHeightView(s.height, s.view)
+
+	effectiveHeight := s.height
+	if effectiveHeight < max {
+		effectiveHeight = max
+	}
+
+	if height < effectiveHeight {
+		return hv, false
+	}
+
+	cancel()
+	return hv, true
+}
+
+func (s *State) CompareHeightViewAndCancel(cancel func(), height primitives.BlockHeight, view primitives.View) (*HeightView, bool) {
+	s.RLock()
+	defer s.RUnlock()
+
+	hv := NewHeightView(s.height, s.view)
+
+	if s.height != height || s.view != view {
+		return hv, false
+	}
+
+	cancel()
+	return hv, true
+}
+
+func (s *State) SetHeightAndResetView(ctx context.Context, newHeight primitives.BlockHeight) (*HeightView, error) {
 	s.Lock()
 	defer s.Unlock()
+
+	if ctx.Err() == context.Canceled {
+		return NewHeightView(s.height, s.view), ctx.Err()
+	}
 
 	s.height = newHeight
 	s.view = 0
-	return NewHeightView(s.height, s.view)
+	return NewHeightView(s.height, s.view), nil
 }
 
-func (s *state) SetView(newView primitives.View) *HeightView {
+func (s *State) SetView(ctx context.Context, newView primitives.View) (*HeightView, error) {
 	s.Lock()
 	defer s.Unlock()
+
+	if ctx.Err() == context.Canceled {
+		return NewHeightView(s.height, s.view), ctx.Err()
+	}
+
+	if s.view == newView && newView != 0 {
+		return NewHeightView(s.height, s.view), errors.New("view did not change and is non-zero. aborting SetView()")
+	}
 
 	s.view = newView
-	return NewHeightView(s.height, s.view)
+	return NewHeightView(s.height, s.view), nil
 }
 
-func (s *state) SetHeightView(newHeight primitives.BlockHeight, newView primitives.View) *HeightView {
+func (s *State) SetHeightView(ctx context.Context, newHeight primitives.BlockHeight, newView primitives.View) (*HeightView, error) {
 	s.Lock()
 	defer s.Unlock()
+
+	if ctx.Err() == context.Canceled {
+		return NewHeightView(s.height, s.view), ctx.Err()
+	}
 
 	s.height = newHeight
 	s.view = newView
-	return NewHeightView(s.height, s.view)
+	return NewHeightView(s.height, s.view), nil
 }
 
-func (s *state) Height() primitives.BlockHeight {
+func (s *State) Height() primitives.BlockHeight {
 	s.RLock()
 	defer s.RUnlock()
 
 	return s.height
 }
 
-func (s *state) View() primitives.View {
+func (s *State) View() primitives.View {
 	s.RLock()
 	defer s.RUnlock()
 
 	return s.view
 }
 
-func (s *state) HeightView() *HeightView {
+func (s *State) HeightView() *HeightView {
 	s.RLock()
 	defer s.RUnlock()
 
 	return NewHeightView(s.height, s.view)
 }
 
-func NewState() State {
-	return &state{
+func NewState() *State {
+	return &State{
 		height: 0,
 		view:   0,
 	}

@@ -49,7 +49,7 @@ type WorkerLoop struct {
 	workerUpdateStateChannel    chan *workerUpdateStateMessage
 	electionChannel             chan *workerElectionsTriggerMessage
 	electionTrigger             interfaces.ElectionScheduler
-	state                       state.State
+	state                       *state.State
 	config                      *interfaces.Config
 	logger                      L.LHLogger
 	filter                      *rawmessagesfilter.RawMessageFilter
@@ -60,7 +60,7 @@ type WorkerLoop struct {
 }
 
 func NewWorkerLoop(
-	state state.State,
+	state *state.State,
 	config *interfaces.Config,
 	logger L.LHLogger,
 	electionTrigger interfaces.ElectionScheduler,
@@ -235,8 +235,13 @@ func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, bloc
 
 func (lh *WorkerLoop) onNewConsensusRound(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) {
 
-	lh.state.SetHeightAndResetView(blockheight.GetBlockHeight(prevBlock) + 1)
-	lh.logger.Debug("onNewConsensusRound() INCREMENTED HEIGHT TO %d", lh.state.Height())
+	current, err := lh.state.SetHeightAndResetView(ctx, blockheight.GetBlockHeight(prevBlock) + 1)
+	if err != nil {
+		lh.logger.Info("onNewConsensusRound() aborting heigt increment %d: %s", current.Height(), err)
+		return
+	}
+
+	lh.logger.Debug("onNewConsensusRound() INCREMENTED HEIGHT TO %d", current.Height())
 	if lh.leanHelixTerm != nil {
 		lh.leanHelixTerm.Dispose()
 		lh.leanHelixTerm = nil
