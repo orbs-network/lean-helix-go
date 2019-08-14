@@ -511,10 +511,10 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 	}
 	commits, ok := tic.storage.GetCommitMessages(blockHeight, view, blockHash)
 	if !ok || len(commits) < tic.QuorumSize {
-		tic.logger.Debug("LHMSG RECEIVED COMMIT - received %d of %d required quorum commits", len(commits), tic.QuorumSize)
+		tic.logger.Debug("LHMSG RECEIVED COMMIT - stored %d of %d COMMIT messages", len(commits), tic.QuorumSize)
 		return
 	}
-	tic.logger.Debug("LHMSG RECEIVED COMMIT - received %d of %d required quorum commits", len(commits), tic.QuorumSize)
+	tic.logger.Debug("LHMSG RECEIVED COMMIT - stored %d of %d COMMIT messages", len(commits), tic.QuorumSize)
 	ppm, ok := tic.storage.GetPreprepareMessage(blockHeight, view)
 	if !ok {
 		// log
