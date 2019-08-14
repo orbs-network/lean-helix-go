@@ -66,14 +66,6 @@ func (node *Node) GetLatestBlock() interfaces.Block {
 	return node.blockChain.LastBlock()
 }
 
-func (node *Node) GetLatestBlockProof() []byte {
-	return node.blockChain.LastBlockProof()
-}
-
-func (node *Node) GetBlockProofAt(height primitives.BlockHeight) []byte {
-	return node.blockChain.BlockProofAt(height)
-}
-
 func (node *Node) TriggerElectionOnNode(ctx context.Context) <-chan struct{} {
 
 	electionTriggerMock, ok := node.ElectionTrigger.(*mocks.ElectionTriggerMock)
@@ -88,7 +80,7 @@ func (node *Node) TriggerElectionOnNode(ctx context.Context) <-chan struct{} {
 
 func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, blockProof []byte) {
 	node.blockChain.AppendBlockToChain(block, blockProof)
-	node.log.Debug("ID=%s BH=%d onCommittedBlock: appended to blockchain", node.MemberId, block.Height())
+	node.log.Debug("ID=%s onCommittedBlock: appended to blockchain: %s", node.MemberId, block)
 
 	if node.WriteToStateChannel {
 		nodeState := &NodeState{
@@ -197,6 +189,14 @@ func (node *Node) BuildConfig(logger interfaces.Logger) *interfaces.Config {
 		ElectionChanBufLen:    0,
 	}
 
+}
+
+func (node *Node) SetRequestNewBlockCallsLeftUntilItPausesWhenCounterIsZero(counter int64) {
+	if pausableBlockUtils, ok := node.BlockUtils.(*mocks.PausableBlockUtils); ok {
+		pausableBlockUtils.RequestNewBlockCallsLeftUntilItPausesWhenCounterIsZero = counter
+	} else {
+		panic("Node.BlockUtils is not PausableBlockUtils")
+	}
 }
 
 func NewNode(

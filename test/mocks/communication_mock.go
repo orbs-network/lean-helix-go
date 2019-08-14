@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/pkg/errors"
@@ -42,6 +43,7 @@ type messageProps struct {
 type CommunicationMock struct {
 	memberId  primitives.MemberId
 	discovery *Discovery
+	logger    interfaces.Logger
 
 	outgoingLock        sync.Mutex
 	outgoingChannelsMap map[string]chan *outgoingMessage
@@ -50,18 +52,28 @@ type CommunicationMock struct {
 	nextSubscriptionKey int
 	subscriptions       map[int]*SubscriptionValue
 
+	muOut                      sync.RWMutex
 	outgoingWhitelistMemberIds []primitives.MemberId
+
+	muIn                       sync.RWMutex
 	incomingWhiteListMemberIds []primitives.MemberId
-	statsSentMessages          []*interfaces.ConsensusRawMessage
-	maxDelayDuration           time.Duration
-	messagesHistoryLock        sync.Mutex
-	messagesHistory            []*messageProps
+
+	statsSentMessages   []*interfaces.ConsensusRawMessage
+	maxDelayDuration    time.Duration
+	messagesHistoryLock sync.Mutex
+	messagesHistory     []*messageProps
 }
 
-func NewCommunication(memberId primitives.MemberId, discovery *Discovery) *CommunicationMock {
+func NewCommunication(memberId primitives.MemberId, discovery *Discovery, log interfaces.Logger) *CommunicationMock {
+
+	if log == nil {
+		log = logger.NewConsoleLogger("XXX")
+	}
+
 	return &CommunicationMock{
 		memberId:                   memberId,
 		discovery:                  discovery,
+		logger:                     log,
 		outgoingChannelsMap:        make(map[string]chan *outgoingMessage),
 		nextSubscriptionKey:        0,
 		subscriptions:              make(map[int]*SubscriptionValue),
@@ -82,6 +94,9 @@ func (g *CommunicationMock) SendConsensusMessage(ctx context.Context, targets []
 		case <-ctx.Done():
 			return errors.Errorf("ID=%s context canceled for outgoing channel of %v", g.memberId, target)
 		case channel <- &outgoingMessage{target, message}:
+			msg := interfaces.ToConsensusMessage(message)
+			g.logger.Debug("COMM: ID=%s Sent message %s to %s H=%d V=%d", msg.SenderMemberId(), msg.MessageType(), target,
+				msg.BlockHeight(), msg.View())
 			continue
 		}
 	}
@@ -158,6 +173,8 @@ func (g *CommunicationMock) SendToNode(ctx context.Context, receiverMemberId pri
 }
 
 func (g *CommunicationMock) bannedReceiver(receiverMemberId primitives.MemberId) bool {
+	g.muOut.RLock()
+	defer g.muOut.RUnlock()
 	if g.outgoingWhitelistMemberIds == nil {
 		return false
 	}
@@ -171,6 +188,9 @@ func (g *CommunicationMock) bannedReceiver(receiverMemberId primitives.MemberId)
 }
 
 func (g *CommunicationMock) bannedSender(rawMessage *interfaces.ConsensusRawMessage) bool {
+	g.muIn.RLock()
+	defer g.muIn.RUnlock()
+
 	if g.incomingWhiteListMemberIds == nil {
 		return false
 	}
@@ -207,6 +227,9 @@ func (g *CommunicationMock) RegisterIncomingMessageHandler(cb func(ctx context.C
 }
 
 func (g *CommunicationMock) inOutgoingWhitelist(memberId primitives.MemberId) bool {
+	g.muOut.RLock()
+	defer g.muOut.RUnlock()
+
 	for _, currentId := range g.outgoingWhitelistMemberIds {
 		if currentId.Equal(memberId) {
 			return true
@@ -216,14 +239,20 @@ func (g *CommunicationMock) inOutgoingWhitelist(memberId primitives.MemberId) bo
 }
 
 func (g *CommunicationMock) DisableOutgoingCommunication() {
+	g.muOut.Lock()
+	defer g.muOut.Unlock()
 	g.outgoingWhitelistMemberIds = []primitives.MemberId{}
 }
 
 func (g *CommunicationMock) EnableOutgoingCommunication() {
+	g.muOut.Lock()
+	defer g.muOut.Unlock()
 	g.outgoingWhitelistMemberIds = nil
 }
 
 func (g *CommunicationMock) SetOutgoingWhitelist(outgoingWhitelist []primitives.MemberId) {
+	g.muOut.Lock()
+	defer g.muOut.Unlock()
 	if len(outgoingWhitelist) == 0 {
 		panic("Instead of setting nil, use EnableOutgoingCommunication(). Instead of setting empty array use DisableOutgoingCommunication()")
 	}
@@ -231,14 +260,23 @@ func (g *CommunicationMock) SetOutgoingWhitelist(outgoingWhitelist []primitives.
 }
 
 func (g *CommunicationMock) DisableIncomingCommunication() {
+	g.muIn.Lock()
+	defer g.muIn.Unlock()
+
 	g.incomingWhiteListMemberIds = []primitives.MemberId{}
 }
 
 func (g *CommunicationMock) EnableIncomingCommunication() {
+	g.muIn.Lock()
+	defer g.muIn.Unlock()
+
 	g.incomingWhiteListMemberIds = nil
 }
 
 func (g *CommunicationMock) SetIncomingWhitelist(incomingWhitelist []primitives.MemberId) {
+	g.muIn.Lock()
+	defer g.muIn.Unlock()
+
 	if len(incomingWhitelist) == 0 {
 		panic("Instead of setting nil, use EnableIncomingCommunication(). Instead of setting empty array use DisableIncomingCommunication()")
 	}

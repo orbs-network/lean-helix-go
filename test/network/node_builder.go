@@ -100,6 +100,6 @@ func ADummyNode() *Node {
 	return NewNodeBuilder().
 		WithMemberId(memberId).
 		ThatIsPartOf(mocks.NewFakeMembership(memberId, nil, false)).
-		CommunicatesVia(mocks.NewCommunication(memberId, nil)).
+		CommunicatesVia(mocks.NewCommunication(memberId, nil, nil)).
 		Build()
 }

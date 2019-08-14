@@ -59,61 +59,12 @@ func TestNodeSyncIsStillHandledDespiteBlockedOnRequestNewBlockProposal(t *testin
 			return
 		}
 		blockToSync, blockProofToSync := bc.BlockAndProofAt(2)
-		prevBlockProofToSync := bc.BlockProofAt(1)
+		_, prevBlockProofToSync := bc.BlockAndProofAt(1)
 		if err := node0.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync); err != nil {
 			t.Fatalf("Sync failed for node %s - %s", node0.MemberId, err)
 		}
-		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 3, node0)
-		//net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
+		net.WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx, 3, 1)
 	})
-
-	/*
-		test.WithContext(func(ctx context.Context) {
-			withConsensusRound(ctx, func(net *network.TestNetwork, blockUtilsMocks []*SimpleMockBlockUtils, blockToPropose interfaces.Block) {
-				leaderBlockUtilsMock := blockUtilsMocks[0]
-
-				createNewBlockProposalEntered := newWaitingGroupWithDelta(1)
-				createNewBlockProposalCanceled := newWaitingGroupWithDelta(1)
-				leaderBlockUtilsMock.
-					When("RequestNewBlockProposal", mock.Any, mock.Any, mock.Any).
-					Call(func(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
-						createNewBlockProposalEntered.Done()
-						fmt.Printf("ENTERED RequestNewBlockProposal on H=%d\n", blockHeight)
-						<-ctx.Done() // block until context cancellation
-						fmt.Printf("CANCELED RequestNewBlockProposal on H=%d\n", blockHeight)
-						createNewBlockProposalCanceled.Done()
-						return blockToPropose, nil
-					})
-				for _, b := range blockUtilsMocks {
-					b.When("ValidateBlockCommitment", mock.Any, mock.Any, mock.Any).Return(true)
-				}
-				net.StartConsensus(ctx)
-
-				createNewBlockProposalEntered.Wait()
-
-				block1 := mocks.ABlock(interfaces.GenesisBlock)
-				block2 := mocks.ABlock(block1)
-				block3 := mocks.ABlock(block1)
-
-				// Run Sync with block H=2 on all nodes
-				bc, err := leaderelection.GenerateBlocksWithProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)
-				if err != nil {
-					t.Fatalf("Error creating mock blockchain for tests: %s", err)
-					return
-				}
-				blockToSync, blockProofToSync := bc.BlockAndProofAt(2)
-				prevBlockProofToSync := bc.BlockProofAt(1)
-
-				for _, node := range net.Nodes {
-					if err := node.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync); err != nil {
-						t.Fatalf("Sync failed for node %s - %s", node.MemberId, err)
-					}
-				}
-				test.FailIfNotDoneByTimeout(t, createNewBlockProposalCanceled, TIMEOUT, "RequestNewBlockProposal's ctx was not canceled immediately after NodeSync")
-			})
-		})
-
-	*/
 }
 
 func TestRequestNewBlockDoesNotHangElectionsTrigger(t *testing.T) {

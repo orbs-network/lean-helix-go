@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	StartCpuSchedulingJitter()
+	//StartCpuSchedulingJitter() // Do not run with CPU noise
 }
 
 // creates ongoing random bursts of cpu noise (all cores together) to make goroutine scheduling erratic in -count 100 flakiness tests

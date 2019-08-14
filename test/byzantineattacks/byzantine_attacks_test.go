@@ -28,7 +28,7 @@ func TestThatWeReachConsensusWhere1of4NodeIsByzantine(t *testing.T) {
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
 			WithBlocks(block).
-			WithTimeBasedElectionTrigger(200 * time.Millisecond).
+			WithTimeBasedElectionTrigger(1000 * time.Millisecond).
 			LogToConsole(t).
 			Build(ctx)
 
@@ -50,7 +50,7 @@ func TestNetworkReachesConsensusWhen2of7NodesAreByzantine(t *testing.T) {
 			NewTestNetworkBuilder().
 			LogToConsole(t).
 			WithNodeCount(totalNodes).
-			WithTimeBasedElectionTrigger(200 * time.Millisecond). // reducing the timeout is flaky since sync is not performed and nodes may drop out if interrupted too frequently
+			WithTimeBasedElectionTrigger(1000 * time.Millisecond). // reducing the timeout is flaky since sync is not performed and nodes may drop out if interrupted too frequently
 			//WithBlocks(block).
 			Build(ctx)
 
@@ -75,7 +75,7 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 		net := network.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
-			WithTimeBasedElectionTrigger(200 * time.Millisecond).
+			WithTimeBasedElectionTrigger(1000 * time.Millisecond).
 			WithBlocks(block1).
 			Build(ctx)
 
@@ -100,13 +100,14 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 	test.WithContextWithTimeout(t, 15*time.Second, func(ctx context.Context) {
 		goodBlock := mocks.ABlock(interfaces.GenesisBlock)
 		fakeBlock := mocks.ABlock(interfaces.GenesisBlock)
+		t.Logf("GoodBlock=%s FakeBlock=%s", goodBlock, fakeBlock)
 
 		require.False(t, matchers.BlocksAreEqual(goodBlock, fakeBlock))
 
 		net := network.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
-			WithTimeBasedElectionTrigger(200 * time.Millisecond).
+			WithTimeBasedElectionTrigger(1000 * time.Millisecond).
 			WithBlocks(goodBlock).
 			//LogToConsole().
 			Build(ctx)
@@ -114,20 +115,23 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
+		honestNodes := []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}
 		byzantineNode := net.Nodes[3]
+
 		net.SetNodesToPauseOnRequestNewBlock(node0)
 		net.StartConsensus(ctx)
 
 		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 
 		// fake a preprepare message from node3 (byzantineNode) that points to a unrelated block (Should be ignored)
-		ppm := builders.APreprepareMessage(net.InstanceId, byzantineNode.KeyManager, byzantineNode.MemberId, 1, 1, fakeBlock)
-		_ = byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
-		_ = byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
-		_ = byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
-		_ = byzantineNode.Communication.SendConsensusMessage(ctx, []primitives.MemberId{node0.MemberId, node1.MemberId, node2.MemberId}, ppm.ToConsensusRawMessage())
+		ppm := builders.APreprepareMessage(net.InstanceId, byzantineNode.KeyManager, byzantineNode.MemberId, 1, 1, fakeBlock).ToConsensusRawMessage()
+		_ = byzantineNode.Communication.SendConsensusMessage(ctx, honestNodes, ppm)
+		_ = byzantineNode.Communication.SendConsensusMessage(ctx, honestNodes, ppm)
+		_ = byzantineNode.Communication.SendConsensusMessage(ctx, honestNodes, ppm)
+		_ = byzantineNode.Communication.SendConsensusMessage(ctx, honestNodes, ppm)
 
 		net.ResumeRequestNewBlockOnNodes(ctx, node0)
+		t.Logf("Waiting for commit of good block %s", goodBlock)
 
 		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, 0, goodBlock)
 	})
@@ -152,8 +156,8 @@ func TestThatAByzantineLeaderCannotCauseAFork(t *testing.T) {
 		node3 := net.Nodes[3]
 		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{node1.MemberId, node2.MemberId})
 		node1.Communication.SetOutgoingWhitelist([]primitives.MemberId{node2.MemberId})
-		node2.Communication.DisableIncomingCommunication()
-		node3.Communication.DisableIncomingCommunication()
+		node2.Communication.DisableOutgoingCommunication()
+		node3.Communication.DisableOutgoingCommunication()
 
 		net.StartConsensus(ctx)
 

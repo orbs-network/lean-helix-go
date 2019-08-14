@@ -21,7 +21,7 @@ func TestThatWeReachConsensusEventIfWeDelayAllTheGossipMessages(t *testing.T) {
 		net := network.
 			NewTestNetworkBuilder().
 			WithBlocks().
-			WithTimeBasedElectionTrigger(200 * time.Millisecond).
+			WithTimeBasedElectionTrigger(1000 * time.Millisecond).
 			GossipMessagesMaxDelay(100 * time.Millisecond).
 			WithNodeCount(4).
 			//LogToConsole().

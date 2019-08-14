@@ -172,7 +172,7 @@ func (tic *TermInCommittee) startTerm(ctx context.Context, canBeFirstLeader bool
 	// Context cancellation is only a performance optimization,
 	// so whether PPM is sent out or not, does not affect correctness
 	if ctx.Err() != nil {
-		tic.logger.Debug("LHFLOW startTerm() RequestNewBlockProposal() context canceled, not sending PREPREPARE - %s", ctx.Err())
+		tic.logger.Info("LHFLOW startTerm() RequestNewBlockProposal() context canceled, not sending PREPREPARE - %s", ctx.Err())
 		return
 	}
 
@@ -184,14 +184,6 @@ func (tic *TermInCommittee) startTerm(ctx context.Context, canBeFirstLeader bool
 	if err := tic.sendConsensusMessage(ctx, ppm); err != nil {
 		tic.logger.Info("LHMSG SEND PREPREPARE FAILED - %s", err)
 	}
-}
-
-//func (tic *TermInCommittee) GetView() primitives.View {
-//	return tic.view
-//}
-
-func shouldInitView(currentView primitives.View, newView primitives.View) bool {
-	return currentView != newView || newView == 0
 }
 
 // update view and reset election trigger
@@ -229,12 +221,12 @@ func (tic *TermInCommittee) moveToNextLeaderByElection(ctx context.Context, heig
 	if height != currentHV.Height() || view != currentHV.View() {
 		return
 	}
-	tic.logger.Debug("LHFLOW moveToNextLeaderByElection() calling initView(), incrementing view to V=%d", currentHV.View()+1)
+	tic.logger.Debug("LHFLOW moveToNextLeaderByElection() calling initView(), will increment view to V=%d", currentHV.View()+1)
 	tic.initView(ctx, currentHV.View()+1)
 
 	currentHV = tic.State.HeightView()
 	newLeader := tic.calcLeaderMemberId(currentHV.View())
-	tic.logger.Debug("LHFLOW moveToNextLeaderByElection() newLeader=%s", Str(newLeader))
+	tic.logger.Debug("LHFLOW moveToNextLeaderByElection() calculated newLeader=%s of V=%d", Str(newLeader), currentHV.View())
 	var preparedMessages *preparedmessages.PreparedMessages
 	if tic.preparedLocally != nil && tic.preparedLocally.isPreparedLocally {
 		preparedMessages = preparedmessages.ExtractPreparedMessages(currentHV.Height(), tic.preparedLocally.latestView, tic.storage, tic.QuorumSize)
@@ -242,11 +234,11 @@ func (tic *TermInCommittee) moveToNextLeaderByElection(ctx context.Context, heig
 	vcm := tic.messageFactory.CreateViewChangeMessage(currentHV.Height(), currentHV.View(), preparedMessages)
 
 	if err := tic.isLeader(tic.myMemberId, currentHV.View()); err == nil {
-		tic.logger.Debug("LHFLOW moveToNextLeaderByElection() I will be leader if I get enough VIEW_CHANGE votes. My leadership of V=%d will time out in %s", currentHV.View(), tic.electionTrigger.CalcTimeout(currentHV.View()))
+		tic.logger.Debug("LHFLOW moveToNextLeaderByElection() I WILL BE LEADER if I get enough VIEW_CHANGE votes. My leadership of V=%d will time out in %s", currentHV.View(), tic.electionTrigger.CalcTimeout(currentHV.View()))
 		tic.storage.StoreViewChange(vcm)
 		tic.checkElected(ctx, currentHV.Height(), currentHV.View())
 	} else {
-		tic.logger.Debug("LHMSG SEND VIEW_CHANGE (I'm not leader) to %s (%s) (msg: H=%d V=%d sender=%s)",
+		tic.logger.Debug("LHFLOW LHMSG SEND VIEW_CHANGE to %s in moveToNextLeader() (I'M NOT LEADER: %s) (msg: H=%d V=%d sender=%s)",
 			newLeader, err, vcm.BlockHeight(), vcm.View(), Str(vcm.SenderMemberId()))
 		if sendErr := tic.sendConsensusMessageToSpecificMember(ctx, newLeader, vcm); sendErr != nil {
 			tic.logger.Info("LHMSG SEND VIEW_CHANGE to %s FAILED - %s", newLeader, sendErr)
@@ -293,19 +285,19 @@ func (tic *TermInCommittee) checkElected(ctx context.Context, height primitives.
 
 func (tic *TermInCommittee) onElectedByViewChange(ctx context.Context, view primitives.View, viewChangeMessages []*interfaces.ViewChangeMessage) {
 	tic.latestViewThatProcessedVCMOrNVM = view
-	tic.logger.Debug("LHFLOW onElectedByViewChange() I AM THE LEADER BY VIEW CHANGE for V=%d, now calling SetView()", view)
+	tic.logger.Debug("LHFLOW onElectedByViewChange() I AM THE LEADER BY VIEW CHANGE for V=%d, now calling initView()", view)
 	tic.initView(ctx, view)
 	block, blockHash := blockextractor.GetLatestBlockFromViewChangeMessages(viewChangeMessages)
 	if block == nil {
 		tic.logger.Debug("LHFLOW onElectedByViewChange() MISSING BLOCK IN VIEW_CHANGE, calling RequestNewBlockProposal()")
 		block, blockHash = tic.blockUtils.RequestNewBlockProposal(ctx, tic.State.Height(), tic.prevBlock)
 		if ctx.Err() != nil {
-			tic.logger.Debug("LHFLOW onElectedByViewChange() RequestNewBlockProposal() context canceled, not sending NEW_VIEW - %s", ctx.Err())
+			tic.logger.Info("LHFLOW onElectedByViewChange() RequestNewBlockProposal() context canceled, not sending NEW_VIEW - %s", ctx.Err())
 			return
 		}
-		tic.logger.Debug("LHFLOW onElectedByViewChange() returned from RequestNewBlockProposal(), sending the new block as part of NEW_VIEW")
+		tic.logger.Debug("LHFLOW onElectedByViewChange() SEND NEW_VIEW with the new block that was returned from RequestNewBlockProposal()")
 	} else {
-		tic.logger.Debug("LHFLOW onElectedByViewChange() found block with H=%d in VIEW_CHANGE messages, so sending it as part of NEW_VIEW", block.Height())
+		tic.logger.Debug("LHFLOW onElectedByViewChange() SEND NEW_VIEW with the block with H=%d from the latest VIEW_CHANGE messages", block.Height())
 	}
 	ppmContentBuilder := tic.messageFactory.CreatePreprepareMessageContentBuilder(tic.State.Height(), view, block, blockHash)
 	ppm := tic.messageFactory.CreatePreprepareMessageFromContentBuilder(ppmContentBuilder, block)
@@ -440,7 +432,7 @@ func (tic *TermInCommittee) checkPreparedLocally(ctx context.Context, blockHeigh
 
 	countPrepared := tic.countPrepared(blockHeight, view, blockHash)
 	isPrepared := countPrepared >= tic.QuorumSize-1
-	tic.logger.Debug("LHFLOW Check if in PHASE PREPARED: stored=%d out of expected=%d isPrepared=%t", countPrepared, tic.QuorumSize-1, isPrepared)
+	tic.logger.Debug("LHFLOW Check if in PHASE PREPARED: stored %d of %d PREPARE messages", countPrepared, tic.QuorumSize-1)
 	if isPrepared {
 		tic.onPreparedLocally(ctx, blockHeight, view, blockHash)
 	}
@@ -507,10 +499,10 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 	}
 	commits, ok := tic.storage.GetCommitMessages(blockHeight, view, blockHash)
 	if !ok || len(commits) < tic.QuorumSize {
-		tic.logger.Debug("LHMSG RECEIVED COMMIT - received %d of %d required quorum commits", len(commits), tic.QuorumSize)
+		tic.logger.Debug("LHMSG RECEIVED COMMIT - stored %d of %d COMMIT messages", len(commits), tic.QuorumSize)
 		return
 	}
-	tic.logger.Debug("LHMSG RECEIVED COMMIT - received %d of %d required quorum commits", len(commits), tic.QuorumSize)
+	tic.logger.Debug("LHMSG RECEIVED COMMIT - stored %d of %d COMMIT messages", len(commits), tic.QuorumSize)
 	ppm, ok := tic.storage.GetPreprepareMessage(blockHeight, view)
 	if !ok {
 		// log
