@@ -101,7 +101,7 @@ func (m *MainLoop) runWorkerLoop(ctx context.Context) govnr.ShutdownWaiter {
 		m.onNewConsensusRoundCallback)
 
 	logger := log.GetLogger().WithTags(log.Node(m.config.InstanceId.String()), log.String("event_loop", "LHWorker"))
-	govnr.Forever(ctx, "lh-workerloop", GovnrErrorer(logger), func() {
+	return govnr.Forever(ctx, "lh-workerloop", GovnrErrorer(logger), func() {
 		m.worker.Run(ctx)
 	})
 }
