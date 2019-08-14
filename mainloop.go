@@ -14,6 +14,7 @@ import (
 	"github.com/orbs-network/scribe/log"
 	"github.com/pkg/errors"
 	"runtime/debug"
+	"time"
 )
 
 type MainLoop struct {
@@ -75,6 +76,7 @@ func (s stdoutErrorer) Error(err error) {
 
 func (m *MainLoop) Run(ctx context.Context) govnr.ShutdownWaiter {
 
+	startTime := time.Now()
 	m.worker = NewWorkerLoop(
 		m.state,
 		m.config,
@@ -90,6 +92,7 @@ func (m *MainLoop) Run(ctx context.Context) govnr.ShutdownWaiter {
 		m.worker.Run(ctx)
 	}))
 
+	m.logger.Info("MainLoop.Run() completed in %d ms", (time.Now().Sub(startTime))/1000000)
 	return m
 
 }
