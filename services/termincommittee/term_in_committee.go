@@ -172,7 +172,7 @@ func (tic *TermInCommittee) startTerm(ctx context.Context, canBeFirstLeader bool
 	// Context cancellation is only a performance optimization,
 	// so whether PPM is sent out or not, does not affect correctness
 	if ctx.Err() != nil {
-		tic.logger.Debug("LHFLOW startTerm() RequestNewBlockProposal() context canceled, not sending PREPREPARE - %s", ctx.Err())
+		tic.logger.Info("LHFLOW startTerm() RequestNewBlockProposal() context canceled, not sending PREPREPARE - %s", ctx.Err())
 		return
 	}
 
@@ -196,7 +196,11 @@ func shouldInitView(currentView primitives.View, newView primitives.View) bool {
 
 func (tic *TermInCommittee) initView(ctx context.Context, newView primitives.View) {
 
-	if !shouldInitView(tic.State.View(), newView) {
+	currentView := tic.State.View()
+	shouldInitView := currentView != newView || newView == 0
+
+	if !shouldInitView {
+		tic.logger.Debug("LHFLOW initView() shouldInitView=false because both current and new view are %d", currentView)
 		return
 	}
 
@@ -229,12 +233,12 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 	if height != currentHV.Height() || view != currentHV.View() {
 		return
 	}
-	tic.logger.Debug("LHFLOW moveToNextLeader() calling initView(), incrementing view to V=%d", currentHV.View()+1)
+	tic.logger.Debug("LHFLOW moveToNextLeader() calling initView(), will increment view to V=%d", currentHV.View()+1)
 	tic.initView(ctx, currentHV.View()+1)
 
 	currentHV = tic.State.HeightView()
 	newLeader := tic.calcLeaderMemberId(currentHV.View())
-	tic.logger.Debug("LHFLOW moveToNextLeader() newLeader=%s", Str(newLeader))
+	tic.logger.Debug("LHFLOW moveToNextLeader() calculated newLeader=%s of V=%d", Str(newLeader), currentHV.View())
 	var preparedMessages *preparedmessages.PreparedMessages
 	if tic.preparedLocally != nil && tic.preparedLocally.isPreparedLocally {
 		preparedMessages = preparedmessages.ExtractPreparedMessages(currentHV.Height(), tic.preparedLocally.latestView, tic.storage, tic.QuorumSize)
@@ -242,11 +246,11 @@ func (tic *TermInCommittee) moveToNextLeader(ctx context.Context, height primiti
 	vcm := tic.messageFactory.CreateViewChangeMessage(currentHV.Height(), currentHV.View(), preparedMessages)
 
 	if err := tic.isLeader(tic.myMemberId, currentHV.View()); err == nil {
-		tic.logger.Debug("LHFLOW moveToNextLeader() I will be leader if I get enough VIEW_CHANGE votes. My leadership of V=%d will time out in %s", currentHV.View(), tic.electionTrigger.CalcTimeout(currentHV.View()))
+		tic.logger.Debug("LHFLOW moveToNextLeader() I WILL BE LEADER if I get enough VIEW_CHANGE votes. My leadership of V=%d will time out in %s", currentHV.View(), tic.electionTrigger.CalcTimeout(currentHV.View()))
 		tic.storage.StoreViewChange(vcm)
 		tic.checkElected(ctx, currentHV.Height(), currentHV.View())
 	} else {
-		tic.logger.Debug("LHMSG SEND VIEW_CHANGE (I'm not leader) to %s (%s) (msg: H=%d V=%d sender=%s)",
+		tic.logger.Debug("LHFLOW LHMSG SEND VIEW_CHANGE to %s in moveToNextLeader() (I'M NOT LEADER: %s) (msg: H=%d V=%d sender=%s)",
 			newLeader, err, vcm.BlockHeight(), vcm.View(), Str(vcm.SenderMemberId()))
 		if sendErr := tic.sendConsensusMessageToSpecificMember(ctx, newLeader, vcm); sendErr != nil {
 			tic.logger.Info("LHMSG SEND VIEW_CHANGE to %s FAILED - %s", newLeader, sendErr)
@@ -293,19 +297,19 @@ func (tic *TermInCommittee) checkElected(ctx context.Context, height primitives.
 
 func (tic *TermInCommittee) onElected(ctx context.Context, view primitives.View, viewChangeMessages []*interfaces.ViewChangeMessage) {
 	tic.latestViewThatProcessedVCMOrNVM = view
-	tic.logger.Debug("LHFLOW onElected() I AM THE LEADER BY VIEW CHANGE for V=%d, now calling SetView()", view)
+	tic.logger.Debug("LHFLOW onElected() I AM THE LEADER BY VIEW CHANGE for V=%d, now calling initView()", view)
 	tic.initView(ctx, view)
 	block, blockHash := blockextractor.GetLatestBlockFromViewChangeMessages(viewChangeMessages)
 	if block == nil {
 		tic.logger.Debug("LHFLOW onElected() MISSING BLOCK IN VIEW_CHANGE, calling RequestNewBlockProposal()")
 		block, blockHash = tic.blockUtils.RequestNewBlockProposal(ctx, tic.State.Height(), tic.prevBlock)
 		if ctx.Err() != nil {
-			tic.logger.Debug("LHFLOW onElected() RequestNewBlockProposal() context canceled, not sending NEW_VIEW - %s", ctx.Err())
+			tic.logger.Info("LHFLOW onElected() RequestNewBlockProposal() context canceled, not sending NEW_VIEW - %s", ctx.Err())
 			return
 		}
-		tic.logger.Debug("LHFLOW onElected() returned from RequestNewBlockProposal(), sending the new block as part of NEW_VIEW")
+		tic.logger.Debug("LHFLOW onElected() SEND NEW_VIEW with the new block that was returned from RequestNewBlockProposal()")
 	} else {
-		tic.logger.Debug("LHFLOW onElected() found block with H=%d in VIEW_CHANGE messages, so sending it as part of NEW_VIEW", block.Height())
+		tic.logger.Debug("LHFLOW onElected() SEND NEW_VIEW with the block with H=%d from the latest VIEW_CHANGE messages", block.Height())
 	}
 	ppmContentBuilder := tic.messageFactory.CreatePreprepareMessageContentBuilder(tic.State.Height(), view, block, blockHash)
 	ppm := tic.messageFactory.CreatePreprepareMessageFromContentBuilder(ppmContentBuilder, block)
@@ -440,7 +444,7 @@ func (tic *TermInCommittee) checkPreparedLocally(ctx context.Context, blockHeigh
 
 	countPrepared := tic.countPrepared(blockHeight, view, blockHash)
 	isPrepared := countPrepared >= tic.QuorumSize-1
-	tic.logger.Debug("LHFLOW Check if in PHASE PREPARED: stored=%d out of expected=%d isPrepared=%t", countPrepared, tic.QuorumSize-1, isPrepared)
+	tic.logger.Debug("LHFLOW Check if in PHASE PREPARED: stored %d of %d PREPARE messages", countPrepared, tic.QuorumSize-1)
 	if isPrepared {
 		tic.onPreparedLocally(ctx, blockHeight, view, blockHash)
 	}

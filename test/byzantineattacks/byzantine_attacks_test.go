@@ -28,7 +28,7 @@ func TestThatWeReachConsensusWhere1of4NodeIsByzantine(t *testing.T) {
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
 			WithBlocks(block).
-			WithTimeBasedElectionTrigger(200 * time.Millisecond).
+			WithTimeBasedElectionTrigger(1000 * time.Millisecond).
 			LogToConsole(t).
 			Build(ctx)
 
@@ -50,7 +50,7 @@ func TestNetworkReachesConsensusWhen2of7NodesAreByzantine(t *testing.T) {
 			NewTestNetworkBuilder().
 			LogToConsole(t).
 			WithNodeCount(totalNodes).
-			WithTimeBasedElectionTrigger(200 * time.Millisecond). // reducing the timeout is flaky since sync is not performed and nodes may drop out if interrupted too frequently
+			WithTimeBasedElectionTrigger(1000 * time.Millisecond). // reducing the timeout is flaky since sync is not performed and nodes may drop out if interrupted too frequently
 			//WithBlocks(block).
 			Build(ctx)
 
@@ -75,7 +75,7 @@ func TestThatAByzantineLeaderCanNotCauseAForkBySendingTwoBlocks(t *testing.T) {
 		net := network.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
-			WithTimeBasedElectionTrigger(200 * time.Millisecond).
+			WithTimeBasedElectionTrigger(1000 * time.Millisecond).
 			WithBlocks(block1).
 			Build(ctx)
 
@@ -107,7 +107,7 @@ func TestNoForkWhenAByzantineNodeSendsABadBlockSeveralTimes(t *testing.T) {
 		net := network.
 			NewTestNetworkBuilder().
 			WithNodeCount(4).
-			WithTimeBasedElectionTrigger(200 * time.Millisecond).
+			WithTimeBasedElectionTrigger(1000 * time.Millisecond).
 			WithBlocks(goodBlock).
 			//LogToConsole().
 			Build(ctx)

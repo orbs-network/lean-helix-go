@@ -97,7 +97,7 @@ func (f *RawMessageFilter) pushToCache(height primitives.BlockHeight, message in
 
 func (f *RawMessageFilter) processConsensusMessage(ctx context.Context, message interfaces.ConsensusMessage) {
 	if f.consensusMessagesHandler == nil {
-		f.logger.Debug("LHFILTER consensusMessagesHandler is nil, ignoring message %s", message.MessageType())
+		f.logger.Info("LHFILTER consensusMessagesHandler is nil, ignoring message %s", message.MessageType())
 		return
 	}
 
