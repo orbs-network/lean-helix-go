@@ -98,39 +98,23 @@ func (net *TestNetwork) WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx
 		// hangs - need to understand why, as it seems more correct.
 
 		go func(node *Node) { // shadowing node on purpose
-			defer func() {
-				if e := recover(); e != nil {
-					s, ok := e.(error)
-					if ok && s.Error() != "send on closed channel" {
-						node.log.Debug("H=%d ID=%s WaitUntilSubsetOfNodesEventuallyReachASpecificHeight exited with error: %s", node.GetCurrentHeight(), node.Membership.MyMemberId(), height, s)
-					}
-					if ok && s.Error() == "send on closed channel" {
-						node.log.Debug("H=%d ID=%s WaitUntilSubsetOfNodesEventuallyReachASpecificHeight exited with error: %s AFTER QUORUM REACHED", node.GetCurrentHeight(), node.Membership.MyMemberId(), height, s)
-					}
-					if !ok {
-						node.log.Debug("H=%d ID=%s WaitUntilSubsetOfNodesEventuallyReachASpecificHeight exited with error: %v UNKNOWN ERROR", node.GetCurrentHeight(), node.Membership.MyMemberId(), height, e)
-					}
-				}
-			}()
 			for node.GetCurrentHeight() < height {
 				iterationTimeout, _ := context.WithTimeout(ctx, 20*time.Millisecond)
 				<-iterationTimeout.Done() // sleep or get cancelled
-
-				if ctx.Err() != nil {
-					break // shutting down
-				}
-			}
-			if height > 1 {
-				node.log.Debug("H=%d ID=%s WaitUntilSubsetOfNodesEventuallyReachASpecificHeight (target height %d)", node.GetCurrentHeight(), node.Membership.MyMemberId(), height)
 			}
 
-			doneChan <- struct{}{}
+			select {
+			case doneChan <- struct{}{}:
+			case <-ctx.Done():
+			}
 		}(node)
 	}
 	for i := 0; i < subset; i++ {
-		<-doneChan
+		select {
+		case <-doneChan:
+		case <-ctx.Done():
+		}
 	}
-	close(doneChan)
 }
 
 // Wait for H=1 so that election triggers will be sent with H=1

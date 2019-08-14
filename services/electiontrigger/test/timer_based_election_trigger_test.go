@@ -64,7 +64,6 @@ func TestCallbackTriggerTwiceInARow(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		et := buildElectionTrigger(ctx, 1*time.Nanosecond)
 
-
 		triggerReached := make(chan struct{})
 		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
 			triggerReached <- struct{}{}
@@ -138,23 +137,13 @@ func TestNotTriggerIfSameHeightButDifferentView(t *testing.T) {
 			atomic.AddInt32(&callCount, 1)
 		}
 
-		et.RegisterOnElection(10, 0, cb)
-		time.Sleep(10 * time.Millisecond)
-		et.RegisterOnElection(10, 1, cb)
-		time.Sleep(10 * time.Millisecond)
-		et.RegisterOnElection(10, 2, cb)
-		time.Sleep(10 * time.Millisecond)
-		et.RegisterOnElection(10, 3, cb)
-		time.Sleep(10 * time.Millisecond)
-		et.RegisterOnElection(10, 4, cb)
-		time.Sleep(10 * time.Millisecond)
-		et.RegisterOnElection(10, 5, cb)
-		time.Sleep(10 * time.Millisecond)
-		et.RegisterOnElection(10, 5, cb)
-		time.Sleep(10 * time.Millisecond)
+		for i := 0; i < 5; i++ {
+			et.RegisterOnElection(10, primitives.View(i), cb)
+			time.Sleep(10 * time.Millisecond)
+		}
 
-		atomic.LoadInt32(&callCount)
-		require.Exactly(t, 0, int(callCount), "Trigger callback called")
+		count := atomic.LoadInt32(&callCount)
+		require.True(t, count <= 1, "Trigger callback called multiple times while expected 1 at most")
 	})
 }
 
