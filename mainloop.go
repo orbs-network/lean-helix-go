@@ -78,20 +78,6 @@ func (s stdoutErrorer) Error(err error) {
 
 func (m *MainLoop) Run(ctx context.Context) {
 
-	m.Supervise(m.runMainLoop(ctx))
-
-	m.Supervise(m.runWorkerLoop(ctx))
-}
-
-func (m *MainLoop) runMainLoop(ctx context.Context) *govnr.ForeverHandle {
-	logger := log.GetLogger().WithTags(log.Node(m.config.InstanceId.String()), log.String("event_loop", "LHMain"))
-	return govnr.Forever(ctx, "lh-mainloop", GovnrErrorer(logger), func() {
-		m.run(ctx)
-	})
-}
-
-// TODO Pass logger from mainloop
-func (m *MainLoop) runWorkerLoop(ctx context.Context) govnr.ShutdownWaiter {
 	m.worker = NewWorkerLoop(
 		m.state,
 		m.config,
@@ -100,9 +86,19 @@ func (m *MainLoop) runWorkerLoop(ctx context.Context) govnr.ShutdownWaiter {
 		m.onCommitCallback,
 		m.onNewConsensusRoundCallback)
 
+	m.Supervise(m.runMainLoop(ctx))
+
 	logger := log.GetLogger().WithTags(log.Node(m.config.InstanceId.String()), log.String("event_loop", "LHWorker"))
-	return govnr.Forever(ctx, "lh-workerloop", GovnrErrorer(logger), func() {
+	m.Supervise(govnr.Forever(ctx, "lh-workerloop", GovnrErrorer(logger), func() {
 		m.worker.Run(ctx)
+	}))
+
+}
+
+func (m *MainLoop) runMainLoop(ctx context.Context) *govnr.ForeverHandle {
+	logger := log.GetLogger().WithTags(log.Node(m.config.InstanceId.String()), log.String("event_loop", "LHMain"))
+	return govnr.Forever(ctx, "lh-mainloop", GovnrErrorer(logger), func() {
+		m.run(ctx)
 	})
 }
 
