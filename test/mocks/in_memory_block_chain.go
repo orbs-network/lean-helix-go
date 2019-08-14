@@ -48,7 +48,7 @@ func (bs *InMemoryBlockchain) AppendBlockToChain(block interfaces.Block, blockPr
 	bs.lock.Lock()
 	defer bs.lock.Unlock()
 	bs.items = append(bs.items, &chainItem{block, blockProof})
-	fmt.Printf("Node %s appended block %s (blochchain has %d blocks)\n", bs.memberId, block, len(bs.items))
+	fmt.Printf("Node %s appended block %s (blockchain has %d blocks)\n", bs.memberId, block, len(bs.items))
 }
 
 func (bs *InMemoryBlockchain) LastBlock() interfaces.Block {
@@ -77,6 +77,10 @@ func (bs *InMemoryBlockchain) BlockAndProofAt(height primitives.BlockHeight) (in
 	bs.lock.RLock()
 	defer bs.lock.RUnlock()
 
+	if int(height) >= len(bs.items) {
+		panic(fmt.Sprintf("BlockAndProofAt() ID=%s requested H=%d but blockchain has only %d blocks", bs.memberId, height, len(bs.items)))
+	}
+
 	item := bs.items[height]
 	return item.block, item.blockProof
 }
@@ -85,12 +89,4 @@ func (bs *InMemoryBlockchain) Count() int {
 	bs.lock.RLock()
 	defer bs.lock.RUnlock()
 	return len(bs.items)
-}
-
-func (bs *InMemoryBlockchain) Blocks() []interfaces.Block {
-	blocks := make([]interfaces.Block, 0)
-	for _, item := range bs.items {
-		blocks = append(blocks, item.Block())
-	}
-	return blocks
 }
