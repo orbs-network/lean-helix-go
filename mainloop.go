@@ -129,10 +129,13 @@ func (m *MainLoop) run(ctx context.Context) {
 			}
 
 		case trigger := <-m.electionScheduler.ElectionChannel():
-
-			current, canceled := m.state.CompareHeightViewAndCancel(cancelWorkerContext, trigger.Hv.Height(), trigger.Hv.View())
+			if lastReceivedHeight > trigger.Hv.Height() {
+				m.logger.Info("LHFLOW ELECTION MAINLOOP - INVALID HEIGHT/VIEW IGNORED - Sync message inflight with higher height - lastReceivedHeight: %s, ElectionTrigger: %s", lastReceivedHeight, trigger.Hv)
+				continue
+			}
+			current, canceled := m.state.CancelContextIfHeightViewUnchanged(cancelWorkerContext, trigger.Hv.Height(), trigger.Hv.View())
 			if !canceled {
-				m.logger.Debug("LHFLOW ELECTION MAINLOOP - INVALID HEIGHT/VIEW IGNORED - Current: %s, ElectionTrigger: %s", current, trigger.Hv)
+				m.logger.Info("LHFLOW ELECTION MAINLOOP - INVALID HEIGHT/VIEW IGNORED - Current: %s, ElectionTrigger: %s", current, trigger.Hv)
 				continue
 			}
 
@@ -160,13 +163,12 @@ func (m *MainLoop) run(ctx context.Context) {
 				receivedBlockHeight = receivedBlockWithProof.block.Height()
 			}
 
-			current, canceled := m.state.CompareMaxHeightAndCancel(cancelWorkerContext, lastReceivedHeight, receivedBlockHeight)
+			current, canceled := m.state.CompareWithEffectiveHeightAndCancel(cancelWorkerContext, lastReceivedHeight, receivedBlockHeight)
 			if !canceled {
 				m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - INVALID BLOCK IGNORED - Received block height is %d which is lower than current height of %d or lastReceivedHeight of %d", receivedBlockHeight, current.Height(), lastReceivedHeight)
 				continue
 			}
 
-			cancelWorkerContext()
 			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
 			m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - CANCELED WORKER CONTEXT")
 			message := &workerUpdateStateMessage{

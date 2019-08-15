@@ -15,15 +15,15 @@ type State struct {
 	view   primitives.View
 }
 
-func (s *State) CompareMaxHeightAndCancel(cancel func(), max primitives.BlockHeight, height primitives.BlockHeight) (*HeightView, bool) {
+func (s *State) CompareWithEffectiveHeightAndCancel(cancel context.CancelFunc, lastUpdated primitives.BlockHeight, height primitives.BlockHeight) (*HeightView, bool) {
 	s.RLock()
 	defer s.RUnlock()
 
 	hv := NewHeightView(s.height, s.view)
 
 	effectiveHeight := s.height
-	if effectiveHeight < max {
-		effectiveHeight = max
+	if effectiveHeight < lastUpdated {
+		effectiveHeight = lastUpdated
 	}
 
 	if height < effectiveHeight {
@@ -34,7 +34,7 @@ func (s *State) CompareMaxHeightAndCancel(cancel func(), max primitives.BlockHei
 	return hv, true
 }
 
-func (s *State) CompareHeightViewAndCancel(cancel func(), height primitives.BlockHeight, view primitives.View) (*HeightView, bool) {
+func (s *State) CancelContextIfHeightViewUnchanged(cancel context.CancelFunc, height primitives.BlockHeight, view primitives.View) (*HeightView, bool) {
 	s.RLock()
 	defer s.RUnlock()
 
@@ -56,6 +56,10 @@ func (s *State) SetHeightAndResetView(ctx context.Context, newHeight primitives.
 		return NewHeightView(s.height, s.view), ctx.Err()
 	}
 
+	if s.height >= newHeight {
+		return NewHeightView(s.height, s.view), errors.New("SetHeightAndResetView() failed because newHeight is not newer than current height")
+	}
+
 	s.height = newHeight
 	s.view = 0
 	return NewHeightView(s.height, s.view), nil
@@ -69,14 +73,15 @@ func (s *State) SetView(ctx context.Context, newView primitives.View) (*HeightVi
 		return NewHeightView(s.height, s.view), ctx.Err()
 	}
 
-	if s.view == newView && newView != 0 {
-		return NewHeightView(s.height, s.view), errors.New("view did not change and is non-zero. aborting SetView()")
+	if s.view > newView && newView != 0 {
+		return NewHeightView(s.height, s.view), errors.New("SetView() failed because newView is not newer than current view, and it's not a new term")
 	}
 
 	s.view = newView
 	return NewHeightView(s.height, s.view), nil
 }
 
+// TODO For testing only, so perhaps move it away
 func (s *State) SetHeightView(ctx context.Context, newHeight primitives.BlockHeight, newView primitives.View) (*HeightView, error) {
 	s.Lock()
 	defer s.Unlock()

@@ -15,6 +15,6 @@ func NewMockState() *MockState {
 }
 
 func (s *MockState) WithHeightView(h primitives.BlockHeight, v primitives.View) *MockState {
-	s.SetHeightView(context.Background(), h, v)
+	s.SetHeightView(context.TODO(), h, v)
 	return s
 }

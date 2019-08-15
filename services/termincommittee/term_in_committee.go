@@ -152,9 +152,12 @@ func panicOnLessThanMinimumCommitteeMembers(committeeMembers []primitives.Member
 func (tic *TermInCommittee) startTerm(ctx context.Context, canBeFirstLeader bool) {
 	tic.setNotPreparedLocally()
 
-	tic.initView(ctx, 0)
+	currentHV, err := tic.initView(ctx, 0)
+	if err != nil {
+		tic.logger.Info("LHFLOW startTerm() initView() failed: %s", err)
+		return
+	}
 
-	currentHV := tic.State.HeightView()
 	if currentHV.Height() > 1 && !canBeFirstLeader {
 		tic.logger.Info("LHFLOW startTerm() I CANNOT BE LEADER OF FIRST VIEW, skipping view")
 		return
@@ -187,18 +190,20 @@ func (tic *TermInCommittee) startTerm(ctx context.Context, canBeFirstLeader bool
 }
 
 // update view and reset election trigger
-func (tic *TermInCommittee) initView(ctx context.Context, newView primitives.View) {
+func (tic *TermInCommittee) initView(ctx context.Context, newView primitives.View) (*state.HeightView, error) {
 
 	current, err := tic.State.SetView(ctx, newView)
 	if err != nil {
 		tic.logger.Debug("LHFLOW initView() aborted: %s", err)
-		return
+		return nil, err
 	}
 
 	tic.electionTrigger.RegisterOnElection(current.Height(), current.View(), tic.moveToNextLeaderByElection)
 	tic.logger.Debug("LHFLOW initView() set leader to %s, incremented view to %d, election-timeout=%s, members=%s, goroutines#=%d",
 		Str(tic.calcLeaderMemberId(current.View())), current.View(), tic.electionTrigger.CalcTimeout(current.View()),
 		ToCommitteeMembersStr(tic.committeeMembersMemberIds), runtime.NumGoroutine())
+
+	return current, nil
 }
 
 func (tic *TermInCommittee) Dispose() {
@@ -222,7 +227,11 @@ func (tic *TermInCommittee) moveToNextLeaderByElection(ctx context.Context, heig
 		return
 	}
 	tic.logger.Debug("LHFLOW moveToNextLeaderByElection() calling initView(), will increment view to V=%d", currentHV.View()+1)
-	tic.initView(ctx, currentHV.View()+1)
+	currentHV, err := tic.initView(ctx, currentHV.View()+1)
+	if err != nil {
+		tic.logger.Info("LHFLOW moveToNextLeaderByElection() initView() failed, cannot continue: %s", err)
+		return
+	}
 
 	currentHV = tic.State.HeightView()
 	newLeader := tic.calcLeaderMemberId(currentHV.View())
@@ -286,7 +295,11 @@ func (tic *TermInCommittee) checkElected(ctx context.Context, height primitives.
 func (tic *TermInCommittee) onElectedByViewChange(ctx context.Context, view primitives.View, viewChangeMessages []*interfaces.ViewChangeMessage) {
 	tic.latestViewThatProcessedVCMOrNVM = view
 	tic.logger.Debug("LHFLOW onElectedByViewChange() I AM THE LEADER BY VIEW CHANGE for V=%d, now calling initView()", view)
-	tic.initView(ctx, view)
+	_, err := tic.initView(ctx, view)
+	if err != nil {
+		tic.logger.Debug("LHFLOW onElectedByViewChange() failed: %s", err)
+		return
+	}
 	block, blockHash := blockextractor.GetLatestBlockFromViewChangeMessages(viewChangeMessages)
 	if block == nil {
 		tic.logger.Debug("LHFLOW onElectedByViewChange() MISSING BLOCK IN VIEW_CHANGE, calling RequestNewBlockProposal()")
@@ -502,13 +515,25 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 		tic.logger.Debug("LHMSG RECEIVED COMMIT - stored %d of %d COMMIT messages", len(commits), tic.QuorumSize)
 		return
 	}
+
 	tic.logger.Debug("LHMSG RECEIVED COMMIT - stored %d of %d COMMIT messages", len(commits), tic.QuorumSize)
+
 	ppm, ok := tic.storage.GetPreprepareMessage(blockHeight, view)
 	if !ok {
-		// log
 		tic.logger.Debug("LHMSG RECEIVED COMMIT IGNORE - missing PPM in Commit message")
 		return
 	}
+
+	// --- At this point we are convinced that the block needs to be committed ---
+
+	tic.sendCommitIfNotAlreadySent(commits, blockHeight, view, blockHash, ctx)
+	tic.committedBlock = ppm.Block()
+	tic.logger.Debug("LHFLOW PHASE COMMITTED CommittedBlock set to H=%d, calling onCommit() with H=%d V=%d block-hash=%s num-commit-messages=%d",
+		ppm.Block().Height(), blockHeight, view, blockHash, len(commits))
+	tic.onCommit(ctx, ppm.Block(), commits)
+}
+
+func (tic *TermInCommittee) sendCommitIfNotAlreadySent(commits []*interfaces.CommitMessage, blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash, ctx context.Context) {
 	var iSentCommitMessage bool
 	for _, msg := range commits {
 		if msg.SenderMemberId().Equal(tic.myMemberId) {
@@ -524,10 +549,6 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 			tic.logger.Info("LHMSG SEND COMMIT FAILED [checkCommitted] - %s", err)
 		}
 	}
-	tic.committedBlock = ppm.Block()
-	tic.logger.Debug("LHFLOW PHASE COMMITTED CommittedBlock set to H=%d, calling onCommit() with H=%d V=%d block-hash=%s num-commit-messages=%d",
-		ppm.Block().Height(), blockHeight, view, blockHash, len(commits))
-	tic.onCommit(ctx, ppm.Block(), commits)
 }
 
 func (tic *TermInCommittee) HandleViewChange(ctx context.Context, vcm *interfaces.ViewChangeMessage) {
@@ -715,7 +736,10 @@ func (tic *TermInCommittee) HandleNewView(ctx context.Context, nvm *interfaces.N
 	if err := tic.validatePreprepare(ctx, ppm); err == nil {
 		tic.latestViewThatProcessedVCMOrNVM = nvmHeader.View()
 		tic.logger.Debug("LHFLOW LHMSG RECEIVED NEW_VIEW OK - calling initView(). latestViewThatProcessedVCMOrNVM set to V=%d", tic.latestViewThatProcessedVCMOrNVM)
-		tic.initView(ctx, nvmHeader.View())
+		if _, err := tic.initView(ctx, nvmHeader.View()); err != nil {
+			tic.logger.Debug("LHFLOW LHMSG HandleNewView() - initView() failed: %s", err)
+			return
+		}
 		tic.processPreprepare(ctx, ppm)
 	} else {
 		tic.logger.Info("LHFLOW LHMSG RECEIVED NEW_VIEW FAILED validation of PPM: %s", err)
