@@ -88,8 +88,9 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done(): // system shutdown
-			lh.logger.Info("LHFLOW WORKERLOOP DONE STOPPED LISTENING, Terminating Run()")
+			lh.logger.Info("LHFLOW WORKERLOOP DONE STOPPED LISTENING, SHUTDOWN START")
 			lh.workerShutdown()
+			lh.logger.Info("LHFLOW WORKERLOOP DONE STOPPED LISTENING, SHUTDOWN END")
 			return
 
 		case res := <-lh.MessagesChannel:
@@ -251,7 +252,6 @@ func (lh *WorkerLoop) onNewConsensusRound(ctx context.Context, prevBlock interfa
 }
 
 func (lh *WorkerLoop) workerShutdown() {
-	lh.logger.Debug("workerShutdown()")
 	if lh.leanHelixTerm != nil {
 		lh.leanHelixTerm.Dispose()
 	}

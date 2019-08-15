@@ -116,7 +116,7 @@ func (m *MainLoop) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done(): // system shutdown
-			m.logger.Info("LHFLOW LHMSG MAINLOOP DONE STOPPED LISTENING, Terminating Run().")
+			m.logger.Info("LHFLOW LHMSG MAINLOOP DONE STOPPED LISTENING, SHUTDOWN END")
 			return
 		case message := <-m.messagesChannel:
 			parsedMessage := interfaces.ToConsensusMessage(message)
