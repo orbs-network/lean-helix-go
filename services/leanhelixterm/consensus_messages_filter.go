@@ -28,7 +28,7 @@ func NewConsensusMessagesFilter(handler TermMessagesHandler, keyManager interfac
 
 func (mp *ConsensusMessagesFilter) HandleConsensusMessage(ctx context.Context, message interfaces.ConsensusMessage) error {
 	if mp.handler == nil {
-		return errors.New("mp.handler is nil")
+		return errors.Errorf("Out of committee - ignoring message %s H=%d V=%d", message.MessageType(), message.BlockHeight(), message.View())
 	}
 
 	switch message := message.(type) {
