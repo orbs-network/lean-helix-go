@@ -8,7 +8,6 @@ package test
 
 import (
 	"context"
-	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -18,8 +17,6 @@ func WithContext(f func(ctx context.Context)) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	f(ctx)
-	runtime.GC()
-	time.Sleep(100*time.Millisecond)
 
 }
 
@@ -30,8 +27,6 @@ func WithContextWithTimeout(t *testing.T, d time.Duration, f func(ctx context.Co
 	if ctx.Err() != nil {
 		panic("WithContextWithTimeout() timed out")
 	}
-	runtime.GC()
-	time.Sleep(100*time.Millisecond)
 }
 
 func FailIfNotDoneByTimeout(t *testing.T, waitGroup *sync.WaitGroup, timeout time.Duration, format string, args ...interface{}) {

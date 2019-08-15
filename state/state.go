@@ -65,20 +65,21 @@ func (s *State) SetHeightAndResetView(ctx context.Context, newHeight primitives.
 	return NewHeightView(s.height, s.view), nil
 }
 
-func (s *State) SetView(ctx context.Context, newView primitives.View) (*HeightView, error) {
+func (s *State) SetView(ctx context.Context, newView primitives.View) (*HeightView, bool, error) {
 	s.Lock()
 	defer s.Unlock()
 
 	if ctx.Err() == context.Canceled {
-		return NewHeightView(s.height, s.view), ctx.Err()
+		return NewHeightView(s.height, s.view), false, ctx.Err()
 	}
 
 	if s.view > newView && newView != 0 {
-		return NewHeightView(s.height, s.view), errors.New("SetView() failed because newView is not newer than current view, and it's not a new term")
+		return NewHeightView(s.height, s.view), false, errors.New("SetView() failed because newView is not newer than current view, and it's not a new term")
 	}
 
+	changed := s.view != newView
 	s.view = newView
-	return NewHeightView(s.height, s.view), nil
+	return NewHeightView(s.height, s.view), changed, nil
 }
 
 // TODO For testing only, so perhaps move it away

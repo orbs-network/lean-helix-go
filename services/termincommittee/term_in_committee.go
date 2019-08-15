@@ -192,16 +192,20 @@ func (tic *TermInCommittee) startTerm(ctx context.Context, canBeFirstLeader bool
 // update view and reset election trigger
 func (tic *TermInCommittee) initView(ctx context.Context, newView primitives.View) (*state.HeightView, error) {
 
-	current, err := tic.State.SetView(ctx, newView)
+	// Updates the state
+	current, changed, err := tic.State.SetView(ctx, newView)
 	if err != nil {
 		tic.logger.Debug("LHFLOW initView() aborted: %s", err)
 		return nil, err
 	}
 
-	tic.electionTrigger.RegisterOnElection(current.Height(), current.View(), tic.moveToNextLeaderByElection)
-	tic.logger.Debug("LHFLOW initView() set leader to %s, incremented view to %d, election-timeout=%s, members=%s, goroutines#=%d",
-		Str(tic.calcLeaderMemberId(current.View())), current.View(), tic.electionTrigger.CalcTimeout(current.View()),
-		ToCommitteeMembersStr(tic.committeeMembersMemberIds), runtime.NumGoroutine())
+	if newView == 0 || changed {
+		// Resets the election timer
+		tic.electionTrigger.RegisterOnElection(current.Height(), current.View(), tic.moveToNextLeaderByElection)
+		tic.logger.Debug("LHFLOW initView() set leader to %s, incremented view to %d, election-timeout=%s, members=%s, goroutines#=%d",
+			Str(tic.calcLeaderMemberId(current.View())), current.View(), tic.electionTrigger.CalcTimeout(current.View()),
+			ToCommitteeMembersStr(tic.committeeMembersMemberIds), runtime.NumGoroutine())
+	}
 
 	return current, nil
 }
