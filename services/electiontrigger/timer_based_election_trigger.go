@@ -19,11 +19,12 @@ import (
 var TIMEOUT_EXP_BASE = 2.0
 
 type TimerBasedElectionTrigger struct {
-	electionChannel chan *interfaces.ElectionTrigger
-	minTimeout      time.Duration
-	electionHandler func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)
-	onElectionCB    interfaces.OnElectionCallback
-	timer           *time.Timer
+	electionChannel  chan *interfaces.ElectionTrigger
+	triggerCancelled chan struct{}
+	minTimeout       time.Duration
+	electionHandler  func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)
+	callbackFromOrbs interfaces.OnElectionCallback
+	timer            *time.Timer
 
 	// mutable, mutex protected - better refactor into separate obj
 	lock        sync.RWMutex
@@ -31,15 +32,16 @@ type TimerBasedElectionTrigger struct {
 	view        primitives.View
 }
 
-func NewTimerBasedElectionTrigger(minTimeout time.Duration, onElectionCB interfaces.OnElectionCallback) *TimerBasedElectionTrigger {
+func NewTimerBasedElectionTrigger(minTimeout time.Duration, callbackFromOrbs interfaces.OnElectionCallback) *TimerBasedElectionTrigger {
 	return &TimerBasedElectionTrigger{
-		electionChannel: make(chan *interfaces.ElectionTrigger), // Caution - keep 0 to make election channel blocking
-		minTimeout:      minTimeout,
-		onElectionCB:    onElectionCB,
+		electionChannel:  make(chan *interfaces.ElectionTrigger), // Caution - keep 0 to make election channel blocking
+		minTimeout:       minTimeout,
+		callbackFromOrbs: callbackFromOrbs,
 	}
 }
 
-func (t *TimerBasedElectionTrigger) RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, cb func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)) {
+// on new view
+func (t *TimerBasedElectionTrigger) RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, moveToNextLeader func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, willBeCalledAfterMovedToNextLeader interfaces.OnElectionCallback)) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
@@ -51,11 +53,13 @@ func (t *TimerBasedElectionTrigger) RegisterOnElection(blockHeight primitives.Bl
 	t.view = view
 	t.blockHeight = blockHeight
 	t.Stop()
+
+	t.triggerCancelled = make(chan struct{})
 	t.timer = time.AfterFunc(timeout, func() {
 		t.onTimerTimeout()
 	})
 
-	t.electionHandler = cb
+	t.electionHandler = moveToNextLeader
 }
 
 func (t *TimerBasedElectionTrigger) ElectionChannel() chan *interfaces.ElectionTrigger {
@@ -65,9 +69,10 @@ func (t *TimerBasedElectionTrigger) ElectionChannel() chan *interfaces.ElectionT
 func (t *TimerBasedElectionTrigger) Stop() {
 	t.electionHandler = nil
 	if t.timer != nil {
-		active := t.timer.Stop()
-		if !active {
-			select {
+		onTimerTimeoutIsAlreadyRunning := !t.timer.Stop()
+		if onTimerTimeoutIsAlreadyRunning {
+			close(t.triggerCancelled) // so that we do not write an irrelevant trigger to the election channel
+			select {                  // levison voodoo
 			case <-t.timer.C:
 			default:
 			}
@@ -84,7 +89,7 @@ func (t *TimerBasedElectionTrigger) runOnReadElectionChannel(ctx context.Context
 	t.lock.RUnlock()
 
 	if handler != nil {
-		handler(ctx, h, v, t.onElectionCB)
+		handler(ctx, h, v, t.callbackFromOrbs)
 	}
 }
 
@@ -93,10 +98,13 @@ func (t *TimerBasedElectionTrigger) onTimerTimeout() {
 	h := t.blockHeight
 	v := t.view
 	t.lock.RUnlock()
-
-	t.electionChannel <- &interfaces.ElectionTrigger{
+	select {
+	// timer expired and no new timer has been registered
+	case t.electionChannel <- &interfaces.ElectionTrigger{
 		MoveToNextLeader: t.runOnReadElectionChannel,
 		Hv:               state.NewHeightView(h, v),
+	}:
+	case <-t.triggerCancelled:
 	}
 
 }

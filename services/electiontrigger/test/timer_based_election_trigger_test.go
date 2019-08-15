@@ -200,3 +200,26 @@ func TestElectionTrigger_Stress_FrequentRegisters(t *testing.T) {
 	})
 
 }
+
+func TestElectionTrigger_StuckOnTimerTimeout_GetsReleasedByStop(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		et := Electiontrigger.NewTimerBasedElectionTrigger(100*time.Millisecond, nil)
+		et.RegisterOnElection(0, 0, nil)
+		time.Sleep(200 * time.Millisecond) // strictly higher than timeout
+		et.RegisterOnElection(0, 1, nil)
+		time.Sleep(200 * time.Millisecond) // strictly higher than timeout
+
+		select {
+		case trigger := <-et.ElectionChannel():
+			require.EqualValues(t, 1, trigger.Hv.View(), "only view 1's trigger should have been written to chan, as second register should have cancelled the first trigger")
+		case <-time.After(1 * time.Second):
+			require.Fail(t, "election channel should have contained a single message")
+		}
+
+		select {
+		case <-et.ElectionChannel():
+			require.Fail(t, "election channel should have only contained one message")
+		default:
+		}
+	})
+}
