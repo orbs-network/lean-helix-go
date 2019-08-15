@@ -193,19 +193,16 @@ func (tic *TermInCommittee) startTerm(ctx context.Context, canBeFirstLeader bool
 func (tic *TermInCommittee) initView(ctx context.Context, newView primitives.View) (*state.HeightView, error) {
 
 	// Updates the state
-	current, changed, err := tic.State.SetView(ctx, newView)
+	current, err := tic.State.SetView(ctx, newView)
 	if err != nil {
 		tic.logger.Debug("LHFLOW initView() aborted: %s", err)
 		return nil, err
 	}
 
-	if newView == 0 || changed {
-		// Resets the election timer
-		tic.electionTrigger.RegisterOnElection(current.Height(), current.View(), tic.moveToNextLeaderByElection)
-		tic.logger.Debug("LHFLOW initView() set leader to %s, incremented view to %d, election-timeout=%s, members=%s, goroutines#=%d",
-			Str(tic.calcLeaderMemberId(current.View())), current.View(), tic.electionTrigger.CalcTimeout(current.View()),
-			ToCommitteeMembersStr(tic.committeeMembersMemberIds), runtime.NumGoroutine())
-	}
+	tic.electionTrigger.RegisterOnElection(current.Height(), current.View(), tic.moveToNextLeaderByElection)
+	tic.logger.Debug("LHFLOW initView() set leader to %s, incremented view to %d, election-timeout=%s, members=%s, goroutines#=%d",
+		Str(tic.calcLeaderMemberId(current.View())), current.View(), tic.electionTrigger.CalcTimeout(current.View()),
+		ToCommitteeMembersStr(tic.committeeMembersMemberIds), runtime.NumGoroutine())
 
 	return current, nil
 }
@@ -237,7 +234,6 @@ func (tic *TermInCommittee) moveToNextLeaderByElection(ctx context.Context, heig
 		return
 	}
 
-	currentHV = tic.State.HeightView()
 	newLeader := tic.calcLeaderMemberId(currentHV.View())
 	tic.logger.Debug("LHFLOW moveToNextLeaderByElection() calculated newLeader=%s of V=%d", Str(newLeader), currentHV.View())
 	var preparedMessages *preparedmessages.PreparedMessages
@@ -331,13 +327,13 @@ func (tic *TermInCommittee) onElectedByViewChange(ctx context.Context, view prim
 func (tic *TermInCommittee) sendConsensusMessage(ctx context.Context, message interfaces.ConsensusMessage) error {
 	tic.logger.Debug("LHMSG SEND sendConsensusMessage() target=ALL, msgType=%v", message.MessageType())
 	rawMessage := interfaces.CreateConsensusRawMessage(message)
-	return tic.communication.SendConsensusMessage(ctx, tic.otherCommitteeMembersMemberIds, rawMessage)
+	return tic.communication.SendConsensusMessage(context.TODO(), tic.otherCommitteeMembersMemberIds, rawMessage)
 }
 
 func (tic *TermInCommittee) sendConsensusMessageToSpecificMember(ctx context.Context, targetMemberId primitives.MemberId, message interfaces.ConsensusMessage) error {
 	tic.logger.Debug("LHMSG SEND sendConsensusMessageToSpecificMember() target=%s, msgType=%v", Str(targetMemberId), message.MessageType())
 	rawMessage := interfaces.CreateConsensusRawMessage(message)
-	return tic.communication.SendConsensusMessage(ctx, []primitives.MemberId{targetMemberId}, rawMessage)
+	return tic.communication.SendConsensusMessage(context.TODO(), []primitives.MemberId{targetMemberId}, rawMessage)
 }
 
 func (tic *TermInCommittee) HandlePrePrepare(ctx context.Context, ppm *interfaces.PreprepareMessage) {

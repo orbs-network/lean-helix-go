@@ -180,9 +180,7 @@ func (m *MainLoop) run(ctx context.Context) {
 			case m.worker.workerUpdateStateChannel <- message:
 			}
 
-			if receivedBlockWithProof.block != nil {
-				lastReceivedHeight = receivedBlockWithProof.block.Height()
-			}
+			lastReceivedHeight = receivedBlockHeight
 
 			m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - Wrote to worker UpdateState channel")
 		}
