@@ -239,7 +239,7 @@ func (lh *WorkerLoop) onNewConsensusRound(ctx context.Context, prevBlock interfa
 
 	current, err := lh.state.SetHeightAndResetView(ctx, blockheight.GetBlockHeight(prevBlock) + 1)
 	if err != nil {
-		lh.logger.Info("onNewConsensusRound() aborting heigt increment %d: %s", current.Height(), err)
+		lh.logger.Info("onNewConsensusRound() failed height increment %d: %s", current.Height(), err)
 		return
 	}
 

@@ -195,7 +195,7 @@ func (tic *TermInCommittee) initView(ctx context.Context, newView primitives.Vie
 	// Updates the state
 	current, changed, err := tic.State.SetView(ctx, newView)
 	if err != nil {
-		tic.logger.Debug("LHFLOW initView() aborted: %s", err)
+		tic.logger.Info("LHFLOW initView() tried to SetView(%d) while in state %s. failed: %s", newView, current, err)
 		return nil, err
 	}
 
