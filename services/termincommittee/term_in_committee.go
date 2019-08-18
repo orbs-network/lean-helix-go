@@ -152,9 +152,9 @@ func panicOnLessThanMinimumCommitteeMembers(committeeMembers []primitives.Member
 func (tic *TermInCommittee) startTerm(ctx context.Context, canBeFirstLeader bool) {
 	tic.setNotPreparedLocally()
 
-	currentHV := tic.State.HeightView()
-	if currentHV.View() != 0 {
-		panic(fmt.Sprintf("startTerm() should always be reached when view = 0, found %s", currentHV))
+	currentHV, err := tic.initView(ctx, 0)
+	if err != nil {
+		tic.logger.Info("LHFLOW startTerm() tried to SetView(0) while in state %s. failed: %s", currentHV, err)
 		return
 	}
 
