@@ -106,7 +106,7 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 			}
 			current := lh.state.HeightView()
 			if current.Height() != trigger.Hv.Height() || current.View() != trigger.Hv.View() { // stale election message
-				lh.logger.Debug("LHFLOW WORKERLOOP ELECTION - INVALID HEIGHT/VIEW IGNORED - Current: %s, ElectionTrigger: %s",
+				lh.logger.Info("LHFLOW WORKERLOOP ELECTION - INVALID HEIGHT/VIEW IGNORED - Current: %s, ElectionTrigger: %s",
 					current, trigger.Hv)
 				continue
 			}

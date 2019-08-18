@@ -45,7 +45,7 @@ type CommunicationMock struct {
 	discovery *Discovery
 	logger    interfaces.Logger
 
-	outgoingLock        sync.Mutex
+	outgoingLock        sync.RWMutex
 	outgoingChannelsMap map[string]chan *outgoingMessage
 
 	subscriptionsLock   sync.Mutex
@@ -88,7 +88,7 @@ func NewCommunication(memberId primitives.MemberId, discovery *Discovery, log in
 func (g *CommunicationMock) SendConsensusMessage(ctx context.Context, targets []primitives.MemberId, message *interfaces.ConsensusRawMessage) error {
 	g.statsSentMessages = append(g.statsSentMessages, message)
 	for _, target := range targets {
-		channel := g.outgoingChannelsMap[target.String()]
+		channel := g.ReturnOutgoingChannelByTarget(target)
 		select {
 		default: // never block. ignore message if buffer is full
 		case <-ctx.Done():
@@ -133,11 +133,17 @@ func (g *CommunicationMock) OnIncomingMessage(ctx context.Context, rawMessage *i
 		return
 	}
 
+	count := 0
 	for _, s := range g.subscriptions {
 		if g.maxDelayDuration > 0 {
 			time.Sleep(time.Duration(rand.Int63n(int64(g.maxDelayDuration))))
 		}
+		count++
 		s.cb(ctx, rawMessage)
+	}
+	if count == 0 {
+		parsedMessage := interfaces.ToConsensusMessage(rawMessage)
+		g.logger.Error("failed delivery for %s - no subscriber found", parsedMessage.MessageType())
 	}
 }
 
@@ -202,6 +208,13 @@ func (g *CommunicationMock) bannedSender(rawMessage *interfaces.ConsensusRawMess
 		}
 	}
 	return true
+}
+
+func (g *CommunicationMock) ReturnOutgoingChannelByTarget(target primitives.MemberId) chan *outgoingMessage {
+	g.outgoingLock.RLock()
+	defer g.outgoingLock.RUnlock()
+
+	return g.outgoingChannelsMap[target.String()]
 }
 
 func (g *CommunicationMock) ReturnAndMaybeCreateOutgoingChannelByTarget(ctx context.Context, target primitives.MemberId) chan *outgoingMessage {
