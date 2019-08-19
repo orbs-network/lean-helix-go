@@ -8,193 +8,218 @@ package test
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go/instrumentation/metrics"
 	"github.com/orbs-network/lean-helix-go/services/electiontrigger"
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/stretchr/testify/require"
+	"sync/atomic"
 	"testing"
 	"time"
 )
 
-func buildElectionTrigger(ctx context.Context, timeout time.Duration) *electiontrigger.TimerBasedElectionTrigger {
-	et := electiontrigger.NewTimerBasedElectionTrigger(timeout, nil)
+func buildElectionTrigger(ctx context.Context, timeout time.Duration) *Electiontrigger.TimerBasedElectionTrigger {
+	et := Electiontrigger.NewTimerBasedElectionTrigger(timeout, nil)
+	ready := make(chan struct{})
 	go func() {
+		close(ready)
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case trigger := <-et.ElectionChannel():
-				trigger(ctx)
+				trigger.MoveToNextLeader(ctx)
 			}
 		}
 	}()
-
+	<-ready
 	return et
 }
 
-// TODO Consider removing this test entirely - sleeps in tests are bad
-func TestCallbackTrigger(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
-		et := buildElectionTrigger(ctx, 50*time.Millisecond)
-
-		wasCalled := false
-		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics)) {
-			wasCalled = true
-		}
-		et.RegisterOnElection(ctx, 20, 0, cb)
-
-		time.Sleep(time.Duration(80) * time.Millisecond)
-
-		require.True(t, wasCalled, "Did not call the timer callback")
-	})
-}
-
-// TODO v1 this is sometimes flaky
 func TestCallbackTriggerOnce(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		et := buildElectionTrigger(ctx, 10*time.Millisecond)
+		et := buildElectionTrigger(ctx, 1*time.Nanosecond)
 
-		callCount := 0
-		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics)) {
-			callCount++
+		triggerReached := make(chan struct{})
+		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+			triggerReached <- struct{}{}
 		}
-		et.RegisterOnElection(ctx, 10, 0, cb)
+		et.RegisterOnElection(10, 0, cb)
 
-		time.Sleep(time.Duration(25) * time.Millisecond)
+		<-triggerReached
 
-		require.Exactly(t, 1, callCount, "Trigger callback called more than once")
+		timeoutCtx, cancelTimeout := context.WithTimeout(ctx, 25*time.Millisecond)
+		defer cancelTimeout()
+
+		select {
+		case <-triggerReached:
+			t.Fatal("Trigger callback called more than once")
+		case <-timeoutCtx.Done():
+
+		}
 	})
 }
 
 func TestCallbackTriggerTwiceInARow(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		et := buildElectionTrigger(ctx, 10*time.Millisecond)
+		et := buildElectionTrigger(ctx, 1*time.Nanosecond)
 
-		callCount := 0
-		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics)) {
-			callCount++
+		triggerReached := make(chan struct{})
+		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+			triggerReached <- struct{}{}
 		}
-		et.RegisterOnElection(ctx, 10, 0, cb)
+		et.RegisterOnElection(10, 0, cb)
 
-		time.Sleep(time.Duration(25) * time.Millisecond)
+		<-triggerReached
 
-		et.RegisterOnElection(ctx, 11, 0, cb)
-		time.Sleep(time.Duration(25) * time.Millisecond)
+		et.RegisterOnElection(11, 0, cb)
 
-		require.Exactly(t, 2, callCount, "Trigger callback twice without getting stuck")
+		<-triggerReached
+
+		timeoutCtx, cancelTimeout := context.WithTimeout(ctx, 25*time.Millisecond)
+		defer cancelTimeout()
+
+		select {
+		case <-triggerReached:
+			t.Fatal("Trigger callback called more than once")
+		case <-timeoutCtx.Done():
+		}
 	})
 }
 
 func TestIgnoreSameViewOrHeight(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		et := buildElectionTrigger(ctx, 30*time.Millisecond)
+		et := buildElectionTrigger(ctx, 1*time.Nanosecond)
 
-		callCount := 0
-		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics)) {
-			callCount++
+		var callCount int32 = 0
+		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+			atomic.AddInt32(&callCount, 1)
 		}
 
-		et.RegisterOnElection(ctx, 10, 0, cb)
-		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(ctx, 10, 0, cb)
-		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(ctx, 10, 0, cb)
-		time.Sleep(time.Duration(20) * time.Millisecond)
-		et.RegisterOnElection(ctx, 10, 0, cb)
+		et.RegisterOnElection(10, 0, cb)
+		time.Sleep(10 * time.Millisecond)
+		et.RegisterOnElection(10, 0, cb)
+		time.Sleep(10 * time.Millisecond)
+		et.RegisterOnElection(10, 0, cb)
+		time.Sleep(20 * time.Millisecond)
+		et.RegisterOnElection(10, 0, cb)
 
-		require.Exactly(t, 1, callCount, "Trigger callback called more than once")
+		atomic.LoadInt32(&callCount)
+		require.Exactly(t, 1, int(callCount), "Trigger callback called more than once")
 	})
 }
 
-// TODO: Flaky
-func TestNotTriggerIfSameViewButDifferentHeight(t *testing.T) {
+func TestNotTriggeredIfSameViewButDifferentHeight(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		et := buildElectionTrigger(ctx, 30*time.Millisecond)
+		electionTimeout := 10 * time.Millisecond
+		et := buildElectionTrigger(ctx, electionTimeout)
 
-		callCount := 0
-		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics)) {
-			callCount++
+		cbNeverTriggered := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+			t.Fatalf("Callback for H=%d V=%d", blockHeight, view)
 		}
 
-		et.RegisterOnElection(ctx, 10, 0, cb)
-		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(ctx, 11, 0, cb)
-		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(ctx, 12, 0, cb)
-		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(ctx, 13, 0, cb)
-		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(ctx, 14, 0, cb)
-		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(ctx, 15, 0, cb)
+		cbNoop := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+		}
 
-		require.Exactly(t, 0, callCount, "Trigger callback called")
+		et.RegisterOnElection(1, 0, cbNeverTriggered)
+		et.RegisterOnElection(2, 0, cbNoop)
+
+		time.Sleep(2 * electionTimeout)
 	})
 }
 
 func TestNotTriggerIfSameHeightButDifferentView(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		et := buildElectionTrigger(ctx, 30*time.Millisecond)
-
-		callCount := 0
-		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics)) {
-			callCount++
-		}
-
-		et.RegisterOnElection(ctx, 10, 0, cb)
-		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(ctx, 10, 1, cb)
-		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(ctx, 10, 2, cb)
-		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(ctx, 10, 3, cb)
-		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(ctx, 10, 4, cb)
-		time.Sleep(time.Duration(10) * time.Millisecond)
-		et.RegisterOnElection(ctx, 10, 5, cb)
-
-		require.Exactly(t, 0, callCount, "Trigger callback called")
-	})
-}
-
-func TestViewChanges(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
 		et := buildElectionTrigger(ctx, 50*time.Millisecond)
 
-		wasCalled := false
-		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics)) {
-			wasCalled = true
+		var callCount int32 = 0
+		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+			atomic.AddInt32(&callCount, 1)
 		}
 
-		et.RegisterOnElection(ctx, 10, 0, cb) // 2 ** 0 * 20 = 20
-		time.Sleep(time.Duration(10) * time.Millisecond)
+		for i := 0; i < 5; i++ {
+			et.RegisterOnElection(10, primitives.View(i), cb)
+			time.Sleep(10 * time.Millisecond)
+		}
 
-		et.RegisterOnElection(ctx, 10, 1, cb) // 2 ** 1 * 20 = 40
-		time.Sleep(time.Duration(30) * time.Millisecond)
-
-		et.RegisterOnElection(ctx, 10, 2, cb) // 2 ** 2 * 20 = 80
-		time.Sleep(time.Duration(70) * time.Millisecond)
-
-		et.RegisterOnElection(ctx, 10, 3, cb) // 2 ** 3 * 20 = 160
-
-		require.False(t, wasCalled, "Trigger the callback even if a new Register was called with a new view")
+		count := atomic.LoadInt32(&callCount)
+		require.True(t, count <= 1, "Trigger callback called multiple times while expected 1 at most")
 	})
 }
 
-func TestViewPowTimeout(t *testing.T) {
+func TestTimerBasedElectionTrigger_DidNotTriggerBeforeTimeout(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		et := buildElectionTrigger(ctx, 10*time.Millisecond)
+		et := buildElectionTrigger(ctx, 10*time.Hour)
 
-		wasCalled := false
-		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics)) {
-			wasCalled = true
+		var wasCalled int32 = 0
+		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+			atomic.StoreInt32(&wasCalled, 1)
 		}
 
-		et.RegisterOnElection(ctx, 10, 2, cb) // 2 ** 2 * 10 = 40
-		time.Sleep(time.Duration(30) * time.Millisecond)
-		require.False(t, wasCalled, "Triggered the callback too early")
-		time.Sleep(time.Duration(30) * time.Millisecond)
-		require.True(t, wasCalled, "Did not trigger the callback after the required timeout")
+		et.RegisterOnElection(10, 2, cb) // 2 ** 2 * 10h = 40h
+		time.Sleep(30 * time.Millisecond)
+		atomic.LoadInt32(&wasCalled)
+		require.Equal(t, 0, int(wasCalled), "Triggered the callback too early")
+	})
+}
+
+func TestViewPowTimeout_DidTriggerAfterTimeout(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		et := buildElectionTrigger(ctx, 1*time.Millisecond)
+
+		triggered := make(chan struct{})
+		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+			close(triggered)
+		}
+
+		et.RegisterOnElection(10, 2, cb) // 2 ** 2 * 1ms = 4ms
+
+		timeoutCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
+		defer cancel()
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-timeoutCtx.Done():
+			t.Fatal("Did not trigger the callback after the required timeout")
+		case <-triggered:
+			return
+		}
+	})
+}
+
+func TestElectionTrigger_Stress_FrequentRegisters(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		et := buildElectionTrigger(ctx, 1*time.Microsecond)
+		var counter int32
+		for h := primitives.BlockHeight(1); h < primitives.BlockHeight(1000); h++ {
+			et.RegisterOnElection(h, 0, nil)
+			counter++
+			time.Sleep(1 * time.Microsecond)
+		}
+	})
+
+}
+
+func TestElectionTrigger_StuckOnTimerTimeout_GetsReleasedByStop(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		et := Electiontrigger.NewTimerBasedElectionTrigger(100*time.Millisecond, nil)
+		et.RegisterOnElection(0, 0, nil)
+		time.Sleep(200 * time.Millisecond) // strictly higher than timeout
+		et.RegisterOnElection(0, 1, nil)
+		time.Sleep(200 * time.Millisecond) // strictly higher than timeout
+
+		select {
+		case trigger := <-et.ElectionChannel():
+			require.EqualValues(t, 1, trigger.Hv.View(), "only view 1's trigger should have been written to chan, as second register should have cancelled the first trigger")
+		case <-time.After(1 * time.Second):
+			require.Fail(t, "election channel should have contained a single message")
+		}
+
+		select {
+		case <-et.ElectionChannel():
+			require.Fail(t, "election channel should have only contained one message")
+		default:
+		}
 	})
 }

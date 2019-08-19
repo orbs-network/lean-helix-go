@@ -11,8 +11,13 @@ import (
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/state"
 	"math"
+	"time"
 )
+
+const PRINT_TIMESTAMP = true
+const FORCE_STDOUT = false
 
 type _LC struct {
 	h  primitives.BlockHeight
@@ -43,6 +48,8 @@ func (lc *_LC) String() string {
 }
 
 type lhLogger struct {
+	config         *interfaces.Config
+	state          *state.State
 	externalLogger interfaces.Logger
 }
 
@@ -50,21 +57,64 @@ func (l *lhLogger) ExternalLogger() interfaces.Logger {
 	return l.externalLogger
 }
 
-func (l *lhLogger) Debug(lc *_LC, format string, args ...interface{}) {
-	l.externalLogger.Debug(fmt.Sprintf("%s %s", lc, format), args...)
+func nowISO() string {
+	// Full ISO8601 is "2006-01-02T15:04:05.000Z"
+	if PRINT_TIMESTAMP {
+		return time.Now().Format("15:04:05.000Z ")
+	} else {
+		return ""
+	}
 }
 
-func (l *lhLogger) Info(lc *_LC, format string, args ...interface{}) {
-	l.externalLogger.Info(fmt.Sprintf("%s %s", lc, format), args...)
+const (
+	LOG_LEVEL_DEBUG int = 1
+	LOG_LEVEL_INFO  int = 2
+	LOG_LEVEL_ERROR int = 3
+)
+
+func (l *lhLogger) log(level int, format string, args ...interface{}) {
+	var f func(format string, args ...interface{})
+	switch level {
+	case LOG_LEVEL_INFO:
+		f = l.externalLogger.Info
+	case LOG_LEVEL_ERROR:
+		f = l.externalLogger.Error
+	default:
+		f = l.externalLogger.Debug
+	}
+
+	lc := LC(l.state.Height(), l.state.View(), l.config.Membership.MyMemberId())
+	s := fmt.Sprintf(format, args...)
+	if FORCE_STDOUT {
+		fmt.Printf(fmt.Sprintf("%s%s %s\n", nowISO(), lc, s))
+	} else {
+		f(fmt.Sprintf("%s%s %s", nowISO(), lc, s))
+	}
 }
 
-func (l *lhLogger) Error(lc *_LC, format string, args ...interface{}) {
-	l.externalLogger.Error(fmt.Sprintf("%s %s", lc, format), args...)
+func (l *lhLogger) Debug(format string, args ...interface{}) {
+	l.log(LOG_LEVEL_DEBUG, format, args...)
 }
 
-func NewLhLogger(externalLogger interfaces.Logger) LHLogger {
+func (l *lhLogger) Info(format string, args ...interface{}) {
+	l.log(LOG_LEVEL_INFO, format, args...)
+}
+
+func (l *lhLogger) Error(format string, args ...interface{}) {
+	l.log(LOG_LEVEL_ERROR, format, args...)
+}
+
+func NewLhLogger(config *interfaces.Config, state *state.State) LHLogger {
+	var logger interfaces.Logger
+	if config.Logger == nil {
+		logger = NewSilentLogger()
+	} else {
+		logger = config.Logger
+	}
 	return &lhLogger{
-		externalLogger: externalLogger,
+		config:         config,
+		state:          state,
+		externalLogger: logger,
 	}
 }
 
@@ -80,9 +130,9 @@ func MemberIdToStr(memberId primitives.MemberId) string {
 }
 
 type LHLogger interface {
-	Debug(lc *_LC, format string, args ...interface{})
-	Info(lc *_LC, format string, args ...interface{})
-	Error(lc *_LC, format string, args ...interface{})
+	Debug(format string, args ...interface{})
+	Info(format string, args ...interface{})
+	Error(format string, args ...interface{})
 	ExternalLogger() interfaces.Logger
 }
 

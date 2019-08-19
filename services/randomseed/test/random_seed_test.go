@@ -51,8 +51,8 @@ func TestValidateRandomSeed(t *testing.T) {
 
 	randomSeed := randomseed.CalculateRandomSeed(prevRandomSeedSignature) // Calculate the random seed based on prev block proof
 
-	lastCall := keyManager.VerifyRandomSeedHistory[0]
+	lastCall := keyManager.VerifyRandomSeedHistory(0)
 	require.Equal(t, primitives.BlockHeight(4), lastCall.BlockHeight)
-	require.True(t, bytes.Equal(keyManager.VerifyRandomSeedHistory[0].Sender.Signature(), randomSeedSignature))
-	require.True(t, bytes.Equal(keyManager.VerifyRandomSeedHistory[0].Content, randomseed.RandomSeedToBytes(randomSeed)))
+	require.True(t, bytes.Equal(keyManager.VerifyRandomSeedHistory(0).Sender.Signature(), randomSeedSignature))
+	require.True(t, bytes.Equal(keyManager.VerifyRandomSeedHistory(0).Content, randomseed.RandomSeedToBytes(randomSeed)))
 }

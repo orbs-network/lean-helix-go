@@ -9,48 +9,70 @@ package leaderelection
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
-	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/stretchr/testify/require"
 	"testing"
+	"time"
 )
 
-func Test2fPlus1ViewChangeToBeElected(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
-		block1 := mocks.ABlock(interfaces.GenesisBlock)
-		block2 := mocks.ABlock(block1)
+const LOG_TO_CONSOLE = true
 
-		h := NewHarness(ctx, t, block1, block2)
+func TestNewLeaderProposesNewBlock_IfPreviousLeaderFailedToBringNetworkIntoPreparedPhase(t *testing.T) {
+	test.WithContextWithTimeout(t, 15*time.Second, func(ctx context.Context) {
+		h := NewStartedHarness(ctx, t, LOG_TO_CONSOLE)
 
 		node0 := h.net.Nodes[0]
 		node1 := h.net.Nodes[1]
+
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
+		node0.Communication.DisableOutgoingCommunication()
+
+		h.net.TriggerElectionsOnAllNodes(ctx)
+
+		// Now that we caused node1 to be the new leader, it will ask for a new block.
+		// BTW the test doesn't care which block it actually is
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node1)
+	})
+}
+
+func TestNotCountingViewChangeFromTheSameNode(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		h := NewStartedHarness(ctx, t, LOG_TO_CONSOLE)
+		node0 := h.net.Nodes[0]
+		node1 := h.net.Nodes[1]
 		node2 := h.net.Nodes[2]
-		node3 := h.net.Nodes[3]
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 
-		// hang the leader (node0)
-		h.net.WaitForNodeToRequestNewBlock(ctx, node0)
-		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
+		// sending only 4 view-change from the same node
+		for i := 0; i < 4; i++ {
+			node1.Communication.OnIncomingMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
+		}
+		require.Zero(t, node1.Communication.CountSentMessages(protocol.LEAN_HELIX_NEW_VIEW), "node1 sent new view although it didn't receive enough valid votes")
+	})
+}
 
-		// manually cause new-view with 3 view-changes
-		node0VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node0.KeyManager, node0.MemberId, 1, 1, nil)
-		node2VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil)
-		node3VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node3.KeyManager, node3.MemberId, 1, 1, nil)
-		node1.Communication.OnRemoteMessage(ctx, node0VCMessage.ToConsensusRawMessage())
-		node1.Communication.OnRemoteMessage(ctx, node2VCMessage.ToConsensusRawMessage())
-		node1.Communication.OnRemoteMessage(ctx, node3VCMessage.ToConsensusRawMessage())
+func TestDoesNotReachConsensusOnBlockWhenValidateBlockProposalFails(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
 
-		// now that we caused node1 to be the new leader, he'll ask for a new block (block2)
-		h.net.WaitForNodeToRequestNewBlock(ctx, node1)
-		h.net.ResumeNodeRequestNewBlock(ctx, node1)
+		h := NewStartedHarnessWithFailingBlockProposalValidations(ctx, t, LOG_TO_CONSOLE)
 
-		// release the hanged the leader (node0)
-		h.net.ResumeNodeRequestNewBlock(ctx, node0)
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, h.net.Nodes[0])
+		h.net.ResumeRequestNewBlockOnNodes(ctx, h.net.Nodes[0])
 
-		// make sure that we're on block2
-		h.net.WaitForAllNodesToCommitBlock(ctx, block2)
+		c := make(chan struct{})
+		go func() {
+			h.net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 2)
+			close(c)
+		}()
+
+		select {
+		case <-time.After(50 * time.Millisecond):
+		case <-c:
+			t.Fatal("Reached consensus on block despite validations failing")
+		}
 	})
 }
 
@@ -60,165 +82,108 @@ func TestBlockIsNotUsedWhenElectionHappened(t *testing.T) {
 		block2 := mocks.ABlock(block1)
 		block3 := mocks.ABlock(block1)
 
-		h := NewHarness(ctx, t, block1, block2, block3)
+		h := NewStartedHarness(ctx, t, LOG_TO_CONSOLE, block1, block2, block3)
 
 		node0 := h.net.Nodes[0]
 		node1 := h.net.Nodes[1]
 
-		// processing block1, should be agreed by all nodes
-		h.net.WaitForNodeToRequestNewBlock(ctx, node0)
-		h.net.ResumeNodeRequestNewBlock(ctx, node0)
-		h.net.WaitForAllNodesToCommitBlock(ctx, block1)
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // processing block1, should be agreed by all nodes
+		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
+		h.net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, 0, block1)
 
-		// processing block 2
-		h.net.WaitForNodeToRequestNewBlock(ctx, node0)
-		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
-		// selection node 1 as the leader (dropping block2)
-		h.net.Nodes[0].TriggerElection(ctx)
-		h.net.Nodes[1].TriggerElection(ctx)
-		h.net.Nodes[2].TriggerElection(ctx)
-		h.net.Nodes[3].TriggerElection(ctx)
+		// Thwart Preprepare message sending by node0 for block2
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // pause when proposing block2
 
-		node0.Communication.ClearOutgoingWhitelist()
+		// increment view - this selects node1 as the leader
+		/*
+			All nodes progress to the next view:
+			we blocked PREPREPARE from being sent by the leader node0
+			so other nodes did not receive it and send out PREPARE
+			so in turn they did not receive 2f+1 PREPAREs (a.k.a PREPARED phase)
+			so new leader is free to suggest another block instead of block2
+		*/
 
-		h.net.WaitForNodeToRequestNewBlock(ctx, node1)
-		h.net.ResumeNodeRequestNewBlock(ctx, node0)
+		<-h.net.Nodes[1].TriggerElectionOnNode(ctx)
+		<-h.net.Nodes[2].TriggerElectionOnNode(ctx)
+		<-h.net.Nodes[3].TriggerElectionOnNode(ctx)
 
-		// processing block 3
-		h.net.ResumeNodeRequestNewBlock(ctx, node1)
-		h.net.WaitForAllNodesToCommitBlock(ctx, block3)
+		// free the first leader to send stale PREPREPARE now when the others are in next view
+		h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
+		// tell the old leader to advance it's view so it can join the others in view 1
+		<-h.net.Nodes[0].TriggerElectionOnNode(ctx)
+		// sync with new leader on block proposal
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node1)
+		h.net.ResumeRequestNewBlockOnNodes(ctx, node1) // processing block 3
+		h.net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, 0, block3)
 	})
 }
 
 func TestThatNewLeaderSendsNewViewWhenElected(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		h := NewHarness(ctx, t)
+		h := NewStartedHarness(ctx, t, LOG_TO_CONSOLE)
 		node0 := h.net.Nodes[0]
 		node1 := h.net.Nodes[1]
 		node2 := h.net.Nodes[2]
 		node3 := h.net.Nodes[3]
 
-		h.net.WaitForNodeToRequestNewBlock(ctx, node0)
-		node0.Communication.SetOutgoingWhitelist([]primitives.MemberId{})
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
+		node0.Communication.DisableOutgoingCommunication()
 
-		// selection node 1 as the leader
-		node0.TriggerElection(ctx)
-		node1.TriggerElection(ctx)
-		node2.TriggerElection(ctx)
-		node3.TriggerElection(ctx)
+		h.net.WaitUntilNetworkIsRunning(ctx)
 
-		h.net.ResumeNodeRequestNewBlock(ctx, node0)
-		h.net.WaitForNodeToRequestNewBlock(ctx, node1)
-		node0.Communication.ClearOutgoingWhitelist()
+		// will elect node1 as the leader (because nodes are elected sequentially)
+		h.net.TriggerElectionsOnAllNodes(ctx)
 
-		h.net.ResumeNodeRequestNewBlock(ctx, node1)
-		h.net.WaitForAllNodesToCommitTheSameBlock(ctx)
+		//h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node1)
+		node0.Communication.EnableOutgoingCommunication()
 
-		require.Equal(t, 1, node0.Communication.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))
+		h.net.ResumeRequestNewBlockOnNodes(ctx, node1)
+		h.net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 2)
+
+		require.Equal(t, 1, node0.Communication.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE)) // node0's send of view change will be counted even though its comms are down, since we count *attempts* to send messages rather than *successful* sends
 		require.Equal(t, 1, node2.Communication.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))
 		require.Equal(t, 1, node3.Communication.CountSentMessages(protocol.LEAN_HELIX_VIEW_CHANGE))
 		require.Equal(t, 1, node1.Communication.CountSentMessages(protocol.LEAN_HELIX_NEW_VIEW))
 	})
 }
 
-func TestNotCountingViewChangeFromTheSameNode(t *testing.T) {
+func TestViewNotIncrementedIfLessThan2fPlus1ViewChange(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
 
-		h := NewHarness(ctx, t, block1, block2)
+		h := NewStartedHarness(ctx, t, LOG_TO_CONSOLE, block1, block2)
 
 		node0 := h.net.Nodes[0]
 		node1 := h.net.Nodes[1]
 		node2 := h.net.Nodes[2]
 
-		// hang the leader (node0)
-		h.net.WaitForNodeToRequestNewBlock(ctx, node0)
+		// Verify leader (node0) indeed starts RequestNewBlockProposal()
+		h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
 
-		// sending only 4 view-change from the same node
-		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-		node1.Communication.OnRemoteMessage(ctx, builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil).ToConsensusRawMessage())
-
-		node1.Communication.CountSentMessages(protocol.LEAN_HELIX_NEW_VIEW)
-	})
-}
-
-func TestNoNewViewIfLessThan2fPlus1ViewChange(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
-		block1 := mocks.ABlock(interfaces.GenesisBlock)
-		block2 := mocks.ABlock(block1)
-
-		h := NewHarness(ctx, t, block1, block2)
-
-		node0 := h.net.Nodes[0]
-		node1 := h.net.Nodes[1]
-		node2 := h.net.Nodes[2]
-
-		// hang the leader (node0)
-		h.net.WaitForNodeToRequestNewBlock(ctx, node0)
-
-		// sending only 2 view-change (not enough to be elected)
+		// sending only 2 VIEW_CHANGE
+		// This is not enough to be elected as f=1 for 4 nodes, so 2f+1 is 3 nodes
 		node0VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node0.KeyManager, node0.MemberId, 1, 1, nil)
 		node2VCMessage := builders.AViewChangeMessage(h.net.InstanceId, node2.KeyManager, node2.MemberId, 1, 1, nil)
-		node1.Communication.OnRemoteMessage(ctx, node0VCMessage.ToConsensusRawMessage())
-		node1.Communication.OnRemoteMessage(ctx, node2VCMessage.ToConsensusRawMessage())
+		node1.Communication.OnIncomingMessage(ctx, node0VCMessage.ToConsensusRawMessage())
+		node1.Communication.OnIncomingMessage(ctx, node2VCMessage.ToConsensusRawMessage())
 
-		// release the hanged the leader (node0)
-		h.net.ResumeNodeRequestNewBlock(ctx, node0)
+		// Resume the paused leader (node0)
+		//h.net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
-		// make sure that we're on block2
-		h.net.WaitForAllNodesToCommitBlock(ctx, block2)
-	})
-}
+		h.net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 1, node0)
+		h.net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 1, node1)
 
-// TODO: This is sometimes stuck!!! Remove this comment if doesnt happen by end of June 2019
-func TestLeaderCircularOrdering(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
-		h := NewHarness(ctx, t)
+		go func() {
+			// Fail if node1 starts RequestNewBlockProposal() because it means it became new leader
+			h.net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node1)
+			if ctx.Err() == nil {
+				t.Fatal("node1 tried to propose a block after receiving only 2 view change messages")
+			}
+		}()
 
-		// Nodes might get into prepared state, and send their block in the view-change
-		// meaning that the new leader will not request new block and we can't hang him.
-		// to prevent nodes from getting prepared, we just don't validate the block
-
-		h.net.Nodes[0].BlockUtils.ValidationResult = false
-		h.net.Nodes[1].BlockUtils.ValidationResult = false
-		h.net.Nodes[2].BlockUtils.ValidationResult = false
-		h.net.Nodes[3].BlockUtils.ValidationResult = false
-
-		h.net.WaitForNodeToRequestNewBlock(ctx, h.net.Nodes[0])
-
-		// selecting node 1 as the leader
-		h.net.Nodes[0].TriggerElection(ctx)
-		h.net.Nodes[2].TriggerElection(ctx)
-		h.net.Nodes[3].TriggerElection(ctx)
-
-		h.net.ResumeNodeRequestNewBlock(ctx, h.net.Nodes[0])
-		h.net.WaitForNodeToRequestNewBlock(ctx, h.net.Nodes[1])
-
-		// selecting node 2 as the leader
-		h.net.Nodes[0].TriggerElection(ctx)
-		h.net.Nodes[1].TriggerElection(ctx)
-		h.net.Nodes[3].TriggerElection(ctx)
-
-		h.net.ResumeNodeRequestNewBlock(ctx, h.net.Nodes[1])
-		h.net.WaitForNodeToRequestNewBlock(ctx, h.net.Nodes[2])
-
-		// selecting node 3 as the leader
-		h.net.Nodes[0].TriggerElection(ctx)
-		h.net.Nodes[1].TriggerElection(ctx)
-		h.net.Nodes[2].TriggerElection(ctx)
-
-		h.net.ResumeNodeRequestNewBlock(ctx, h.net.Nodes[2])
-		h.net.WaitForNodeToRequestNewBlock(ctx, h.net.Nodes[3])
-
-		// back to node 0 as the leader
-		h.net.Nodes[1].TriggerElection(ctx)
-		h.net.Nodes[2].TriggerElection(ctx)
-		h.net.Nodes[3].TriggerElection(ctx)
-
-		h.net.ResumeNodeRequestNewBlock(ctx, h.net.Nodes[3])
-		h.net.WaitForNodeToRequestNewBlock(ctx, h.net.Nodes[0])
+		time.Sleep(100 * time.Millisecond)
+		// node 1 got a chance to propose a block and did not take it as expected
 	})
 }

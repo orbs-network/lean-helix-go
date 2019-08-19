@@ -11,20 +11,29 @@ import (
 	"github.com/orbs-network/lean-helix-go/instrumentation/metrics"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
+	"github.com/orbs-network/lean-helix-go/state"
 	"time"
 )
 
 type OnCommitCallback func(ctx context.Context, block Block, blockProof []byte)
+type OnNewConsensusRoundCallback func(ctx context.Context, newHeight primitives.BlockHeight, prevBlock Block, canBeFirstLeader bool)
+type OnUpdateStateCallback func(ctx context.Context, currentHeight primitives.BlockHeight, receivedBlockHeight primitives.BlockHeight)
+type OnElectionCallback func(m metrics.ElectionMetrics)
 
 type Config struct {
-	InstanceId      primitives.InstanceId
-	Communication   Communication
-	Membership      Membership
-	BlockUtils      BlockUtils
-	KeyManager      KeyManager
-	ElectionTrigger ElectionTrigger // TimerBasedElectionTrigger can be used
-	Storage         Storage         // optional
-	Logger          Logger          // optional
+	InstanceId              primitives.InstanceId
+	Communication           Communication
+	Membership              Membership
+	BlockUtils              BlockUtils
+	KeyManager              KeyManager
+	ElectionTimeoutOnV0     time.Duration
+	OnElectionCB            OnElectionCallback
+	Storage                 Storage // optional
+	Logger                  Logger  // optional
+	MsgChanBufLen           uint64
+	UpdateStateChanBufLen   uint64
+	ElectionChanBufLen      uint64
+	OverrideElectionTrigger ElectionScheduler
 }
 
 type ConsensusRawMessage struct {
@@ -33,7 +42,7 @@ type ConsensusRawMessage struct {
 }
 
 type Communication interface {
-	SendConsensusMessage(ctx context.Context, recipients []primitives.MemberId, message *ConsensusRawMessage)
+	SendConsensusMessage(ctx context.Context, recipients []primitives.MemberId, message *ConsensusRawMessage) error
 }
 
 type Membership interface {
@@ -55,11 +64,16 @@ type KeyManager interface {
 	AggregateRandomSeed(blockHeight primitives.BlockHeight, randomSeedShares []*protocol.SenderSignature) primitives.RandomSeedSignature
 }
 
-type ElectionTrigger interface {
-	RegisterOnElection(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, cb func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics)))
-	Stop()
-	ElectionChannel() chan func(ctx context.Context)
+type ElectionTrigger struct {
+	MoveToNextLeader func(ctx context.Context)
+	Hv               *state.HeightView
+}
+
+type ElectionScheduler interface {
+	RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, cb func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB OnElectionCallback))
+	ElectionChannel() chan *ElectionTrigger
 	CalcTimeout(view primitives.View) time.Duration
+	Stop()
 }
 
 type Storage interface {

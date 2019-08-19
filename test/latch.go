@@ -9,7 +9,7 @@ package test
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
-	"github.com/orbs-network/lean-helix-go/services/logger"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
 type Latch struct {
@@ -18,44 +18,54 @@ type Latch struct {
 	resumeChannel chan bool
 }
 
-func NewLatch() *Latch {
+func NewLatch(logger interfaces.Logger) *Latch {
 	return &Latch{
-		log:           logger.NewConsoleLogger(),
+		log:           logger,
 		pauseChannel:  make(chan bool),
 		resumeChannel: make(chan bool),
+		//paused:        false,
 	}
 }
 
-func (l *Latch) ReturnWhenLatchIsResumed(ctx context.Context) {
+func (l *Latch) WaitOnPauseThenWaitOnResume(ctx context.Context, memberId primitives.MemberId) {
+
+	l.log.Debug("ID=%s Latch.WaitOnPauseThenWaitOnResume() start, blocked on writing to Pause channel", memberId)
 	select {
 	case <-ctx.Done():
+		l.log.Debug("ID=%s Latch.WaitOnPauseThenWaitOnResume() ctx.Done (before Pause)", memberId)
 		return
 	case l.pauseChannel <- true:
+		l.log.Debug("ID=%s Latch.WaitOnPauseThenWaitOnResume() wrote to paused latch", memberId)
 	}
 
-	l.log.Debug("ReturnWhenLatchIsResumed() waiting for latch to resume")
+	l.log.Debug("ID=%s Latch.WaitOnPauseThenWaitOnResume() blocked on writing to resume channel", memberId)
 	select {
 	case <-ctx.Done():
+		l.log.Debug("ID=%s Latch.WaitOnPauseThenWaitOnResume() ctx.Done (before Resume)", memberId)
 		return
 	case <-l.resumeChannel:
-		l.log.Debug("ReturnWhenLatchIsResumed() latch has resumed")
+		l.log.Debug("ID=%s Latch.WaitOnPauseThenWaitOnResume() read from resume channel", memberId)
 	}
 }
 
-func (l *Latch) ReturnWhenLatchIsPaused(ctx context.Context) {
+func (l *Latch) ReturnWhenLatchIsPaused(ctx context.Context, memberId primitives.MemberId) {
+	l.log.Debug("ID=%s Latch.ReturnWhenLatchIsPaused() start, blocked on reading from pause channel", memberId)
 	select {
 	case <-ctx.Done():
+		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsPaused() ctx.Done", memberId)
 		return
 	case <-l.pauseChannel:
-		l.log.Debug("ReturnWhenLatchIsPaused() latch has paused")
+		l.log.Debug("ID=%s Latch.ReturnWhenLatchIsPaused() read from Pause channel", memberId)
 	}
 }
 
-func (l *Latch) Resume(ctx context.Context) {
+func (l *Latch) Resume(ctx context.Context, memberId primitives.MemberId) {
+	l.log.Debug("ID=%s Latch.Resume() start, blocked on reading from Resume channel", memberId)
 	select {
 	case <-ctx.Done():
+		l.log.Debug("ID=%s Latch.Resume() ctx.Done", memberId)
 		return
 	case l.resumeChannel <- true:
-		l.log.Debug("Resume() resuming latch")
+		l.log.Debug("ID=%s Latch.Resume() wrote to Resume channel", memberId)
 	}
 }

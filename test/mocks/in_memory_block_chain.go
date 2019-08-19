@@ -7,41 +7,86 @@
 package mocks
 
 import (
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"sync"
 )
 
 type chainItem struct {
 	block      interfaces.Block
 	blockProof []byte
 }
-type InMemoryBlockChain struct {
-	blockChain []*chainItem
+
+func (i *chainItem) Block() interfaces.Block {
+	return i.block
 }
 
-func NewInMemoryBlockChain() *InMemoryBlockChain {
-	return &InMemoryBlockChain{
-		blockChain: []*chainItem{
-			{interfaces.GenesisBlock, nil},
+func (i *chainItem) Proof() []byte {
+	return i.blockProof
+}
+
+type InMemoryBlockchain struct {
+	memberId primitives.MemberId
+	items    []*chainItem
+	lock     sync.RWMutex
+}
+
+func NewInMemoryBlockchain() *InMemoryBlockchain {
+	return &InMemoryBlockchain{
+		items: []*chainItem{
+			//{interfaces.GenesisBlock, nil},
 		},
 	}
 }
 
-func (bs *InMemoryBlockChain) AppendBlockToChain(block interfaces.Block, blockProof []byte) {
-	bs.blockChain = append(bs.blockChain, &chainItem{block, blockProof})
+func (bs *InMemoryBlockchain) WithMemberId(memberId primitives.MemberId) *InMemoryBlockchain {
+	bs.memberId = memberId
+	return bs
+}
+func (bs *InMemoryBlockchain) AppendBlockToChain(block interfaces.Block, blockProof []byte) {
+	bs.lock.Lock()
+	defer bs.lock.Unlock()
+	bs.items = append(bs.items, &chainItem{block, blockProof})
+	fmt.Printf("ID=%s appended block %s (blockchain has %d blocks)\n", bs.memberId, block, len(bs.items))
 }
 
-func (bs *InMemoryBlockChain) GetLastBlock() interfaces.Block {
-	item := bs.blockChain[len(bs.blockChain)-1]
+func (bs *InMemoryBlockchain) LastBlock() interfaces.Block {
+	bs.lock.RLock()
+	defer bs.lock.RUnlock()
+
+	if len(bs.items) == 0 {
+		return nil
+	}
+	item := bs.items[len(bs.items)-1]
 	return item.block
 }
 
-func (bs *InMemoryBlockChain) GetLastBlockProof() []byte {
-	item := bs.blockChain[len(bs.blockChain)-1]
+func (bs *InMemoryBlockchain) LastBlockProof() []byte {
+	bs.lock.RLock()
+	defer bs.lock.RUnlock()
+
+	if len(bs.items) == 0 {
+		return nil
+	}
+	item := bs.items[len(bs.items)-1]
 	return item.blockProof
 }
 
-func (bs *InMemoryBlockChain) GetBlockProofAt(height primitives.BlockHeight) []byte {
-	item := bs.blockChain[height]
-	return item.blockProof
+func (bs *InMemoryBlockchain) BlockAndProofAt(height primitives.BlockHeight) (interfaces.Block, []byte) {
+	bs.lock.RLock()
+	defer bs.lock.RUnlock()
+
+	if int(height) >= len(bs.items) {
+		panic(fmt.Sprintf("BlockAndProofAt() ID=%s requested H=%d but blockchain has only %d blocks", bs.memberId, height, len(bs.items)))
+	}
+
+	item := bs.items[height]
+	return item.block, item.blockProof
+}
+
+func (bs *InMemoryBlockchain) Count() int {
+	bs.lock.RLock()
+	defer bs.lock.RUnlock()
+	return len(bs.items)
 }

@@ -8,6 +8,7 @@ package leanhelix
 
 import (
 	"context"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/test"
@@ -16,31 +17,32 @@ import (
 	"github.com/orbs-network/lean-helix-go/test/network"
 	"github.com/stretchr/testify/require"
 	"testing"
+	"time"
 )
 
 func TestHappyFlow(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
-		net := network.ABasicTestNetwork()
+	test.WithContextWithTimeout(t, 15*time.Second, func(ctx context.Context) {
+		net := network.ABasicTestNetworkWithTimeBasedElectionsAndConsoleLogs(ctx, t)
 		net.StartConsensus(ctx)
-		require.True(t, net.WaitForAllNodesToCommitTheSameBlock(ctx))
+		net.WaitUntilQuorumOfNodesEventuallyReachASpecificHeight(ctx, 1)
 	})
 }
 
 func TestHappyFlowMessages(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
-		net := network.ABasicTestNetwork()
+	test.WithContextWithTimeout(t, 15*time.Second, func(ctx context.Context) {
+		net := network.ABasicTestNetwork(ctx)
 		net.SetNodesToPauseOnRequestNewBlock()
 
 		net.StartConsensus(ctx)
 
 		// let the leader run on the first round
-		net.WaitForNodeToRequestNewBlock(ctx, net.Nodes[0])
-		net.ResumeNodeRequestNewBlock(ctx, net.Nodes[0])
+		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, net.Nodes[0])
+		net.ResumeRequestNewBlockOnNodes(ctx, net.Nodes[0])
 
-		net.WaitForAllNodesToCommitTheSameBlock(ctx)
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 2)
 
 		// hang the leader before the next round
-		net.WaitForNodeToRequestNewBlock(ctx, net.Nodes[0])
+		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, net.Nodes[0])
 
 		require.Equal(t, 1, net.Nodes[0].Communication.CountSentMessages(protocol.LEAN_HELIX_PREPREPARE))
 		require.Equal(t, 0, net.Nodes[1].Communication.CountSentMessages(protocol.LEAN_HELIX_PREPREPARE))
@@ -59,51 +61,60 @@ func TestHappyFlowMessages(t *testing.T) {
 	})
 }
 
-func TestConsensusFor8Blocks(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
-		net := network.ABasicTestNetwork().StartConsensus(ctx)
-		for i := 0; i < 8; i++ {
-			net.WaitForAllNodesToCommitTheSameBlock(ctx)
-		}
+func TestConsensusFor2Blocks(t *testing.T) {
+	test.WithContextWithTimeout(t, 15*time.Second, func(ctx context.Context) {
+		net := network.
+			ABasicTestNetworkWithTimeBasedElectionsAndConsoleLogs(ctx, t).
+			StartConsensus(ctx)
+		net.WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx, 2, 1) // We must not wait for ALL nodes to commit H=8 as sometimes one of the nodes will start after PREPREPARE is sent so it will be left behind for good (there is no NodeSync to save it as in production case)
 	})
 }
 
 func TestHangingNode(t *testing.T) {
-	test.WithContext(func(ctx context.Context) {
+	test.WithContextWithTimeout(t, 15*time.Second, func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
 
-		net := network.ATestNetwork(4, block1, block2)
+		net := network.ATestNetworkBuilder(4, block1, block2).
+			//LogToConsole(t).
+			Build(ctx)
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
 		node3 := net.Nodes[3]
-		net.NodesPauseOnValidate()
+		net.SetNodesToPauseOnValidateBlock()
 		net.StartConsensus(ctx)
+		// TODO This hangs, maybe impl is bad, compare to RequestNewBlockProposal
+		net.ReturnWhenNodesPauseOnValidateBlock(ctx, node1, node2, node3)
+		net.ResumeValidateBlockOnNodes(ctx, node1, node2)
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 2, node0, node1, node2)
 
-		net.WaitForNodesToValidate(ctx, node1, node2, node3)
-		net.ResumeNodesValidation(ctx, node1, node2)
-		net.WaitForNodesToCommitABlock(ctx, node0, node1, node2)
-		require.True(t, matchers.BlocksAreEqual(node0.GetLatestBlock(), block1))
-		require.True(t, matchers.BlocksAreEqual(node1.GetLatestBlock(), block1))
-		require.True(t, matchers.BlocksAreEqual(node2.GetLatestBlock(), block1))
+		node0LatestBlock := node0.GetLatestBlock()
+		if node0LatestBlock == nil {
+			fmt.Printf("Weird: node0 latest is nil!")
+			t.Fatal("node0Latest is nil")
+		}
+		require.True(t, matchers.BlocksAreEqual(node0LatestBlock, block1), "%s should be equal to %s", node0LatestBlock, block1)
+		require.True(t, matchers.BlocksAreEqual(node1.GetLatestBlock(), block1), "%s should be equal to %s", node1.GetLatestBlock(), block1)
+		require.True(t, matchers.BlocksAreEqual(node2.GetLatestBlock(), block1), "%s should be equal to %s", node2.GetLatestBlock(), block1)
 		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)
 
-		net.WaitForNodesToValidate(ctx, node1, node2)
-		net.ResumeNodesValidation(ctx, node1, node2)
-		net.WaitForNodesToCommitABlock(ctx, node0, node1, node2)
-		require.True(t, matchers.BlocksAreEqual(node0.GetLatestBlock(), block2))
+		net.ReturnWhenNodesPauseOnValidateBlock(ctx, node1, node2)
+		net.ResumeValidateBlockOnNodes(ctx, node1, node2)
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 3, node0, node1, node2)
+		node0LatestBlock = node0.GetLatestBlock()
+		require.True(t, matchers.BlocksAreEqual(node0LatestBlock, block2))
 		require.True(t, matchers.BlocksAreEqual(node1.GetLatestBlock(), block2))
 		require.True(t, matchers.BlocksAreEqual(node2.GetLatestBlock(), block2))
 		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)
 
-		net.ResumeNodesValidation(ctx, node3)
-		net.WaitForNodesToCommitABlock(ctx, node3)
+		net.ResumeValidateBlockOnNodes(ctx, node3)
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 2, node3)
 		require.True(t, matchers.BlocksAreEqual(node3.GetLatestBlock(), block1))
 
-		net.WaitForNodesToValidate(ctx, node3)
-		net.ResumeNodesValidation(ctx, node3)
-		net.WaitForNodesToCommitABlock(ctx, node3)
+		net.ReturnWhenNodesPauseOnValidateBlock(ctx, node3)
+		net.ResumeValidateBlockOnNodes(ctx, node3)
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 3, node3)
 		require.True(t, matchers.BlocksAreEqual(node3.GetLatestBlock(), block2))
 	})
 }

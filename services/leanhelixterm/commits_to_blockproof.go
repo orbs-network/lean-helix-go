@@ -11,10 +11,8 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/blockproof"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/logger"
-	L "github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
-	"math"
 	"strings"
 )
 
@@ -22,7 +20,8 @@ func CommitsToProof(log logger.LHLogger, blockHeight primitives.BlockHeight, myM
 	return func(ctx context.Context, block interfaces.Block, commitMessages []*interfaces.CommitMessage) {
 		proof := blockproof.GenerateLeanHelixBlockProof(keyManager, commitMessages)
 		committeeStr := commitMessagesToCommitteeMemberIdsStr(commitMessages)
-		log.Debug(L.LC(blockHeight, math.MaxUint64, myMemberId), "Generated block proof with committee-size=%d, committee-members=%s", len(commitMessages), committeeStr)
+		height := block.Height()
+		log.Debug("Generated block proof for H=%d with committee-size=%d, committee-members=%s", height, len(commitMessages), committeeStr)
 		onCommit(ctx, block, proof.Raw())
 	}
 }

@@ -7,6 +7,11 @@
 package test
 
 import (
+	"crypto/md5"
+	"encoding/hex"
+	"fmt"
+	"strings"
+	"testing"
 	"time"
 )
 
@@ -31,4 +36,14 @@ func Consistently(timeout time.Duration, f func() bool) bool {
 		time.Sleep(timeout / consistentlyIterations)
 	}
 	return true
+}
+
+
+func NameHashPrefix(tb testing.TB, idLen int) string {
+	if tb == nil {
+		return strings.Repeat(" ", idLen)
+	}
+	testInstance := fmt.Sprintf("%p", tb) // test instance identifier
+	md5 := md5.Sum([]byte(testInstance)) // avoid collisions
+	return hex.EncodeToString(md5[:])[:idLen]
 }

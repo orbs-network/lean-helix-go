@@ -18,10 +18,10 @@ type NodeBuilder struct {
 	instanceId      primitives.InstanceId
 	communication   *mocks.CommunicationMock
 	membership      interfaces.Membership
-	blocksPool      *mocks.BlocksPool
-	logsToConsole   bool
 	memberId        primitives.MemberId
-	electionTrigger interfaces.ElectionTrigger
+	electionTrigger interfaces.ElectionScheduler
+	blockUtils      interfaces.BlockUtils
+	l               interfaces.Logger
 }
 
 func NewNodeBuilder() *NodeBuilder {
@@ -54,52 +54,52 @@ func (builder *NodeBuilder) AsInstanceId(instanceId primitives.InstanceId) *Node
 	return builder
 }
 
-func (builder *NodeBuilder) WithBlocksPool(blocksPool *mocks.BlocksPool) *NodeBuilder {
-	if builder.blocksPool == nil {
-		builder.blocksPool = blocksPool
-	}
-	return builder
-}
-
-func (builder *NodeBuilder) WithElectionTrigger(electionTrigger interfaces.ElectionTrigger) *NodeBuilder {
+func (builder *NodeBuilder) WithElectionTrigger(electionTrigger interfaces.ElectionScheduler) *NodeBuilder {
 	if builder.electionTrigger == nil {
 		builder.electionTrigger = electionTrigger
 	}
 	return builder
 }
 
-func (builder *NodeBuilder) ThatLogsToConsole() *NodeBuilder {
-	builder.logsToConsole = true
+func (builder *NodeBuilder) WithLogger(logger interfaces.Logger) *NodeBuilder {
+	builder.l = logger
+	return builder
+}
+
+func (builder *NodeBuilder) WithBlockUtils(utils interfaces.BlockUtils) *NodeBuilder {
+	builder.blockUtils = utils
 	return builder
 }
 
 func (builder *NodeBuilder) Build() *Node {
 	memberId := builder.memberId
 	if memberId == nil {
-		memberId = primitives.MemberId(fmt.Sprintf("Dummy MemberId"))
+		memberId = primitives.MemberId(fmt.Sprintf("XXX"))
 	}
 
-	blockUtils := mocks.NewMockBlockUtils(builder.blocksPool)
-
-	var electionTrigger interfaces.ElectionTrigger
-	if builder.electionTrigger == nil {
-		electionTrigger = mocks.NewMockElectionTrigger()
-	} else {
-		electionTrigger = builder.electionTrigger
+	if builder.l == nil {
+		builder.l = logger.NewSilentLogger()
 	}
 
-	var l interfaces.Logger
-	if builder.logsToConsole {
-		l = logger.NewConsoleLogger()
+	if builder.blockUtils == nil {
+		builder.blockUtils = mocks.NewMockBlockUtils(builder.memberId, mocks.NewBlocksPool(nil), builder.l)
 	}
-	return NewNode(builder.instanceId, builder.membership, builder.communication, blockUtils, electionTrigger, l)
+
+	return NewNode(
+		builder.instanceId,
+		builder.membership,
+		builder.communication,
+		builder.blockUtils,
+		builder.electionTrigger,
+		builder.l,
+	)
 }
 
 func ADummyNode() *Node {
 	memberId := primitives.MemberId("Dummy")
 	return NewNodeBuilder().
 		WithMemberId(memberId).
-		ThatIsPartOf(mocks.NewMockMembership(memberId, nil, false)).
-		CommunicatesVia(mocks.NewCommunication(nil)).
+		ThatIsPartOf(mocks.NewFakeMembership(memberId, nil, false)).
+		CommunicatesVia(mocks.NewCommunication(memberId, nil, nil)).
 		Build()
 }

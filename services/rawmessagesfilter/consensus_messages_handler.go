@@ -12,5 +12,5 @@ import (
 )
 
 type ConsensusMessagesHandler interface {
-	HandleConsensusMessage(ctx context.Context, message interfaces.ConsensusMessage)
+	HandleConsensusMessage(ctx context.Context, message interfaces.ConsensusMessage) error
 }

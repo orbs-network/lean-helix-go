@@ -18,18 +18,47 @@ type harness struct {
 	net *network.TestNetwork
 }
 
-func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Block) *harness {
-	//net := builders.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).LogToConsole().Build()
-	net := network.ATestNetwork(4, blocksPool...)
-	net.SetNodesToPauseOnRequestNewBlock()
+func NewStartedHarness(ctx context.Context, t *testing.T, logsToConsole bool, blocksPool ...interfaces.Block) *harness {
+	return newHarness(ctx, t, logsToConsole, false, true, blocksPool...)
+}
+
+func NewStartedHarnessDontPauseOnRequestNewBlock(ctx context.Context, t *testing.T, logsToConsole bool, blocksPool ...interfaces.Block) *harness {
+	return newHarness(ctx, t, logsToConsole, false, false, blocksPool...)
+}
+
+// This might not be a good idea but it is needed outside this package
+func Net(h *harness) *network.TestNetwork {
+	return h.net
+}
+func NewStartedHarnessWithFailingBlockProposalValidations(ctx context.Context, t *testing.T, logsToConsole bool) *harness {
+	return newHarness(ctx, t, logsToConsole, true, true)
+}
+
+func newHarness(ctx context.Context, t *testing.T, logsToConsole bool, withFailingBlockProposalValidations bool, pauseOnRequestNewBlock bool, blocksPool ...interfaces.Block) *harness {
+	networkBuilder := network.ATestNetworkBuilder(4)
+	if logsToConsole {
+		networkBuilder = networkBuilder.LogToConsole(t)
+	}
+	net := networkBuilder.
+		WithMaybeFailingBlockProposalValidations(withFailingBlockProposalValidations, blocksPool...).
+		Build(ctx)
+
+	// Create all channels in advance, using the test context which will only get canceled at the end of test
+	for _, node := range net.Nodes {
+		for _, peerNode := range net.Nodes {
+			net.GetNodeCommunication(node.MemberId).ReturnAndMaybeCreateOutgoingChannelByTarget(ctx, peerNode.MemberId)
+		}
+	}
+
+	if pauseOnRequestNewBlock {
+		net.SetNodesToPauseOnRequestNewBlock()
+	} else {
+		net.SetNodesToNotPauseOnRequestNewBlock()
+	}
 	net.StartConsensus(ctx)
 
 	return &harness{
 		t:   t,
 		net: net,
 	}
-}
-
-func (h *harness) TriggerElection(ctx context.Context) {
-	h.net.TriggerElection(ctx)
 }

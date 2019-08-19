@@ -14,23 +14,23 @@ import (
 )
 
 func TestGenesisBlock(t *testing.T) {
-	blockChain := mocks.NewInMemoryBlockChain()
-	actual := blockChain.GetLastBlock()
+	blockChain := mocks.NewInMemoryBlockchain()
+	actual := blockChain.LastBlock()
 	expected := interfaces.GenesisBlock
 	require.Equal(t, expected, actual, "Did not return the genesis block as the first block")
 }
 
 func TestAppendingToBlockChain(t *testing.T) {
-	blockChain := mocks.NewInMemoryBlockChain()
+	blockChain := mocks.NewInMemoryBlockchain()
 	block := mocks.ABlock(interfaces.GenesisBlock)
 	blockChain.AppendBlockToChain(block, nil)
 
-	actual := blockChain.GetLastBlock()
+	actual := blockChain.LastBlock()
 	require.Equal(t, block, actual, "Did not return the genesis block as the first block")
 }
 
 func TestGettingTheLatestBlock(t *testing.T) {
-	blockChain := mocks.NewInMemoryBlockChain()
+	blockChain := mocks.NewInMemoryBlockchain()
 	block1 := mocks.ABlock(interfaces.GenesisBlock)
 	block2 := mocks.ABlock(block1)
 	block3 := mocks.ABlock(block2)
@@ -38,12 +38,12 @@ func TestGettingTheLatestBlock(t *testing.T) {
 	blockChain.AppendBlockToChain(block2, nil)
 	blockChain.AppendBlockToChain(block3, nil)
 
-	actual := blockChain.GetLastBlock()
+	actual := blockChain.LastBlock()
 	require.Equal(t, block3, actual, "Did not return the latest block")
 }
 
 func TestGettingTheLatestBlockProof(t *testing.T) {
-	blockChain := mocks.NewInMemoryBlockChain()
+	blockChain := mocks.NewInMemoryBlockchain()
 	block1 := mocks.ABlock(interfaces.GenesisBlock)
 	block2 := mocks.ABlock(block1)
 	block3 := mocks.ABlock(block2)
@@ -51,6 +51,6 @@ func TestGettingTheLatestBlockProof(t *testing.T) {
 	blockChain.AppendBlockToChain(block2, []byte{4, 5, 6})
 	blockChain.AppendBlockToChain(block3, []byte{7, 8, 9})
 
-	actual := blockChain.GetLastBlockProof()
+	actual := blockChain.LastBlockProof()
 	require.Equal(t, []byte{7, 8, 9}, actual, "Did not return the latest block proof")
 }

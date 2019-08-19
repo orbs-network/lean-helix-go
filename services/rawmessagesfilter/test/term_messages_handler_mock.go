@@ -19,6 +19,8 @@ func NewTermMessagesHandlerMock() *termMessagesHandlerMock {
 	return &termMessagesHandlerMock{}
 }
 
-func (t *termMessagesHandlerMock) HandleConsensusMessage(ctx context.Context, message interfaces.ConsensusMessage) {
+func (t *termMessagesHandlerMock) HandleConsensusMessage(ctx context.Context, message interfaces.ConsensusMessage) error {
 	t.history = append(t.history, message)
+
+	return nil
 }

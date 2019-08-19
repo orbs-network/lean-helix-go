@@ -8,41 +8,40 @@ package network
 
 import (
 	"context"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/services/quorum"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/matchers"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
+	"math"
+	"testing"
+	"time"
 )
 
 type TestNetwork struct {
 	InstanceId primitives.InstanceId
 	Nodes      []*Node
 	Discovery  *mocks.Discovery
+	log        interfaces.Logger
 }
 
 func (net *TestNetwork) GetNodeCommunication(memberId primitives.MemberId) *mocks.CommunicationMock {
 	return net.Discovery.GetCommunicationById(memberId)
 }
 
-func (net *TestNetwork) TriggerElection(ctx context.Context) {
-	for _, node := range net.Nodes {
-		node.TriggerElection(ctx)
-	}
-}
-
 func (net *TestNetwork) StartConsensus(ctx context.Context) *TestNetwork {
+	net.log.Debug("StartConsensus() start")
 	for _, node := range net.Nodes {
-		node.StartConsensus(ctx)
+		err := node.StartConsensus(ctx)
+		if err != nil {
+			panic(fmt.Sprintf("error starting consensus %s", err))
+		}
 	}
 
-	return net
-}
+	net.WaitUntilNetworkIsRunning(ctx)
 
-func (net *TestNetwork) StartConsensusSync(ctx context.Context) *TestNetwork {
-	for _, node := range net.Nodes {
-		node.StartConsensusSync(ctx)
-	}
-
+	net.log.Debug("StartConsensus: NETWORK IS READY")
 	return net
 }
 
@@ -65,132 +64,147 @@ func (net *TestNetwork) AllNodesChainEndsWithABlock(block interfaces.Block) bool
 	return true
 }
 
-func (net *TestNetwork) WaitForAllNodesToCommitBlock(ctx context.Context, block interfaces.Block) bool {
-	for _, node := range net.Nodes {
-		select {
-		case <-ctx.Done():
-			return false
-		case nodeState := <-node.NodeStateChannel:
-			if matchers.BlocksAreEqual(block, nodeState.block) == false {
-				return false
-			}
+func (net *TestNetwork) WaitUntilNodesEventuallyCommitASpecificBlock(ctx context.Context, t *testing.T, timeout time.Duration, block interfaces.Block, nodes ...*Node) {
+
+	if nodes == nil {
+		nodes = net.Nodes
+	}
+
+	h := block.Height()
+	net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, h+1, nodes...)
+	for _, node := range nodes {
+		b, _ := node.blockChain.BlockAndProofAt(h)
+		if !matchers.BlocksAreEqual(block, b) {
+			t.Fatalf("Node %s: Height=%d: Expected block %s but found %s",
+				node.MemberId, h, block, b)
 		}
 	}
-	return true
 }
 
-const MINIMUM_NUMBER_OF_NODES_FOR_CONSENSUS = 4
-
-func (net *TestNetwork) WaitForAllNodesToCommitTheSameBlock(ctx context.Context) bool {
-	if len(net.Nodes) < MINIMUM_NUMBER_OF_NODES_FOR_CONSENSUS {
-		panic("Not enough nodes for consensus")
+func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context.Context, height primitives.BlockHeight, nodes ...*Node) {
+	if nodes == nil {
+		nodes = net.Nodes
 	}
+	net.WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx, height, len(nodes), nodes...)
 
-	select {
-	case <-ctx.Done():
-		return false
-	case firstNodeStateChannel := <-net.Nodes[0].NodeStateChannel:
-		firstNodeBlock := firstNodeStateChannel.block
-		for i := 1; i < len(net.Nodes); i++ {
-			node := net.Nodes[i]
+}
+
+func (net *TestNetwork) WaitUntilQuorumOfNodesEventuallyReachASpecificHeight(ctx context.Context, height primitives.BlockHeight) {
+	quorum := quorum.CalcQuorumSize(len(net.Nodes))
+	net.WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx, height, quorum, net.Nodes...)
+}
+func (net *TestNetwork) WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx context.Context, height primitives.BlockHeight, subset int, nodes ...*Node) {
+	if nodes == nil {
+		nodes = net.Nodes
+	}
+	net.log.Debug("WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(): start: height=%d subset=%d numNodes=%d ", height, subset, len(nodes))
+	doneChan := make(chan struct{})
+	for _, node := range nodes {
+		// TODO Trying to use node.blockChain.Count() instead of node.GetCurrentHeight()
+		// hangs - need to understand why, as it seems more correct.
+
+		go func(node *Node) { // shadowing node on purpose
+			for node.GetCurrentHeight() < height {
+				iterationTimeout, _ := context.WithTimeout(ctx, 20*time.Millisecond)
+				<-iterationTimeout.Done() // sleep or get cancelled
+			}
 
 			select {
+			case doneChan <- struct{}{}:
 			case <-ctx.Done():
-				return false
-
-			case nodeState := <-node.NodeStateChannel:
-				if matchers.BlocksAreEqual(firstNodeBlock, nodeState.block) == false {
-					return false
-				}
 			}
-
-		}
-		return true
+		}(node)
 	}
+	for i := 0; i < subset; i++ {
+		select {
+		case <-doneChan:
+		case <-ctx.Done():
+		}
+	}
+	net.log.Debug("WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(): end: height=%d subset=%d numNodes=%d ", height, subset, len(nodes))
 }
 
-func (net *TestNetwork) NodesPauseOnValidate(nodes ...*Node) {
+// Wait for H=1 so that election triggers will be sent with H=1
+// o/w they will sometimes be sent with H=0 and subsequently be ignored
+// by workerloop's election channel, causing election to not happen,
+// failing/hanging the test.
+func (net *TestNetwork) WaitUntilNetworkIsRunning(ctx context.Context) {
+	net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 1)
+}
+
+func (net *TestNetwork) SetNodesToPauseOnValidateBlock(nodes ...*Node) {
 	if nodes == nil {
 		nodes = net.Nodes
 	}
 
 	for _, node := range nodes {
-		node.BlockUtils.PauseOnValidation = true
+		if pausableBlockUtils, ok := node.BlockUtils.(*mocks.PausableBlockUtils); ok {
+			pausableBlockUtils.PauseOnValidateBlock = true
+		} else {
+			panic("Node.BlockUtils is not PausableBlockUtils")
+		}
+
 	}
 }
 
-func (net *TestNetwork) WaitForNodesToValidate(ctx context.Context, nodes ...*Node) {
+func (net *TestNetwork) ReturnWhenNodesPauseOnValidateBlock(ctx context.Context, nodes ...*Node) {
 	for _, node := range nodes {
-		node.BlockUtils.ValidationLatch.ReturnWhenLatchIsPaused(ctx)
+		if pausableBlockUtils, ok := node.BlockUtils.(*mocks.PausableBlockUtils); ok {
+			pausableBlockUtils.ValidationLatch.ReturnWhenLatchIsPaused(ctx, node.MemberId)
+		} else {
+			panic("Node.BlockUtils is not PausableBlockUtils")
+		}
+
 	}
 }
 
-func (net *TestNetwork) ResumeNodesValidation(ctx context.Context, nodes ...*Node) {
+func (net *TestNetwork) ResumeValidateBlockOnNodes(ctx context.Context, nodes ...*Node) {
 	for _, node := range nodes {
-		node.BlockUtils.ValidationLatch.Resume(ctx)
+		if pausableBlockUtils, ok := node.BlockUtils.(*mocks.PausableBlockUtils); ok {
+			pausableBlockUtils.ValidationLatch.Resume(ctx, node.MemberId)
+		} else {
+			panic("Node.BlockUtils is not PausableBlockUtils")
+		}
+
 	}
 }
 
 func (net *TestNetwork) SetNodesToPauseOnRequestNewBlock(nodes ...*Node) {
+	net.SetNodesPauseOnRequestNewBlockWhenCounterIsZero(0, nodes...)
+}
+
+func (net *TestNetwork) SetNodesToNotPauseOnRequestNewBlock(nodes ...*Node) {
+	net.SetNodesPauseOnRequestNewBlockWhenCounterIsZero(math.MaxInt64, nodes...)
+}
+
+func (net *TestNetwork) SetNodesPauseOnRequestNewBlockWhenCounterIsZero(counter int64, nodes ...*Node) {
 	if nodes == nil {
 		nodes = net.Nodes
 	}
-
 	for _, node := range nodes {
-		node.BlockUtils.PauseOnRequestNewBlock = true
+		node.SetRequestNewBlockCallsLeftUntilItPausesWhenCounterIsZero(counter)
 	}
 }
 
-func (net *TestNetwork) WaitForNodeToRequestNewBlock(ctx context.Context, node *Node) {
-	node.BlockUtils.RequestNewBlockLatch.ReturnWhenLatchIsPaused(ctx)
-}
-
-func (net *TestNetwork) ResumeNodeRequestNewBlock(ctx context.Context, node *Node) {
-	node.BlockUtils.RequestNewBlockLatch.Resume(ctx)
-}
-
-func (net *TestNetwork) WaitForConsensus(ctx context.Context) {
-	for _, node := range net.Nodes {
-		select {
-		case <-ctx.Done():
-			return
-		case <-node.NodeStateChannel:
-		}
+func (net *TestNetwork) ReturnWhenNodeIsPausedOnRequestNewBlock(ctx context.Context, node *Node) {
+	if pausableBlockUtils, ok := node.BlockUtils.(*mocks.PausableBlockUtils); ok {
+		pausableBlockUtils.RequestNewBlockLatch.ReturnWhenLatchIsPaused(ctx, node.MemberId)
+	} else {
+		panic("Node.BlockUtils is not PausableBlockUtils")
 	}
 }
 
-func (net *TestNetwork) WaitForNodesToCommitABlock(ctx context.Context, nodes ...*Node) {
-	if nodes == nil {
-		nodes = net.Nodes
-	}
-
-	for _, node := range nodes {
-		select {
-		case <-ctx.Done():
-			return
-		case <-node.NodeStateChannel:
-		}
-	}
+func (net *TestNetwork) ReturnWhenNodesPauseOnUpdateState(ctx context.Context, node *Node) {
+	node.OnUpdateStateLatch.ReturnWhenLatchIsPaused(ctx, node.MemberId)
 }
 
-func (net *TestNetwork) WaitForNodesToCommitASpecificBlock(ctx context.Context, block interfaces.Block, nodes ...*Node) bool {
-	if nodes == nil {
-		nodes = net.Nodes
+func (net *TestNetwork) ResumeRequestNewBlockOnNodes(ctx context.Context, node *Node) {
+	if pausableBlockUtils, ok := node.BlockUtils.(*mocks.PausableBlockUtils); ok {
+		pausableBlockUtils.RequestNewBlockLatch.Resume(ctx, node.MemberId)
+	} else {
+		panic("Node.BlockUtils is not PausableBlockUtils")
 	}
 
-	for _, node := range nodes {
-
-		select {
-		case <-ctx.Done():
-			return false
-		case nodeState := <-node.NodeStateChannel:
-			if matchers.BlocksAreEqual(block, nodeState.block) == false {
-				return false
-			}
-		}
-
-	}
-	return true
 }
 
 func (net *TestNetwork) AllNodesValidatedNoMoreThanOnceBeforeCommit(ctx context.Context) bool {
@@ -199,7 +213,7 @@ func (net *TestNetwork) AllNodesValidatedNoMoreThanOnceBeforeCommit(ctx context.
 		select {
 		case <-ctx.Done():
 			return false
-		case nodeState := <-node.NodeStateChannel:
+		case nodeState := <-node.CommittedBlockChannel:
 			if nodeState.validationCount > 1 {
 				return false
 			}
@@ -208,10 +222,25 @@ func (net *TestNetwork) AllNodesValidatedNoMoreThanOnceBeforeCommit(ctx context.
 	return true
 }
 
-func NewTestNetwork(instanceId primitives.InstanceId, discovery *mocks.Discovery) *TestNetwork {
+func (net *TestNetwork) TriggerElectionsOnAllNodes(ctx context.Context) {
+	for _, n := range net.Nodes {
+		<-n.TriggerElectionOnNode(ctx)
+	}
+}
+
+func (net *TestNetwork) WaitForShutdown(ctx context.Context) {
+	net.log.Debug("WaitForShutdown() start")
+	for _, node := range net.Nodes {
+		node.leanHelix.WaitUntilShutdown(ctx)
+	}
+	net.log.Debug("WaitForShutdown() DONE")
+}
+
+func NewTestNetwork(instanceId primitives.InstanceId, discovery *mocks.Discovery, log interfaces.Logger) *TestNetwork {
 	return &TestNetwork{
 		InstanceId: instanceId,
 		Nodes:      []*Node{},
 		Discovery:  discovery,
+		log:        log,
 	}
 }

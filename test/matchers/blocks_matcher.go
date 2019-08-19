@@ -12,5 +12,10 @@ import (
 )
 
 func BlocksAreEqual(block1 interfaces.Block, block2 interfaces.Block) bool {
-	return mocks.CalculateBlockHash(block1).Equal(mocks.CalculateBlockHash(block2))
+	if block1 == nil && block2 == nil {
+		return true
+	}
+	block1Hash := mocks.CalculateBlockHash(block1)
+	block2Hash := mocks.CalculateBlockHash(block2)
+	return block1Hash.Equal(block2Hash)
 }

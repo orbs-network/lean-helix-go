@@ -9,10 +9,10 @@ package test
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
-	"github.com/orbs-network/lean-helix-go/services/logger"
 	L "github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/services/rawmessagesfilter"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/state"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
@@ -21,8 +21,8 @@ import (
 	"testing"
 )
 
-func testLogger() L.LHLogger {
-	return L.NewLhLogger(logger.NewSilentLogger())
+func testLogger(state *state.State) L.LHLogger {
+	return L.NewLhLogger(mocks.NewMockConfig(), state)
 }
 
 func GeneratePreprepareMessage(instanceId primitives.InstanceId, blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
@@ -63,9 +63,10 @@ func GenerateNewViewMessage(instanceId primitives.InstanceId, blockHeight primit
 func TestGettingAMessage(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		instanceId := primitives.InstanceId(rand.Uint64())
-		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger())
+		state := mocks.NewMockState().WithHeightView(10, 20)
+		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state.State), state.State)
 		messagesHandler := NewTermMessagesHandlerMock()
-		filter.SetBlockHeight(ctx, 10, messagesHandler)
+		filter.ConsumeCacheMessages(ctx, messagesHandler)
 
 		ppm := GeneratePreprepareMessage(instanceId, 10, 20, "Sender MemberId")
 		pm := GeneratePrepareMessage(instanceId, 10, 20, "Sender MemberId")
@@ -88,9 +89,10 @@ func TestGettingAMessage(t *testing.T) {
 func TestFilterMessagesFromThePast(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		instanceId := primitives.InstanceId(rand.Uint64())
-		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger())
+		state := mocks.NewMockState().WithHeightView(10, 0)
+		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state.State), state.State)
 		messagesHandler := NewTermMessagesHandlerMock()
-		filter.SetBlockHeight(ctx, 10, messagesHandler)
+		filter.ConsumeCacheMessages(ctx, messagesHandler)
 
 		messageFromThePast := GeneratePreprepareMessage(instanceId, 9, 20, "Sender MemberId")
 		messageFromThePresent := GeneratePreprepareMessage(instanceId, 10, 20, "Sender MemberId")
@@ -106,9 +108,10 @@ func TestFilterMessagesFromThePast(t *testing.T) {
 
 func TestFilterMessagesWithBadInstanceId(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		filter := rawmessagesfilter.NewConsensusMessageFilter(777, primitives.MemberId("My MemberId"), testLogger())
+		state := mocks.NewMockState().WithHeightView(10, 0)
+		filter := rawmessagesfilter.NewConsensusMessageFilter(777, primitives.MemberId("My MemberId"), testLogger(state.State), state.State)
 		messagesHandler := NewTermMessagesHandlerMock()
-		filter.SetBlockHeight(ctx, 10, messagesHandler)
+		filter.ConsumeCacheMessages(ctx, messagesHandler)
 
 		messageWithGoodInstanceId := GeneratePreprepareMessage(777, 10, 20, "Sender MemberId")
 		messageWithBadInstanceId := GeneratePreprepareMessage(666, 10, 20, "Sender MemberId")
@@ -125,9 +128,10 @@ func TestFilterMessagesWithBadInstanceId(t *testing.T) {
 func TestCacheMessagesFromTheFuture(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		instanceId := primitives.InstanceId(rand.Uint64())
-		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger())
+		state := mocks.NewMockState().WithHeightView(10, 0)
+		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state.State), state.State)
 		messagesHandler := NewTermMessagesHandlerMock()
-		filter.SetBlockHeight(ctx, 10, messagesHandler)
+		filter.ConsumeCacheMessages(ctx, messagesHandler)
 
 		messageFromTheFuture := GeneratePreprepareMessage(instanceId, 11, 20, "Sender MemberId")
 		messageFromThePresent := GeneratePreprepareMessage(instanceId, 10, 20, "Sender MemberId")
@@ -144,9 +148,10 @@ func TestCacheMessagesFromTheFuture(t *testing.T) {
 func TestFilterMessagesWithMyMemberId(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		instanceId := primitives.InstanceId(rand.Uint64())
-		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger())
+		state := mocks.NewMockState().WithHeightView(10, 0)
+		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state.State), state.State)
 		messagesHandler := NewTermMessagesHandlerMock()
-		filter.SetBlockHeight(ctx, 10, messagesHandler)
+		filter.ConsumeCacheMessages(ctx, messagesHandler)
 
 		badMessage := GeneratePreprepareMessage(instanceId, 11, 20, "My MemberId")
 		goodMessage := GeneratePreprepareMessage(instanceId, 10, 20, "Sender MemberId")

@@ -8,8 +8,9 @@ package tests
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go/instrumentation/metrics"
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/state"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/stretchr/testify/require"
@@ -28,15 +29,15 @@ func TestCallingCallback(t *testing.T) {
 		var actualHeight primitives.BlockHeight = 666
 		var expectedView primitives.View = 10
 		var expectedHeight primitives.BlockHeight = 20
-		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB func(m metrics.ElectionMetrics)) {
+		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
 			actualHeight = blockHeight
 			actualView = view
 		}
-		et.RegisterOnElection(ctx, expectedHeight, expectedView, cb)
+		et.RegisterOnElection(expectedHeight, expectedView, cb)
 
-		go et.ManualTrigger(ctx)
+		go et.ManualTrigger(ctx, state.NewHeightView(actualHeight, actualView))
 		trigger := <-et.ElectionChannel()
-		trigger(ctx)
+		trigger.MoveToNextLeader(ctx)
 
 		require.Equal(t, expectedView, actualView)
 		require.Equal(t, expectedHeight, actualHeight)
@@ -47,8 +48,8 @@ func TestIgnoreEmptyCallback(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		et := mocks.NewMockElectionTrigger()
 
-		go et.ManualTrigger(ctx)
+		go et.ManualTrigger(ctx, state.NewHeightView(0, 1))
 		trigger := <-et.ElectionChannel()
-		trigger(ctx)
+		trigger.MoveToNextLeader(ctx)
 	})
 }

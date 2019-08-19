@@ -13,6 +13,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/pkg/errors"
+	"sync"
 )
 
 type VerifyRandomSeedCallParams struct {
@@ -25,7 +26,8 @@ type MockKeyManager struct {
 	myMemberId              primitives.MemberId
 	rejectedMemberIds       []primitives.MemberId
 	FailFutureVerifications bool
-	VerifyRandomSeedHistory []*VerifyRandomSeedCallParams
+	historyLock             sync.RWMutex
+	verifyRandomSeedHistory []*VerifyRandomSeedCallParams
 }
 
 func NewMockKeyManager(memberId primitives.MemberId, rejectedMemberIds ...primitives.MemberId) *MockKeyManager {
@@ -65,8 +67,17 @@ func (km *MockKeyManager) SignRandomSeed(ctx context.Context, blockHeight primit
 	return []byte(str)
 }
 
+func (km *MockKeyManager) VerifyRandomSeedHistory(idx int) *VerifyRandomSeedCallParams {
+	km.historyLock.RLock()
+	defer km.historyLock.RUnlock()
+
+	return km.verifyRandomSeedHistory[idx]
+}
+
 func (km *MockKeyManager) VerifyRandomSeed(blockHeight primitives.BlockHeight, content []byte, sender *protocol.SenderSignature) error {
-	km.VerifyRandomSeedHistory = append(km.VerifyRandomSeedHistory, &VerifyRandomSeedCallParams{blockHeight, content, sender})
+	km.historyLock.Lock()
+	defer km.historyLock.Unlock()
+	km.verifyRandomSeedHistory = append(km.verifyRandomSeedHistory, &VerifyRandomSeedCallParams{blockHeight, content, sender})
 
 	str := fmt.Sprintf("RND_SIG|%s|%s|%x", blockHeight, sender.MemberId().KeyForMap(), content)
 	expected := []byte(str)

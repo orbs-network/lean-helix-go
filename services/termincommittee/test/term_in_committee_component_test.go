@@ -22,7 +22,6 @@ import (
 func TestViewIncrementedAfterElectionTrigger(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
-
 		h.assertView(0)
 		h.triggerElection(ctx)
 		h.assertView(1)
@@ -39,7 +38,7 @@ func TestNewViewNotAcceptedIfDidNotPassValidation(t *testing.T) {
 
 			h.assertView(startView)
 			if failValidations {
-				h.failValidations()
+				h.failMyNodeBlockProposalValidations()
 			}
 			h.receiveAndHandleNewView(ctx, 2, 1, view, block)
 			if shouldAcceptMessage {
@@ -582,7 +581,6 @@ func TestAValidPreparedProofIsSentOnViewChange(t *testing.T) {
 		pBlockRef := preparedProof.PrepareBlockRef()
 
 		var pSendersIds []primitives.MemberId
-		t.Logf("preparedProof: %+v\n", preparedProof)
 		pSendersIter := preparedProof.PrepareSendersIterator()
 		for {
 			if !pSendersIter.HasNext() {

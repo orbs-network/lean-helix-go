@@ -13,6 +13,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/randomseed"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
+	"github.com/pkg/errors"
 )
 
 type ConsensusMessagesFilter struct {
@@ -25,9 +26,9 @@ func NewConsensusMessagesFilter(handler TermMessagesHandler, keyManager interfac
 	return &ConsensusMessagesFilter{handler, keyManager, randomSeed}
 }
 
-func (mp *ConsensusMessagesFilter) HandleConsensusMessage(ctx context.Context, message interfaces.ConsensusMessage) {
+func (mp *ConsensusMessagesFilter) HandleConsensusMessage(ctx context.Context, message interfaces.ConsensusMessage) error {
 	if mp.handler == nil {
-		return
+		return errors.Errorf("Out of committee - ignoring message %s H=%d V=%d", message.MessageType(), message.BlockHeight(), message.View())
 	}
 
 	switch message := message.(type) {
@@ -45,8 +46,7 @@ func (mp *ConsensusMessagesFilter) HandleConsensusMessage(ctx context.Context, m
 
 		randomSeedBytes := randomseed.RandomSeedToBytes(mp.randomSeed)
 		if err := mp.keyManager.VerifyRandomSeed(message.BlockHeight(), randomSeedBytes, senderSignature); err != nil {
-			//fmt.Println("Filter VerifyRandomSeed Failed")
-			return
+			return errors.Wrapf(err, "Failed in VerifyRandomSeed()")
 		}
 		mp.handler.HandleCommit(ctx, message)
 
@@ -59,4 +59,6 @@ func (mp *ConsensusMessagesFilter) HandleConsensusMessage(ctx context.Context, m
 	default:
 		panic(fmt.Sprintf("unknown message type: %T", message))
 	}
+
+	return nil
 }

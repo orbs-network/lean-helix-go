@@ -9,21 +9,23 @@ package test
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
-	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
+	"github.com/orbs-network/lean-helix-go/test/leaderelection"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/orbs-network/lean-helix-go/test/network"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
-func TestNodeSync(t *testing.T) {
+func TestNodeSync_AllNodesReachSameHeight(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
 		block2 := mocks.ABlock(block1)
 		block3 := mocks.ABlock(block2)
 
-		net := network.ATestNetwork(4, block1, block2, block3)
+		net := network.ATestNetworkBuilder(4, block1, block2, block3).
+			//LogToConsole(t).
+			Build(ctx)
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
@@ -33,34 +35,42 @@ func TestNodeSync(t *testing.T) {
 		net.StartConsensus(ctx)
 
 		// closing node3's network to messages (To make it out of sync)
-		node3.Communication.SetIncomingWhitelist([]primitives.MemberId{})
+		node3.Communication.DisableIncomingCommunication()
 
-		// node0, node1, and node2 are progressing to block2
-		net.WaitForNodeToRequestNewBlock(ctx, node0)
-		net.ResumeNodeRequestNewBlock(ctx, node0)
-		net.WaitForNodesToCommitASpecificBlock(ctx, block1, node0, node1, node2)
-
-		net.WaitForNodeToRequestNewBlock(ctx, node0)
-		net.ResumeNodeRequestNewBlock(ctx, node0)
-		net.WaitForNodesToCommitASpecificBlock(ctx, block2, node0, node1, node2)
+		// node0, node1, and node2 are closing block1
+		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0)
+		net.ResumeRequestNewBlockOnNodes(ctx, node0)
+		net.WaitUntilNodesEventuallyCommitASpecificBlock(ctx, t, 0, block1, node0, node1, node2)
 
 		// node3 is still "stuck" on the genesis block
-		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)
+		node3LatestBlock := node3.GetLatestBlock()
+		require.True(t, node3LatestBlock == interfaces.GenesisBlock, "node3 should have been on genesis but its latest block is %s", node3LatestBlock)
 
-		net.WaitForNodeToRequestNewBlock(ctx, node0)
+		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, node0) // hangs on block2
+
+		bc, err := leaderelection.GenerateBlocksWithProofsForTest([]interfaces.Block{block1, block2, block3}, net.Nodes)
+		if err != nil {
+			t.Fatalf("Error creating mock blockchain for tests - %s", err)
+			return
+		}
+		blockToSync, blockProofToSync := bc.BlockAndProofAt(2)
+		_, prevBlockProofToSync := bc.BlockAndProofAt(1)
+		if err := node3.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync); err != nil {
+			t.Fatalf("Sync failed for node %s - %s", node3.MemberId, err)
+		}
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 3, node3)
+		require.True(t, node3.GetCurrentHeight() >= block2.Height())
 
 		// opening node3's network to messages
-		node3.Communication.ClearIncomingWhitelist()
+		node3.Communication.EnableIncomingCommunication()
 
-		// syncing node3
-		latestBlock := node0.GetLatestBlock()
-		latestBlockProof := node0.GetLatestBlockProof()
-		prevBlockProof := node0.GetBlockProofAt(latestBlock.Height())
-		node3.Sync(ctx, latestBlock, latestBlockProof, prevBlockProof)
+		net.SetNodesToNotPauseOnRequestNewBlock()
+		net.ResumeRequestNewBlockOnNodes(ctx, node0)
 
-		net.ResumeNodeRequestNewBlock(ctx, node0)
-
-		// now that node3 is synced, they all should progress to block3
-		net.WaitForNodesToCommitASpecificBlock(ctx, block3, node0, node1, node2, node3)
+		// Just verify all nodes reached the height of block2, either by commit or by sync.
+		// DON'T try to verify the next block is committed (block3) because sometimes one of the nodes gets left behind
+		// Normally that node would trigger a sync and get the block and continue closing blocks with the other nodes,
+		// but during this test there is no additional sync so the node will never catch up, thus it will never commit block3
+		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, block2.Height(), node0, node1, node2, node3)
 	})
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
+	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/matchers"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
@@ -24,59 +25,72 @@ import (
 	"testing"
 )
 
+const TERM_IN_COMMITTEE_HARNESS_LOGS_TO_CONSOLE = false
+
 type harness struct {
-	t                 *testing.T
-	instanceId        primitives.InstanceId
-	myMemberId        primitives.MemberId
-	keyManager        *mocks.MockKeyManager
-	myNode            *network.Node
-	net               *network.TestNetwork
-	termInCommittee   *termincommittee.TermInCommittee
-	storage           interfaces.Storage
-	electionTrigger   interfaces.ElectionTrigger
-	failVerifications bool
+	t               *testing.T
+	instanceId      primitives.InstanceId
+	myMemberId      primitives.MemberId
+	keyManager      *mocks.MockKeyManager
+	myNode          *network.Node
+	net             *network.TestNetwork
+	termInCommittee *termincommittee.TermInCommittee
+	storage         interfaces.Storage
+	electionTrigger interfaces.ElectionScheduler
 }
 
 func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Block) *harness {
-	net := network.NewTestNetworkBuilder().WithNodeCount(4).WithBlocks(blocksPool).Build()
+	net := network.
+		NewTestNetworkBuilder().
+		WithNodeCount(4).
+		WithBlocks(blocksPool...).
+		//LogToConsole().
+		Build(ctx)
 	myNode := net.Nodes[0]
-	termConfig := myNode.BuildConfig(logger.NewConsoleLogger())
-	log := logger.NewLhLogger(termConfig.Logger)
+	var logOutput interfaces.Logger
+	if TERM_IN_COMMITTEE_HARNESS_LOGS_TO_CONSOLE {
+		logOutput = logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
+	} else {
+		logOutput = logger.NewSilentLogger()
+	}
+	termConfig := myNode.BuildConfig(logOutput)
+	log := logger.NewLhLogger(termConfig, mocks.NewMockState().State)
 
 	prevBlock := myNode.GetLatestBlock()
-	blockHeight := blockheight.GetBlockHeight(prevBlock) + 1
-	committeeMembers, _ := termConfig.Membership.RequestOrderedCommittee(ctx, blockHeight, uint64(12345))
+	state := mocks.NewMockState().WithHeightView(blockheight.GetBlockHeight(prevBlock)+1, 0)
+	committeeMembers, _ := termConfig.Membership.RequestOrderedCommittee(ctx, state.Height(), uint64(12345))
 	messageFactory := messagesfactory.NewMessageFactory(termConfig.InstanceId, termConfig.KeyManager, termConfig.Membership.MyMemberId(), 0)
-	log.Info(nil, "NewHarness calling NewTermInCommittee with H=%d", blockHeight)
-	termInCommittee := termincommittee.NewTermInCommittee(ctx, log, termConfig, messageFactory, committeeMembers, blockHeight, prevBlock, true, nil)
+	log.Info("NewHarness calling NewTermInCommittee with H=%d", state.Height())
+
+	// TODO state.State is shadowing state.State and is generally meaninless
+	termInCommittee := termincommittee.NewTermInCommittee(ctx, log, termConfig, state.State, messageFactory, myNode.ElectionTrigger, committeeMembers, prevBlock, true, nil)
 
 	return &harness{
-		t:                 t,
-		instanceId:        termConfig.InstanceId,
-		myMemberId:        myNode.MemberId,
-		myNode:            myNode,
-		net:               net,
-		keyManager:        myNode.KeyManager,
-		termInCommittee:   termInCommittee,
-		storage:           termConfig.Storage,
-		electionTrigger:   myNode.ElectionTrigger,
-		failVerifications: false,
+		t:               t,
+		instanceId:      termConfig.InstanceId,
+		myMemberId:      myNode.MemberId,
+		myNode:          myNode,
+		net:             net,
+		keyManager:      myNode.KeyManager,
+		termInCommittee: termInCommittee,
+		storage:         termConfig.Storage,
+		electionTrigger: myNode.ElectionTrigger,
 	}
 }
 
-func (h *harness) failValidations() {
-	h.myNode.BlockUtils.ValidationResult = false
+func (h *harness) failMyNodeBlockProposalValidations() {
+	h.myNode.BlockUtils.(*mocks.PausableBlockUtils).WithFailingBlockProposalValidations()
 }
 
 func (h *harness) assertView(expectedView primitives.View) {
-	view := h.termInCommittee.GetView()
+	view := h.termInCommittee.State.View()
 	require.Equal(h.t, expectedView, view, fmt.Sprintf("TermInCommittee should have view=%d, but got %d", uint64(expectedView), uint64(view)))
 }
 
 func (h *harness) triggerElection(ctx context.Context) {
 	electionTriggerMock, ok := h.electionTrigger.(*mocks.ElectionTriggerMock)
 	if ok {
-		electionTriggerMock.ManualTrigger(ctx)
+		electionTriggerMock.ManualTrigger(ctx, h.myNode.State().HeightView())
 	} else {
 		panic("You are trying to trigger election with an election trigger that is not the ElectionTriggerMock")
 	}
@@ -115,7 +129,7 @@ func (h *harness) builderMessageSenders(nodesIds ...int) []*builders.MessageSign
 
 func (h *harness) electionTillView(ctx context.Context, view primitives.View) {
 	for {
-		if h.termInCommittee.GetView() == view {
+		if h.termInCommittee.State.View() == view {
 			break
 		}
 		h.triggerElection(ctx)

@@ -7,6 +7,7 @@
 package test
 
 import (
+	"context"
 	"github.com/orbs-network/lean-helix-go/services/blockextractor"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/preparedmessages"
@@ -64,7 +65,7 @@ func TestKeepOnlyMessagesWithBlock(t *testing.T) {
 
 func TestReturnBlockFromPPMWithHighestView(t *testing.T) {
 	instanceId := primitives.InstanceId(rand.Uint64())
-	testNetwork := network.ABasicTestNetwork()
+	testNetwork := network.ABasicTestNetwork(context.Background())
 	node0 := testNetwork.Nodes[0]
 	node1 := testNetwork.Nodes[1]
 	node2 := testNetwork.Nodes[2]

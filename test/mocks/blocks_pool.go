@@ -12,8 +12,8 @@ import (
 )
 
 type BlocksPool struct {
-	upcomingBlocks []interfaces.Block
 	mutex          *sync.Mutex
+	upcomingBlocks []interfaces.Block
 }
 
 func (bp *BlocksPool) PopBlock(prevBlock interfaces.Block) interfaces.Block {
