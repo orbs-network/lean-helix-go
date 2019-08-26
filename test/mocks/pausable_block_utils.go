@@ -74,7 +74,7 @@ func (b *PausableBlockUtils) ValidateBlockCommitment(blockHeight primitives.Bloc
 	return CalculateBlockHash(block).Equal(blockHash)
 }
 
-func (b *PausableBlockUtils) ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, memberId primitives.MemberId, block interfaces.Block, blockHash primitives.BlockHash, prevBlock interfaces.Block) error {
+func (b *PausableBlockUtils) ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, _ primitives.MemberId, block interfaces.Block, blockHash primitives.BlockHash, prevBlock interfaces.Block) error {
 	if b.PauseOnValidateBlock {
 		b.ValidationLatch.WaitOnPauseThenWaitOnResume(ctx, b.memberId)
 	}
