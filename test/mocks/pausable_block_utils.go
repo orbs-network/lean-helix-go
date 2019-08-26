@@ -56,7 +56,7 @@ func (b *PausableBlockUtils) WithFailingBlockProposalValidations() *PausableBloc
 	return b
 }
 
-func (b *PausableBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
+func (b *PausableBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, _ primitives.MemberId, prevBlock interfaces.Block) (interfaces.Block, primitives.BlockHash) {
 	if b.RequestNewBlockCallsLeftUntilItPausesWhenCounterIsZero == 0 {
 		//fmt.Printf("ID=%s H=%d RequestNewBlockProposal: Sleeping until latch is resumed\n", b.memberId, blockHeight)
 		b.RequestNewBlockLatch.WaitOnPauseThenWaitOnResume(ctx, b.memberId)
@@ -74,7 +74,7 @@ func (b *PausableBlockUtils) ValidateBlockCommitment(blockHeight primitives.Bloc
 	return CalculateBlockHash(block).Equal(blockHash)
 }
 
-func (b *PausableBlockUtils) ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, block interfaces.Block, blockHash primitives.BlockHash, prevBlock interfaces.Block) error {
+func (b *PausableBlockUtils) ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, memberId primitives.MemberId, block interfaces.Block, blockHash primitives.BlockHash, prevBlock interfaces.Block) error {
 	if b.PauseOnValidateBlock {
 		b.ValidationLatch.WaitOnPauseThenWaitOnResume(ctx, b.memberId)
 	}

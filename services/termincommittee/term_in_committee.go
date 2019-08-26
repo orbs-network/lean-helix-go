@@ -346,6 +346,7 @@ func (tic *TermInCommittee) HandlePrePrepare(ctx context.Context, ppm *interface
 	}
 
 	header := ppm.Content().SignedHeader()
+	// TODO Is this the correct memberId or should it be ppm.Content().Sender().MemberId ?
 	err := tic.blockUtils.ValidateBlockProposal(ctx, ppm.BlockHeight(), tic.calcLeaderMemberId(header.View()), ppm.Block(), ppm.Content().SignedHeader().BlockHash(), tic.prevBlock)
 	if ctx.Err() != nil {
 		tic.logger.Info("LHFLOW HandlePrePrepare() ValidateBlockProposal - %s", ctx.Err())
@@ -723,6 +724,7 @@ func (tic *TermInCommittee) HandleNewView(ctx context.Context, nvm *interfaces.N
 	// leader proposed a new block in this view, checking its proposal
 	if latestVote == nil {
 		header := ppm.Content().SignedHeader()
+		// TODO Is this the correct member Id or should it be ppm.Content().Sender().MemberId()?
 		err := tic.blockUtils.ValidateBlockProposal(ctx, ppm.BlockHeight(), tic.calcLeaderMemberId(header.View()), ppm.Block(), ppm.Content().SignedHeader().BlockHash(), tic.prevBlock)
 		if ctx.Err() != nil {
 			tic.logger.Info("LHFLOW LHMSG RECEIVED NEW_VIEW IGNORE - ValidateBlockProposal - %s", ctx.Err())
