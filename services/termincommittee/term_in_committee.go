@@ -168,7 +168,7 @@ func (tic *TermInCommittee) startTerm(ctx context.Context, canBeFirstLeader bool
 	}
 
 	tic.logger.Debug("LHFLOW startTerm() I AM THE LEADER OF FIRST VIEW, requesting new block")
-	block, blockHash := tic.blockUtils.RequestNewBlockProposal(ctx, currentHV.Height(), tic.prevBlock)
+	block, blockHash := tic.blockUtils.RequestNewBlockProposal(ctx, currentHV.Height(), tic.myMemberId, tic.prevBlock)
 
 	// Sometimes PPM will still be sent although context was canceled,
 	// because cancellation is not fast enough.
@@ -303,7 +303,7 @@ func (tic *TermInCommittee) onElectedByViewChange(ctx context.Context, view prim
 	block, blockHash := blockextractor.GetLatestBlockFromViewChangeMessages(viewChangeMessages)
 	if block == nil {
 		tic.logger.Debug("LHFLOW onElectedByViewChange() MISSING BLOCK IN VIEW_CHANGE, calling RequestNewBlockProposal()")
-		block, blockHash = tic.blockUtils.RequestNewBlockProposal(ctx, tic.State.Height(), tic.prevBlock)
+		block, blockHash = tic.blockUtils.RequestNewBlockProposal(ctx, tic.State.Height(), tic.myMemberId, tic.prevBlock)
 		if ctx.Err() != nil {
 			tic.logger.Info("LHFLOW onElectedByViewChange() RequestNewBlockProposal() context canceled, not sending NEW_VIEW - %s", ctx.Err())
 			return
@@ -345,7 +345,8 @@ func (tic *TermInCommittee) HandlePrePrepare(ctx context.Context, ppm *interface
 		return
 	}
 
-	err := tic.blockUtils.ValidateBlockProposal(ctx, ppm.BlockHeight(), ppm.Block(), ppm.Content().SignedHeader().BlockHash(), tic.prevBlock)
+	header := ppm.Content().SignedHeader()
+	err := tic.blockUtils.ValidateBlockProposal(ctx, ppm.BlockHeight(), tic.calcLeaderMemberId(header.View()), ppm.Block(), ppm.Content().SignedHeader().BlockHash(), tic.prevBlock)
 	if ctx.Err() != nil {
 		tic.logger.Info("LHFLOW HandlePrePrepare() ValidateBlockProposal - %s", ctx.Err())
 		return
@@ -721,7 +722,8 @@ func (tic *TermInCommittee) HandleNewView(ctx context.Context, nvm *interfaces.N
 
 	// leader proposed a new block in this view, checking its proposal
 	if latestVote == nil {
-		err := tic.blockUtils.ValidateBlockProposal(ctx, ppm.BlockHeight(), ppm.Block(), ppm.Content().SignedHeader().BlockHash(), tic.prevBlock)
+		header := ppm.Content().SignedHeader()
+		err := tic.blockUtils.ValidateBlockProposal(ctx, ppm.BlockHeight(), tic.calcLeaderMemberId(header.View()), ppm.Block(), ppm.Content().SignedHeader().BlockHash(), tic.prevBlock)
 		if ctx.Err() != nil {
 			tic.logger.Info("LHFLOW LHMSG RECEIVED NEW_VIEW IGNORE - ValidateBlockProposal - %s", ctx.Err())
 			return
