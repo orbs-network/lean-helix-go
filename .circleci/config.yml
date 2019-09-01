@@ -13,7 +13,7 @@ jobs:
       - image: circleci/golang:1.12.6
     steps:
       - checkout
-      - run: go test ./... -test.v -test.timeout 3m -test.race
+      - run: go test ./... -test.v -test.timeout 3m -test.count 2 -test.failfast -test.race
 
 workflows:
   version: 2
