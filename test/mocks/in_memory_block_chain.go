@@ -48,7 +48,6 @@ func (bs *InMemoryBlockchain) AppendBlockToChain(block interfaces.Block, blockPr
 	bs.lock.Lock()
 	defer bs.lock.Unlock()
 	bs.items = append(bs.items, &chainItem{block, blockProof})
-	fmt.Printf("ID=%s appended block %s (blockchain has %d blocks)\n", bs.memberId, block, len(bs.items))
 }
 
 func (bs *InMemoryBlockchain) LastBlock() interfaces.Block {
