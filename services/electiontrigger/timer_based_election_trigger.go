@@ -20,16 +20,16 @@ var TIMEOUT_EXP_BASE = 2.0
 
 type TimerBasedElectionTrigger struct {
 	electionChannel  chan *interfaces.ElectionTrigger
-	triggerCancelled chan struct{}
 	minTimeout       time.Duration
 	electionHandler  func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)
 	callbackFromOrbs interfaces.OnElectionCallback
 	timer            *time.Timer
 
 	// mutable, mutex protected - better refactor into separate obj
-	lock        sync.RWMutex
-	blockHeight primitives.BlockHeight
-	view        primitives.View
+	lock             sync.RWMutex
+	blockHeight      primitives.BlockHeight
+	view             primitives.View
+	triggerCancelled chan struct{}
 }
 
 func NewTimerBasedElectionTrigger(minTimeout time.Duration, callbackFromOrbs interfaces.OnElectionCallback) *TimerBasedElectionTrigger {
@@ -56,7 +56,8 @@ func (t *TimerBasedElectionTrigger) RegisterOnElection(blockHeight primitives.Bl
 
 	t.triggerCancelled = make(chan struct{})
 	t.timer = time.AfterFunc(timeout, func() {
-		t.onTimerTimeout()
+		h, v, tc := t.loadTriggerContextUnderLock()
+		triggerElections(t.ElectionChannel(), t.runOnReadElectionChannel, h, v, tc)
 	})
 
 	t.electionHandler = moveToNextLeader
@@ -93,23 +94,24 @@ func (t *TimerBasedElectionTrigger) runOnReadElectionChannel(ctx context.Context
 	}
 }
 
-func (t *TimerBasedElectionTrigger) onTimerTimeout() {
+func (t *TimerBasedElectionTrigger) loadTriggerContextUnderLock() (primitives.BlockHeight, primitives.View, chan struct{}) {
 	t.lock.RLock()
-	h := t.blockHeight
-	v := t.view
-	t.lock.RUnlock()
-	select {
-	// timer expired and no new timer has been registered
-	case t.electionChannel <- &interfaces.ElectionTrigger{
-		MoveToNextLeader: t.runOnReadElectionChannel,
-		Hv:               state.NewHeightView(h, v),
-	}:
-	case <-t.triggerCancelled:
-	}
-
+	defer t.lock.RUnlock()
+	return t.blockHeight, t.view, t.triggerCancelled
 }
 
 func (t *TimerBasedElectionTrigger) CalcTimeout(view primitives.View) time.Duration {
 	timeoutMultiplier := time.Duration(int64(math.Pow(TIMEOUT_EXP_BASE, float64(view))))
 	return timeoutMultiplier * t.minTimeout
+}
+
+func triggerElections(electionChannel chan *interfaces.ElectionTrigger, electionsFunc func(ctx context.Context), height primitives.BlockHeight, view primitives.View, triggerCancelled chan struct{}) {
+	select {
+	case electionChannel <- &interfaces.ElectionTrigger{
+		MoveToNextLeader: electionsFunc,
+		Hv:               state.NewHeightView(height, view),
+	}:
+	case <-triggerCancelled:
+	}
+
 }
