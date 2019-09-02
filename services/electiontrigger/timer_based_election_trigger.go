@@ -97,6 +97,7 @@ func (t *TimerBasedElectionTrigger) onTimerTimeout() {
 	t.lock.RLock()
 	h := t.blockHeight
 	v := t.view
+	triggerCancelled := t.triggerCancelled
 	t.lock.RUnlock()
 	select {
 	// timer expired and no new timer has been registered
@@ -104,7 +105,7 @@ func (t *TimerBasedElectionTrigger) onTimerTimeout() {
 		MoveToNextLeader: t.runOnReadElectionChannel,
 		Hv:               state.NewHeightView(h, v),
 	}:
-	case <-t.triggerCancelled:
+	case <-triggerCancelled:
 	}
 
 }
