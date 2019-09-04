@@ -447,7 +447,7 @@ func (tic *TermInCommittee) checkPreparedLocally(ctx context.Context, blockHeigh
 
 	countPrepared := tic.countPrepared(blockHeight, view, blockHash)
 	isPrepared := countPrepared >= tic.QuorumSize-1
-	tic.logger.Debug("LHFLOW Check if in PHASE PREPARED: stored %d of %d PREPARE messages", countPrepared, tic.QuorumSize-1)
+	tic.logger.Debug("LHMSG Check if in PHASE PREPARED: stored %d of %d PREPARE messages", countPrepared, tic.QuorumSize-1)
 	if isPrepared {
 		tic.onPreparedLocally(ctx, blockHeight, view, blockHash)
 	}
@@ -477,7 +477,7 @@ func (tic *TermInCommittee) countPrepared(height primitives.BlockHeight, view pr
 
 func (tic *TermInCommittee) onPreparedLocally(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) {
 	tic.setPreparedLocally(view)
-	tic.logger.Debug("LHFLOW PHASE PREPARED, PreparedLocally set to V=%d", view)
+	tic.logger.Debug("LHFLOW LHMSG PHASE PREPARED, PreparedLocally set to V=%d", view)
 	cm := tic.messageFactory.CreateCommitMessage(blockHeight, view, blockHash)
 	tic.storage.StoreCommit(cm)
 	tic.logger.Debug("LHMSG SEND COMMIT (msg: H=%d V=%d sender=%s)",
@@ -505,7 +505,7 @@ func (tic *TermInCommittee) HandleCommit(ctx context.Context, cm *interfaces.Com
 
 func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) {
 	if tic.committedBlock != nil {
-		tic.logger.Debug("LHMSG RECEIVED COMMIT IGNORE - already committed")
+		tic.logger.Debug("LHMSG RECEIVED COMMIT IGNORE - already committed H=%d", tic.committedBlock.Height())
 		return
 	}
 	if err := tic.isPreprepared(blockHeight, view, blockHash); err != nil {
@@ -530,7 +530,7 @@ func (tic *TermInCommittee) checkCommitted(ctx context.Context, blockHeight prim
 
 	tic.sendCommitIfNotAlreadySent(commits, blockHeight, view, blockHash, ctx)
 	tic.committedBlock = ppm.Block()
-	tic.logger.Debug("LHFLOW PHASE COMMITTED CommittedBlock set to H=%d, calling onCommit() with H=%d V=%d block-hash=%s num-commit-messages=%d",
+	tic.logger.Debug("LHFLOW LHMSG PHASE COMMITTED CommittedBlock set to H=%d, calling onCommit() with H=%d V=%d block-hash=%s num-commit-messages=%d",
 		ppm.Block().Height(), blockHeight, view, blockHash, len(commits))
 	tic.onCommit(ctx, ppm.Block(), commits)
 }

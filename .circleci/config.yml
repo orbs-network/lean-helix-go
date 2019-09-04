@@ -1,14 +1,23 @@
 version: 2
 jobs:
-  build:
+  tests:
     docker:
       - image: circleci/golang:1.12.6
     steps:
       - checkout
       - run: go test ./... -test.v -test.timeout 3m
 
+
+  races:
+    docker:
+      - image: circleci/golang:1.12.6
+    steps:
+      - checkout
+      - run: go test ./... -test.v -test.timeout 3m -test.count 2 -test.failfast -test.race
+
 workflows:
   version: 2
   build:
     jobs:
-      - build
+      - tests
+      - races
