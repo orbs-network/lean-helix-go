@@ -20,12 +20,12 @@ type SimpleMockBlockUtils struct {
 	mock.Mock
 }
 
-func (b *SimpleMockBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, _ interfaces.Block) (interfaces.Block, primitives.BlockHash) {
+func (b *SimpleMockBlockUtils) RequestNewBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, _ primitives.MemberId, _ interfaces.Block) (interfaces.Block, primitives.BlockHash) {
 	res := b.Called(ctx, blockHeight) // go-mock chokes on nil values, we don't need it, so don't pass it
 	return res.Get(0).(interfaces.Block), res.Get(1).(primitives.BlockHash)
 }
 
-func (b SimpleMockBlockUtils) ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, block interfaces.Block, blockHash primitives.BlockHash, prevBlock interfaces.Block) error {
+func (b SimpleMockBlockUtils) ValidateBlockProposal(ctx context.Context, blockHeight primitives.BlockHeight, _ primitives.MemberId, block interfaces.Block, blockHash primitives.BlockHash, prevBlock interfaces.Block) error {
 	return b.Called(ctx, blockHeight, block, blockHash, prevBlock).Error(0)
 }
 
