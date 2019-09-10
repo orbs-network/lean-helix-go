@@ -130,3 +130,26 @@ func withConsensusRound(ctx context.Context, tb testing.TB, test func(net *netwo
 
 	test(net, simpleMockBlockUtils, block1)
 }
+
+// this test is intended to provoke a race condition during flakiness tests. (see https://github.com/orbs-network/lean-helix-go/issues/74)
+func TestDoesNotHangWhenViewChangeRacesElectionsTrigger(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+
+		net := network.
+			ATestNetworkBuilder(4, block1).
+			Build(ctx)
+
+		net.SetNodesToPauseOnRequestNewBlock()
+		net.StartConsensus(ctx)
+
+		// setup node1 with 1 VIEW_CHANGE
+		net.TriggerElectionsOnNodes(ctx, net.Nodes[2])
+
+		// provoke race between final VIEW_CHANGE and election trigger on node1
+		net.TriggerElectionsOnNodes(ctx, net.Nodes[0], net.Nodes[1])
+
+		// expect node1 to become leader and propose a block
+		net.ReturnWhenNodeIsPausedOnRequestNewBlock(ctx, net.Nodes[1])
+	})
+}
