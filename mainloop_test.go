@@ -13,11 +13,11 @@ func TestRunEndsAfterGoroutinesEnd(t *testing.T) {
 	defer cancelTimer()
 
 	ctx, cancelGoRoutines := context.WithCancel(context.Background())
-	mainloop := NewLeanHelix(mocks.NewMockConfig(), nil, nil)
-	mainloop.Run(ctx)
+	mainLoop := NewLeanHelix(mocks.NewMockConfigSimple(), nil, nil)
+	mainLoop.Run(ctx)
 	time.Sleep(100 * time.Millisecond) // TODO replace with latch that fires after both goroutines have started?
 	cancelGoRoutines()
-	mainloop.WaitUntilShutdown(shutdownContext)
+	mainLoop.WaitUntilShutdown(shutdownContext)
 
 	select {
 	case <-ctx.Done():
@@ -25,5 +25,4 @@ func TestRunEndsAfterGoroutinesEnd(t *testing.T) {
 	case <-shutdownContext.Done():
 		t.Fatalf("system did not shut down in a timely manner")
 	}
-
 }
