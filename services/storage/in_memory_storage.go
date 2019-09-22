@@ -309,6 +309,13 @@ func (storage *InMemoryStorage) ClearBlockHeightLogs(blockHeight primitives.Bloc
 	storage.mutext.Lock()
 	defer storage.mutext.Unlock()
 
+	if blockHeight > 0 {
+		delete(storage.preprepareStorage, blockHeight-1)
+		delete(storage.prepareStorage, blockHeight-1)
+		delete(storage.commitStorage, blockHeight-1)
+		delete(storage.viewChangeStorage, blockHeight-1)
+	}
+
 	storage.resetPreprepareStorage(blockHeight)
 	storage.resetPrepareStorage(blockHeight)
 	storage.resetCommitStorage(blockHeight)
