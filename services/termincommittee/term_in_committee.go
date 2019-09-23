@@ -209,7 +209,9 @@ func (tic *TermInCommittee) initView(ctx context.Context, newView primitives.Vie
 
 func (tic *TermInCommittee) Dispose() {
 	tic.electionTrigger.Stop()
-	tic.storage.ClearBlockHeightLogs(tic.State.Height())
+	height := tic.State.Height()
+	tic.storage.ClearBlockHeightLogs(height)
+	tic.logger.Debug("LHFLOW Dispose() for H=%d", height)
 }
 
 func (tic *TermInCommittee) calcLeaderMemberId(view primitives.View) primitives.MemberId {
