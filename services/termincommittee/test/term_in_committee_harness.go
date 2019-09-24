@@ -234,6 +234,6 @@ func (h *harness) failFutureVerifications() {
 	h.keyManager.FailFutureVerifications = true
 }
 
-func (h *harness) disposeTerm() {
-	h.termInCommittee.Dispose()
+func (h *harness) disposeTerm(height primitives.BlockHeight) {
+	h.termInCommittee.Dispose(height)
 }

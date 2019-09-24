@@ -207,9 +207,8 @@ func (tic *TermInCommittee) initView(ctx context.Context, newView primitives.Vie
 	return current, nil
 }
 
-func (tic *TermInCommittee) Dispose() {
-	tic.electionTrigger.Stop()
-	height := tic.State.Height()
+func (tic *TermInCommittee) Dispose(height primitives.BlockHeight) {
+	tic.electionTrigger.Stop() // smelly - we are not verifying that electionTrigger belongs to the same height
 	tic.storage.ClearBlockHeightLogs(height)
 	tic.logger.Debug("LHFLOW Dispose() for H=%d", height)
 }

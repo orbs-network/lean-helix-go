@@ -528,7 +528,7 @@ func TestDisposingATermInCommitteeStopsTheElectionTrigger(t *testing.T) {
 		h.assertView(1)
 
 		// dispose the termInCommittee
-		h.disposeTerm()
+		h.disposeTerm(1)
 
 		// view was not changed
 		h.assertView(1)
@@ -548,7 +548,7 @@ func TestDisposingATermInCommitteeClearTheStorage(t *testing.T) {
 		h.receiveAndHandlePrepare(ctx, 2, 1, 0, block)
 
 		// dispose the termInCommittee
-		h.disposeTerm()
+		h.disposeTerm(1)
 
 		// make sure that all the messages are cleared from the storage
 		require.False(t, h.hasPreprepare(1, 0, block), "There should be no preprepare in the storage")

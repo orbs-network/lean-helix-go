@@ -56,11 +56,13 @@ func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfac
 	}
 }
 
-func (lht *LeanHelixTerm) Dispose() {
-	if lht.termInCommittee != nil {
-		lht.termInCommittee.Dispose()
-		lht.termInCommittee = nil
+func (lht *LeanHelixTerm) Dispose(height primitives.BlockHeight) {
+	if lht.termInCommittee == nil {
+		return
 	}
+
+	lht.termInCommittee.Dispose(height)
+	lht.termInCommittee = nil
 }
 
 func isParticipatingInCommittee(myMemberId primitives.MemberId, committeeMembers []primitives.MemberId) bool {
