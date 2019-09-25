@@ -309,6 +309,8 @@ func (storage *InMemoryStorage) ClearBlockHeightLogs(blockHeight primitives.Bloc
 	storage.mutext.Lock()
 	defer storage.mutext.Unlock()
 
+	// TODO: https://github.com/orbs-network/lean-helix-go/issues/81
+	//  To prevent memory leaks, it is safer to delete all older dangling heights in the storage maps
 	if blockHeight > 0 {
 		delete(storage.preprepareStorage, blockHeight-1)
 		delete(storage.prepareStorage, blockHeight-1)
