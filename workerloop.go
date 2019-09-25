@@ -237,11 +237,6 @@ func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, bloc
 
 func (lh *WorkerLoop) onNewConsensusRound(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) {
 
-	if lh.leanHelixTerm != nil {
-		lh.leanHelixTerm.Dispose()
-		lh.leanHelixTerm = nil
-	}
-
 	current, err := lh.state.SetHeightAndResetView(ctx, blockheight.GetBlockHeight(prevBlock)+1)
 	if err != nil {
 		lh.logger.Info("onNewConsensusRound() failed height increment %d: %s", current.Height(), err)
@@ -249,7 +244,10 @@ func (lh *WorkerLoop) onNewConsensusRound(ctx context.Context, prevBlock interfa
 	}
 
 	lh.logger.Debug("onNewConsensusRound() INCREMENTED HEIGHT TO %d", current.Height())
-
+	if lh.leanHelixTerm != nil {
+		lh.leanHelixTerm.Dispose()
+		lh.leanHelixTerm = nil
+	}
 	lh.leanHelixTerm = leanhelixterm.NewLeanHelixTerm(ctx, lh.logger, lh.config, lh.state, lh.electionTrigger, lh.onCommit, prevBlock, prevBlockProofBytes, canBeFirstLeader)
 	lh.logger.Debug("onNewConsensusRound() Calling ConsumeCacheMessages for H=%d", lh.state.Height())
 	lh.filter.ConsumeCacheMessages(ctx, lh.leanHelixTerm)
