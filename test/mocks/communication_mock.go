@@ -58,10 +58,11 @@ type CommunicationMock struct {
 	muIn                       sync.RWMutex
 	incomingWhiteListMemberIds []primitives.MemberId
 
-	statsSentMessages   []*interfaces.ConsensusRawMessage
-	maxDelayDuration    time.Duration
-	messagesHistoryLock sync.Mutex
-	messagesHistory     []*messageProps
+	statsSentMessagesMutex sync.RWMutex
+	statsSentMessages      []*interfaces.ConsensusRawMessage
+	maxDelayDuration       time.Duration
+	messagesHistoryLock    sync.Mutex
+	messagesHistory        []*messageProps
 }
 
 func NewCommunication(memberId primitives.MemberId, discovery *Discovery, log interfaces.Logger) *CommunicationMock {
@@ -86,6 +87,9 @@ func NewCommunication(memberId primitives.MemberId, discovery *Discovery, log in
 }
 
 func (g *CommunicationMock) SendConsensusMessage(ctx context.Context, targets []primitives.MemberId, message *interfaces.ConsensusRawMessage) error {
+	g.statsSentMessagesMutex.Lock()
+	defer g.statsSentMessagesMutex.Unlock()
+
 	g.statsSentMessages = append(g.statsSentMessages, message)
 	for _, target := range targets {
 		channel := g.ReturnOutgoingChannelByTarget(target)
@@ -298,6 +302,9 @@ func (g *CommunicationMock) SetIncomingWhitelist(incomingWhitelist []primitives.
 
 // TODO REMOVE THIS REDUNDANT METHOD
 func (g *CommunicationMock) CountSentMessages(messageType protocol.MessageType) int {
+	g.statsSentMessagesMutex.RLock()
+	defer g.statsSentMessagesMutex.RUnlock()
+
 	res := 0
 	for _, msg := range g.statsSentMessages {
 		if interfaces.ToConsensusMessage(msg).MessageType() == messageType {
@@ -309,6 +316,9 @@ func (g *CommunicationMock) CountSentMessages(messageType protocol.MessageType) 
 
 // TODO Refactor this, maybe get the data from messagesHistory instead of statsSentMessages
 func (g *CommunicationMock) GetSentMessages(messageType protocol.MessageType) []*interfaces.ConsensusRawMessage {
+	g.statsSentMessagesMutex.RLock()
+	defer g.statsSentMessagesMutex.RUnlock()
+
 	var res []*interfaces.ConsensusRawMessage
 	for _, msg := range g.statsSentMessages {
 		if interfaces.ToConsensusMessage(msg).MessageType() == messageType {

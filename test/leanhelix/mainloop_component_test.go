@@ -3,8 +3,10 @@ package leanhelix
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
+	"github.com/orbs-network/lean-helix-go/state"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/orbs-network/lean-helix-go/test/leaderelection"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
@@ -151,5 +153,36 @@ func TestVerifyWorkerContextNotCancelledIfNodeSyncBlockIsIgnored(t *testing.T) {
 		time.Sleep(100 * time.Millisecond) // let the above go func run
 
 		require.Equal(t, primitives.BlockHeight(2), node0.GetCurrentHeight())
+	})
+}
+
+// see https://github.com/orbs-network/lean-helix-go/issues/74
+func TestViewChangeRaceWithElectionLeader(t *testing.T) {
+
+	test.WithContext(func(ctx context.Context) {
+		logger := logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
+
+		d := newDriver(logger, 1, 4)
+		d.mainLoop.Run(ctx)
+
+		// init - sync the first block, to reach height 1 view 0
+		err := d.mainLoop.UpdateState(ctx, interfaces.GenesisBlock, nil)
+		require.NoError(t, err)
+
+		// receive VIEW_CHANGE messages form other committee members
+		nextView := state.NewHeightView(1, 1)
+		d.handleViewChangeMessage(ctx, nextView, 0)
+		d.handleViewChangeMessage(ctx, nextView, 2)
+
+		// for another flavor of this test uncomment this:
+		//d.handleViewChangeMessage(ctx, nextView, 3)
+
+		// trigger elections
+		d.electionTriggerMock.ManualTrigger(ctx, state.NewHeightView(1, 0))
+
+		require.True(t, test.Eventually(1*time.Second, func() bool {
+			newViewSentCount := d.communication.CountSentMessages(protocol.LEAN_HELIX_NEW_VIEW)
+			return newViewSentCount == 1
+		}), "expect to send NEW_VIEW after at least 2 VIEW_CHANGEs and an election trigger")
 	})
 }

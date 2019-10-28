@@ -22,7 +22,7 @@ import (
 )
 
 func testLogger(state *state.State) L.LHLogger {
-	return L.NewLhLogger(mocks.NewMockConfig(), state)
+	return L.NewLhLogger(mocks.NewMockConfigSimple(), state)
 }
 
 func GeneratePreprepareMessage(instanceId primitives.InstanceId, blockHeight primitives.BlockHeight, view primitives.View, senderMemberIdStr string) *interfaces.ConsensusRawMessage {
