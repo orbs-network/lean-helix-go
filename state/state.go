@@ -69,6 +69,10 @@ func (s *State) SetView(ctx context.Context, newView primitives.View) (*HeightVi
 	s.Lock()
 	defer s.Unlock()
 
+	if s.view == newView {
+		return NewHeightView(s.height, s.view), nil
+	}
+
 	if ctx.Err() == context.Canceled {
 		return NewHeightView(s.height, s.view), ctx.Err()
 	}

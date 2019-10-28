@@ -169,6 +169,10 @@ func TestViewChangeRaceWithElectionLeader(t *testing.T) {
 		err := d.mainLoop.UpdateState(ctx, interfaces.GenesisBlock, nil)
 		require.NoError(t, err)
 
+		require.True(t, test.Eventually(1*time.Second, func() bool {
+			return d.mainLoop.State().Height() == 1
+		}))
+
 		// receive VIEW_CHANGE messages form other committee members
 		nextView := state.NewHeightView(1, 1)
 		d.handleViewChangeMessage(ctx, nextView, 0)
