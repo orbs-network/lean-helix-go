@@ -11,8 +11,9 @@ import (
 // Mutable, goroutine-safe State object
 type State struct {
 	sync.RWMutex
-	height primitives.BlockHeight
-	view   primitives.View
+	height               primitives.BlockHeight
+	view                 primitives.View
+	WorkerContextManager *WorkerContextManager
 }
 
 func (s *State) CompareWithEffectiveHeightAndCancel(cancel context.CancelFunc, lastUpdated primitives.BlockHeight, height primitives.BlockHeight) (*HeightView, bool) {
@@ -118,8 +119,9 @@ func (s *State) HeightView() *HeightView {
 
 func NewState() *State {
 	return &State{
-		height: 0,
-		view:   0,
+		height:               0,
+		view:                 0,
+		WorkerContextManager: NewWorkerContextManager(),
 	}
 }
 
@@ -146,4 +148,8 @@ func (hv *HeightView) Height() primitives.BlockHeight {
 
 func (hv *HeightView) View() primitives.View {
 	return hv.view
+}
+
+func (hv *HeightView) OlderThan(otherHv *HeightView) bool {
+	return hv.Height() < otherHv.Height() || hv.Height() == otherHv.Height() && hv.View() < otherHv.View()
 }

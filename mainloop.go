@@ -109,9 +109,11 @@ func (m *MainLoop) run(ctx context.Context) {
 		panic("Election trigger was not configured, cannot run Lean Helix (mainloop.run)")
 	}
 
+	m.state.WorkerContextManager.Init(ctx)
+	defer m.state.WorkerContextManager.CancelAll()
+
 	m.logger.Info("LHFLOW LHMSG MAINLOOP START LISTENING NOW")
-	workerCtx, cancelWorkerContext := context.WithCancel(ctx)
-	defer cancelWorkerContext()
+
 	var lastReceivedHeight primitives.BlockHeight
 	for {
 		select {
@@ -122,27 +124,36 @@ func (m *MainLoop) run(ctx context.Context) {
 			parsedMessage := interfaces.ToConsensusMessage(message)
 
 			m.logger.Debug("LHFLOW LHMSG MAINLOOP RECEIVED %v from %v for H=%d V=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight(), parsedMessage.View())
+
+			msgWorkerCtx, ok := m.state.WorkerContextManager.GetOrCreateContextFor(state.NewHeightView(parsedMessage.BlockHeight(), parsedMessage.View()))
+			if !ok {
+				m.logger.Debug("LHFLOW LHMSG MAINLOOP - IGNORING RECEIVED MESSAGE %v FROM %v WITH OLDER HEIGHT/VIEW H=%d V=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight(), parsedMessage.View())
+				continue
+			}
+
 			select {
 			default: // never block the main loop
 			case <-ctx.Done(): // here for uniformity, made redundant by default:
-			case m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}:
+			case m.worker.MessagesChannel <- &MessageWithContext{ctx: msgWorkerCtx, msg: message}:
 			}
 
 		case trigger := <-m.electionScheduler.ElectionChannel():
+			triggeredHv := state.NewHeightView(trigger.Hv.Height(), trigger.Hv.View()+1)
+			m.state.WorkerContextManager.CancelContextsOlderThan(triggeredHv) // Must happen on each election trigger to periodically clean old contexts
+
 			if lastReceivedHeight > trigger.Hv.Height() {
 				m.logger.Info("LHFLOW ELECTION MAINLOOP - INVALID HEIGHT/VIEW IGNORED - Sync message inflight with higher height - lastReceivedHeight: %s, ElectionTrigger: %s", lastReceivedHeight, trigger.Hv)
 				continue
 			}
-			current, canceled := m.state.CancelContextIfHeightViewUnchanged(cancelWorkerContext, trigger.Hv.Height(), trigger.Hv.View())
-			if !canceled {
-				m.logger.Info("LHFLOW ELECTION MAINLOOP - INVALID HEIGHT/VIEW IGNORED - Current: %s, ElectionTrigger: %s", current, trigger.Hv)
+			msgWorkerCtx, ok := m.state.WorkerContextManager.GetOrCreateContextFor(triggeredHv)
+			if !ok {
+				m.logger.Debug("LHFLOW LHMSG MAINLOOP - IGNORING ELECTION TRIGGER WITH OLDER HEIGHT/VIEW H=%d V=%d", trigger.Hv.Height(), trigger.Hv.View())
 				continue
 			}
 
-			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
 			m.logger.Debug("LHFLOW ELECTION MAINLOOP - CANCELED WORKER CONTEXT (received election trigger with H=%d V=%d)", trigger.Hv.Height(), trigger.Hv.View())
 			message := &workerElectionsTriggerMessage{
-				ctx:             workerCtx,
+				ctx:             msgWorkerCtx,
 				ElectionTrigger: trigger,
 			}
 			select {
@@ -163,16 +174,18 @@ func (m *MainLoop) run(ctx context.Context) {
 				receivedBlockHeight = receivedBlockWithProof.block.Height()
 			}
 
-			current, canceled := m.state.CompareWithEffectiveHeightAndCancel(cancelWorkerContext, lastReceivedHeight, receivedBlockHeight)
-			if !canceled {
-				m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - INVALID BLOCK IGNORED - Received block height is %d which is lower than current height of %d or lastReceivedHeight of %d", receivedBlockHeight, current.Height(), lastReceivedHeight)
+			hv := state.NewHeightView(receivedBlockHeight+1, 0)
+			m.state.WorkerContextManager.CancelContextsOlderThan(hv)
+
+			msgWorkerContext, ok := m.state.WorkerContextManager.GetOrCreateContextFor(hv)
+			if !ok {
+				m.logger.Debug("LHFLOW LHMSG MAINLOOP - IGNORING BLOCK SYNC WITH OLDER HEIGHT H=%d", receivedBlockHeight)
 				continue
 			}
 
-			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
 			m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - CANCELED WORKER CONTEXT")
 			message := &workerUpdateStateMessage{
-				ctx:            workerCtx,
+				ctx:            msgWorkerContext,
 				blockWithProof: receivedBlockWithProof,
 			}
 			select {

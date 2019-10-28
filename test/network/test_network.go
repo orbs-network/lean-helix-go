@@ -107,6 +107,9 @@ func (net *TestNetwork) WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx
 			for node.GetCurrentHeight() < height {
 				iterationTimeout, _ := context.WithTimeout(ctx, 20*time.Millisecond)
 				<-iterationTimeout.Done() // sleep or get cancelled
+				if ctx.Err() != nil {
+					return
+				}
 			}
 
 			select {

@@ -135,7 +135,7 @@ func (lh *WorkerLoop) handleUpdateState(ctx context.Context, receivedBlockWithPr
 		lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP ACCEPTED block with height=%d, calling onNewConsensusRound() from handleUpdateState", receivedBlockHeight)
 		// This block is received from external source
 		// Refuse to be leader on V=0 for a block received from block sync, because this block will usually be not be the latest block.
-		lh.onNewConsensusRound(ctx, receivedBlockWithProof.block, receivedBlockWithProof.prevBlockProofBytes, false)
+		lh.onNewConsensusRound(receivedBlockWithProof.block, receivedBlockWithProof.prevBlockProofBytes, false)
 	} else {
 		lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP IGNORE - Received block ignored because its height=%d is less than current height=%d", receivedBlockHeight, lh.state.Height())
 	}
@@ -232,12 +232,18 @@ func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, bloc
 	lh.onCommitCallback(ctx, block, blockProofBytes)
 	lh.logger.Debug("LHFLOW onCommitCallback RETURNED from leanhelix.onCommit()")
 	lh.logger.Debug("Calling onNewConsensusRound() from leanhelix.onCommit()")
-	lh.onNewConsensusRound(ctx, block, blockProofBytes, true)
+	lh.onNewConsensusRound(block, blockProofBytes, true)
 }
 
-func (lh *WorkerLoop) onNewConsensusRound(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) {
+func (lh *WorkerLoop) onNewConsensusRound(prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) {
+	hv := state.NewHeightView(blockheight.GetBlockHeight(prevBlock)+1, 0)
+	ctx, ok := lh.state.WorkerContextManager.GetOrCreateContextFor(hv)
+	if !ok {
+		lh.logger.Info("onNewConsensusRound() context already cancelled %d", hv.Height())
+		return
+	}
 
-	current, err := lh.state.SetHeightAndResetView(ctx, blockheight.GetBlockHeight(prevBlock)+1)
+	current, err := lh.state.SetHeightAndResetView(ctx, hv.Height())
 	if err != nil {
 		lh.logger.Info("onNewConsensusRound() failed height increment %d: %s", current.Height(), err)
 		return
