@@ -35,6 +35,8 @@ github.com/go-kit/kit v0.8.0/go.mod h1:xBxKIO96dXMWWy0MnWVtmwkA9/13aqxPnvrjFYMA2
 github.com/go-kit/kit v0.9.0/go.mod h1:xBxKIO96dXMWWy0MnWVtmwkA9/13aqxPnvrjFYMA2as=
 github.com/go-logfmt/logfmt v0.3.0/go.mod h1:Qt1PoO58o5twSAckw1HlFXLmHsOX5/0LbT9GBnD5lWE=
 github.com/go-logfmt/logfmt v0.4.0/go.mod h1:3RMwSq7FuexP4Kalkev3ejPJsZTpXXBr9+V4qmtdjCk=
+github.com/go-playground/ansi v2.1.0+incompatible h1:f9ldskdk1seTFmYjbmPaYB+WYsDKWc4UXcGb+e9JrN8=
+github.com/go-playground/ansi v2.1.0+incompatible/go.mod h1:OCdnfTFO/GfFtp+ktUt+PhElbGOwyTRUuRUsA+Y5pSU=
 github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
 github.com/gobuffalo/envy v1.7.0/go.mod h1:n7DRkBerg/aorDM8kbduw5dN3oXGswK5liaSCx4T5NI=
 github.com/gobuffalo/logger v1.0.0/go.mod h1:2zbswyIUa45I+c+FLXuWl9zSWEiVuthsk8ze5s8JvPs=
@@ -57,6 +59,7 @@ github.com/golang/protobuf v1.3.2/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5y
 github.com/google/btree v0.0.0-20180813153112-4030bb1f1f0c/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
 github.com/google/btree v1.0.0/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
 github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5aqRK0M=
+github.com/google/go-cmp v0.3.0 h1:crn/baboCvb5fXaQ0IJ1SGTsTVrWpDsCWC8EGETZijY=
 github.com/google/go-cmp v0.3.0/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=
 github.com/google/martian v2.1.0+incompatible/go.mod h1:9I4somxYTbIHy5NJKHRl3wXiIaQGbYVAs8BPL6v8lEs=
 github.com/google/pprof v0.0.0-20181206194817-3ea8567a2e57/go.mod h1:zfwlbNMJ+OItoe0UupaVj+oy1omPYYDuagoSzA8v9mc=
@@ -99,10 +102,17 @@ github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3Rllmb
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
+github.com/orbs-network/go-mock v0.0.0-20180813130752-890a1ee8d0a1 h1:ezKxeCPNvc27Ri1EQkXfJu6N6i4i38kPuL7BkzcFOUU=
 github.com/orbs-network/go-mock v0.0.0-20180813130752-890a1ee8d0a1/go.mod h1:Hfj5NDPp07PIkGv5y8g1C0zsMXbrVTPQVIvSuHSHyvo=
+github.com/orbs-network/gojay v1.3.0 h1:TDqmmbgwHum9oXq1iexd+J+IUBm4/gtlyoOP5HV8rvw=
+github.com/orbs-network/gojay v1.3.0/go.mod h1:xdSp1mz0+DL+c6OLsbZ5qB/Gtygikcr5NdSsU1GsRC0=
+github.com/orbs-network/govnr v0.2.0 h1:Txazgo4Jd29hiARXg6nMqK2pmJA85KeXR+ZjLNy9WZc=
+github.com/orbs-network/govnr v0.2.0/go.mod h1:kZctUOFclDbO3Z6w559++l4qh0FPb57XdE5IdOFCbI4=
 github.com/orbs-network/membuffers v0.3.0 h1:EYtF1T/VBsi6DGPVS/Xbcei+Vn86fEJ/jJESFiiAqfg=
 github.com/orbs-network/membuffers v0.3.0/go.mod h1:b6+sJ9+pgca7HHle0e85RDd5zL0Hv360Xec7TGVrGFk=
 github.com/orbs-network/pbparser v0.2.0/go.mod h1:WSzcxgH5xzywQm0YSASbD7RcdxBXZgqZaDVK8M+8DJ8=
+github.com/orbs-network/scribe v0.1.0 h1:Kn/EQpifQFae+F7HRIoTIipUsSHZNcfQ3HJOhD/b+8M=
+github.com/orbs-network/scribe v0.1.0/go.mod h1:FmGcbukz5eolO+mqzxwmuy4RF4UEoLfGJIeEDAoGsBU=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/pelletier/go-toml v1.4.0/go.mod h1:PN7xzY2wHTK0K9p34ErDQMlFxa51Fk0OUruD3k1mMwo=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
