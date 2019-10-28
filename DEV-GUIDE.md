@@ -1,5 +1,10 @@
 # Lean Helix Developer Guide
 
+## Go Modules
+As of October 2019 Lean Helix switched to Go Modules for its dependency management.
+This goes in line with corresponding update to other Orbs repos, and
+replaces the previous solution of using a `vendor` folder.
+
 ## Updated threading model
 
 The existing single-threaded model using only a main event loop (`Mainloop`) prevents processing `UpdateState` and `Election` events when waiting on a long-running operation.
