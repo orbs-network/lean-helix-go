@@ -70,6 +70,10 @@ func (s *State) SetView(ctx context.Context, newView primitives.View) (*HeightVi
 	s.Lock()
 	defer s.Unlock()
 
+	if s.view == newView {
+		return NewHeightView(s.height, s.view), nil
+	}
+
 	if ctx.Err() == context.Canceled {
 		return NewHeightView(s.height, s.view), ctx.Err()
 	}
@@ -132,6 +136,9 @@ type HeightView struct {
 }
 
 func (hv *HeightView) String() string {
+	if hv == nil {
+		return "<nil HV>"
+	}
 	return fmt.Sprintf("H=%d,V=%d", hv.height, hv.view)
 }
 
@@ -151,5 +158,5 @@ func (hv *HeightView) View() primitives.View {
 }
 
 func (hv *HeightView) OlderThan(otherHv *HeightView) bool {
-	return hv.Height() < otherHv.Height() || hv.Height() == otherHv.Height() && hv.View() < otherHv.View()
+	return hv.Height() < otherHv.Height() || (hv.Height() == otherHv.Height() && hv.View() < otherHv.View())
 }
