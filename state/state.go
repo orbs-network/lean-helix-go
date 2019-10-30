@@ -16,39 +16,6 @@ type State struct {
 	WorkerContextManager *WorkerContextManager
 }
 
-func (s *State) CompareWithEffectiveHeightAndCancel(cancel context.CancelFunc, lastUpdated primitives.BlockHeight, height primitives.BlockHeight) (*HeightView, bool) {
-	s.RLock()
-	defer s.RUnlock()
-
-	hv := NewHeightView(s.height, s.view)
-
-	effectiveHeight := s.height
-	if effectiveHeight < lastUpdated {
-		effectiveHeight = lastUpdated
-	}
-
-	if height < effectiveHeight {
-		return hv, false
-	}
-
-	cancel()
-	return hv, true
-}
-
-func (s *State) CancelContextIfHeightViewUnchanged(cancel context.CancelFunc, height primitives.BlockHeight, view primitives.View) (*HeightView, bool) {
-	s.RLock()
-	defer s.RUnlock()
-
-	hv := NewHeightView(s.height, s.view)
-
-	if s.height != height || s.view != view {
-		return hv, false
-	}
-
-	cancel()
-	return hv, true
-}
-
 func (s *State) SetHeightAndResetView(ctx context.Context, newHeight primitives.BlockHeight) (*HeightView, error) {
 	s.Lock()
 	defer s.Unlock()

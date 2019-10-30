@@ -114,8 +114,8 @@ func (m *MainLoop) run(ctx context.Context) {
 
 	m.logger.Info("LHFLOW LHMSG MAINLOOP START LISTENING NOW")
 
-	var lastReceivedHeight primitives.BlockHeight
 	for {
+		m.state.WorkerContextManager.CancelContextsOlderThan(state.NewHeightView(m.state.Height(), 0)) // gc old contexts
 		select {
 		case <-ctx.Done(): // system shutdown
 			m.logger.Info("LHFLOW LHMSG MAINLOOP DONE STOPPED LISTENING, SHUTDOWN END")
@@ -139,12 +139,7 @@ func (m *MainLoop) run(ctx context.Context) {
 
 		case trigger := <-m.electionScheduler.ElectionChannel():
 			triggeredHv := state.NewHeightView(trigger.Hv.Height(), trigger.Hv.View()+1)
-			m.state.WorkerContextManager.CancelContextsOlderThan(triggeredHv) // Must happen on each election trigger to periodically clean old contexts
-
-			if lastReceivedHeight > trigger.Hv.Height() {
-				m.logger.Info("LHFLOW ELECTION MAINLOOP - INVALID HEIGHT/VIEW IGNORED - Sync message inflight with higher height - lastReceivedHeight: %s, ElectionTrigger: %s", lastReceivedHeight, trigger.Hv)
-				continue
-			}
+			m.state.WorkerContextManager.CancelContextsOlderThan(triggeredHv)
 			msgWorkerCtx, ok := m.state.WorkerContextManager.GetOrCreateContextFor(triggeredHv)
 			if !ok {
 				m.logger.Debug("LHFLOW LHMSG MAINLOOP - IGNORING ELECTION TRIGGER WITH OLDER HEIGHT/VIEW H=%d V=%d", trigger.Hv.Height(), trigger.Hv.View())
@@ -192,8 +187,6 @@ func (m *MainLoop) run(ctx context.Context) {
 			case <-ctx.Done(): // system shutdown
 			case m.worker.workerUpdateStateChannel <- message:
 			}
-
-			lastReceivedHeight = receivedBlockHeight
 
 			m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - Wrote to worker UpdateState channel")
 		}
