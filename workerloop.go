@@ -223,16 +223,22 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 	return nil
 }
 
-func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, blockProofBytes []byte) {
+func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, blockProofBytes []byte) error {
 	height := block.Height()
 	lh.logger.Debug("LHFLOW onCommitCallback START from leanhelix.onCommit() ID=%s H=%d", lh.config.Membership.MyMemberId(), height)
 
 	// TODO Gad: Should this check for errors and not call onNewConsensusRound
 
-	lh.onCommitCallback(ctx, block, blockProofBytes)
+	err := lh.onCommitCallback(ctx, block, blockProofBytes)
+	if err != nil {
+		lh.logger.Debug("LHFLOW onCommitCallback FAILED - %s", err.Error())
+		return err
+	}
 	lh.logger.Debug("LHFLOW onCommitCallback RETURNED from leanhelix.onCommit()")
 	lh.logger.Debug("Calling onNewConsensusRound() from leanhelix.onCommit()")
 	lh.onNewConsensusRound(block, blockProofBytes, true)
+
+	return nil
 }
 
 func (lh *WorkerLoop) onNewConsensusRound(prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) {

@@ -78,7 +78,7 @@ func (node *Node) TriggerElectionOnNode(ctx context.Context) <-chan struct{} {
 	return electionTriggerMock.ManualTrigger(ctx, hv)
 }
 
-func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, blockProof []byte) {
+func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, blockProof []byte) error {
 	node.blockChain.AppendBlockToChain(block, blockProof)
 	node.log.Debug("ID=%s onCommittedBlock: appended to blockchain: %s", node.MemberId, block)
 
@@ -90,12 +90,14 @@ func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, 
 
 		select {
 		case <-ctx.Done():
-			return
+			return nil
 
 		case node.CommittedBlockChannel <- nodeState:
-			return
+			return nil
 		}
 	}
+
+	return nil
 }
 
 func (node *Node) Blockchain() *mocks.InMemoryBlockchain {

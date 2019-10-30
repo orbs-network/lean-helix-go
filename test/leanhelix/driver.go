@@ -6,9 +6,15 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/messagesfactory"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/state"
+	"github.com/orbs-network/lean-helix-go/test"
+	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
+	"github.com/stretchr/testify/require"
 	"math/rand"
+	"testing"
+	"time"
 )
 
 type driver struct {
@@ -18,9 +24,10 @@ type driver struct {
 	leadersByView       []primitives.MemberId
 	mainLoop            *leanhelix.MainLoop
 	electionTriggerMock *mocks.ElectionTriggerMock
+	discovery           *mocks.Discovery
 }
 
-func newDriver(logger interfaces.Logger, becomeLeaderInView byte, totalMembers byte) *driver {
+func newDriver(logger interfaces.Logger, becomeLeaderInView byte, totalMembers byte, onCommitCallback interfaces.OnCommitCallback) *driver {
 	if becomeLeaderInView >= totalMembers {
 		panic("current node must be in committee")
 	}
@@ -57,7 +64,7 @@ func newDriver(logger interfaces.Logger, becomeLeaderInView byte, totalMembers b
 		currentMemberCommunication,
 	)
 
-	mainLoop := leanhelix.NewLeanHelix(config, nil, nil)
+	mainLoop := leanhelix.NewLeanHelix(config, onCommitCallback, nil)
 
 	return &driver{
 		instanceId:          instanceId,
@@ -66,6 +73,7 @@ func newDriver(logger interfaces.Logger, becomeLeaderInView byte, totalMembers b
 		leadersByView:       leadersByView,
 		mainLoop:            mainLoop,
 		electionTriggerMock: electionTriggerMock,
+		discovery:           discoveryMock,
 	}
 }
 
@@ -76,4 +84,30 @@ func (d *driver) handleViewChangeMessage(ctx context.Context, hv *state.HeightVi
 	message := messageFactory.CreateViewChangeMessage(hv.Height(), hv.View(), nil)
 
 	d.mainLoop.HandleConsensusMessage(ctx, message.ToConsensusRawMessage())
+}
+
+func (d *driver) waitForSentPreprepareMessage(t *testing.T, i int) *interfaces.PreprepareMessage {
+	require.True(t, test.Eventually(time.Second, func() bool {
+		return len(d.communication.GetSentMessages(protocol.LEAN_HELIX_PREPREPARE)) >= i
+	}), "expected a preprepare message to be sent within timeout")
+	message := interfaces.ToConsensusMessage(d.communication.GetSentMessages(protocol.LEAN_HELIX_PREPREPARE)[i-1]).(*interfaces.PreprepareMessage)
+	return message
+}
+
+func (d *driver) waitForSentCommitMessage(t *testing.T, i int) *interfaces.CommitMessage {
+	require.True(t, test.Eventually(time.Second, func() bool {
+		return len(d.communication.GetSentMessages(protocol.LEAN_HELIX_COMMIT)) >= i
+	}), "expected a commit message to be sent within timeout")
+	message := interfaces.ToConsensusMessage(d.communication.GetSentMessages(protocol.LEAN_HELIX_COMMIT)[i-1]).(*interfaces.CommitMessage)
+	return message
+}
+
+func (d *driver) receivePrepareMessageForBlock(ctx context.Context, from primitives.MemberId, height primitives.BlockHeight, view primitives.View, block interfaces.Block) {
+	message := builders.APrepareMessage(d.instanceId, mocks.NewMockKeyManager(from), from, height, view, block)
+	d.mainLoop.HandleConsensusMessage(ctx, message.ToConsensusRawMessage())
+}
+
+func (d *driver) receiveCommitMessageForBlock(ctx context.Context, from primitives.MemberId, height primitives.BlockHeight, view primitives.View, block interfaces.Block, randomSeed uint64) {
+	message := builders.ACommitMessage(d.instanceId, mocks.NewMockKeyManager(from), from, primitives.BlockHeight(1), primitives.View(0), block, randomSeed)
+	d.mainLoop.HandleConsensusMessage(ctx, message.ToConsensusRawMessage()) // commit from 1
 }

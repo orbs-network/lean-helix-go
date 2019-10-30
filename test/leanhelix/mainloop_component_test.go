@@ -2,12 +2,15 @@ package leanhelix
 
 import (
 	"context"
+	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/logger"
+	"github.com/orbs-network/lean-helix-go/services/randomseed"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/state"
 	"github.com/orbs-network/lean-helix-go/test"
+	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/leaderelection"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/orbs-network/lean-helix-go/test/network"
@@ -162,7 +165,7 @@ func TestViewChangeRaceWithElectionLeader(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		logger := logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
 
-		d := newDriver(logger, 1, 4)
+		d := newDriver(logger, 1, 4, nil)
 		d.mainLoop.Run(ctx)
 
 		// init - sync the first block, to reach height 1 view 0
@@ -189,4 +192,60 @@ func TestViewChangeRaceWithElectionLeader(t *testing.T) {
 			return newViewSentCount == 1
 		}), "expect to send NEW_VIEW after at least 2 VIEW_CHANGEs and an election trigger")
 	})
+}
+
+func TestCommitCallbackErrorDetectedAndPreservesState(t *testing.T) {
+
+	test.WithContext(func(ctx context.Context) {
+		logger := logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
+
+		onCommitCalledOnce := make(chan struct{})
+
+		d := newDriver(logger, 0, 4, func(ctx context.Context, block interfaces.Block, blockProof []byte) error {
+			close(onCommitCalledOnce)
+			return fmt.Errorf("intentionally failing commit callback")
+		})
+
+		d.mainLoop.Run(ctx)
+
+		err := d.mainLoop.UpdateState(ctx, interfaces.GenesisBlock, nil)
+		require.NoError(t, err)
+
+		preprepareBlock := d.waitForSentPreprepareMessage(t, 1).Block()
+
+		d.receivePrepareMessageForBlock(ctx, d.leadersByView[1], primitives.BlockHeight(1), primitives.View(0), preprepareBlock)
+		d.receivePrepareMessageForBlock(ctx, d.leadersByView[2], primitives.BlockHeight(1), primitives.View(0), preprepareBlock)
+
+		p2 := builders.APrepareMessage(d.instanceId, mocks.NewMockKeyManager(primitives.MemberId{2}), primitives.MemberId{2}, primitives.BlockHeight(1), primitives.View(0), preprepareBlock)
+		d.mainLoop.HandleConsensusMessage(ctx, p2.ToConsensusRawMessage()) // prepare from 2
+
+		d.waitForSentCommitMessage(t, 1)
+
+		genesisRandomSeed := calcGenesisBlockRandomSeed()
+
+		d.receiveCommitMessageForBlock(ctx, d.leadersByView[1], primitives.BlockHeight(1), primitives.View(0), preprepareBlock, genesisRandomSeed)
+		d.receiveCommitMessageForBlock(ctx, d.leadersByView[2], primitives.BlockHeight(1), primitives.View(0), preprepareBlock, genesisRandomSeed)
+
+		requireChanClosedWithinTimeout(t, ctx, onCommitCalledOnce)
+
+		require.True(t, test.Consistently(100*time.Millisecond, func() bool {
+			return d.mainLoop.State().Height() < 2
+		}), "expected onNewConsensusRound to not be called due to block commit failure")
+	})
+}
+
+func calcGenesisBlockRandomSeed() uint64 {
+	prevBlockProof := protocol.BlockProofReader(nil) // nil represents the block proof of the genesis block
+	genesisRandomSeed := randomseed.CalculateRandomSeed(prevBlockProof.RandomSeedSignature())
+	return genesisRandomSeed
+}
+
+func requireChanClosedWithinTimeout(t *testing.T, ctx context.Context, onCommitCalledOnce chan struct{}) {
+	timeout, c := context.WithTimeout(ctx, 1*time.Second)
+	defer c()
+	select {
+	case <-onCommitCalledOnce:
+	case <-timeout.Done():
+		t.FailNow()
+	}
 }
