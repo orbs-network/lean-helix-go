@@ -226,9 +226,7 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, blockProofBytes []byte) error {
 	height := block.Height()
 	lh.logger.Debug("LHFLOW onCommitCallback START from leanhelix.onCommit() ID=%s H=%d", lh.config.Membership.MyMemberId(), height)
-
-	// TODO Gad: Should this check for errors and not call onNewConsensusRound
-
+	
 	err := lh.onCommitCallback(ctx, block, blockProofBytes)
 	if err != nil {
 		lh.logger.Debug("LHFLOW onCommitCallback FAILED - %s", err.Error())
