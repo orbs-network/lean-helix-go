@@ -59,8 +59,8 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 		config:                      config,
 		onCommitCallback:            onCommitCallback,
 		onNewConsensusRoundCallback: onNewConsensusRoundCallback,
-		messagesChannel:             make(chan *interfaces.ConsensusRawMessage), // TODO use config.MsgChanBufLen
-		mainUpdateStateChannel:      make(chan *blockWithProof),                 // TODO use config.UpdateStateChanBufLen
+		messagesChannel:             make(chan *interfaces.ConsensusRawMessage),
+		mainUpdateStateChannel:      make(chan *blockWithProof),
 		electionScheduler:           electionTrigger,
 		state:                       state,
 		logger:                      L.NewLhLogger(config, state),
@@ -114,7 +114,7 @@ func (m *MainLoop) run(ctx context.Context) {
 
 	m.logger.Info("LHFLOW LHMSG MAINLOOP START LISTENING NOW")
 
-	var highestUpdated *primitives.BlockHeight
+	var topUpdate *primitives.BlockHeight
 	for {
 		m.state.WorkerContextManager.CancelContextsOlderThan(state.NewHeightView(m.state.Height(), 0)) // gc old contexts
 		select {
@@ -152,10 +152,7 @@ func (m *MainLoop) run(ctx context.Context) {
 				ctx:             msgWorkerCtx,
 				ElectionTrigger: trigger,
 			}
-			select {
-			case <-ctx.Done(): // system shutdown
-			case m.worker.electionChannel <- message:
-			}
+			m.sendElectionMessageNonBlocking(ctx, message)
 
 		case receivedBlockWithProof := <-m.mainUpdateStateChannel: // NodeSync
 			if receivedBlockWithProof == nil {
@@ -169,7 +166,7 @@ func (m *MainLoop) run(ctx context.Context) {
 				receivedBlockHeight = receivedBlockWithProof.block.Height()
 			}
 
-			if highestUpdated != nil && *highestUpdated >= receivedBlockHeight {
+			if topUpdate != nil && *topUpdate >= receivedBlockHeight {
 				m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - Already received a more recent update message than block %d", receivedBlockHeight)
 				continue
 			}
@@ -188,16 +185,60 @@ func (m *MainLoop) run(ctx context.Context) {
 				ctx:            msgWorkerContext,
 				blockWithProof: receivedBlockWithProof,
 			}
-			select {
-			case <-ctx.Done(): // system shutdown
-			case m.worker.workerUpdateStateChannel <- message:
-				if highestUpdated == nil {
-					highestUpdated = new(primitives.BlockHeight)
-				}
-				*highestUpdated = receivedBlockHeight
+
+			err := m.sendUpdateMessageNonBlocking(ctx, message)
+			if err != nil {
+				continue
 			}
+
+			if topUpdate == nil {
+				topUpdate = new(primitives.BlockHeight)
+			}
+			*topUpdate = receivedBlockHeight
 			m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - Wrote to worker UpdateState channel")
 		}
+	}
+}
+
+func (m *MainLoop) sendElectionMessageNonBlocking(ctx context.Context, message *workerElectionsTriggerMessage) {
+	elChannel :=  m.worker.electionChannel
+	bufferSize := cap(elChannel)
+	if bufferSize == 0 {
+		panic("electionChannel buffer size must be at least 1")
+	}
+
+	if len(elChannel) == bufferSize { // full buffer
+		select {
+		case <-elChannel: // free one slot
+		default: // worker raced us and emptied buffer
+		}
+	}
+
+	select {
+	case <-ctx.Done(): // system shutdown
+	case elChannel <- message:
+	}
+}
+
+func (m *MainLoop) sendUpdateMessageNonBlocking(ctx context.Context, message *workerUpdateStateMessage) error {
+	msgChannel :=  m.worker.workerUpdateStateChannel
+	bufferSize := cap(msgChannel)
+	if bufferSize == 0 {
+		panic("workerUpdateStateChannel buffer size must be at least 1")
+	}
+
+	if len(msgChannel) == bufferSize { // full buffer
+		select {
+		case <-msgChannel: // free one slot
+		default: // worker raced us and emptied buffer
+		}
+	}
+
+	select {
+	case <-ctx.Done(): // system shutdown
+		return ctx.Err()
+	case msgChannel <- message:
+		return nil
 	}
 }
 

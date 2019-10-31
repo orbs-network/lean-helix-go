@@ -70,9 +70,9 @@ func NewWorkerLoop(
 	logger.Debug("LHFLOW NewWorkerLoop()")
 	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), logger, state)
 	return &WorkerLoop{
-		MessagesChannel:             make(chan *MessageWithContext, 1000),
-		workerUpdateStateChannel:    make(chan *workerUpdateStateMessage),
-		electionChannel:             make(chan *workerElectionsTriggerMessage),
+		MessagesChannel:             make(chan *MessageWithContext, 1000), // TODO config.MsgChanBufLen
+		workerUpdateStateChannel:    make(chan *workerUpdateStateMessage, 1), // must be at least 1 // TODO config.UpdateStateChanBufLen
+		electionChannel:             make(chan *workerElectionsTriggerMessage, 1), // must be at least 1 // TODO config.ElectionChanBufLen
 		electionTrigger:             electionTrigger,
 		state:                       state,
 		config:                      config,
