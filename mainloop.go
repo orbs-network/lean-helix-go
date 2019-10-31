@@ -114,6 +114,7 @@ func (m *MainLoop) run(ctx context.Context) {
 
 	m.logger.Info("LHFLOW LHMSG MAINLOOP START LISTENING NOW")
 
+	var highestUpdated *primitives.BlockHeight
 	for {
 		m.state.WorkerContextManager.CancelContextsOlderThan(state.NewHeightView(m.state.Height(), 0)) // gc old contexts
 		select {
@@ -157,7 +158,6 @@ func (m *MainLoop) run(ctx context.Context) {
 			}
 
 		case receivedBlockWithProof := <-m.mainUpdateStateChannel: // NodeSync
-
 			if receivedBlockWithProof == nil {
 				m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - INVALID BLOCK IGNORED - receivedBlockWithProof is nil")
 				continue
@@ -167,6 +167,11 @@ func (m *MainLoop) run(ctx context.Context) {
 				receivedBlockHeight = 0
 			} else {
 				receivedBlockHeight = receivedBlockWithProof.block.Height()
+			}
+
+			if highestUpdated != nil && *highestUpdated >= receivedBlockHeight {
+				m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - Already received a more recent update message than block %d", receivedBlockHeight)
+				continue
 			}
 
 			hv := state.NewHeightView(receivedBlockHeight+1, 0)
@@ -186,8 +191,11 @@ func (m *MainLoop) run(ctx context.Context) {
 			select {
 			case <-ctx.Done(): // system shutdown
 			case m.worker.workerUpdateStateChannel <- message:
+				if highestUpdated == nil {
+					highestUpdated = new(primitives.BlockHeight)
+				}
+				*highestUpdated = receivedBlockHeight
 			}
-
 			m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - Wrote to worker UpdateState channel")
 		}
 	}
