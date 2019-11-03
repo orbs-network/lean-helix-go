@@ -72,11 +72,17 @@ func TestProcessingAMessage(t *testing.T) {
 		require.Equal(t, 0, len(messagesHandler.HistoryNV))
 		require.Equal(t, 0, len(messagesHandler.HistoryVC))
 
-		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(ppm))
-		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(pm))
-		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(cm))
-		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(vcm))
-		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(nvm))
+		err1 := consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(ppm))
+		err2 := consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(pm))
+		err3 := consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(cm))
+		err4 := consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(vcm))
+		err5 := consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(nvm))
+
+		require.NoError(t, err1)
+		require.NoError(t, err2)
+		require.NoError(t, err3)
+		require.NoError(t, err4)
+		require.NoError(t, err5)
 
 		require.Equal(t, 1, len(messagesHandler.HistoryPP))
 		require.Equal(t, 1, len(messagesHandler.HistoryP))
@@ -98,10 +104,12 @@ func TestFilteringACommitWithBadSeed(t *testing.T) {
 
 		require.Equal(t, 0, len(messagesHandler.HistoryC))
 
-		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(goodCommit))
+		err := consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(goodCommit))
+		require.NoError(t, err)
 		require.Equal(t, 1, len(messagesHandler.HistoryC))
 
-		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(badCommit))
+		err = consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(badCommit))
+		require.NoError(t, err)
 		require.Equal(t, 1, len(messagesHandler.HistoryC)) // still on 1
 	})
 }
@@ -118,12 +126,18 @@ func TestNotSendingMessagesWhenTheHandlerWasNotSet(t *testing.T) {
 		vcm := GenerateViewChangeMessage(instanceId, 10, 20, "Sender MemberId")
 		nvm := GenerateNewViewMessage(instanceId, 10, 20, "Sender MemberId")
 
-		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(ppm))
-		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(pm))
-		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(cm))
-		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(vcm))
-		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(nvm))
+		err1 := consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(ppm))
+		err2 := consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(pm))
+		err3 := consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(cm))
+		err4 := consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(vcm))
+		err5 := consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(nvm))
 
+		require.NoError(t, err1)
+		require.NoError(t, err2)
+		require.NoError(t, err3)
+		require.NoError(t, err4)
+		require.NoError(t, err5)
+		
 		// expect that we don't panic
 	})
 }
