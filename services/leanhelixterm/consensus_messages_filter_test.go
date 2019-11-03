@@ -72,11 +72,11 @@ func TestProcessingAMessage(t *testing.T) {
 		require.Equal(t, 0, len(messagesHandler.HistoryNV))
 		require.Equal(t, 0, len(messagesHandler.HistoryVC))
 
-		consensusMessagesFilter.HandleConsensusMessage(ctx, interfaces.ToConsensusMessage(ppm))
-		consensusMessagesFilter.HandleConsensusMessage(ctx, interfaces.ToConsensusMessage(pm))
-		consensusMessagesFilter.HandleConsensusMessage(ctx, interfaces.ToConsensusMessage(cm))
-		consensusMessagesFilter.HandleConsensusMessage(ctx, interfaces.ToConsensusMessage(vcm))
-		consensusMessagesFilter.HandleConsensusMessage(ctx, interfaces.ToConsensusMessage(nvm))
+		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(ppm))
+		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(pm))
+		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(cm))
+		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(vcm))
+		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(nvm))
 
 		require.Equal(t, 1, len(messagesHandler.HistoryPP))
 		require.Equal(t, 1, len(messagesHandler.HistoryP))
@@ -98,10 +98,10 @@ func TestFilteringACommitWithBadSeed(t *testing.T) {
 
 		require.Equal(t, 0, len(messagesHandler.HistoryC))
 
-		consensusMessagesFilter.HandleConsensusMessage(ctx, interfaces.ToConsensusMessage(goodCommit))
+		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(goodCommit))
 		require.Equal(t, 1, len(messagesHandler.HistoryC))
 
-		consensusMessagesFilter.HandleConsensusMessage(ctx, interfaces.ToConsensusMessage(badCommit))
+		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(badCommit))
 		require.Equal(t, 1, len(messagesHandler.HistoryC)) // still on 1
 	})
 }
@@ -118,11 +118,11 @@ func TestNotSendingMessagesWhenTheHandlerWasNotSet(t *testing.T) {
 		vcm := GenerateViewChangeMessage(instanceId, 10, 20, "Sender MemberId")
 		nvm := GenerateNewViewMessage(instanceId, 10, 20, "Sender MemberId")
 
-		consensusMessagesFilter.HandleConsensusMessage(ctx, interfaces.ToConsensusMessage(ppm))
-		consensusMessagesFilter.HandleConsensusMessage(ctx, interfaces.ToConsensusMessage(pm))
-		consensusMessagesFilter.HandleConsensusMessage(ctx, interfaces.ToConsensusMessage(cm))
-		consensusMessagesFilter.HandleConsensusMessage(ctx, interfaces.ToConsensusMessage(vcm))
-		consensusMessagesFilter.HandleConsensusMessage(ctx, interfaces.ToConsensusMessage(nvm))
+		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(ppm))
+		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(pm))
+		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(cm))
+		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(vcm))
+		consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(nvm))
 
 		// expect that we don't panic
 	})

@@ -2,6 +2,7 @@ package state
 
 import (
 	"context"
+	"fmt"
 	"sync"
 )
 
@@ -10,36 +11,37 @@ type contextWithCancel struct {
 	cancel context.CancelFunc
 }
 
-type WorkerContextManager struct {
+type ViewContexts struct {
 	hvToContext           map[HeightView]*contextWithCancel
 	newestHvCanceledOlder *HeightView
 	parentCtxWithCancel   *contextWithCancel
 	mutex                 *sync.Mutex
+	shutdown              bool
 }
 
-func NewWorkerContextManager() *WorkerContextManager {
-	return &WorkerContextManager{
+func NewViewContexts() *ViewContexts {
+	ctx, cancel := context.WithCancel(context.Background())
+	return &ViewContexts{
 		hvToContext:           make(map[HeightView]*contextWithCancel),
 		newestHvCanceledOlder: nil,
-		parentCtxWithCancel:   nil,
+		parentCtxWithCancel:   &contextWithCancel{
+			ctx:    ctx,
+			cancel: cancel,
+		},
 		mutex:                 &sync.Mutex{},
 	}
 }
 
-func (w *WorkerContextManager) Init(parent context.Context) {
-	ctx, cancel := context.WithCancel(parent)
-	w.parentCtxWithCancel = &contextWithCancel{
-		ctx:    ctx,
-		cancel: cancel,
-	}
-}
-
-func (w *WorkerContextManager) GetOrCreateContextFor(hv *HeightView) (context.Context, bool) {
+func (w *ViewContexts) ActiveFor(hv *HeightView) (context.Context, error) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
+	if w.shutdown {
+		return nil, fmt.Errorf("shutting down")
+	}
+
 	if w.newestHvCanceledOlder != nil && hv.OlderThan(w.newestHvCanceledOlder) {
-		return nil, false
+		return nil, fmt.Errorf("requested context for stale height/view %s", hv)
 	}
 
 	cc, ok := w.hvToContext[*hv]
@@ -52,10 +54,10 @@ func (w *WorkerContextManager) GetOrCreateContextFor(hv *HeightView) (context.Co
 		w.hvToContext[*hv] = cc
 	}
 
-	return cc.ctx, true
+	return cc.ctx, nil
 }
 
-func (w *WorkerContextManager) CancelContextsOlderThan(hv *HeightView) {
+func (w *ViewContexts) CancelOlderThan(hv *HeightView) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
@@ -71,6 +73,10 @@ func (w *WorkerContextManager) CancelContextsOlderThan(hv *HeightView) {
 	}
 }
 
-func (w *WorkerContextManager) CancelAll() {
+func (w *ViewContexts) Shutdown() {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+
 	w.parentCtxWithCancel.cancel()
+	w.shutdown = true
 }

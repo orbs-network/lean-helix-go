@@ -29,25 +29,10 @@ type blockWithProof struct {
 	prevBlockProofBytes []byte
 }
 
-type workerUpdateStateMessage struct {
-	ctx context.Context
-	*blockWithProof
-}
-
-type workerElectionsTriggerMessage struct {
-	ctx context.Context
-	*interfaces.ElectionTrigger
-}
-
-type MessageWithContext struct {
-	msg *interfaces.ConsensusRawMessage
-	ctx context.Context
-}
-
 type WorkerLoop struct {
-	MessagesChannel             chan *MessageWithContext
-	workerUpdateStateChannel    chan *workerUpdateStateMessage
-	electionChannel             chan *workerElectionsTriggerMessage
+	MessagesChannel             chan *interfaces.ConsensusRawMessage
+	workerUpdateStateChannel    chan *blockWithProof
+	electionChannel             chan *interfaces.ElectionTrigger
 	electionTrigger             interfaces.ElectionScheduler
 	state                       *state.State
 	config                      *interfaces.Config
@@ -56,7 +41,6 @@ type WorkerLoop struct {
 	leanHelixTerm               *leanhelixterm.LeanHelixTerm
 	onCommitCallback            interfaces.OnCommitCallback
 	onNewConsensusRoundCallback interfaces.OnNewConsensusRoundCallback
-	onUpdateStateCallback       interfaces.OnUpdateStateCallback
 }
 
 func NewWorkerLoop(
@@ -70,9 +54,9 @@ func NewWorkerLoop(
 	logger.Debug("LHFLOW NewWorkerLoop()")
 	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), logger, state)
 	return &WorkerLoop{
-		MessagesChannel:             make(chan *MessageWithContext, 1000), // TODO config.MsgChanBufLen
-		workerUpdateStateChannel:    make(chan *workerUpdateStateMessage, 1), // must be at least 1 // TODO config.UpdateStateChanBufLen
-		electionChannel:             make(chan *workerElectionsTriggerMessage, 1), // must be at least 1 // TODO config.ElectionChanBufLen
+		MessagesChannel:             make(chan *interfaces.ConsensusRawMessage, 1000), // TODO config.MsgChanBufLen
+		workerUpdateStateChannel:    make(chan *blockWithProof, 1), // must be at least 1 // TODO config.UpdateStateChanBufLen
+		electionChannel:             make(chan *interfaces.ElectionTrigger, 1), // must be at least 1 // TODO config.ElectionChanBufLen
 		electionTrigger:             electionTrigger,
 		state:                       state,
 		config:                      config,
@@ -89,14 +73,14 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 		select {
 		case <-ctx.Done(): // system shutdown
 			lh.logger.Info("LHFLOW WORKERLOOP DONE STOPPED LISTENING, SHUTDOWN START")
-			lh.workerShutdown()
+			lh.cleanupCurrentTerm()
 			lh.logger.Info("LHFLOW WORKERLOOP DONE STOPPED LISTENING, SHUTDOWN END")
 			return
 
-		case res := <-lh.MessagesChannel:
-			parsedMessage := interfaces.ToConsensusMessage(res.msg)
+		case msg := <-lh.MessagesChannel:
+			parsedMessage := interfaces.ToConsensusMessage(msg)
 			lh.logger.Debug("LHFLOW LHMSG WORKERLOOP RECEIVED %v from %v for H=%d V=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight(), parsedMessage.View())
-			lh.filter.HandleConsensusRawMessage(res.ctx, res.msg)
+			lh.filter.HandleConsensusRawMessage(msg)
 
 		case trigger := <-lh.electionChannel:
 			if trigger == nil {
@@ -112,23 +96,22 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 			}
 
 			lh.logger.Debug("LHFLOW WORKERLOOP ELECTION")
-			trigger.MoveToNextLeader(trigger.ctx)
+			trigger.MoveToNextLeader()
 
-		case receivedBlockWithProofAndContext := <-lh.workerUpdateStateChannel: // NodeSync
+		case receivedBlockWithProof := <-lh.workerUpdateStateChannel: // NodeSync
 			var height primitives.BlockHeight
-			receivedBlockWithProof := receivedBlockWithProofAndContext.blockWithProof
 
 			if receivedBlockWithProof.block != nil {
 				height = receivedBlockWithProof.block.Height()
 			}
 			lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP - Received block with H=%d", height)
-			lh.handleUpdateState(receivedBlockWithProofAndContext.ctx, receivedBlockWithProof)
+			lh.handleUpdateState(receivedBlockWithProof)
 			lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP - Handled block with H=%d", height)
 		}
 	}
 }
 
-func (lh *WorkerLoop) handleUpdateState(ctx context.Context, receivedBlockWithProof *blockWithProof) {
+func (lh *WorkerLoop) handleUpdateState(receivedBlockWithProof *blockWithProof) {
 	receivedBlockHeight := blockheight.GetBlockHeight(receivedBlockWithProof.block)
 
 	if receivedBlockHeight >= lh.state.Height() {
@@ -241,13 +224,13 @@ func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, bloc
 
 func (lh *WorkerLoop) onNewConsensusRound(prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) {
 	hv := state.NewHeightView(blockheight.GetBlockHeight(prevBlock)+1, 0)
-	ctx, ok := lh.state.WorkerContextManager.GetOrCreateContextFor(hv)
-	if !ok {
-		lh.logger.Info("onNewConsensusRound() context already cancelled %d", hv.Height())
+	ctx, err := lh.state.ViewContexts.ActiveFor(hv)
+	if err != nil {
+		lh.logger.Info("onNewConsensusRound() error: %e", err)
 		return
 	}
 
-	current, err := lh.state.SetHeightAndResetView(ctx, hv.Height())
+	current, err := lh.state.SetHeightAndResetView(hv.Height())
 	if err != nil {
 		lh.logger.Info("onNewConsensusRound() failed height increment %d: %s", current.Height(), err)
 		return
@@ -260,14 +243,18 @@ func (lh *WorkerLoop) onNewConsensusRound(prevBlock interfaces.Block, prevBlockP
 	}
 	lh.leanHelixTerm = leanhelixterm.NewLeanHelixTerm(ctx, lh.logger, lh.config, lh.state, lh.electionTrigger, lh.onCommit, prevBlock, prevBlockProofBytes, canBeFirstLeader)
 	lh.logger.Debug("onNewConsensusRound() Calling ConsumeCacheMessages for H=%d", lh.state.Height())
-	lh.filter.ConsumeCacheMessages(ctx, lh.leanHelixTerm)
+	lh.filter.ConsumeCacheMessages(lh.leanHelixTerm)
 	if lh.onNewConsensusRoundCallback != nil {
 		lh.onNewConsensusRoundCallback(ctx, lh.state.Height(), prevBlock, canBeFirstLeader)
 	}
 }
 
-func (lh *WorkerLoop) workerShutdown() {
+func (lh *WorkerLoop) cleanupCurrentTerm() {
 	if lh.leanHelixTerm != nil {
 		lh.leanHelixTerm.Dispose()
 	}
+}
+
+func (lh *WorkerLoop) interrupt() {
+	lh.state.ViewContexts.Shutdown()
 }

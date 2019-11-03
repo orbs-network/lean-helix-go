@@ -7,7 +7,6 @@
 package Electiontrigger
 
 import (
-	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/state"
@@ -21,7 +20,7 @@ var TIMEOUT_EXP_BASE = 2.0
 type TimerBasedElectionTrigger struct {
 	electionChannel  chan *interfaces.ElectionTrigger
 	minTimeout       time.Duration
-	electionHandler  func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)
+	electionHandler  func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)
 	callbackFromOrbs interfaces.OnElectionCallback
 	timer            *time.Timer
 
@@ -41,7 +40,7 @@ func NewTimerBasedElectionTrigger(minTimeout time.Duration, callbackFromOrbs int
 }
 
 // on new view
-func (t *TimerBasedElectionTrigger) RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, moveToNextLeader func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, willBeCalledAfterMovedToNextLeader interfaces.OnElectionCallback)) {
+func (t *TimerBasedElectionTrigger) RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, moveToNextLeader func(blockHeight primitives.BlockHeight, view primitives.View, willBeCalledAfterMovedToNextLeader interfaces.OnElectionCallback)) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
@@ -82,7 +81,7 @@ func (t *TimerBasedElectionTrigger) Stop() {
 	}
 }
 
-func (t *TimerBasedElectionTrigger) runOnReadElectionChannel(ctx context.Context) {
+func (t *TimerBasedElectionTrigger) runOnReadElectionChannel() {
 	t.lock.RLock()
 	h := t.blockHeight
 	v := t.view
@@ -90,7 +89,7 @@ func (t *TimerBasedElectionTrigger) runOnReadElectionChannel(ctx context.Context
 	t.lock.RUnlock()
 
 	if handler != nil {
-		handler(ctx, h, v, t.callbackFromOrbs)
+		handler(h, v, t.callbackFromOrbs)
 	}
 }
 
@@ -105,7 +104,7 @@ func (t *TimerBasedElectionTrigger) CalcTimeout(view primitives.View) time.Durat
 	return timeoutMultiplier * t.minTimeout
 }
 
-func triggerElections(electionChannel chan *interfaces.ElectionTrigger, electionsFunc func(ctx context.Context), height primitives.BlockHeight, view primitives.View, triggerCancelled chan struct{}) {
+func triggerElections(electionChannel chan *interfaces.ElectionTrigger, electionsFunc func(), height primitives.BlockHeight, view primitives.View, triggerCancelled chan struct{}) {
 	select {
 	case electionChannel <- &interfaces.ElectionTrigger{
 		MoveToNextLeader: electionsFunc,

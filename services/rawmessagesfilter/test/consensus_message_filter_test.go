@@ -66,7 +66,7 @@ func TestGettingAMessage(t *testing.T) {
 		state := mocks.NewMockState().WithHeightView(10, 20)
 		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state.State), state.State)
 		messagesHandler := NewTermMessagesHandlerMock()
-		filter.ConsumeCacheMessages(ctx, messagesHandler)
+		filter.ConsumeCacheMessages(messagesHandler)
 
 		ppm := GeneratePreprepareMessage(instanceId, 10, 20, "Sender MemberId")
 		pm := GeneratePrepareMessage(instanceId, 10, 20, "Sender MemberId")
@@ -76,11 +76,11 @@ func TestGettingAMessage(t *testing.T) {
 
 		require.Equal(t, 0, len(messagesHandler.history))
 
-		filter.HandleConsensusRawMessage(ctx, ppm)
-		filter.HandleConsensusRawMessage(ctx, pm)
-		filter.HandleConsensusRawMessage(ctx, cm)
-		filter.HandleConsensusRawMessage(ctx, vcm)
-		filter.HandleConsensusRawMessage(ctx, nvm)
+		filter.HandleConsensusRawMessage(ppm)
+		filter.HandleConsensusRawMessage(pm)
+		filter.HandleConsensusRawMessage(cm)
+		filter.HandleConsensusRawMessage(vcm)
+		filter.HandleConsensusRawMessage(nvm)
 
 		require.Equal(t, 5, len(messagesHandler.history))
 	})
@@ -92,15 +92,15 @@ func TestFilterMessagesFromThePast(t *testing.T) {
 		state := mocks.NewMockState().WithHeightView(10, 0)
 		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state.State), state.State)
 		messagesHandler := NewTermMessagesHandlerMock()
-		filter.ConsumeCacheMessages(ctx, messagesHandler)
+		filter.ConsumeCacheMessages(messagesHandler)
 
 		messageFromThePast := GeneratePreprepareMessage(instanceId, 9, 20, "Sender MemberId")
 		messageFromThePresent := GeneratePreprepareMessage(instanceId, 10, 20, "Sender MemberId")
 
 		require.Equal(t, 0, len(messagesHandler.history))
 
-		filter.HandleConsensusRawMessage(ctx, messageFromThePast)
-		filter.HandleConsensusRawMessage(ctx, messageFromThePresent)
+		filter.HandleConsensusRawMessage(messageFromThePast)
+		filter.HandleConsensusRawMessage(messageFromThePresent)
 
 		require.Equal(t, 1, len(messagesHandler.history))
 	})
@@ -111,15 +111,15 @@ func TestFilterMessagesWithBadInstanceId(t *testing.T) {
 		state := mocks.NewMockState().WithHeightView(10, 0)
 		filter := rawmessagesfilter.NewConsensusMessageFilter(777, primitives.MemberId("My MemberId"), testLogger(state.State), state.State)
 		messagesHandler := NewTermMessagesHandlerMock()
-		filter.ConsumeCacheMessages(ctx, messagesHandler)
+		filter.ConsumeCacheMessages(messagesHandler)
 
 		messageWithGoodInstanceId := GeneratePreprepareMessage(777, 10, 20, "Sender MemberId")
 		messageWithBadInstanceId := GeneratePreprepareMessage(666, 10, 20, "Sender MemberId")
 
 		require.Equal(t, 0, len(messagesHandler.history))
 
-		filter.HandleConsensusRawMessage(ctx, messageWithGoodInstanceId)
-		filter.HandleConsensusRawMessage(ctx, messageWithBadInstanceId)
+		filter.HandleConsensusRawMessage(messageWithGoodInstanceId)
+		filter.HandleConsensusRawMessage(messageWithBadInstanceId)
 
 		require.Equal(t, 1, len(messagesHandler.history))
 	})
@@ -131,15 +131,15 @@ func TestCacheMessagesFromTheFuture(t *testing.T) {
 		state := mocks.NewMockState().WithHeightView(10, 0)
 		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state.State), state.State)
 		messagesHandler := NewTermMessagesHandlerMock()
-		filter.ConsumeCacheMessages(ctx, messagesHandler)
+		filter.ConsumeCacheMessages(messagesHandler)
 
 		messageFromTheFuture := GeneratePreprepareMessage(instanceId, 11, 20, "Sender MemberId")
 		messageFromThePresent := GeneratePreprepareMessage(instanceId, 10, 20, "Sender MemberId")
 
 		require.Equal(t, 0, len(messagesHandler.history))
 
-		filter.HandleConsensusRawMessage(ctx, messageFromTheFuture)
-		filter.HandleConsensusRawMessage(ctx, messageFromThePresent)
+		filter.HandleConsensusRawMessage(messageFromTheFuture)
+		filter.HandleConsensusRawMessage(messageFromThePresent)
 
 		require.Equal(t, 1, len(messagesHandler.history))
 	})
@@ -151,15 +151,15 @@ func TestFilterMessagesWithMyMemberId(t *testing.T) {
 		state := mocks.NewMockState().WithHeightView(10, 0)
 		filter := rawmessagesfilter.NewConsensusMessageFilter(instanceId, primitives.MemberId("My MemberId"), testLogger(state.State), state.State)
 		messagesHandler := NewTermMessagesHandlerMock()
-		filter.ConsumeCacheMessages(ctx, messagesHandler)
+		filter.ConsumeCacheMessages(messagesHandler)
 
 		badMessage := GeneratePreprepareMessage(instanceId, 11, 20, "My MemberId")
 		goodMessage := GeneratePreprepareMessage(instanceId, 10, 20, "Sender MemberId")
 
 		require.Equal(t, 0, len(messagesHandler.history))
 
-		filter.HandleConsensusRawMessage(ctx, badMessage)
-		filter.HandleConsensusRawMessage(ctx, goodMessage)
+		filter.HandleConsensusRawMessage(badMessage)
+		filter.HandleConsensusRawMessage(goodMessage)
 
 		require.Equal(t, 1, len(messagesHandler.history))
 	})

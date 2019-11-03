@@ -28,7 +28,7 @@ func buildElectionTrigger(ctx context.Context, timeout time.Duration) *Electiont
 			case <-ctx.Done():
 				return
 			case trigger := <-et.ElectionChannel():
-				trigger.MoveToNextLeader(ctx)
+				trigger.MoveToNextLeader()
 			}
 		}
 	}()
@@ -41,7 +41,7 @@ func TestCallbackTriggerOnce(t *testing.T) {
 		et := buildElectionTrigger(ctx, 1*time.Nanosecond)
 
 		triggerReached := make(chan struct{})
-		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+		cb := func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
 			triggerReached <- struct{}{}
 		}
 		et.RegisterOnElection(10, 0, cb)
@@ -65,7 +65,7 @@ func TestCallbackTriggerTwiceInARow(t *testing.T) {
 		et := buildElectionTrigger(ctx, 1*time.Nanosecond)
 
 		triggerReached := make(chan struct{})
-		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+		cb := func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
 			triggerReached <- struct{}{}
 		}
 		et.RegisterOnElection(10, 0, cb)
@@ -92,7 +92,7 @@ func TestIgnoreSameViewOrHeight(t *testing.T) {
 		et := buildElectionTrigger(ctx, 1*time.Nanosecond)
 
 		var callCount int32 = 0
-		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+		cb := func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
 			atomic.AddInt32(&callCount, 1)
 		}
 
@@ -114,11 +114,11 @@ func TestNotTriggeredIfSameViewButDifferentHeight(t *testing.T) {
 		electionTimeout := 10 * time.Millisecond
 		et := buildElectionTrigger(ctx, electionTimeout)
 
-		cbNeverTriggered := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+		cbNeverTriggered := func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
 			t.Fatalf("Callback for H=%d V=%d", blockHeight, view)
 		}
 
-		cbNoop := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+		cbNoop := func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
 		}
 
 		et.RegisterOnElection(1, 0, cbNeverTriggered)
@@ -133,7 +133,7 @@ func TestNotTriggerIfSameHeightButDifferentView(t *testing.T) {
 		et := buildElectionTrigger(ctx, 50*time.Millisecond)
 
 		var callCount int32 = 0
-		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+		cb := func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
 			atomic.AddInt32(&callCount, 1)
 		}
 
@@ -152,7 +152,7 @@ func TestTimerBasedElectionTrigger_DidNotTriggerBeforeTimeout(t *testing.T) {
 		et := buildElectionTrigger(ctx, 10*time.Hour)
 
 		var wasCalled int32 = 0
-		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+		cb := func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
 			atomic.StoreInt32(&wasCalled, 1)
 		}
 
@@ -168,7 +168,7 @@ func TestViewPowTimeout_DidTriggerAfterTimeout(t *testing.T) {
 		et := buildElectionTrigger(ctx, 1*time.Millisecond)
 
 		triggered := make(chan struct{})
-		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+		cb := func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
 			close(triggered)
 		}
 

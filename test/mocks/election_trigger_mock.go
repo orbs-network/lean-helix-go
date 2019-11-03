@@ -17,7 +17,7 @@ import (
 type ElectionTriggerMock struct {
 	blockHeight     primitives.BlockHeight
 	view            primitives.View
-	electionHandler func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)
+	electionHandler func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)
 	electionChannel chan *interfaces.ElectionTrigger
 }
 
@@ -35,7 +35,7 @@ func NewMockElectionTrigger() *ElectionTriggerMock {
 	}
 }
 
-func (et *ElectionTriggerMock) RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, cb func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)) {
+func (et *ElectionTriggerMock) RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, cb func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)) {
 	et.view = view
 	et.blockHeight = blockHeight
 	et.electionHandler = cb
@@ -61,14 +61,14 @@ func (et *ElectionTriggerMock) ManualTrigger(ctx context.Context, hv *state.Heig
 	return done
 }
 
-func (et *ElectionTriggerMock) electionTriggerHandler(ctx context.Context) {
+func (et *ElectionTriggerMock) electionTriggerHandler() {
 	if et.electionHandler != nil {
-		et.electionHandler(ctx, et.blockHeight, et.view, nil)
+		et.electionHandler(et.blockHeight, et.view, nil)
 	}
 }
 
-func (et *ElectionTriggerMock) ManualTriggerSync(ctx context.Context) {
+func (et *ElectionTriggerMock) ManualTriggerSync() {
 	if et.electionHandler != nil {
-		et.electionHandler(ctx, et.blockHeight, et.view, nil)
+		et.electionHandler(et.blockHeight, et.view, nil)
 	}
 }

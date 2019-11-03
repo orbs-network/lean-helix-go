@@ -95,7 +95,7 @@ func (h *harness) triggerElection(ctx context.Context) {
 		panic("You are trying to trigger election with an election trigger that is not the ElectionTriggerMock")
 	}
 
-	electionTriggerMock.ManualTriggerSync(ctx)
+	electionTriggerMock.ManualTriggerSync()
 }
 
 func (h *harness) getMyNodeMemberId() primitives.MemberId {
@@ -147,19 +147,19 @@ func (h *harness) setMeAsTheLeader(ctx context.Context, blockHeight primitives.B
 func (h *harness) receiveAndHandlePreprepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	leader := h.net.Nodes[fromNode]
 	ppm := builders.APreprepareMessage(h.instanceId, leader.KeyManager, leader.MemberId, blockHeight, view, block)
-	h.termInCommittee.HandlePrePrepare(ctx, ppm)
+	h.termInCommittee.HandlePrePrepare(ppm)
 }
 
 func (h *harness) receiveAndHandlePrepare(ctx context.Context, fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	sender := h.net.Nodes[fromNode]
 	pm := builders.APrepareMessage(h.instanceId, sender.KeyManager, sender.MemberId, blockHeight, view, block)
-	h.termInCommittee.HandlePrepare(ctx, pm)
+	h.termInCommittee.HandlePrepare(pm)
 }
 
 func (h *harness) receiveAndHandleViewChange(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View) {
 	sender := h.net.Nodes[fromNodeIdx]
 	vc := builders.AViewChangeMessage(h.instanceId, sender.KeyManager, sender.MemberId, blockHeight, view, nil)
-	h.termInCommittee.HandleViewChange(ctx, vc)
+	h.termInCommittee.HandleViewChange(vc)
 }
 
 func (h *harness) receiveAndHandleNewView(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {
@@ -182,15 +182,15 @@ func (h *harness) receiveAndHandleNewView(ctx context.Context, fromNodeIdx int, 
 		OnBlockHeight(blockHeight).
 		OnView(view).
 		Build()
-	h.termInCommittee.HandleNewView(ctx, nvm)
+	h.termInCommittee.HandleNewView(nvm)
 }
 
 func (h *harness) handleViewChangeMessage(ctx context.Context, msg *interfaces.ViewChangeMessage) {
-	h.termInCommittee.HandleViewChange(ctx, msg)
+	h.termInCommittee.HandleViewChange(msg)
 }
 
 func (h *harness) handleNewViewMessage(ctx context.Context, nvm *interfaces.NewViewMessage) {
-	h.termInCommittee.HandleNewView(ctx, nvm)
+	h.termInCommittee.HandleNewView(nvm)
 }
 
 func (h *harness) createPreprepareMessage(fromNode int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block, blockHash primitives.BlockHash) *interfaces.PreprepareMessage {

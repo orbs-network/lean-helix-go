@@ -12,7 +12,7 @@ func TestSetHeightResetsView(t *testing.T) {
 	state.SetHeightView(context.Background(), 2, 3)
 	require.Equal(t, primitives.BlockHeight(2), state.Height(), "returned incorrect height")
 	require.Equal(t, primitives.View(3), state.View(), "returned incorrect view")
-	state.SetHeightAndResetView(context.Background(),4)
+	state.SetHeightAndResetView(4)
 	require.Equal(t, primitives.BlockHeight(4), state.Height(), "returned incorrect height")
 	require.Equal(t, primitives.View(0), state.View(), "returned incorrect view")
 }
