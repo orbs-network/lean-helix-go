@@ -104,12 +104,10 @@ func TestFilteringACommitWithBadSeed(t *testing.T) {
 
 		require.Equal(t, 0, len(messagesHandler.HistoryC))
 
-		err := consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(goodCommit))
-		require.NoError(t, err)
+		_ = consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(goodCommit))
 		require.Equal(t, 1, len(messagesHandler.HistoryC))
 
-		err = consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(badCommit))
-		require.NoError(t, err)
+		_ = consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(badCommit))
 		require.Equal(t, 1, len(messagesHandler.HistoryC)) // still on 1
 	})
 }
@@ -126,18 +124,12 @@ func TestNotSendingMessagesWhenTheHandlerWasNotSet(t *testing.T) {
 		vcm := GenerateViewChangeMessage(instanceId, 10, 20, "Sender MemberId")
 		nvm := GenerateNewViewMessage(instanceId, 10, 20, "Sender MemberId")
 
-		err1 := consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(ppm))
-		err2 := consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(pm))
-		err3 := consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(cm))
-		err4 := consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(vcm))
-		err5 := consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(nvm))
+		_ = consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(ppm))
+		_ = consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(pm))
+		_ = consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(cm))
+		_ = consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(vcm))
+		_ = consensusMessagesFilter.HandleConsensusMessage(interfaces.ToConsensusMessage(nvm))
 
-		require.NoError(t, err1)
-		require.NoError(t, err2)
-		require.NoError(t, err3)
-		require.NoError(t, err4)
-		require.NoError(t, err5)
-		
 		// expect that we don't panic
 	})
 }
