@@ -20,7 +20,7 @@ require (
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/orbs-network/go-mock v0.0.0-20180813130752-890a1ee8d0a1
 	github.com/orbs-network/govnr v0.2.0
-	github.com/orbs-network/membuffers v0.3.4
+	github.com/orbs-network/membuffers v0.3.2
 	github.com/orbs-network/scribe v0.1.0
 	github.com/pelletier/go-toml v1.4.0 // indirect
 	github.com/pkg/errors v0.8.1

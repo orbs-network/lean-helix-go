@@ -110,6 +110,8 @@ github.com/orbs-network/govnr v0.2.0 h1:Txazgo4Jd29hiARXg6nMqK2pmJA85KeXR+ZjLNy9
 github.com/orbs-network/govnr v0.2.0/go.mod h1:kZctUOFclDbO3Z6w559++l4qh0FPb57XdE5IdOFCbI4=
 github.com/orbs-network/membuffers v0.3.0 h1:EYtF1T/VBsi6DGPVS/Xbcei+Vn86fEJ/jJESFiiAqfg=
 github.com/orbs-network/membuffers v0.3.0/go.mod h1:b6+sJ9+pgca7HHle0e85RDd5zL0Hv360Xec7TGVrGFk=
+github.com/orbs-network/membuffers v0.3.2 h1:dpUJXBTjvFkNputqIjCfBJnAJszZALtfuWcf9hGvg/4=
+github.com/orbs-network/membuffers v0.3.2/go.mod h1:M5ABv0m0XBGoJbX+7UKVY02hLF4XhS2SlZVEVABMc6M=
 github.com/orbs-network/membuffers v0.3.4 h1:CZZDYwrmHZAcBobiRTd4cRjrPSUMEmF+CDhSxI0D83A=
 github.com/orbs-network/membuffers v0.3.4/go.mod h1:M5ABv0m0XBGoJbX+7UKVY02hLF4XhS2SlZVEVABMc6M=
 github.com/orbs-network/pbparser v0.2.0/go.mod h1:WSzcxgH5xzywQm0YSASbD7RcdxBXZgqZaDVK8M+8DJ8=
