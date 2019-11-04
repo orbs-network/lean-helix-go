@@ -103,7 +103,7 @@ func (m *MainLoop) run(ctx context.Context) {
 
 	m.logger.Info("LHFLOW LHMSG MAINLOOP START LISTENING NOW")
 
-	var topUpdate *primitives.BlockHeight
+	var maxBlockHeightBySync *primitives.BlockHeight
 	var shutdown bool
 	for !shutdown {
 		m.state.GcOldContexts()
@@ -116,7 +116,7 @@ func (m *MainLoop) run(ctx context.Context) {
 
 			m.logger.Debug("LHFLOW LHMSG MAINLOOP RECEIVED %v from %v for H=%d V=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight(), parsedMessage.View())
 
-			_, err := m.state.ViewContexts.ActiveFor(state.NewHeightView(parsedMessage.BlockHeight(), parsedMessage.View()))
+			_, err := m.state.Contexts.For(state.NewHeightView(parsedMessage.BlockHeight(), parsedMessage.View()))
 			if err != nil {
 				m.logger.Debug("LHFLOW LHMSG MAINLOOP - IGNORING RECEIVED MESSAGE %v FROM %v WITH %e", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), err)
 				continue
@@ -129,17 +129,16 @@ func (m *MainLoop) run(ctx context.Context) {
 			}
 
 		case trigger := <-m.electionScheduler.ElectionChannel():
-			triggeredHv := state.NewHeightView(trigger.Hv.Height(), trigger.Hv.View()+1)
-			m.state.ViewContexts.CancelOlderThan(triggeredHv)
-			_, err := m.state.ViewContexts.ActiveFor(triggeredHv)
+			targetHv := state.NewHeightView(trigger.Hv.Height(), trigger.Hv.View()+1)
+			m.state.Contexts.CancelOlderThan(targetHv)
+			_, err := m.state.Contexts.For(targetHv)
 			if err != nil {
 				m.logger.Debug("LHFLOW LHMSG MAINLOOP - IGNORING ELECTION TRIGGER WITH %e", err)
 				continue
 			}
 
 			m.logger.Debug("LHFLOW ELECTION MAINLOOP - CANCELED WORKER CONTEXT (received election trigger with H=%d V=%d)", trigger.Hv.Height(), trigger.Hv.View())
-			message := trigger
-			m.sendElectionMessageNonBlocking(ctx, message)
+			m.sendElectionMessageNonBlocking(ctx, trigger)
 
 		case receivedBlockWithProof := <-m.mainUpdateStateChannel: // NodeSync
 			if receivedBlockWithProof == nil {
@@ -153,15 +152,15 @@ func (m *MainLoop) run(ctx context.Context) {
 				receivedBlockHeight = receivedBlockWithProof.block.Height()
 			}
 
-			if topUpdate != nil && *topUpdate >= receivedBlockHeight {
+			if maxBlockHeightBySync != nil && *maxBlockHeightBySync >= receivedBlockHeight {
 				m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - Already received a more recent update message than block %d", receivedBlockHeight)
 				continue
 			}
 
 			hv := state.NewHeightView(receivedBlockHeight+1, 0)
-			m.state.ViewContexts.CancelOlderThan(hv)
+			m.state.Contexts.CancelOlderThan(hv)
 
-			_, err := m.state.ViewContexts.ActiveFor(hv)
+			_, err := m.state.Contexts.For(hv)
 			if err != nil {
 				m.logger.Debug("LHFLOW LHMSG MAINLOOP - IGNORING BLOCK SYNC WITH %e", err)
 				continue
@@ -175,10 +174,10 @@ func (m *MainLoop) run(ctx context.Context) {
 				continue
 			}
 
-			if topUpdate == nil {
-				topUpdate = new(primitives.BlockHeight)
+			if maxBlockHeightBySync == nil {
+				maxBlockHeightBySync = new(primitives.BlockHeight)
 			}
-			*topUpdate = receivedBlockHeight
+			*maxBlockHeightBySync = receivedBlockHeight
 			m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - Wrote to worker UpdateState channel")
 		}
 	}

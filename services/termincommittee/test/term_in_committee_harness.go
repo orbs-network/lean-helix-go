@@ -63,7 +63,7 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 	log.Info("NewHarness calling NewTermInCommittee with H=%d", state.Height())
 
 	// TODO state.State is shadowing state.State and is generally meaninless
-	termInCommittee := termincommittee.NewTermInCommittee(ctx, log, termConfig, state.State, messageFactory, myNode.ElectionTrigger, committeeMembers, prevBlock, true, nil)
+	termInCommittee := termincommittee.NewTermInCommittee(log, termConfig, state.State, messageFactory, myNode.ElectionTrigger, committeeMembers, prevBlock, true, nil)
 
 	return &harness{
 		t:               t,

@@ -173,7 +173,7 @@ func TestViewChangeRaceWithElectionLeader(t *testing.T) {
 		require.NoError(t, err)
 
 		require.True(t, test.Eventually(time.Second, func() bool {
-			return d.mainLoop.State().Height() == 1
+			return d.electionTriggerMock.GetRegisteredHeight() == 1
 		}))
 
 		// receive VIEW_CHANGE messages form other committee members

@@ -11,9 +11,9 @@ import (
 // Mutable, goroutine-safe State object
 type State struct {
 	sync.RWMutex
-	height       primitives.BlockHeight
-	view         primitives.View
-	ViewContexts *ViewContexts
+	height   primitives.BlockHeight
+	view     primitives.View
+	Contexts *ViewContexts
 }
 
 func (s *State) SetHeightAndResetView(newHeight primitives.BlockHeight) (*HeightView, error) {
@@ -21,10 +21,6 @@ func (s *State) SetHeightAndResetView(newHeight primitives.BlockHeight) (*Height
 	defer s.Unlock()
 
 	candidateHv := NewHeightView(newHeight, 0)
-	_, err := s.ViewContexts.ActiveFor(candidateHv)
-	if err != nil {
-		return NewHeightView(s.height, s.view), errors.Wrap(err, "failed to SetHeightAndResetView")
-	}
 
 	if s.height >= candidateHv.height {
 		return NewHeightView(s.height, s.view), errors.New("SetHeightAndResetView() failed because newHeight is not newer than current height")
@@ -39,22 +35,12 @@ func (s *State) SetView(newView primitives.View) (*HeightView, error) {
 	s.Lock()
 	defer s.Unlock()
 
-	if s.view == newView {
-		return NewHeightView(s.height, s.view), nil
-	}
-
-	candidateHv := NewHeightView(s.height, newView)
-	_, err := s.ViewContexts.ActiveFor(candidateHv)
-	if err != nil {
-		return NewHeightView(s.height, s.view), errors.Wrap(err, "failed to SetView")
-	}
-
-	if s.view > newView && newView != 0 {
+	if s.view > newView {
 		return NewHeightView(s.height, s.view), errors.New("SetView() failed because newView is not newer than current view, and it's not a new term")
 	}
 
-	s.view = candidateHv.view
-	return candidateHv, nil
+	s.view = newView
+	return NewHeightView(s.height, newView), nil
 }
 
 // TODO For testing only, so perhaps move it away
@@ -93,14 +79,14 @@ func (s *State) HeightView() *HeightView {
 }
 
 func (s *State) GcOldContexts() {
-	s.ViewContexts.CancelOlderThan(NewHeightView(s.Height(), 0))
+	s.Contexts.CancelOlderThan(NewHeightView(s.Height(), 0))
 }
 
 func NewState() *State {
 	return &State{
-		height:       0,
-		view:         0,
-		ViewContexts: NewViewContexts(),
+		height:   0,
+		view:     0,
+		Contexts: NewViewContexts(),
 	}
 }
 

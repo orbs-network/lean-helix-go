@@ -47,7 +47,7 @@ func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfac
 		return termNotInCommittee(randomSeed, config)
 	}
 
-	termInCommittee := termincommittee.NewTermInCommittee(ctx, log, config, state, messageFactory, electionTrigger, committeeMembers, prevBlock, canBeFirstLeader, CommitsToProof(log, blockHeight, myMemberId, config.KeyManager, onCommit))
+	termInCommittee := termincommittee.NewTermInCommittee(log, config, state, messageFactory, electionTrigger, committeeMembers, prevBlock, canBeFirstLeader, CommitsToProof(log, config.KeyManager, onCommit))
 	return &LeanHelixTerm{
 		ConsensusMessagesFilter: NewConsensusMessagesFilter(termInCommittee, config.KeyManager, randomSeed),
 		termInCommittee:         termInCommittee,
@@ -55,7 +55,7 @@ func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfac
 }
 
 func requestOrderedCommittee(s *state.State, blockHeight primitives.BlockHeight, randomSeed uint64, config *interfaces.Config) ([]primitives.MemberId, error) {
-	ctx, err := s.ViewContexts.ActiveFor(state.NewHeightView(blockHeight, 0))
+	ctx, err := s.Contexts.For(state.NewHeightView(blockHeight, 0))
 	if err != nil {
 		return nil, err
 	}

@@ -32,7 +32,7 @@ func NewViewContexts() *ViewContexts {
 	}
 }
 
-func (w *ViewContexts) ActiveFor(hv *HeightView) (context.Context, error) {
+func (w *ViewContexts) For(hv *HeightView) (context.Context, error) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 

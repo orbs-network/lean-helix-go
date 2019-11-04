@@ -52,17 +52,7 @@ type TermInCommittee struct {
 	State                           *state.State
 }
 
-func NewTermInCommittee(
-	ctx context.Context,
-	log L.LHLogger,
-	config *interfaces.Config,
-	state *state.State,
-	messageFactory *messagesfactory.MessageFactory,
-	electionTrigger interfaces.ElectionScheduler,
-	committeeMembers []primitives.MemberId,
-	prevBlock interfaces.Block,
-	canBeFirstLeader bool,
-	onCommit OnInCommitteeCommitCallback) *TermInCommittee {
+func NewTermInCommittee(log L.LHLogger, config *interfaces.Config, state *state.State, messageFactory *messagesfactory.MessageFactory, electionTrigger interfaces.ElectionScheduler, committeeMembers []primitives.MemberId, prevBlock interfaces.Block, canBeFirstLeader bool, onCommit OnInCommitteeCommitCallback) *TermInCommittee {
 
 	keyManager := config.KeyManager
 	blockUtils := config.BlockUtils
@@ -169,7 +159,7 @@ func (tic *TermInCommittee) startTerm(canBeFirstLeader bool) {
 
 	tic.logger.Debug("LHFLOW startTerm() I AM THE LEADER OF FIRST VIEW, requesting new block")
 
-	ctx, err := tic.State.ViewContexts.ActiveFor(currentHV)
+	ctx, err := tic.State.Contexts.For(currentHV)
 	if err != nil {
 		tic.logger.Info("LHFLOW onElectedByViewChange() not requesting new block - %e", err)
 		return
@@ -313,7 +303,7 @@ func (tic *TermInCommittee) onElectedByViewChange(view primitives.View, viewChan
 	if block == nil {
 		tic.logger.Debug("LHFLOW onElectedByViewChange() MISSING BLOCK IN VIEW_CHANGE, calling RequestNewBlockProposal()")
 
-		ctx, err := tic.State.ViewContexts.ActiveFor(currentHeightView)
+		ctx, err := tic.State.Contexts.For(currentHeightView)
 		if err != nil {
 			tic.logger.Info("LHFLOW onElectedByViewChange() not sending NEW_VIEW - %e", err)
 			return
@@ -363,7 +353,7 @@ func (tic *TermInCommittee) HandlePrePrepare(ppm *interfaces.PreprepareMessage) 
 
 	header := ppm.Content().SignedHeader()
 
-	ctx, err := tic.State.ViewContexts.ActiveFor(state.NewHeightView(header.BlockHeight(), header.View()))
+	ctx, err := tic.State.Contexts.For(state.NewHeightView(header.BlockHeight(), header.View()))
 	if err != nil {
 		tic.logger.Info("LHFLOW LHMSG RECEIVED PREPREPARE IGNORE - %e", err)
 		return
@@ -549,7 +539,7 @@ func (tic *TermInCommittee) checkCommitted(blockHeight primitives.BlockHeight, v
 		return
 	}
 
-	ctx, err := tic.State.ViewContexts.ActiveFor(state.NewHeightView(blockHeight, view))
+	ctx, err := tic.State.Contexts.For(state.NewHeightView(blockHeight, view))
 	if err != nil {
 		tic.logger.Debug("LHMSG RECEIVED COMMIT IGNORE - %e", err)
 		return
@@ -752,7 +742,7 @@ func (tic *TermInCommittee) HandleNewView(nvm *interfaces.NewViewMessage) {
 	if latestVote == nil {
 		header := ppm.Content().SignedHeader()
 
-		ctx, err := tic.State.ViewContexts.ActiveFor(state.NewHeightView(nvmHeader.BlockHeight(), nvm.View()))
+		ctx, err := tic.State.Contexts.For(state.NewHeightView(nvmHeader.BlockHeight(), nvm.View()))
 		if err != nil {
 			tic.logger.Info("LHFLOW LHMSG RECEIVED NEW_VIEW IGNORE - %e", err)
 			return

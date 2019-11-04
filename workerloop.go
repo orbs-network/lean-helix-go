@@ -224,7 +224,7 @@ func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, bloc
 
 func (lh *WorkerLoop) onNewConsensusRound(prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) {
 	hv := state.NewHeightView(blockheight.GetBlockHeight(prevBlock)+1, 0)
-	ctx, err := lh.state.ViewContexts.ActiveFor(hv)
+	ctx, err := lh.state.Contexts.For(hv)
 	if err != nil {
 		lh.logger.Info("onNewConsensusRound() error: %e", err)
 		return
@@ -256,5 +256,5 @@ func (lh *WorkerLoop) cleanupCurrentTerm() {
 }
 
 func (lh *WorkerLoop) interrupt() {
-	lh.state.ViewContexts.Shutdown()
+	lh.state.Contexts.Shutdown()
 }

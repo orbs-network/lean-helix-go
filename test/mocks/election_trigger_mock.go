@@ -11,6 +11,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/state"
+	"sync/atomic"
 	"time"
 )
 
@@ -36,8 +37,8 @@ func NewMockElectionTrigger() *ElectionTriggerMock {
 }
 
 func (et *ElectionTriggerMock) RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, cb func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)) {
+	atomic.StoreUint64((*uint64)(&et.blockHeight), uint64(blockHeight))
 	et.view = view
-	et.blockHeight = blockHeight
 	et.electionHandler = cb
 }
 
@@ -63,12 +64,16 @@ func (et *ElectionTriggerMock) ManualTrigger(ctx context.Context, hv *state.Heig
 
 func (et *ElectionTriggerMock) electionTriggerHandler() {
 	if et.electionHandler != nil {
-		et.electionHandler(et.blockHeight, et.view, nil)
+		et.electionHandler(et.GetRegisteredHeight(), et.view, nil)
 	}
 }
 
 func (et *ElectionTriggerMock) ManualTriggerSync() {
 	if et.electionHandler != nil {
-		et.electionHandler(et.blockHeight, et.view, nil)
+		et.electionHandler(et.GetRegisteredHeight(), et.view, nil)
 	}
+}
+
+func (et *ElectionTriggerMock) GetRegisteredHeight() primitives.BlockHeight {
+	return 	primitives.BlockHeight(atomic.LoadUint64((*uint64)(&et.blockHeight)))
 }
