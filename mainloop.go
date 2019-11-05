@@ -97,6 +97,8 @@ func (m *MainLoop) runMainLoop(ctx context.Context) *govnr.ForeverHandle {
 }
 
 func (m *MainLoop) run(ctx context.Context) {
+	defer m.worker.interrupt()
+
 	if m.electionScheduler == nil {
 		panic("Election trigger was not configured, cannot run Lean Helix (mainloop.run)")
 	}
@@ -183,11 +185,10 @@ func (m *MainLoop) run(ctx context.Context) {
 	}
 
 	m.logger.Info("LHFLOW LHMSG MAINLOOP DONE STOPPED LISTENING, SHUTDOWN END")
-	m.worker.interrupt()
 }
 
 func (m *MainLoop) sendElectionMessageNonBlocking(ctx context.Context, trigger *interfaces.ElectionTrigger) {
-	elChannel :=  m.worker.electionChannel
+	elChannel := m.worker.electionChannel
 	bufferSize := cap(elChannel)
 	if bufferSize == 0 {
 		panic("electionChannel buffer size must be at least 1")
@@ -207,7 +208,7 @@ func (m *MainLoop) sendElectionMessageNonBlocking(ctx context.Context, trigger *
 }
 
 func (m *MainLoop) sendUpdateMessageNonBlocking(ctx context.Context, blockWithProof *blockWithProof) error {
-	msgChannel :=  m.worker.workerUpdateStateChannel
+	msgChannel := m.worker.workerUpdateStateChannel
 	bufferSize := cap(msgChannel)
 	if bufferSize == 0 {
 		panic("workerUpdateStateChannel buffer size must be at least 1")
