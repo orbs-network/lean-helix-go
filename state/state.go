@@ -11,74 +11,36 @@ import (
 // Mutable, goroutine-safe State object
 type State struct {
 	sync.RWMutex
-	height primitives.BlockHeight
-	view   primitives.View
+	height   primitives.BlockHeight
+	view     primitives.View
+	Contexts *ViewContexts
 }
 
-func (s *State) CompareWithEffectiveHeightAndCancel(cancel context.CancelFunc, lastUpdated primitives.BlockHeight, height primitives.BlockHeight) (*HeightView, bool) {
-	s.RLock()
-	defer s.RUnlock()
-
-	hv := NewHeightView(s.height, s.view)
-
-	effectiveHeight := s.height
-	if effectiveHeight < lastUpdated {
-		effectiveHeight = lastUpdated
-	}
-
-	if height < effectiveHeight {
-		return hv, false
-	}
-
-	cancel()
-	return hv, true
-}
-
-func (s *State) CancelContextIfHeightViewUnchanged(cancel context.CancelFunc, height primitives.BlockHeight, view primitives.View) (*HeightView, bool) {
-	s.RLock()
-	defer s.RUnlock()
-
-	hv := NewHeightView(s.height, s.view)
-
-	if s.height != height || s.view != view {
-		return hv, false
-	}
-
-	cancel()
-	return hv, true
-}
-
-func (s *State) SetHeightAndResetView(ctx context.Context, newHeight primitives.BlockHeight) (*HeightView, error) {
+func (s *State) SetHeightAndResetView(newHeight primitives.BlockHeight) (*HeightView, error) {
 	s.Lock()
 	defer s.Unlock()
 
-	if ctx.Err() == context.Canceled {
-		return NewHeightView(s.height, s.view), ctx.Err()
-	}
+	candidateHv := NewHeightView(newHeight, 0)
 
-	if s.height >= newHeight {
+	if s.height >= candidateHv.height {
 		return NewHeightView(s.height, s.view), errors.New("SetHeightAndResetView() failed because newHeight is not newer than current height")
 	}
 
-	s.height = newHeight
-	s.view = 0
-	return NewHeightView(s.height, s.view), nil
+	s.height = candidateHv.height
+	s.view = candidateHv.view
+	return candidateHv, nil
 }
 
-func (s *State) SetView(ctx context.Context, newView primitives.View) (*HeightView, error) {
+func (s *State) SetView(newView primitives.View) (*HeightView, error) {
 	s.Lock()
 	defer s.Unlock()
 
-	if ctx.Err() == context.Canceled {
-		return NewHeightView(s.height, s.view), ctx.Err()
-	}
-
-	if s.view > newView && newView != 0 {
+	if s.view > newView {
 		return NewHeightView(s.height, s.view), errors.New("SetView() failed because newView is not newer than current view, and it's not a new term")
 	}
 
 	s.view = newView
-	return NewHeightView(s.height, s.view), nil
+	return NewHeightView(s.height, newView), nil
 }
 
 // TODO For testing only, so perhaps move it away
@@ -116,10 +78,15 @@ func (s *State) HeightView() *HeightView {
 	return NewHeightView(s.height, s.view)
 }
 
+func (s *State) GcOldContexts() {
+	s.Contexts.CancelOlderThan(NewHeightView(s.Height(), 0))
+}
+
 func NewState() *State {
 	return &State{
-		height: 0,
-		view:   0,
+		height:   0,
+		view:     0,
+		Contexts: NewViewContexts(),
 	}
 }
 
@@ -130,6 +97,9 @@ type HeightView struct {
 }
 
 func (hv *HeightView) String() string {
+	if hv == nil {
+		return "<nil HV>"
+	}
 	return fmt.Sprintf("H=%d,V=%d", hv.height, hv.view)
 }
 
@@ -146,4 +116,8 @@ func (hv *HeightView) Height() primitives.BlockHeight {
 
 func (hv *HeightView) View() primitives.View {
 	return hv.view
+}
+
+func (hv *HeightView) OlderThan(otherHv *HeightView) bool {
+	return hv.Height() < otherHv.Height() || (hv.Height() == otherHv.Height() && hv.View() < otherHv.View())
 }

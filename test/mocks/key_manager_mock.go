@@ -23,11 +23,12 @@ type VerifyRandomSeedCallParams struct {
 }
 
 type MockKeyManager struct {
-	myMemberId              primitives.MemberId
-	rejectedMemberIds       []primitives.MemberId
-	FailFutureVerifications bool
-	historyLock             sync.RWMutex
-	verifyRandomSeedHistory []*VerifyRandomSeedCallParams
+	myMemberId                   primitives.MemberId
+	rejectedMemberIds            []primitives.MemberId
+	FailFutureVerifications      bool
+	historyLock                  sync.RWMutex
+	verifyRandomSeedHistory      []*VerifyRandomSeedCallParams
+	alwaysVerifyConsensusMessage bool
 }
 
 func NewMockKeyManager(memberId primitives.MemberId, rejectedMemberIds ...primitives.MemberId) *MockKeyManager {
@@ -38,12 +39,19 @@ func NewMockKeyManager(memberId primitives.MemberId, rejectedMemberIds ...primit
 	}
 }
 
+func (km *MockKeyManager) DisableConsensusMessageVerification() {
+	km.alwaysVerifyConsensusMessage = true
+}
 func (km *MockKeyManager) SignConsensusMessage(ctx context.Context, blockHeight primitives.BlockHeight, content []byte) primitives.Signature {
 	str := fmt.Sprintf("SIG|%s|%s|%x", blockHeight, km.myMemberId.KeyForMap(), content)
 	return []byte(str)
 }
 
 func (km *MockKeyManager) VerifyConsensusMessage(blockHeight primitives.BlockHeight, content []byte, sender *protocol.SenderSignature) error {
+	if km.alwaysVerifyConsensusMessage {
+		return nil
+	}
+
 	if km.FailFutureVerifications {
 		return errors.New("FailFutureVerifications=true")
 	}

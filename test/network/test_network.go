@@ -107,6 +107,9 @@ func (net *TestNetwork) WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx
 			for node.GetCurrentHeight() < height {
 				iterationTimeout, _ := context.WithTimeout(ctx, 20*time.Millisecond)
 				<-iterationTimeout.Done() // sleep or get cancelled
+				if ctx.Err() != nil {
+					return
+				}
 			}
 
 			select {
@@ -222,10 +225,14 @@ func (net *TestNetwork) AllNodesValidatedNoMoreThanOnceBeforeCommit(ctx context.
 	return true
 }
 
-func (net *TestNetwork) TriggerElectionsOnAllNodes(ctx context.Context) {
-	for _, n := range net.Nodes {
+func (net *TestNetwork) TriggerElectionsOnNodes(ctx context.Context, nodes ...*Node) {
+	for _, n := range nodes {
 		<-n.TriggerElectionOnNode(ctx)
 	}
+}
+
+func (net *TestNetwork) TriggerElectionsOnAllNodes(ctx context.Context) {
+	net.TriggerElectionsOnNodes(ctx, net.Nodes...)
 }
 
 func (net *TestNetwork) WaitForShutdown(ctx context.Context) {

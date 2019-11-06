@@ -15,9 +15,8 @@ import (
 	"time"
 )
 
-type OnCommitCallback func(ctx context.Context, block Block, blockProof []byte)
+type OnCommitCallback func(ctx context.Context, block Block, blockProof []byte) error
 type OnNewConsensusRoundCallback func(ctx context.Context, newHeight primitives.BlockHeight, prevBlock Block, canBeFirstLeader bool)
-type OnUpdateStateCallback func(ctx context.Context, currentHeight primitives.BlockHeight, receivedBlockHeight primitives.BlockHeight)
 type OnElectionCallback func(m metrics.ElectionMetrics)
 
 type Config struct {
@@ -65,12 +64,12 @@ type KeyManager interface {
 }
 
 type ElectionTrigger struct {
-	MoveToNextLeader func(ctx context.Context)
+	MoveToNextLeader func()
 	Hv               *state.HeightView
 }
 
 type ElectionScheduler interface {
-	RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, cb func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB OnElectionCallback))
+	RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, cb func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB OnElectionCallback))
 	ElectionChannel() chan *ElectionTrigger
 	CalcTimeout(view primitives.View) time.Duration
 	Stop()

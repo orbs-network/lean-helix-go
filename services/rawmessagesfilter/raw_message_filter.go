@@ -7,7 +7,6 @@
 package rawmessagesfilter
 
 import (
-	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	L "github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
@@ -38,7 +37,7 @@ func NewConsensusMessageFilter(instanceId primitives.InstanceId, myMemberId prim
 }
 
 // TODO Consider passing ConsensusMessage instead of *interfaces.ConsensusRawMessage
-func (f *RawMessageFilter) HandleConsensusRawMessage(ctx context.Context, rawMessage *interfaces.ConsensusRawMessage) {
+func (f *RawMessageFilter) HandleConsensusRawMessage(rawMessage *interfaces.ConsensusRawMessage) {
 	message := interfaces.ToConsensusMessage(rawMessage)
 	if f.isMyMessage(message) {
 		f.logger.Debug("LHFILTER IGNORING RECEIVED %s with H=%d V=%d sender=%s IGNORING message I sent", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
@@ -61,7 +60,7 @@ func (f *RawMessageFilter) HandleConsensusRawMessage(ctx context.Context, rawMes
 		return
 	}
 	f.logger.Debug("LHFILTER RECEIVED %s with H=%d V=%d sender=%s OK PROCESSING", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
-	f.processConsensusMessage(ctx, message)
+	f.processConsensusMessage(message)
 }
 
 func (f *RawMessageFilter) isMyMessage(message interfaces.ConsensusMessage) bool {
@@ -95,18 +94,18 @@ func (f *RawMessageFilter) pushToCache(height primitives.BlockHeight, message in
 	}
 }
 
-func (f *RawMessageFilter) processConsensusMessage(ctx context.Context, message interfaces.ConsensusMessage) {
+func (f *RawMessageFilter) processConsensusMessage(message interfaces.ConsensusMessage) {
 	if f.consensusMessagesHandler == nil {
 		f.logger.Info("LHFILTER consensusMessagesHandler is nil, ignoring message %s", message.MessageType())
 		return
 	}
 
-	if err := f.consensusMessagesHandler.HandleConsensusMessage(ctx, message); err != nil {
+	if err := f.consensusMessagesHandler.HandleConsensusMessage(message); err != nil {
 		f.logger.Info("LHFILTER LHMSG Failed in HandleConsensusMessage(): %s", err)
 	}
 }
 
-func (f *RawMessageFilter) ConsumeCacheMessages(ctx context.Context, consensusMessagesHandler ConsensusMessagesHandler) {
+func (f *RawMessageFilter) ConsumeCacheMessages(consensusMessagesHandler ConsensusMessagesHandler) {
 	height := f.state.Height()
 	f.logger.Debug("LHFILTER ConsumeCacheMessages(): updated consensusMessagesHandler is %v", consensusMessagesHandler)
 	f.consensusMessagesHandler = consensusMessagesHandler
@@ -117,7 +116,7 @@ func (f *RawMessageFilter) ConsumeCacheMessages(ctx context.Context, consensusMe
 		f.logger.Debug("LHFILTER consuming %d messages from height=%d", len(messages), height)
 	}
 	for _, message := range messages {
-		f.processConsensusMessage(ctx, message)
+		f.processConsensusMessage(message)
 	}
 	delete(f.futureCache, height)
 }

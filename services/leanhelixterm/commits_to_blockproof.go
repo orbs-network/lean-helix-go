@@ -12,11 +12,10 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
-	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"strings"
 )
 
-func CommitsToProof(log logger.LHLogger, blockHeight primitives.BlockHeight, myMemberId primitives.MemberId, keyManager interfaces.KeyManager, onCommit interfaces.OnCommitCallback) termincommittee.OnInCommitteeCommitCallback {
+func CommitsToProof(log logger.LHLogger, keyManager interfaces.KeyManager, onCommit interfaces.OnCommitCallback) termincommittee.OnInCommitteeCommitCallback {
 	return func(ctx context.Context, block interfaces.Block, commitMessages []*interfaces.CommitMessage) {
 		proof := blockproof.GenerateLeanHelixBlockProof(keyManager, commitMessages)
 		committeeStr := commitMessagesToCommitteeMemberIdsStr(commitMessages)

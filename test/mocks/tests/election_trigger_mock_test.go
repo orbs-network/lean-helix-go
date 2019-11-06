@@ -29,7 +29,7 @@ func TestCallingCallback(t *testing.T) {
 		var actualHeight primitives.BlockHeight = 666
 		var expectedView primitives.View = 10
 		var expectedHeight primitives.BlockHeight = 20
-		cb := func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+		cb := func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
 			actualHeight = blockHeight
 			actualView = view
 		}
@@ -37,7 +37,7 @@ func TestCallingCallback(t *testing.T) {
 
 		go et.ManualTrigger(ctx, state.NewHeightView(actualHeight, actualView))
 		trigger := <-et.ElectionChannel()
-		trigger.MoveToNextLeader(ctx)
+		trigger.MoveToNextLeader()
 
 		require.Equal(t, expectedView, actualView)
 		require.Equal(t, expectedHeight, actualHeight)
@@ -50,6 +50,6 @@ func TestIgnoreEmptyCallback(t *testing.T) {
 
 		go et.ManualTrigger(ctx, state.NewHeightView(0, 1))
 		trigger := <-et.ElectionChannel()
-		trigger.MoveToNextLeader(ctx)
+		trigger.MoveToNextLeader()
 	})
 }
