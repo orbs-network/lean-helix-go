@@ -77,6 +77,16 @@ func newDriver(logger interfaces.Logger, becomeLeaderInView byte, totalMembers b
 	}
 }
 
+func (d *driver) start(ctx context.Context, t *testing.T) {
+	d.mainLoop.Run(ctx)
+	err := d.mainLoop.UpdateState(ctx, interfaces.GenesisBlock, nil)
+	require.NoError(t, err)
+
+	require.True(t, test.Eventually(time.Second, func() bool {
+		return d.electionTriggerMock.GetRegisteredHeight() == 1
+	}))
+}
+
 func (d *driver) handleViewChangeMessage(ctx context.Context, hv *state.HeightView, fromLeaderAtView byte) {
 	randomSeed := rand.Uint64()
 	messageFactory := messagesfactory.NewMessageFactory(d.instanceId, d.config.KeyManager, d.leadersByView[fromLeaderAtView], randomSeed)
@@ -102,12 +112,17 @@ func (d *driver) waitForSentCommitMessage(t *testing.T, i int) *interfaces.Commi
 	return message
 }
 
-func (d *driver) receivePrepareMessageForBlock(ctx context.Context, from primitives.MemberId, height primitives.BlockHeight, view primitives.View, block interfaces.Block) {
+func (d *driver) handlePrepareMessage(ctx context.Context, from primitives.MemberId, height primitives.BlockHeight, view primitives.View, block interfaces.Block) {
 	message := builders.APrepareMessage(d.instanceId, mocks.NewMockKeyManager(from), from, height, view, block)
 	d.mainLoop.HandleConsensusMessage(ctx, message.ToConsensusRawMessage())
 }
 
-func (d *driver) receiveCommitMessageForBlock(ctx context.Context, from primitives.MemberId, height primitives.BlockHeight, view primitives.View, block interfaces.Block, randomSeed uint64) {
+func (d *driver) handleCommitMessage(ctx context.Context, from primitives.MemberId, height primitives.BlockHeight, view primitives.View, block interfaces.Block, randomSeed uint64) {
 	message := builders.ACommitMessage(d.instanceId, mocks.NewMockKeyManager(from), from, primitives.BlockHeight(1), primitives.View(0), block, randomSeed)
-	d.mainLoop.HandleConsensusMessage(ctx, message.ToConsensusRawMessage()) // commit from 1
+	d.mainLoop.HandleConsensusMessage(ctx, message.ToConsensusRawMessage())
+}
+
+func (d *driver) handlePreprepareMessage(ctx context.Context, from primitives.MemberId, height primitives.BlockHeight, view primitives.View, block interfaces.Block, randomSeed uint64) {
+	message := builders.APreprepareMessage(d.instanceId, mocks.NewMockKeyManager(from), from, primitives.BlockHeight(1), primitives.View(0), block)
+	d.mainLoop.HandleConsensusMessage(ctx, message.ToConsensusRawMessage())
 }

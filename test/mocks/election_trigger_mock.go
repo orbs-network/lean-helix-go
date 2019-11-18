@@ -53,7 +53,7 @@ func (et *ElectionTriggerMock) ManualTrigger(ctx context.Context, hv *state.Heig
 		case <-ctx.Done():
 			close(done)
 		case et.electionChannel <- &interfaces.ElectionTrigger{
-			MoveToNextLeader: et.electionTriggerHandler,
+			MoveToNextLeader: et.InvokeElectionHandler,
 			Hv:               state.NewHeightView(hv.Height(), hv.View()),
 		}:
 			close(done)
@@ -62,18 +62,12 @@ func (et *ElectionTriggerMock) ManualTrigger(ctx context.Context, hv *state.Heig
 	return done
 }
 
-func (et *ElectionTriggerMock) electionTriggerHandler() {
-	if et.electionHandler != nil {
-		et.electionHandler(et.GetRegisteredHeight(), et.view, nil)
-	}
-}
-
-func (et *ElectionTriggerMock) ManualTriggerSync() {
+func (et *ElectionTriggerMock) InvokeElectionHandler() {
 	if et.electionHandler != nil {
 		et.electionHandler(et.GetRegisteredHeight(), et.view, nil)
 	}
 }
 
 func (et *ElectionTriggerMock) GetRegisteredHeight() primitives.BlockHeight {
-	return 	primitives.BlockHeight(atomic.LoadUint64((*uint64)(&et.blockHeight)))
+	return primitives.BlockHeight(atomic.LoadUint64((*uint64)(&et.blockHeight)))
 }
