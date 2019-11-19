@@ -7,7 +7,6 @@
 package Electiontrigger
 
 import (
-	"context"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/state"
@@ -57,7 +56,7 @@ func (t *TimerBasedElectionTrigger) RegisterOnElection(blockHeight primitives.Bl
 	triggerCancelled := make(chan struct{})
 	t.triggerCancelled = triggerCancelled
 	t.timer = time.AfterFunc(timeout, func() {
-		triggerElections(t.ElectionChannel(), blockHeight, view, triggerCancelled, func(ctx context.Context) {
+		triggerElections(t.ElectionChannel(), blockHeight, view, triggerCancelled, func() {
 			if moveToNextLeader != nil {
 				moveToNextLeader(blockHeight, view, t.callbackFromOrbs) // executed by LH worker loop
 			}
@@ -91,7 +90,7 @@ func (t *TimerBasedElectionTrigger) CalcTimeout(view primitives.View) time.Durat
 	return timeoutMultiplier * t.minTimeout
 }
 
-func triggerElections(electionChannel chan *interfaces.ElectionTrigger, height primitives.BlockHeight, view primitives.View, triggerCancelled chan struct{}, electionsFunc func(ctx context.Context)) {
+func triggerElections(electionChannel chan *interfaces.ElectionTrigger, height primitives.BlockHeight, view primitives.View, triggerCancelled chan struct{}, electionsFunc func()) {
 	select {
 	case <-triggerCancelled:
 		return
