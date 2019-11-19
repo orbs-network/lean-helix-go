@@ -18,11 +18,10 @@ import (
 
 var TIMEOUT_EXP_BASE = 2.0
 
-type electionHandlerFunc func(context.Context, primitives.BlockHeight, primitives.View, interfaces.OnElectionCallback)
-
 type TimerBasedElectionTrigger struct {
 	electionChannel  chan *interfaces.ElectionTrigger
 	minTimeout       time.Duration
+	electionHandler  func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)
 	callbackFromOrbs interfaces.OnElectionCallback
 	timer            *time.Timer
 
@@ -30,7 +29,6 @@ type TimerBasedElectionTrigger struct {
 	lock             sync.RWMutex
 	blockHeight      primitives.BlockHeight
 	view             primitives.View
-	electionHandler  electionHandlerFunc
 	triggerCancelled chan struct{}
 }
 
@@ -43,7 +41,7 @@ func NewTimerBasedElectionTrigger(minTimeout time.Duration, callbackFromOrbs int
 }
 
 // on new view
-func (t *TimerBasedElectionTrigger) RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, moveToNextLeader func(ctx context.Context, blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)) {
+func (t *TimerBasedElectionTrigger) RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, moveToNextLeader func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
@@ -61,7 +59,7 @@ func (t *TimerBasedElectionTrigger) RegisterOnElection(blockHeight primitives.Bl
 	t.timer = time.AfterFunc(timeout, func() {
 		triggerElections(t.ElectionChannel(), blockHeight, view, triggerCancelled, func(ctx context.Context) {
 			if moveToNextLeader != nil {
-				moveToNextLeader(ctx, blockHeight, view, t.callbackFromOrbs) // executed by LH worker loop
+				moveToNextLeader(blockHeight, view, t.callbackFromOrbs) // executed by LH worker loop
 			}
 		})
 	})

@@ -7,7 +7,6 @@
 package leanhelixterm
 
 import (
-	"context"
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/randomseed"
@@ -26,17 +25,17 @@ func NewConsensusMessagesFilter(handler TermMessagesHandler, keyManager interfac
 	return &ConsensusMessagesFilter{handler, keyManager, randomSeed}
 }
 
-func (mp *ConsensusMessagesFilter) HandleConsensusMessage(ctx context.Context, message interfaces.ConsensusMessage) error {
+func (mp *ConsensusMessagesFilter) HandleConsensusMessage(message interfaces.ConsensusMessage) error {
 	if mp.handler == nil {
 		return errors.Errorf("Out of committee - ignoring message %s H=%d V=%d", message.MessageType(), message.BlockHeight(), message.View())
 	}
 
 	switch message := message.(type) {
 	case *interfaces.PreprepareMessage:
-		mp.handler.HandlePrePrepare(ctx, message)
+		mp.handler.HandlePrePrepare(message)
 
 	case *interfaces.PrepareMessage:
-		mp.handler.HandlePrepare(ctx, message)
+		mp.handler.HandlePrepare(message)
 
 	case *interfaces.CommitMessage:
 		senderSignature := (&protocol.SenderSignatureBuilder{
@@ -48,13 +47,13 @@ func (mp *ConsensusMessagesFilter) HandleConsensusMessage(ctx context.Context, m
 		if err := mp.keyManager.VerifyRandomSeed(message.BlockHeight(), randomSeedBytes, senderSignature); err != nil {
 			return errors.Wrapf(err, "Failed in VerifyRandomSeed()")
 		}
-		mp.handler.HandleCommit(ctx, message)
+		mp.handler.HandleCommit(message)
 
 	case *interfaces.ViewChangeMessage:
-		mp.handler.HandleViewChange(ctx, message)
+		mp.handler.HandleViewChange(message)
 
 	case *interfaces.NewViewMessage:
-		mp.handler.HandleNewView(ctx, message)
+		mp.handler.HandleNewView(message)
 
 	default:
 		panic(fmt.Sprintf("unknown message type: %T", message))

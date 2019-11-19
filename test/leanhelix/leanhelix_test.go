@@ -90,31 +90,41 @@ func TestHangingNode(t *testing.T) {
 		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 2, node0, node1, node2)
 
 		node0LatestBlock := node0.GetLatestBlock()
+		node1LatestBlock := node1.GetLatestBlock()
+		node2LatestBlock := node2.GetLatestBlock()
+		node3LatestBlock := node3.GetLatestBlock()
+
 		if node0LatestBlock == nil {
 			fmt.Printf("Weird: node0 latest is nil!")
 			t.Fatal("node0Latest is nil")
 		}
 		require.True(t, matchers.BlocksAreEqual(node0LatestBlock, block1), "%s should be equal to %s", node0LatestBlock, block1)
-		require.True(t, matchers.BlocksAreEqual(node1.GetLatestBlock(), block1), "%s should be equal to %s", node1.GetLatestBlock(), block1)
-		require.True(t, matchers.BlocksAreEqual(node2.GetLatestBlock(), block1), "%s should be equal to %s", node2.GetLatestBlock(), block1)
-		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)
+		require.True(t, matchers.BlocksAreEqual(node1LatestBlock, block1), "%s should be equal to %s", node1LatestBlock, block1)
+		require.True(t, matchers.BlocksAreEqual(node2LatestBlock, block1), "%s should be equal to %s", node2LatestBlock, block1)
+		require.True(t, node3LatestBlock == interfaces.GenesisBlock)
 
 		net.ReturnWhenNodesPauseOnValidateBlock(ctx, node1, node2)
 		net.ResumeValidateBlockOnNodes(ctx, node1, node2)
 		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 3, node0, node1, node2)
 		node0LatestBlock = node0.GetLatestBlock()
-		require.True(t, matchers.BlocksAreEqual(node0LatestBlock, block2))
-		require.True(t, matchers.BlocksAreEqual(node1.GetLatestBlock(), block2))
-		require.True(t, matchers.BlocksAreEqual(node2.GetLatestBlock(), block2))
-		require.True(t, node3.GetLatestBlock() == interfaces.GenesisBlock)
+		node1LatestBlock = node1.GetLatestBlock()
+		node2LatestBlock = node2.GetLatestBlock()
+		node3LatestBlock = node3.GetLatestBlock()
+
+		require.True(t, matchers.BlocksAreEqual(node0LatestBlock, block2), "%s should be equal to %s", node0LatestBlock, block2)
+		require.True(t, matchers.BlocksAreEqual(node1LatestBlock, block2), "%s should be equal to %s", node1LatestBlock, block2)
+		require.True(t, matchers.BlocksAreEqual(node2LatestBlock, block2), "%s should be equal to %s", node2LatestBlock, block2)
+		require.True(t, node3LatestBlock == interfaces.GenesisBlock)
 
 		net.ResumeValidateBlockOnNodes(ctx, node3)
 		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 2, node3)
-		require.True(t, matchers.BlocksAreEqual(node3.GetLatestBlock(), block1))
+		node3LatestBlock = node3.GetLatestBlock()
+		require.True(t, matchers.BlocksAreEqual(node3LatestBlock, block1), "%s should be equal to %s", node3LatestBlock, block1)
 
 		net.ReturnWhenNodesPauseOnValidateBlock(ctx, node3)
 		net.ResumeValidateBlockOnNodes(ctx, node3)
 		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 3, node3)
-		require.True(t, matchers.BlocksAreEqual(node3.GetLatestBlock(), block2))
+		node3LatestBlock = node3.GetLatestBlock()
+		require.True(t, matchers.BlocksAreEqual(node3LatestBlock, block2), "%s should be equal to %s", node3LatestBlock, block2)
 	})
 }

@@ -2,7 +2,6 @@ package leanhelix
 
 import (
 	"context"
-	"fmt"
 	"github.com/orbs-network/govnr"
 	"github.com/orbs-network/lean-helix-go/services/electiontrigger"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
@@ -59,19 +58,12 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 		config:                      config,
 		onCommitCallback:            onCommitCallback,
 		onNewConsensusRoundCallback: onNewConsensusRoundCallback,
-		messagesChannel:             make(chan *interfaces.ConsensusRawMessage), // TODO use config.MsgChanBufLen
-		mainUpdateStateChannel:      make(chan *blockWithProof),                 // TODO use config.UpdateStateChanBufLen
+		messagesChannel:             make(chan *interfaces.ConsensusRawMessage),
+		mainUpdateStateChannel:      make(chan *blockWithProof),
 		electionScheduler:           electionTrigger,
 		state:                       state,
 		logger:                      L.NewLhLogger(config, state),
 	}
-}
-
-type stdoutErrorer struct {
-}
-
-func (s stdoutErrorer) Error(err error) {
-	fmt.Printf("%s\n", err)
 }
 
 func (m *MainLoop) Run(ctx context.Context) govnr.ShutdownWaiter {
@@ -105,53 +97,52 @@ func (m *MainLoop) runMainLoop(ctx context.Context) *govnr.ForeverHandle {
 }
 
 func (m *MainLoop) run(ctx context.Context) {
+	defer m.worker.interrupt()
+
 	if m.electionScheduler == nil {
 		panic("Election trigger was not configured, cannot run Lean Helix (mainloop.run)")
 	}
 
 	m.logger.Info("LHFLOW LHMSG MAINLOOP START LISTENING NOW")
-	workerCtx, cancelWorkerContext := context.WithCancel(ctx)
-	defer cancelWorkerContext()
-	var lastReceivedHeight primitives.BlockHeight
-	for {
+
+	var maxBlockHeightBySync *primitives.BlockHeight
+	var shutdown bool
+	for !shutdown {
+		m.state.GcOldContexts()
 		select {
 		case <-ctx.Done(): // system shutdown
-			m.logger.Info("LHFLOW LHMSG MAINLOOP DONE STOPPED LISTENING, SHUTDOWN END")
-			return
+			shutdown = true
+
 		case message := <-m.messagesChannel:
 			parsedMessage := interfaces.ToConsensusMessage(message)
 
 			m.logger.Debug("LHFLOW LHMSG MAINLOOP RECEIVED %v from %v for H=%d V=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight(), parsedMessage.View())
+
+			_, err := m.state.Contexts.For(state.NewHeightView(parsedMessage.BlockHeight(), parsedMessage.View()))
+			if err != nil {
+				m.logger.Debug("LHFLOW LHMSG MAINLOOP - IGNORING RECEIVED MESSAGE %v FROM %v WITH %e", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), err)
+				continue
+			}
+
 			select {
 			default: // never block the main loop
 			case <-ctx.Done(): // here for uniformity, made redundant by default:
-			case m.worker.MessagesChannel <- &MessageWithContext{ctx: workerCtx, msg: message}:
+			case m.worker.MessagesChannel <- message:
 			}
 
 		case trigger := <-m.electionScheduler.ElectionChannel():
-			if lastReceivedHeight > trigger.Hv.Height() {
-				m.logger.Info("LHFLOW ELECTION MAINLOOP - INVALID HEIGHT/VIEW IGNORED - Sync message inflight with higher height - lastReceivedHeight: %s, ElectionTrigger: %s", lastReceivedHeight, trigger.Hv)
-				continue
-			}
-			current, canceled := m.state.CancelContextIfHeightViewUnchanged(cancelWorkerContext, trigger.Hv.Height(), trigger.Hv.View())
-			if !canceled {
-				m.logger.Info("LHFLOW ELECTION MAINLOOP - INVALID HEIGHT/VIEW IGNORED - Current: %s, ElectionTrigger: %s", current, trigger.Hv)
+			targetHv := state.NewHeightView(trigger.Hv.Height(), trigger.Hv.View()+1)
+			m.state.Contexts.CancelOlderThan(targetHv)
+			_, err := m.state.Contexts.For(targetHv)
+			if err != nil {
+				m.logger.Debug("LHFLOW LHMSG MAINLOOP - IGNORING ELECTION TRIGGER WITH %e", err)
 				continue
 			}
 
-			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
 			m.logger.Debug("LHFLOW ELECTION MAINLOOP - CANCELED WORKER CONTEXT (received election trigger with H=%d V=%d)", trigger.Hv.Height(), trigger.Hv.View())
-			message := &workerElectionsTriggerMessage{
-				ctx:             workerCtx,
-				ElectionTrigger: trigger,
-			}
-			select {
-			case <-ctx.Done(): // system shutdown
-			case m.worker.electionChannel <- message:
-			}
+			m.sendElectionMessageNonBlocking(ctx, trigger)
 
 		case receivedBlockWithProof := <-m.mainUpdateStateChannel: // NodeSync
-
 			if receivedBlockWithProof == nil {
 				m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - INVALID BLOCK IGNORED - receivedBlockWithProof is nil")
 				continue
@@ -163,27 +154,78 @@ func (m *MainLoop) run(ctx context.Context) {
 				receivedBlockHeight = receivedBlockWithProof.block.Height()
 			}
 
-			current, canceled := m.state.CompareWithEffectiveHeightAndCancel(cancelWorkerContext, lastReceivedHeight, receivedBlockHeight)
-			if !canceled {
-				m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - INVALID BLOCK IGNORED - Received block height is %d which is lower than current height of %d or lastReceivedHeight of %d", receivedBlockHeight, current.Height(), lastReceivedHeight)
+			if maxBlockHeightBySync != nil && *maxBlockHeightBySync >= receivedBlockHeight {
+				m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - Already received a more recent update message than block %d", receivedBlockHeight)
 				continue
 			}
 
-			workerCtx, cancelWorkerContext = context.WithCancel(ctx)
+			hv := state.NewHeightView(receivedBlockHeight+1, 0)
+			m.state.Contexts.CancelOlderThan(hv)
+
+			_, err := m.state.Contexts.For(hv)
+			if err != nil {
+				m.logger.Debug("LHFLOW LHMSG MAINLOOP - IGNORING BLOCK SYNC WITH %e", err)
+				continue
+			}
+
 			m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - CANCELED WORKER CONTEXT")
-			message := &workerUpdateStateMessage{
-				ctx:            workerCtx,
-				blockWithProof: receivedBlockWithProof,
-			}
-			select {
-			case <-ctx.Done(): // system shutdown
-			case m.worker.workerUpdateStateChannel <- message:
+			message := receivedBlockWithProof
+
+			err = m.sendUpdateMessageNonBlocking(ctx, message)
+			if err != nil {
+				continue
 			}
 
-			lastReceivedHeight = receivedBlockHeight
-
+			if maxBlockHeightBySync == nil {
+				maxBlockHeightBySync = new(primitives.BlockHeight)
+			}
+			*maxBlockHeightBySync = receivedBlockHeight
 			m.logger.Debug("LHFLOW UPDATESTATE MAINLOOP - Wrote to worker UpdateState channel")
 		}
+	}
+
+	m.logger.Info("LHFLOW LHMSG MAINLOOP DONE STOPPED LISTENING, SHUTDOWN END")
+}
+
+func (m *MainLoop) sendElectionMessageNonBlocking(ctx context.Context, trigger *interfaces.ElectionTrigger) {
+	elChannel := m.worker.electionChannel
+	bufferSize := cap(elChannel)
+	if bufferSize == 0 {
+		panic("electionChannel buffer size must be at least 1")
+	}
+
+	if len(elChannel) == bufferSize { // full buffer
+		select {
+		case <-elChannel: // free one slot
+		default: // worker raced us and emptied buffer
+		}
+	}
+
+	select {
+	case <-ctx.Done(): // system shutdown
+	case elChannel <- trigger:
+	}
+}
+
+func (m *MainLoop) sendUpdateMessageNonBlocking(ctx context.Context, blockWithProof *blockWithProof) error {
+	msgChannel := m.worker.workerUpdateStateChannel
+	bufferSize := cap(msgChannel)
+	if bufferSize == 0 {
+		panic("workerUpdateStateChannel buffer size must be at least 1")
+	}
+
+	if len(msgChannel) == bufferSize { // full buffer
+		select {
+		case <-msgChannel: // free one slot
+		default: // worker raced us and emptied buffer
+		}
+	}
+
+	select {
+	case <-ctx.Done(): // system shutdown
+		return ctx.Err()
+	case msgChannel <- blockWithProof:
+		return nil
 	}
 }
 

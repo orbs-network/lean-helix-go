@@ -29,25 +29,10 @@ type blockWithProof struct {
 	prevBlockProofBytes []byte
 }
 
-type workerUpdateStateMessage struct {
-	ctx context.Context
-	*blockWithProof
-}
-
-type workerElectionsTriggerMessage struct {
-	ctx context.Context
-	*interfaces.ElectionTrigger
-}
-
-type MessageWithContext struct {
-	msg *interfaces.ConsensusRawMessage
-	ctx context.Context
-}
-
 type WorkerLoop struct {
-	MessagesChannel             chan *MessageWithContext
-	workerUpdateStateChannel    chan *workerUpdateStateMessage
-	electionChannel             chan *workerElectionsTriggerMessage
+	MessagesChannel             chan *interfaces.ConsensusRawMessage
+	workerUpdateStateChannel    chan *blockWithProof
+	electionChannel             chan *interfaces.ElectionTrigger
 	electionTrigger             interfaces.ElectionScheduler
 	state                       *state.State
 	config                      *interfaces.Config
@@ -56,7 +41,6 @@ type WorkerLoop struct {
 	leanHelixTerm               *leanhelixterm.LeanHelixTerm
 	onCommitCallback            interfaces.OnCommitCallback
 	onNewConsensusRoundCallback interfaces.OnNewConsensusRoundCallback
-	onUpdateStateCallback       interfaces.OnUpdateStateCallback
 }
 
 func NewWorkerLoop(
@@ -70,9 +54,9 @@ func NewWorkerLoop(
 	logger.Debug("LHFLOW NewWorkerLoop()")
 	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), logger, state)
 	return &WorkerLoop{
-		MessagesChannel:             make(chan *MessageWithContext, 1000),
-		workerUpdateStateChannel:    make(chan *workerUpdateStateMessage),
-		electionChannel:             make(chan *workerElectionsTriggerMessage),
+		MessagesChannel:             make(chan *interfaces.ConsensusRawMessage, 1000), // TODO config.MsgChanBufLen
+		workerUpdateStateChannel:    make(chan *blockWithProof, 1), // must be at least 1 // TODO config.UpdateStateChanBufLen
+		electionChannel:             make(chan *interfaces.ElectionTrigger, 1), // must be at least 1 // TODO config.ElectionChanBufLen
 		electionTrigger:             electionTrigger,
 		state:                       state,
 		config:                      config,
@@ -89,14 +73,14 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 		select {
 		case <-ctx.Done(): // system shutdown
 			lh.logger.Info("LHFLOW WORKERLOOP DONE STOPPED LISTENING, SHUTDOWN START")
-			lh.workerShutdown()
+			lh.cleanupCurrentTerm()
 			lh.logger.Info("LHFLOW WORKERLOOP DONE STOPPED LISTENING, SHUTDOWN END")
 			return
 
-		case res := <-lh.MessagesChannel:
-			parsedMessage := interfaces.ToConsensusMessage(res.msg)
+		case msg := <-lh.MessagesChannel:
+			parsedMessage := interfaces.ToConsensusMessage(msg)
 			lh.logger.Debug("LHFLOW LHMSG WORKERLOOP RECEIVED %v from %v for H=%d V=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight(), parsedMessage.View())
-			lh.filter.HandleConsensusRawMessage(res.ctx, res.msg)
+			lh.filter.HandleConsensusRawMessage(msg)
 
 		case trigger := <-lh.electionChannel:
 			if trigger == nil {
@@ -112,30 +96,29 @@ func (lh *WorkerLoop) Run(ctx context.Context) {
 			}
 
 			lh.logger.Debug("LHFLOW WORKERLOOP ELECTION")
-			trigger.MoveToNextLeader(trigger.ctx)
+			trigger.MoveToNextLeader()
 
-		case receivedBlockWithProofAndContext := <-lh.workerUpdateStateChannel: // NodeSync
+		case receivedBlockWithProof := <-lh.workerUpdateStateChannel: // NodeSync
 			var height primitives.BlockHeight
-			receivedBlockWithProof := receivedBlockWithProofAndContext.blockWithProof
 
 			if receivedBlockWithProof.block != nil {
 				height = receivedBlockWithProof.block.Height()
 			}
 			lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP - Received block with H=%d", height)
-			lh.handleUpdateState(receivedBlockWithProofAndContext.ctx, receivedBlockWithProof)
+			lh.handleUpdateState(receivedBlockWithProof)
 			lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP - Handled block with H=%d", height)
 		}
 	}
 }
 
-func (lh *WorkerLoop) handleUpdateState(ctx context.Context, receivedBlockWithProof *blockWithProof) {
+func (lh *WorkerLoop) handleUpdateState(receivedBlockWithProof *blockWithProof) {
 	receivedBlockHeight := blockheight.GetBlockHeight(receivedBlockWithProof.block)
 
 	if receivedBlockHeight >= lh.state.Height() {
 		lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP ACCEPTED block with height=%d, calling onNewConsensusRound() from handleUpdateState", receivedBlockHeight)
 		// This block is received from external source
 		// Refuse to be leader on V=0 for a block received from block sync, because this block will usually be not be the latest block.
-		lh.onNewConsensusRound(ctx, receivedBlockWithProof.block, receivedBlockWithProof.prevBlockProofBytes, false)
+		lh.onNewConsensusRound(receivedBlockWithProof.block, receivedBlockWithProof.prevBlockProofBytes, false)
 	} else {
 		lh.logger.Debug("LHFLOW UPDATESTATE WORKERLOOP IGNORE - Received block ignored because its height=%d is less than current height=%d", receivedBlockHeight, lh.state.Height())
 	}
@@ -223,21 +206,31 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 	return nil
 }
 
-func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, blockProofBytes []byte) {
+func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, blockProofBytes []byte) error {
 	height := block.Height()
 	lh.logger.Debug("LHFLOW onCommitCallback START from leanhelix.onCommit() ID=%s H=%d", lh.config.Membership.MyMemberId(), height)
-
-	// TODO Gad: Should this check for errors and not call onNewConsensusRound
-
-	lh.onCommitCallback(ctx, block, blockProofBytes)
+	
+	err := lh.onCommitCallback(ctx, block, blockProofBytes)
+	if err != nil {
+		lh.logger.Debug("LHFLOW onCommitCallback FAILED - %s", err.Error())
+		return err
+	}
 	lh.logger.Debug("LHFLOW onCommitCallback RETURNED from leanhelix.onCommit()")
 	lh.logger.Debug("Calling onNewConsensusRound() from leanhelix.onCommit()")
-	lh.onNewConsensusRound(ctx, block, blockProofBytes, true)
+	lh.onNewConsensusRound(block, blockProofBytes, true)
+
+	return nil
 }
 
-func (lh *WorkerLoop) onNewConsensusRound(ctx context.Context, prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) {
+func (lh *WorkerLoop) onNewConsensusRound(prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) {
+	hv := state.NewHeightView(blockheight.GetBlockHeight(prevBlock)+1, 0)
+	ctx, err := lh.state.Contexts.For(hv)
+	if err != nil {
+		lh.logger.Info("onNewConsensusRound() error: %e", err)
+		return
+	}
 
-	current, err := lh.state.SetHeightAndResetView(ctx, blockheight.GetBlockHeight(prevBlock) + 1)
+	current, err := lh.state.SetHeightAndResetView(hv.Height())
 	if err != nil {
 		lh.logger.Info("onNewConsensusRound() failed height increment %d: %s", current.Height(), err)
 		return
@@ -250,14 +243,18 @@ func (lh *WorkerLoop) onNewConsensusRound(ctx context.Context, prevBlock interfa
 	}
 	lh.leanHelixTerm = leanhelixterm.NewLeanHelixTerm(ctx, lh.logger, lh.config, lh.state, lh.electionTrigger, lh.onCommit, prevBlock, prevBlockProofBytes, canBeFirstLeader)
 	lh.logger.Debug("onNewConsensusRound() Calling ConsumeCacheMessages for H=%d", lh.state.Height())
-	lh.filter.ConsumeCacheMessages(ctx, lh.leanHelixTerm)
+	lh.filter.ConsumeCacheMessages(lh.leanHelixTerm)
 	if lh.onNewConsensusRoundCallback != nil {
 		lh.onNewConsensusRoundCallback(ctx, lh.state.Height(), prevBlock, canBeFirstLeader)
 	}
 }
 
-func (lh *WorkerLoop) workerShutdown() {
+func (lh *WorkerLoop) cleanupCurrentTerm() {
 	if lh.leanHelixTerm != nil {
 		lh.leanHelixTerm.Dispose()
 	}
+}
+
+func (lh *WorkerLoop) interrupt() {
+	lh.state.Contexts.Shutdown()
 }
