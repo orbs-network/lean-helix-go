@@ -95,7 +95,7 @@ func (h *harness) triggerElection(ctx context.Context) {
 		panic("You are trying to trigger election with an election trigger that is not the ElectionTriggerMock")
 	}
 
-	electionTriggerMock.ManualTriggerSync()
+	electionTriggerMock.InvokeElectionHandler()
 }
 
 func (h *harness) getMyNodeMemberId() primitives.MemberId {

@@ -118,12 +118,6 @@ func (m *MainLoop) run(ctx context.Context) {
 
 			m.logger.Debug("LHFLOW LHMSG MAINLOOP RECEIVED %v from %v for H=%d V=%d", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), parsedMessage.BlockHeight(), parsedMessage.View())
 
-			_, err := m.state.Contexts.For(state.NewHeightView(parsedMessage.BlockHeight(), parsedMessage.View()))
-			if err != nil {
-				m.logger.Debug("LHFLOW LHMSG MAINLOOP - IGNORING RECEIVED MESSAGE %v FROM %v WITH %e", parsedMessage.MessageType(), parsedMessage.SenderMemberId(), err)
-				continue
-			}
-
 			select {
 			default: // never block the main loop
 			case <-ctx.Done(): // here for uniformity, made redundant by default:

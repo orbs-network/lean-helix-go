@@ -22,6 +22,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/state"
 	"github.com/pkg/errors"
+	"math"
 	"runtime"
 	"sort"
 	"strings"
@@ -30,7 +31,8 @@ import (
 // The algorithm cannot function with less committee members
 // because it cannot calculate the f number (where committee members are 3f+1)
 // The only reason to set this manually in config below this limit is for internal tests
-const LEAN_HELIX_HARD_MINIMUM_COMMITTEE_MEMBERS = 4
+const LeanHelixHardMinimumCommitteeMembers = 4
+const MaxView = math.MaxUint64
 
 type TermInCommittee struct {
 	keyManager                      interfaces.KeyManager
@@ -134,8 +136,8 @@ func ToCommitteeMembersStr(members []primitives.MemberId) string {
 }
 
 func panicOnLessThanMinimumCommitteeMembers(committeeMembers []primitives.MemberId) {
-	if len(committeeMembers) < LEAN_HELIX_HARD_MINIMUM_COMMITTEE_MEMBERS {
-		panic(fmt.Sprintf("LH Received only %d committee members, but the hard minimum is %d", len(committeeMembers), LEAN_HELIX_HARD_MINIMUM_COMMITTEE_MEMBERS))
+	if len(committeeMembers) < LeanHelixHardMinimumCommitteeMembers {
+		panic(fmt.Sprintf("LH Received only %d committee members, but the hard minimum is %d", len(committeeMembers), LeanHelixHardMinimumCommitteeMembers))
 	}
 }
 
@@ -539,7 +541,7 @@ func (tic *TermInCommittee) checkCommitted(blockHeight primitives.BlockHeight, v
 		return
 	}
 
-	ctx, err := tic.State.Contexts.For(state.NewHeightView(blockHeight, view))
+	ctx, err := tic.State.Contexts.For(state.NewHeightView(blockHeight, MaxView)) // umbrella context for current term
 	if err != nil {
 		tic.logger.Debug("LHMSG RECEIVED COMMIT IGNORE - %e", err)
 		return

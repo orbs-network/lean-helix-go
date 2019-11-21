@@ -10,7 +10,6 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/state"
 	"github.com/orbs-network/lean-helix-go/test"
-	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/leaderelection"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/orbs-network/lean-helix-go/test/network"
@@ -18,8 +17,6 @@ import (
 	"testing"
 	"time"
 )
-
-const LOG_TO_CONSOLE = false
 
 func TestMainloopReportsCorrectHeight(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
@@ -163,18 +160,10 @@ func TestVerifyWorkerContextNotCancelledIfNodeSyncBlockIsIgnored(t *testing.T) {
 func TestViewChangeRaceWithElectionLeader(t *testing.T) {
 
 	test.WithContext(func(ctx context.Context) {
-		logger := logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
+		l := logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
 
-		d := newDriver(logger, 1, 4, nil)
-		d.mainLoop.Run(ctx)
-
-		// init - sync the first block, to reach height 1 view 0
-		err := d.mainLoop.UpdateState(ctx, interfaces.GenesisBlock, nil)
-		require.NoError(t, err)
-
-		require.True(t, test.Eventually(time.Second, func() bool {
-			return d.electionTriggerMock.GetRegisteredHeight() == 1
-		}))
+		d := newDriver(l, 1, 4, nil)
+		d.start(ctx, t)
 
 		// receive VIEW_CHANGE messages form other committee members
 		nextView := state.NewHeightView(1, 1)
@@ -197,40 +186,117 @@ func TestViewChangeRaceWithElectionLeader(t *testing.T) {
 func TestCommitCallbackErrorDetectedAndPreservesState(t *testing.T) {
 
 	test.WithContext(func(ctx context.Context) {
-		logger := logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
+		l := logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
 
 		onCommitCalledOnce := make(chan struct{})
 
-		d := newDriver(logger, 0, 4, func(ctx context.Context, block interfaces.Block, blockProof []byte) error {
+		d := newDriver(l, 0, 4, func(ctx context.Context, block interfaces.Block, blockProof []byte) error {
 			close(onCommitCalledOnce)
 			return fmt.Errorf("intentionally failing commit callback")
 		})
-
-		d.mainLoop.Run(ctx)
-
-		err := d.mainLoop.UpdateState(ctx, interfaces.GenesisBlock, nil)
-		require.NoError(t, err)
+		d.start(ctx, t)
 
 		preprepareBlock := d.waitForSentPreprepareMessage(t, 1).Block()
 
-		d.receivePrepareMessageForBlock(ctx, d.leadersByView[1], primitives.BlockHeight(1), primitives.View(0), preprepareBlock)
-		d.receivePrepareMessageForBlock(ctx, d.leadersByView[2], primitives.BlockHeight(1), primitives.View(0), preprepareBlock)
-
-		p2 := builders.APrepareMessage(d.instanceId, mocks.NewMockKeyManager(primitives.MemberId{2}), primitives.MemberId{2}, primitives.BlockHeight(1), primitives.View(0), preprepareBlock)
-		d.mainLoop.HandleConsensusMessage(ctx, p2.ToConsensusRawMessage()) // prepare from 2
+		d.handlePrepareMessage(ctx, d.leadersByView[1], primitives.BlockHeight(1), primitives.View(0), preprepareBlock)
+		d.handlePrepareMessage(ctx, d.leadersByView[2], primitives.BlockHeight(1), primitives.View(0), preprepareBlock)
 
 		d.waitForSentCommitMessage(t, 1)
 
 		genesisRandomSeed := calcGenesisBlockRandomSeed()
 
-		d.receiveCommitMessageForBlock(ctx, d.leadersByView[1], primitives.BlockHeight(1), primitives.View(0), preprepareBlock, genesisRandomSeed)
-		d.receiveCommitMessageForBlock(ctx, d.leadersByView[2], primitives.BlockHeight(1), primitives.View(0), preprepareBlock, genesisRandomSeed)
+		d.handleCommitMessage(ctx, d.leadersByView[1], primitives.BlockHeight(1), primitives.View(0), preprepareBlock, genesisRandomSeed)
+		d.handleCommitMessage(ctx, d.leadersByView[2], primitives.BlockHeight(1), primitives.View(0), preprepareBlock, genesisRandomSeed)
 
 		requireChanClosedWithinTimeout(t, ctx, onCommitCalledOnce)
 
 		require.True(t, test.Consistently(100*time.Millisecond, func() bool {
 			return d.mainLoop.State().Height() < 2
 		}), "expected onNewConsensusRound to not be called due to block commit failure")
+	})
+}
+
+func TestPreparedNodeCommitsInOlderViewAfterElectionTrigger(t *testing.T) {
+
+	test.WithContext(func(ctx context.Context) {
+		l := logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
+
+		d := newDriver(l, 3, 4, func(ctx context.Context, block interfaces.Block, blockProof []byte) error {
+			return nil
+		})
+		d.start(ctx, t)
+
+		const blockHeight = 1
+		const view = 0
+
+		block := mocks.ABlock(interfaces.GenesisBlock)
+		randomSeed := calcGenesisBlockRandomSeed()
+		leaderMemberId := d.leadersByView[0]
+		d.handlePreprepareMessage(ctx, leaderMemberId, blockHeight, view, block, randomSeed)
+
+		d.handlePrepareMessage(ctx, d.leadersByView[1], primitives.BlockHeight(1), primitives.View(0), block)
+
+		d.waitForSentCommitMessage(t, 1)
+
+		// Advance to next view
+
+		d.electionTriggerMock.ManualTrigger(ctx, state.NewHeightView(blockHeight, view))
+		require.True(t, test.Eventually(100*time.Millisecond, func() bool {
+			return d.mainLoop.State().View() == view+1
+		}), "expected node to advance to view %d", view+1)
+
+		// Send commits in previous view
+
+		require.EqualValues(t, d.mainLoop.State().Height(), blockHeight, "expected height to remain  %d", blockHeight)
+
+		d.handleCommitMessage(ctx, d.leadersByView[0], primitives.BlockHeight(1), primitives.View(0), block, randomSeed)
+		d.handleCommitMessage(ctx, d.leadersByView[1], primitives.BlockHeight(1), primitives.View(0), block, randomSeed)
+
+		require.True(t, test.Eventually(100*time.Millisecond, func() bool {
+			return d.mainLoop.State().Height() == blockHeight+1
+		}), "expected node to commit block at height %d", blockHeight)
+	})
+}
+
+func TestUnpreparedNodeDoesNotSendCommitsInOlderViewAfterElectionTrigger(t *testing.T) {
+
+	test.WithContext(func(ctx context.Context) {
+		l := logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
+
+		d := newDriver(l, 3, 4, func(ctx context.Context, block interfaces.Block, blockProof []byte) error {
+			return nil
+		})
+		d.start(ctx, t)
+
+		const blockHeight = 1
+		const view = 0
+
+		block := mocks.ABlock(interfaces.GenesisBlock)
+		randomSeed := calcGenesisBlockRandomSeed()
+		leaderMemberId := d.leadersByView[0]
+		d.handlePreprepareMessage(ctx, leaderMemberId, blockHeight, view, block, randomSeed)
+
+		// Advance to next view before node is prepared
+
+		d.electionTriggerMock.ManualTrigger(ctx, state.NewHeightView(blockHeight, view))
+		require.True(t, test.Eventually(100*time.Millisecond, func() bool {
+			return d.mainLoop.State().View() == view+1
+		}), "expected node to advance to view %d", view+1)
+
+		// Send prepares and commits in previous view
+		d.handlePrepareMessage(ctx, d.leadersByView[1], primitives.BlockHeight(1), primitives.View(0), block)
+
+		d.handleCommitMessage(ctx, d.leadersByView[0], primitives.BlockHeight(1), primitives.View(0), block, randomSeed)
+		d.handleCommitMessage(ctx, d.leadersByView[1], primitives.BlockHeight(1), primitives.View(0), block, randomSeed)
+
+		// Node should not send commit messages or commit the block
+
+		require.True(t, test.Consistently(100*time.Millisecond, func() bool {
+			return len(d.communication.GetSentMessages(protocol.LEAN_HELIX_COMMIT)) == 0 &&
+				d.mainLoop.State().Height() == blockHeight
+		}), "expected node to never send any commit messages")
+
+		require.EqualValues(t, d.mainLoop.State().Height(), blockHeight, "expected height to remain  %d", blockHeight)
 	})
 }
 
