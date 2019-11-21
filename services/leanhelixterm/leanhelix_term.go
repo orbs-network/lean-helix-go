@@ -57,7 +57,7 @@ func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfac
 
 func requestOrderedCommittee(s *state.State, blockHeight primitives.BlockHeight, randomSeed uint64, config *interfaces.Config) ([]primitives.MemberId, error) {
 	const maxView = primitives.View(math.MaxUint64)
-	ctx, err := s.Contexts.For(state.NewHeightView(blockHeight, maxView)) // getting the committee is relevant to all views under this term
+	ctx, err := s.Contexts.For(state.NewHeightView(blockHeight, maxView)) // term-level context
 	if err != nil {
 		return nil, err
 	}
