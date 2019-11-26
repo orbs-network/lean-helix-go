@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-type OnCommitCallback func(ctx context.Context, block Block, blockProof []byte) error
+type OnCommitCallback func(ctx context.Context, block Block, blockProof []byte, view primitives.View) error
 type OnNewConsensusRoundCallback func(ctx context.Context, newHeight primitives.BlockHeight, prevBlock Block, canBeFirstLeader bool)
 type OnElectionCallback func(m metrics.ElectionMetrics)
 

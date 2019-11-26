@@ -190,7 +190,7 @@ func TestCommitCallbackErrorDetectedAndPreservesState(t *testing.T) {
 
 		onCommitCalledOnce := make(chan struct{})
 
-		d := newDriver(l, 0, 4, func(ctx context.Context, block interfaces.Block, blockProof []byte) error {
+		d := newDriver(l, 0, 4, func(ctx context.Context, block interfaces.Block, blockProof []byte, view primitives.View) error {
 			close(onCommitCalledOnce)
 			return fmt.Errorf("intentionally failing commit callback")
 		})
@@ -221,7 +221,7 @@ func TestPreparedNodeCommitsInOlderViewAfterElectionTrigger(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		l := logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
 
-		d := newDriver(l, 3, 4, func(ctx context.Context, block interfaces.Block, blockProof []byte) error {
+		d := newDriver(l, 3, 4, func(ctx context.Context, block interfaces.Block, blockProof []byte, view primitives.View) error {
 			return nil
 		})
 		d.start(ctx, t)
@@ -263,7 +263,7 @@ func TestUnpreparedNodeDoesNotSendCommitsInOlderViewAfterElectionTrigger(t *test
 	test.WithContext(func(ctx context.Context) {
 		l := logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
 
-		d := newDriver(l, 3, 4, func(ctx context.Context, block interfaces.Block, blockProof []byte) error {
+		d := newDriver(l, 3, 4, func(ctx context.Context, block interfaces.Block, blockProof []byte, view primitives.View) error {
 			return nil
 		})
 		d.start(ctx, t)

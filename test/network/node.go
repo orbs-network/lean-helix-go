@@ -78,7 +78,7 @@ func (node *Node) TriggerElectionOnNode(ctx context.Context) <-chan struct{} {
 	return electionTriggerMock.ManualTrigger(ctx, hv)
 }
 
-func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, blockProof []byte) error {
+func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, blockProof []byte, view primitives.View) error {
 	node.blockChain.AppendBlockToChain(block, blockProof)
 	node.log.Debug("ID=%s onCommittedBlock: appended to blockchain: %s", node.MemberId, block)
 
