@@ -18,11 +18,10 @@ import (
 var TIMEOUT_EXP_BASE = 2.0
 
 type TimerBasedElectionTrigger struct {
-	electionChannel  chan *interfaces.ElectionTrigger
-	minTimeout       time.Duration
-	electionHandler  func(blockHeight primitives.BlockHeight, view primitives.View)
-	callbackFromOrbs interfaces.OnNewViewCallback
-	timer            *time.Timer
+	electionChannel chan *interfaces.ElectionTrigger
+	minTimeout      time.Duration
+	electionHandler func(blockHeight primitives.BlockHeight, view primitives.View)
+	timer           *time.Timer
 
 	// mutable, mutex protected - better refactor into separate obj
 	lock             sync.RWMutex
