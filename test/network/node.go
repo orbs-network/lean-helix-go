@@ -183,7 +183,7 @@ func (node *Node) BuildConfig(logger interfaces.Logger) *interfaces.Config {
 		BlockUtils:            node.BlockUtils,
 		KeyManager:            node.KeyManager,
 		ElectionTimeoutOnV0:   10 * time.Millisecond,
-		OnElectionCB:          nil,
+		OnNewViewCB:           nil,
 		Storage:               node.Storage,
 		Logger:                logger,
 		MsgChanBufLen:         10,

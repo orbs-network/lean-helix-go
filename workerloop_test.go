@@ -24,7 +24,7 @@ func DummyWorkerConfig() *interfaces.Config {
 		BlockUtils:            nil,
 		KeyManager:            nil,
 		ElectionTimeoutOnV0:   10 * time.Millisecond,
-		OnElectionCB:          nil,
+		OnNewViewCB:           nil,
 		Storage:               nil,
 		Logger:                logger.NewSilentLogger(),
 		MsgChanBufLen:         10,
@@ -44,7 +44,7 @@ func TestWorkerLoopReturnsOnMainContextCancellation(t *testing.T) {
 
 		cfg := DummyWorkerConfig()
 		s := state.NewState()
-		electionTrigger := Electiontrigger.NewTimerBasedElectionTrigger(cfg.ElectionTimeoutOnV0, nil)
+		electionTrigger := Electiontrigger.NewTimerBasedElectionTrigger(cfg.ElectionTimeoutOnV0)
 		workerLoop := NewWorkerLoop(s, cfg, logger.NewLhLogger(cfg, s), electionTrigger, nil, nil)
 		go func() {
 			workerLoop.Run(mainCtx)

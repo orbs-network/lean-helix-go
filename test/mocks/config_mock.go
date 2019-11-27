@@ -15,10 +15,11 @@ func NewMockConfigSimple() *interfaces.Config {
 		nil,
 		nil,
 		nil,
+		nil,
 	)
 }
 
-func NewMockConfig(logger interfaces.Logger, instanceId primitives.InstanceId, membership interfaces.Membership, blockUtils interfaces.BlockUtils, keyManager interfaces.KeyManager, electionSched interfaces.ElectionScheduler, communication interfaces.Communication) *interfaces.Config {
+func NewMockConfig(logger interfaces.Logger, instanceId primitives.InstanceId, membership interfaces.Membership, blockUtils interfaces.BlockUtils, keyManager interfaces.KeyManager, electionSched interfaces.ElectionScheduler, communication interfaces.Communication, onNewView interfaces.OnNewViewCallback) *interfaces.Config {
 	return &interfaces.Config{
 		Logger:                  logger,
 		Membership:              membership,
@@ -27,5 +28,6 @@ func NewMockConfig(logger interfaces.Logger, instanceId primitives.InstanceId, m
 		OverrideElectionTrigger: electionSched,
 		InstanceId:              instanceId,
 		Communication:           communication,
+		OnNewViewCB:             onNewView,
 	}
 }

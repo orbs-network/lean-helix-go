@@ -20,8 +20,8 @@ var TIMEOUT_EXP_BASE = 2.0
 type TimerBasedElectionTrigger struct {
 	electionChannel  chan *interfaces.ElectionTrigger
 	minTimeout       time.Duration
-	electionHandler  func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)
-	callbackFromOrbs interfaces.OnElectionCallback
+	electionHandler  func(blockHeight primitives.BlockHeight, view primitives.View)
+	callbackFromOrbs interfaces.OnNewViewCallback
 	timer            *time.Timer
 
 	// mutable, mutex protected - better refactor into separate obj
@@ -31,16 +31,15 @@ type TimerBasedElectionTrigger struct {
 	triggerCancelled chan struct{}
 }
 
-func NewTimerBasedElectionTrigger(minTimeout time.Duration, callbackFromOrbs interfaces.OnElectionCallback) *TimerBasedElectionTrigger {
+func NewTimerBasedElectionTrigger(minTimeout time.Duration) *TimerBasedElectionTrigger {
 	return &TimerBasedElectionTrigger{
-		electionChannel:  make(chan *interfaces.ElectionTrigger), // Caution - keep 0 to make election channel blocking
-		minTimeout:       minTimeout,
-		callbackFromOrbs: callbackFromOrbs,
+		electionChannel: make(chan *interfaces.ElectionTrigger), // Caution - keep 0 to make election channel blocking
+		minTimeout:      minTimeout,
 	}
 }
 
 // on new view
-func (t *TimerBasedElectionTrigger) RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, moveToNextLeader func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)) {
+func (t *TimerBasedElectionTrigger) RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, moveToNextLeader func(blockHeight primitives.BlockHeight, view primitives.View)) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
@@ -58,7 +57,7 @@ func (t *TimerBasedElectionTrigger) RegisterOnElection(blockHeight primitives.Bl
 	t.timer = time.AfterFunc(timeout, func() {
 		triggerElections(t.ElectionChannel(), blockHeight, view, triggerCancelled, func() {
 			if moveToNextLeader != nil {
-				moveToNextLeader(blockHeight, view, t.callbackFromOrbs) // executed by LH worker loop
+				moveToNextLeader(blockHeight, view) // executed by LH worker loop
 			}
 		})
 	})

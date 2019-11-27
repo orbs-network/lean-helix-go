@@ -9,7 +9,6 @@ package termincommittee
 import (
 	"context"
 	"fmt"
-	"github.com/orbs-network/lean-helix-go/instrumentation/metrics"
 	"github.com/orbs-network/lean-helix-go/services/blockextractor"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	L "github.com/orbs-network/lean-helix-go/services/logger"
@@ -41,6 +40,7 @@ type TermInCommittee struct {
 	electionTrigger                 interfaces.ElectionScheduler
 	blockUtils                      interfaces.BlockUtils
 	onCommit                        OnInCommitteeCommitCallback
+	onNewView                       interfaces.OnNewViewCallback
 	messageFactory                  *messagesfactory.MessageFactory
 	myMemberId                      primitives.MemberId
 	committeeMembersMemberIds       []primitives.MemberId
@@ -79,6 +79,7 @@ func NewTermInCommittee(log L.LHLogger, config *interfaces.Config, state *state.
 	result := &TermInCommittee{
 		State:                          state,
 		onCommit:                       onCommit,
+		onNewView:                      config.OnNewViewCB,
 		prevBlock:                      prevBlock,
 		keyManager:                     keyManager,
 		communication:                  comm,
@@ -198,9 +199,14 @@ func (tic *TermInCommittee) initView(newView primitives.View) (*state.HeightView
 		return nil, err
 	}
 
+	leaderMemberId := tic.calcLeaderMemberId(current.View())
+	if tic.onNewView != nil {
+		tic.onNewView(leaderMemberId, current.View())
+	}
+
 	tic.electionTrigger.RegisterOnElection(current.Height(), current.View(), tic.moveToNextLeaderByElection)
 	tic.logger.Debug("LHFLOW initView() set leader to %s, incremented view to %d, election-timeout=%s, members=%s, goroutines#=%d",
-		Str(tic.calcLeaderMemberId(current.View())), current.View(), tic.electionTrigger.CalcTimeout(current.View()),
+		Str(leaderMemberId), current.View(), tic.electionTrigger.CalcTimeout(current.View()),
 		ToCommitteeMembersStr(tic.committeeMembersMemberIds), runtime.NumGoroutine())
 
 	return current, nil
@@ -222,7 +228,7 @@ func calcLeaderOfViewAndCommittee(view primitives.View, committeeMembersMemberId
 	return committeeMembersMemberIds[index]
 }
 
-func (tic *TermInCommittee) moveToNextLeaderByElection(height primitives.BlockHeight, view primitives.View, updateMetrics interfaces.OnElectionCallback) {
+func (tic *TermInCommittee) moveToNextLeaderByElection(height primitives.BlockHeight, view primitives.View) {
 
 	currentHV := tic.State.HeightView()
 	if height != currentHV.Height() || view != currentHV.View() {
@@ -253,9 +259,6 @@ func (tic *TermInCommittee) moveToNextLeaderByElection(height primitives.BlockHe
 		if sendErr := tic.sendConsensusMessageToSpecificMember(newLeader, vcm); sendErr != nil {
 			tic.logger.Info("LHMSG SEND VIEW_CHANGE to %s FAILED - %s", newLeader, sendErr)
 		}
-	}
-	if updateMetrics != nil {
-		updateMetrics(metrics.NewElectionMetrics(newLeader, currentHV.View()))
 	}
 }
 
