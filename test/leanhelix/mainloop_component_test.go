@@ -258,6 +258,49 @@ func TestPreparedNodeCommitsInOlderViewAfterElectionTrigger(t *testing.T) {
 	})
 }
 
+func TestNodePassesCorrectViewToOnCommitCallback(t *testing.T) {
+
+	test.WithContext(func(ctx context.Context) {
+		l := logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
+
+		const blockHeight = 1
+		const view = 1
+
+		commitCallbackCalledChan := make(chan interface{})
+
+		d := newDriver(l, 3, 4, func(ctx context.Context, block interfaces.Block, blockProof []byte, committedAtView primitives.View) error {
+			require.Equal(t, primitives.View(view), committedAtView, "expected block to commit at view %d", view)
+			close(commitCallbackCalledChan)
+			return nil
+		})
+		d.start(ctx, t)
+
+		// Advance to next view
+
+		d.electionTriggerMock.ManualTrigger(ctx, state.NewHeightView(blockHeight, view-1))
+		require.True(t, test.Eventually(100*time.Millisecond, func() bool {
+			return d.mainLoop.State().View() == view
+		}), "expected node to advance to view %d", view)
+
+		block := mocks.ABlock(interfaces.GenesisBlock)
+		randomSeed := calcGenesisBlockRandomSeed()
+		leaderMemberId := d.leadersByView[view]
+		otherMemberId := d.leadersByView[view+1]
+
+		// Complete consensus round
+		d.handlePreprepareMessage(ctx, leaderMemberId, blockHeight, view, block, randomSeed)
+		d.handlePrepareMessage(ctx, otherMemberId, primitives.BlockHeight(blockHeight), primitives.View(view), block)
+		d.handleCommitMessage(ctx, leaderMemberId, primitives.BlockHeight(blockHeight), primitives.View(view), block, randomSeed)
+		d.handleCommitMessage(ctx, otherMemberId, primitives.BlockHeight(blockHeight), primitives.View(view), block, randomSeed)
+
+		require.True(t, test.Eventually(100*time.Millisecond, func() bool {
+			return d.mainLoop.State().Height() == blockHeight+1
+		}), "expected node to commit block at height %d", blockHeight)
+
+		<-commitCallbackCalledChan
+	})
+}
+
 func TestUnpreparedNodeDoesNotSendCommitsInOlderViewAfterElectionTrigger(t *testing.T) {
 
 	test.WithContext(func(ctx context.Context) {

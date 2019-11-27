@@ -118,11 +118,11 @@ func (d *driver) handlePrepareMessage(ctx context.Context, from primitives.Membe
 }
 
 func (d *driver) handleCommitMessage(ctx context.Context, from primitives.MemberId, height primitives.BlockHeight, view primitives.View, block interfaces.Block, randomSeed uint64) {
-	message := builders.ACommitMessage(d.instanceId, mocks.NewMockKeyManager(from), from, primitives.BlockHeight(1), primitives.View(0), block, randomSeed)
+	message := builders.ACommitMessage(d.instanceId, mocks.NewMockKeyManager(from), from, height, view, block, randomSeed)
 	d.mainLoop.HandleConsensusMessage(ctx, message.ToConsensusRawMessage())
 }
 
 func (d *driver) handlePreprepareMessage(ctx context.Context, from primitives.MemberId, height primitives.BlockHeight, view primitives.View, block interfaces.Block, randomSeed uint64) {
-	message := builders.APreprepareMessage(d.instanceId, mocks.NewMockKeyManager(from), from, primitives.BlockHeight(1), primitives.View(0), block)
+	message := builders.APreprepareMessage(d.instanceId, mocks.NewMockKeyManager(from), from, height, view, block)
 	d.mainLoop.HandleConsensusMessage(ctx, message.ToConsensusRawMessage())
 }
