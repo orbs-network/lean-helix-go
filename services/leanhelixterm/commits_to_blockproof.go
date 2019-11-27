@@ -21,7 +21,7 @@ func CommitsToProof(log logger.LHLogger, keyManager interfaces.KeyManager, onCom
 		committeeStr := commitMessagesToCommitteeMemberIdsStr(commitMessages)
 		height := block.Height()
 		log.Debug("Generated block proof for H=%d with committee-size=%d, committee-members=%s", height, len(commitMessages), committeeStr)
-		onCommit(ctx, block, proof.Raw(), commitMessages[0].View())
+		_ = onCommit(ctx, block, proof.Raw(), commitMessages[0].View())
 	}
 }
 
