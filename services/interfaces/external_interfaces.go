@@ -16,7 +16,7 @@ import (
 
 type OnCommitCallback func(ctx context.Context, block Block, blockProof []byte, view primitives.View) error
 type OnNewConsensusRoundCallback func(ctx context.Context, newHeight primitives.BlockHeight, prevBlock Block, canBeFirstLeader bool)
-type OnNewViewCallback func(primitives.MemberId, primitives.View)
+type OnEnterViewCallback func(primitives.MemberId, primitives.View)
 
 type Config struct {
 	InstanceId              primitives.InstanceId
@@ -25,7 +25,7 @@ type Config struct {
 	BlockUtils              BlockUtils
 	KeyManager              KeyManager
 	ElectionTimeoutOnV0     time.Duration
-	OnNewViewCB             OnNewViewCallback
+	OnEnterViewCB           OnEnterViewCallback
 	Storage                 Storage // optional
 	Logger                  Logger  // optional
 	MsgChanBufLen           uint64

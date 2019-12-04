@@ -27,7 +27,7 @@ type driver struct {
 	discovery           *mocks.Discovery
 }
 
-func newDriver(logger interfaces.Logger, becomeLeaderInView byte, totalMembers byte, onCommitCallback interfaces.OnCommitCallback, onNewView interfaces.OnNewViewCallback) *driver {
+func newDriver(logger interfaces.Logger, becomeLeaderInView byte, totalMembers byte, onCommitCallback interfaces.OnCommitCallback, onEnterView interfaces.OnEnterViewCallback) *driver {
 	if becomeLeaderInView >= totalMembers {
 		panic("current node must be in committee")
 	}
@@ -62,7 +62,7 @@ func newDriver(logger interfaces.Logger, becomeLeaderInView byte, totalMembers b
 		keyManager,
 		electionTriggerMock,
 		currentMemberCommunication,
-		onNewView,
+		onEnterView,
 	)
 
 	mainLoop := leanhelix.NewLeanHelix(config, onCommitCallback, nil)

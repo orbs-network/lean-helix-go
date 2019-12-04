@@ -40,7 +40,7 @@ type TermInCommittee struct {
 	electionTrigger                 interfaces.ElectionScheduler
 	blockUtils                      interfaces.BlockUtils
 	onCommit                        OnInCommitteeCommitCallback
-	onNewView                       interfaces.OnNewViewCallback
+	onEnterView                     interfaces.OnEnterViewCallback
 	messageFactory                  *messagesfactory.MessageFactory
 	myMemberId                      primitives.MemberId
 	committeeMembersMemberIds       []primitives.MemberId
@@ -79,7 +79,7 @@ func NewTermInCommittee(log L.LHLogger, config *interfaces.Config, state *state.
 	result := &TermInCommittee{
 		State:                          state,
 		onCommit:                       onCommit,
-		onNewView:                      config.OnNewViewCB,
+		onEnterView:                    config.OnEnterViewCB,
 		prevBlock:                      prevBlock,
 		keyManager:                     keyManager,
 		communication:                  comm,
@@ -200,8 +200,8 @@ func (tic *TermInCommittee) initView(newView primitives.View) (*state.HeightView
 	}
 
 	leaderMemberId := tic.calcLeaderMemberId(current.View())
-	if tic.onNewView != nil {
-		tic.onNewView(leaderMemberId, current.View())
+	if tic.onEnterView != nil {
+		tic.onEnterView(leaderMemberId, current.View())
 	}
 
 	tic.electionTrigger.RegisterOnElection(current.Height(), current.View(), tic.moveToNextLeaderByElection)

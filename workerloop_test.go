@@ -24,7 +24,7 @@ func DummyWorkerConfig() *interfaces.Config {
 		BlockUtils:            nil,
 		KeyManager:            nil,
 		ElectionTimeoutOnV0:   10 * time.Millisecond,
-		OnNewViewCB:           nil,
+		OnEnterViewCB:         nil,
 		Storage:               nil,
 		Logger:                logger.NewSilentLogger(),
 		MsgChanBufLen:         10,
