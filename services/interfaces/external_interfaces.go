@@ -8,16 +8,15 @@ package interfaces
 
 import (
 	"context"
-	"github.com/orbs-network/lean-helix-go/instrumentation/metrics"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/state"
 	"time"
 )
 
-type OnCommitCallback func(ctx context.Context, block Block, blockProof []byte) error
+type OnCommitCallback func(ctx context.Context, block Block, blockProof []byte, view primitives.View) error
 type OnNewConsensusRoundCallback func(ctx context.Context, newHeight primitives.BlockHeight, prevBlock Block, canBeFirstLeader bool)
-type OnElectionCallback func(m metrics.ElectionMetrics)
+type OnEnterViewCallback func(primitives.MemberId, primitives.View)
 
 type Config struct {
 	InstanceId              primitives.InstanceId
@@ -26,7 +25,7 @@ type Config struct {
 	BlockUtils              BlockUtils
 	KeyManager              KeyManager
 	ElectionTimeoutOnV0     time.Duration
-	OnElectionCB            OnElectionCallback
+	OnEnterViewCB           OnEnterViewCallback
 	Storage                 Storage // optional
 	Logger                  Logger  // optional
 	MsgChanBufLen           uint64
@@ -69,7 +68,7 @@ type ElectionTrigger struct {
 }
 
 type ElectionScheduler interface {
-	RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, cb func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB OnElectionCallback))
+	RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, cb func(blockHeight primitives.BlockHeight, view primitives.View))
 	ElectionChannel() chan *ElectionTrigger
 	CalcTimeout(view primitives.View) time.Duration
 	Stop()

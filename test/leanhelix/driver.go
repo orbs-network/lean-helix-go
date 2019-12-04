@@ -27,7 +27,7 @@ type driver struct {
 	discovery           *mocks.Discovery
 }
 
-func newDriver(logger interfaces.Logger, becomeLeaderInView byte, totalMembers byte, onCommitCallback interfaces.OnCommitCallback) *driver {
+func newDriver(logger interfaces.Logger, becomeLeaderInView byte, totalMembers byte, onCommitCallback interfaces.OnCommitCallback, onEnterView interfaces.OnEnterViewCallback) *driver {
 	if becomeLeaderInView >= totalMembers {
 		panic("current node must be in committee")
 	}
@@ -62,6 +62,7 @@ func newDriver(logger interfaces.Logger, becomeLeaderInView byte, totalMembers b
 		keyManager,
 		electionTriggerMock,
 		currentMemberCommunication,
+		onEnterView,
 	)
 
 	mainLoop := leanhelix.NewLeanHelix(config, onCommitCallback, nil)
@@ -118,11 +119,19 @@ func (d *driver) handlePrepareMessage(ctx context.Context, from primitives.Membe
 }
 
 func (d *driver) handleCommitMessage(ctx context.Context, from primitives.MemberId, height primitives.BlockHeight, view primitives.View, block interfaces.Block, randomSeed uint64) {
-	message := builders.ACommitMessage(d.instanceId, mocks.NewMockKeyManager(from), from, primitives.BlockHeight(1), primitives.View(0), block, randomSeed)
+	message := builders.ACommitMessage(d.instanceId, mocks.NewMockKeyManager(from), from, height, view, block, randomSeed)
 	d.mainLoop.HandleConsensusMessage(ctx, message.ToConsensusRawMessage())
 }
 
 func (d *driver) handlePreprepareMessage(ctx context.Context, from primitives.MemberId, height primitives.BlockHeight, view primitives.View, block interfaces.Block, randomSeed uint64) {
-	message := builders.APreprepareMessage(d.instanceId, mocks.NewMockKeyManager(from), from, primitives.BlockHeight(1), primitives.View(0), block)
+	message := builders.APreprepareMessage(d.instanceId, mocks.NewMockKeyManager(from), from, height, view, block)
+	d.mainLoop.HandleConsensusMessage(ctx, message.ToConsensusRawMessage())
+}
+
+func (d *driver) handleNewViewMessage(ctx context.Context, from primitives.MemberId, height primitives.BlockHeight, view primitives.View, confirmations []*interfaces.ViewChangeMessage, block interfaces.Block, randomSeed uint64) {
+	messageFactory := messagesfactory.NewMessageFactory(d.instanceId, mocks.NewMockKeyManager(from), from, randomSeed)
+	ppContentBuilder := messageFactory.CreatePreprepareMessageContentBuilder(height, view, block, mocks.CalculateBlockHash(block))
+
+	message := builders.ANewViewMessage(d.instanceId, mocks.NewMockKeyManager(from), from, height, view, ppContentBuilder, interfaces.ExtractConfirmationsFromViewChangeMessages(confirmations), block)
 	d.mainLoop.HandleConsensusMessage(ctx, message.ToConsensusRawMessage())
 }

@@ -9,7 +9,6 @@ package test
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/services/electiontrigger"
-	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test"
 	"github.com/stretchr/testify/require"
@@ -19,7 +18,7 @@ import (
 )
 
 func buildElectionTrigger(ctx context.Context, timeout time.Duration) *Electiontrigger.TimerBasedElectionTrigger {
-	et := Electiontrigger.NewTimerBasedElectionTrigger(timeout, nil)
+	et := Electiontrigger.NewTimerBasedElectionTrigger(timeout)
 	ready := make(chan struct{})
 	go func() {
 		close(ready)
@@ -41,7 +40,7 @@ func TestCallbackTriggerOnce(t *testing.T) {
 		et := buildElectionTrigger(ctx, 1*time.Nanosecond)
 
 		triggerReached := make(chan struct{})
-		cb := func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+		cb := func(blockHeight primitives.BlockHeight, view primitives.View) {
 			triggerReached <- struct{}{}
 		}
 		et.RegisterOnElection(10, 0, cb)
@@ -65,7 +64,7 @@ func TestCallbackTriggerTwiceInARow(t *testing.T) {
 		et := buildElectionTrigger(ctx, 1*time.Nanosecond)
 
 		triggerReached := make(chan struct{})
-		cb := func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+		cb := func(blockHeight primitives.BlockHeight, view primitives.View) {
 			triggerReached <- struct{}{}
 		}
 		et.RegisterOnElection(10, 0, cb)
@@ -92,7 +91,7 @@ func TestIgnoreSameViewOrHeight(t *testing.T) {
 		et := buildElectionTrigger(ctx, 1*time.Nanosecond)
 
 		var callCount int32 = 0
-		cb := func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+		cb := func(blockHeight primitives.BlockHeight, view primitives.View) {
 			atomic.AddInt32(&callCount, 1)
 		}
 
@@ -114,11 +113,11 @@ func TestNotTriggeredIfSameViewButDifferentHeight(t *testing.T) {
 		electionTimeout := 10 * time.Millisecond
 		et := buildElectionTrigger(ctx, electionTimeout)
 
-		cbNeverTriggered := func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+		cbNeverTriggered := func(blockHeight primitives.BlockHeight, view primitives.View) {
 			t.Fatalf("Callback for H=%d V=%d", blockHeight, view)
 		}
 
-		cbNoop := func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+		cbNoop := func(blockHeight primitives.BlockHeight, view primitives.View) {
 		}
 
 		et.RegisterOnElection(1, 0, cbNeverTriggered)
@@ -133,7 +132,7 @@ func TestNotTriggerIfSameHeightButDifferentView(t *testing.T) {
 		et := buildElectionTrigger(ctx, 50*time.Millisecond)
 
 		var callCount int32 = 0
-		cb := func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+		cb := func(blockHeight primitives.BlockHeight, view primitives.View) {
 			atomic.AddInt32(&callCount, 1)
 		}
 
@@ -152,7 +151,7 @@ func TestTimerBasedElectionTrigger_DidNotTriggerBeforeTimeout(t *testing.T) {
 		et := buildElectionTrigger(ctx, 10*time.Hour)
 
 		var wasCalled int32 = 0
-		cb := func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+		cb := func(blockHeight primitives.BlockHeight, view primitives.View) {
 			atomic.StoreInt32(&wasCalled, 1)
 		}
 
@@ -168,7 +167,7 @@ func TestViewPowTimeout_DidTriggerAfterTimeout(t *testing.T) {
 		et := buildElectionTrigger(ctx, 1*time.Millisecond)
 
 		triggered := make(chan struct{})
-		cb := func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback) {
+		cb := func(blockHeight primitives.BlockHeight, view primitives.View) {
 			close(triggered)
 		}
 
@@ -203,7 +202,7 @@ func TestElectionTrigger_Stress_FrequentRegisters(t *testing.T) {
 
 func TestElectionTrigger_StuckOnTimerTimeout_GetsReleasedByStop(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		et := Electiontrigger.NewTimerBasedElectionTrigger(100*time.Millisecond, nil)
+		et := Electiontrigger.NewTimerBasedElectionTrigger(100 * time.Millisecond)
 		et.RegisterOnElection(0, 0, nil)
 		time.Sleep(200 * time.Millisecond) // strictly higher than timeout
 		et.RegisterOnElection(0, 1, nil)

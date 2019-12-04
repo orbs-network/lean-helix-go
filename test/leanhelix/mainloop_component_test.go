@@ -10,6 +10,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/state"
 	"github.com/orbs-network/lean-helix-go/test"
+	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/leaderelection"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/orbs-network/lean-helix-go/test/network"
@@ -162,7 +163,7 @@ func TestViewChangeRaceWithElectionLeader(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		l := logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
 
-		d := newDriver(l, 1, 4, nil)
+		d := newDriver(l, 1, 4, nil, nil)
 		d.start(ctx, t)
 
 		// receive VIEW_CHANGE messages form other committee members
@@ -190,10 +191,10 @@ func TestCommitCallbackErrorDetectedAndPreservesState(t *testing.T) {
 
 		onCommitCalledOnce := make(chan struct{})
 
-		d := newDriver(l, 0, 4, func(ctx context.Context, block interfaces.Block, blockProof []byte) error {
+		d := newDriver(l, 0, 4, func(ctx context.Context, block interfaces.Block, blockProof []byte, view primitives.View) error {
 			close(onCommitCalledOnce)
 			return fmt.Errorf("intentionally failing commit callback")
-		})
+		}, nil)
 		d.start(ctx, t)
 
 		preprepareBlock := d.waitForSentPreprepareMessage(t, 1).Block()
@@ -221,13 +222,17 @@ func TestPreparedNodeCommitsInOlderViewAfterElectionTrigger(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		l := logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
 
-		d := newDriver(l, 3, 4, func(ctx context.Context, block interfaces.Block, blockProof []byte) error {
-			return nil
-		})
-		d.start(ctx, t)
-
 		const blockHeight = 1
 		const view = 0
+
+		commitCallbackCalledChan := make(chan interface{})
+
+		d := newDriver(l, 3, 4, func(ctx context.Context, block interfaces.Block, blockProof []byte, committedAtView primitives.View) error {
+			require.Equal(t, primitives.View(view), committedAtView, "expected block to commit at view %d", view)
+			close(commitCallbackCalledChan)
+			return nil
+		}, nil)
+		d.start(ctx, t)
 
 		block := mocks.ABlock(interfaces.GenesisBlock)
 		randomSeed := calcGenesisBlockRandomSeed()
@@ -258,14 +263,102 @@ func TestPreparedNodeCommitsInOlderViewAfterElectionTrigger(t *testing.T) {
 	})
 }
 
+func TestNodePassesCorrectViewToOnCommitCallback(t *testing.T) {
+
+	test.WithContext(func(ctx context.Context) {
+		l := logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
+
+		const blockHeight = 1
+		const view = 1
+
+		commitCallbackCalledChan := make(chan interface{})
+
+		d := newDriver(l, 3, 4, func(ctx context.Context, block interfaces.Block, blockProof []byte, committedAtView primitives.View) error {
+			require.Equal(t, primitives.View(view), committedAtView, "expected block to commit at view %d", view)
+			close(commitCallbackCalledChan)
+			return nil
+		}, nil)
+		d.start(ctx, t)
+
+		// Advance to next view
+
+		d.electionTriggerMock.ManualTrigger(ctx, state.NewHeightView(blockHeight, view-1))
+		require.True(t, test.Eventually(100*time.Millisecond, func() bool {
+			return d.mainLoop.State().View() == view
+		}), "expected node to advance to view %d", view)
+
+		block := mocks.ABlock(interfaces.GenesisBlock)
+		randomSeed := calcGenesisBlockRandomSeed()
+		leaderMemberId := d.leadersByView[view]
+		otherMemberId := d.leadersByView[view+1]
+
+		// Complete consensus round
+		d.handlePreprepareMessage(ctx, leaderMemberId, blockHeight, view, block, randomSeed)
+		d.handlePrepareMessage(ctx, otherMemberId, primitives.BlockHeight(blockHeight), primitives.View(view), block)
+		d.handleCommitMessage(ctx, leaderMemberId, primitives.BlockHeight(blockHeight), primitives.View(view), block, randomSeed)
+		d.handleCommitMessage(ctx, otherMemberId, primitives.BlockHeight(blockHeight), primitives.View(view), block, randomSeed)
+
+		require.True(t, test.Eventually(100*time.Millisecond, func() bool {
+			return d.mainLoop.State().Height() == blockHeight+1
+		}), "expected node to commit block at height %d", blockHeight)
+
+		<-commitCallbackCalledChan
+	})
+}
+
+func TestNodeReportsCorrectViewToOnNewViewCallback(t *testing.T) {
+
+	test.WithContext(func(ctx context.Context) {
+		l := logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
+
+		const blockHeight = 1
+		const numNodes = 4
+
+		reportedViews := make(chan primitives.View, 100)
+		reportedLeaders := make(chan primitives.MemberId, 100)
+
+		d := newDriver(l, 3, numNodes, nil, func(leader primitives.MemberId, newView primitives.View) {
+			reportedViews <- newView
+			reportedLeaders <- leader
+		})
+		d.start(ctx, t)
+
+		require.Equal(t, <-reportedViews, primitives.View(0), "expected initial view to be reported")
+		require.Equal(t, <-reportedLeaders, d.leadersByView[0], "expected initial leader to be reported")
+
+		// Next view by election trigger
+		const viewByTrigger = 1
+
+		d.electionTriggerMock.ManualTrigger(ctx, state.NewHeightView(blockHeight, viewByTrigger-1))
+		require.Equal(t, <-reportedViews, primitives.View(viewByTrigger), "expected triggered view to be reported")
+		require.Equal(t, <-reportedLeaders, d.leadersByView[viewByTrigger], "expected leader of triggered view to be reported")
+
+		// Next view by new-view message
+		const viewByNewView = 2
+
+		confirmations := []*interfaces.ViewChangeMessage{}
+		for i := 0; i < numNodes; i++ {
+			confirmations = append(confirmations, builders.AViewChangeMessage(d.instanceId, mocks.NewMockKeyManager(d.leadersByView[i]), d.leadersByView[i], blockHeight, viewByNewView, nil))
+		}
+
+		block := mocks.ABlock(interfaces.GenesisBlock)
+		randomSeed := calcGenesisBlockRandomSeed()
+
+		d.handleNewViewMessage(ctx, d.leadersByView[viewByNewView], blockHeight, viewByNewView, confirmations, block, randomSeed)
+
+		require.Equal(t, <-reportedViews, primitives.View(viewByNewView), "expected new view to be reported")
+		require.Equal(t, <-reportedLeaders, d.leadersByView[viewByNewView], "expected leader of new view to be reported")
+	})
+}
+
 func TestUnpreparedNodeDoesNotSendCommitsInOlderViewAfterElectionTrigger(t *testing.T) {
 
 	test.WithContext(func(ctx context.Context) {
 		l := logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
 
-		d := newDriver(l, 3, 4, func(ctx context.Context, block interfaces.Block, blockProof []byte) error {
+		d := newDriver(l, 3, 4, func(ctx context.Context, block interfaces.Block, blockProof []byte, view primitives.View) error {
 			return nil
-		})
+		}, nil)
 		d.start(ctx, t)
 
 		const blockHeight = 1

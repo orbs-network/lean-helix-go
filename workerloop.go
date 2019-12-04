@@ -55,8 +55,8 @@ func NewWorkerLoop(
 	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), logger, state)
 	return &WorkerLoop{
 		MessagesChannel:             make(chan *interfaces.ConsensusRawMessage, 1000), // TODO config.MsgChanBufLen
-		workerUpdateStateChannel:    make(chan *blockWithProof, 1), // must be at least 1 // TODO config.UpdateStateChanBufLen
-		electionChannel:             make(chan *interfaces.ElectionTrigger, 1), // must be at least 1 // TODO config.ElectionChanBufLen
+		workerUpdateStateChannel:    make(chan *blockWithProof, 1),                    // must be at least 1 // TODO config.UpdateStateChanBufLen
+		electionChannel:             make(chan *interfaces.ElectionTrigger, 1),        // must be at least 1 // TODO config.ElectionChanBufLen
 		electionTrigger:             electionTrigger,
 		state:                       state,
 		config:                      config,
@@ -206,11 +206,11 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 	return nil
 }
 
-func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, blockProofBytes []byte) error {
+func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, blockProofBytes []byte, view primitives.View) error {
 	height := block.Height()
 	lh.logger.Debug("LHFLOW onCommitCallback START from leanhelix.onCommit() ID=%s H=%d", lh.config.Membership.MyMemberId(), height)
-	
-	err := lh.onCommitCallback(ctx, block, blockProofBytes)
+
+	err := lh.onCommitCallback(ctx, block, blockProofBytes, view)
 	if err != nil {
 		lh.logger.Debug("LHFLOW onCommitCallback FAILED - %s", err.Error())
 		return err

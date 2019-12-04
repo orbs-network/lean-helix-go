@@ -49,7 +49,7 @@ func NewLeanHelix(config *interfaces.Config, onCommitCallback interfaces.OnCommi
 	if config.OverrideElectionTrigger != nil {
 		electionTrigger = config.OverrideElectionTrigger
 	} else {
-		electionTrigger = Electiontrigger.NewTimerBasedElectionTrigger(config.ElectionTimeoutOnV0, config.OnElectionCB)
+		electionTrigger = Electiontrigger.NewTimerBasedElectionTrigger(config.ElectionTimeoutOnV0)
 	}
 
 	state := state.NewState()

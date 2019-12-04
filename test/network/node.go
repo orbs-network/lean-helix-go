@@ -78,7 +78,7 @@ func (node *Node) TriggerElectionOnNode(ctx context.Context) <-chan struct{} {
 	return electionTriggerMock.ManualTrigger(ctx, hv)
 }
 
-func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, blockProof []byte) error {
+func (node *Node) onCommittedBlock(ctx context.Context, block interfaces.Block, blockProof []byte, view primitives.View) error {
 	node.blockChain.AppendBlockToChain(block, blockProof)
 	node.log.Debug("ID=%s onCommittedBlock: appended to blockchain: %s", node.MemberId, block)
 
@@ -183,7 +183,7 @@ func (node *Node) BuildConfig(logger interfaces.Logger) *interfaces.Config {
 		BlockUtils:            node.BlockUtils,
 		KeyManager:            node.KeyManager,
 		ElectionTimeoutOnV0:   10 * time.Millisecond,
-		OnElectionCB:          nil,
+		OnEnterViewCB:         nil,
 		Storage:               node.Storage,
 		Logger:                logger,
 		MsgChanBufLen:         10,

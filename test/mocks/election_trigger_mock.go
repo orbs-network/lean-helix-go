@@ -18,7 +18,7 @@ import (
 type ElectionTriggerMock struct {
 	blockHeight     primitives.BlockHeight
 	view            primitives.View
-	electionHandler func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)
+	electionHandler func(blockHeight primitives.BlockHeight, view primitives.View)
 	electionChannel chan *interfaces.ElectionTrigger
 }
 
@@ -36,7 +36,7 @@ func NewMockElectionTrigger() *ElectionTriggerMock {
 	}
 }
 
-func (et *ElectionTriggerMock) RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, cb func(blockHeight primitives.BlockHeight, view primitives.View, onElectionCB interfaces.OnElectionCallback)) {
+func (et *ElectionTriggerMock) RegisterOnElection(blockHeight primitives.BlockHeight, view primitives.View, cb func(blockHeight primitives.BlockHeight, view primitives.View)) {
 	atomic.StoreUint64((*uint64)(&et.blockHeight), uint64(blockHeight))
 	et.view = view
 	et.electionHandler = cb
@@ -64,7 +64,7 @@ func (et *ElectionTriggerMock) ManualTrigger(ctx context.Context, hv *state.Heig
 
 func (et *ElectionTriggerMock) InvokeElectionHandler() {
 	if et.electionHandler != nil {
-		et.electionHandler(et.GetRegisteredHeight(), et.view, nil)
+		et.electionHandler(et.GetRegisteredHeight(), et.view)
 	}
 }
 
