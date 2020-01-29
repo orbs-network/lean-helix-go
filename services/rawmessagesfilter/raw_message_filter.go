@@ -12,6 +12,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/termincommittee"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/state"
+	"github.com/orbs-network/scribe/log"
 )
 
 type RawMessageFilter struct {
@@ -39,6 +40,7 @@ func NewConsensusMessageFilter(instanceId primitives.InstanceId, myMemberId prim
 // TODO Consider passing ConsensusMessage instead of *interfaces.ConsensusRawMessage
 func (f *RawMessageFilter) HandleConsensusRawMessage(rawMessage *interfaces.ConsensusRawMessage) {
 	message := interfaces.ToConsensusMessage(rawMessage)
+
 	if f.isMyMessage(message) {
 		f.logger.Debug("LHFILTER IGNORING RECEIVED %s with H=%d V=%d sender=%s IGNORING message I sent", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()))
 		return
@@ -100,6 +102,7 @@ func (f *RawMessageFilter) processConsensusMessage(message interfaces.ConsensusM
 		return
 	}
 
+	f.logger.ConsensusTrace("received consensus message", nil, log.Stringable("message-type", message.MessageType()), log.Stringable("sender", message.SenderMemberId()))
 	if err := f.consensusMessagesHandler.HandleConsensusMessage(message); err != nil {
 		f.logger.Info("LHFILTER LHMSG Failed in HandleConsensusMessage(): %s", err)
 	}

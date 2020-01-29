@@ -8,6 +8,7 @@ package logger
 
 import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/scribe/log"
 )
 
 type SilentLogger struct {
@@ -15,6 +16,9 @@ type SilentLogger struct {
 
 func NewSilentLogger() interfaces.Logger {
 	return &SilentLogger{}
+}
+
+func (l *SilentLogger) ConsensusTrace(format string, fields ...*log.Field) {
 }
 
 func (*SilentLogger) Debug(format string, args ...interface{}) {

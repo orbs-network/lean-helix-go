@@ -9,11 +9,17 @@ package logger
 import (
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/scribe/log"
 )
 
+// Deprecated; use LHLogger wrapping Scribe
 type ConsoleLogger struct {
 	level LogLevel
 	uid   string
+}
+
+func (l *ConsoleLogger) ConsensusTrace(format string, fields ...*log.Field) {
+	l.Debug(format) // this is shit, but the whole class needs to go
 }
 
 func (l *ConsoleLogger) Debug(format string, args ...interface{}) {

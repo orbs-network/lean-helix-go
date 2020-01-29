@@ -262,7 +262,6 @@ func (m *MainLoop) UpdateState(ctx context.Context, prevBlock interfaces.Block, 
 }
 
 func (m *MainLoop) HandleConsensusMessage(ctx context.Context, message *interfaces.ConsensusRawMessage) {
-
 	select {
 	case <-ctx.Done():
 		m.logger.Debug("HandleConsensusRawMessage() ID=%s CONTEXT CANCELED", termincommittee.Str(m.config.Membership.MyMemberId()))
