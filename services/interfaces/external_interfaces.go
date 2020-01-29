@@ -12,6 +12,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/state"
+	"github.com/orbs-network/scribe/log"
 	"time"
 )
 
@@ -99,4 +100,5 @@ type Logger interface {
 	Debug(format string, args ...interface{})
 	Info(format string, args ...interface{})
 	Error(format string, args ...interface{})
+	ConsensusTrace(format string, fields ...*log.Field)
 }

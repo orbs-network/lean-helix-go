@@ -12,6 +12,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/state"
+	"github.com/orbs-network/scribe/log"
 	"math"
 	"time"
 )
@@ -104,6 +105,14 @@ func (l *lhLogger) Error(format string, args ...interface{}) {
 	l.log(LOG_LEVEL_ERROR, format, args...)
 }
 
+func (l *lhLogger) ConsensusTrace(msg string, err error, fields ...*log.Field) {
+	fields = append(fields, log.Uint64("block-height", uint64(l.state.Height())), log.Uint64("view", uint64(l.state.View())))
+	if err != nil {
+		fields = append(fields, log.Error(err))
+	}
+	l.externalLogger.ConsensusTrace(msg, fields...)
+}
+
 func NewLhLogger(config *interfaces.Config, state *state.State) LHLogger {
 	var logger interfaces.Logger
 	if config.Logger == nil {
@@ -134,6 +143,7 @@ type LHLogger interface {
 	Info(format string, args ...interface{})
 	Error(format string, args ...interface{})
 	ExternalLogger() interfaces.Logger
+	ConsensusTrace(msg string, err error, fields ...*log.Field)
 }
 
 func LC(h primitives.BlockHeight, v primitives.View, id primitives.MemberId) *_LC {

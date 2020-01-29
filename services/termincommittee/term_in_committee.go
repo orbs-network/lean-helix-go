@@ -21,6 +21,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/state"
+	"github.com/orbs-network/scribe/log"
 	"github.com/pkg/errors"
 	"math"
 	"runtime"
@@ -126,6 +127,7 @@ func (tic *TermInCommittee) setPreparedLocally(v primitives.View) {
 	}
 }
 
+// Deprecated; this is only for logging, use log.StringableSlice instead
 func ToCommitteeMembersStr(members []primitives.MemberId) string {
 
 	var strs []string
@@ -160,6 +162,7 @@ func (tic *TermInCommittee) startTerm(canBeFirstLeader bool) {
 	}
 
 	tic.logger.Debug("LHFLOW startTerm() I AM THE LEADER OF FIRST VIEW, requesting new block")
+	tic.logger.ConsensusTrace("I am the leader", nil)
 
 	ctx, err := tic.State.Contexts.For(currentHV)
 	if err != nil {
@@ -168,6 +171,7 @@ func (tic *TermInCommittee) startTerm(canBeFirstLeader bool) {
 	}
 
 	block, blockHash := tic.blockUtils.RequestNewBlockProposal(ctx, currentHV.Height(), tic.myMemberId, tic.prevBlock)
+	tic.logger.ConsensusTrace("got block", nil, log.Stringable("block-hash", blockHash))
 
 	// Sometimes PPM will still be sent although context was canceled,
 	// because cancellation is not fast enough.
@@ -186,6 +190,7 @@ func (tic *TermInCommittee) startTerm(canBeFirstLeader bool) {
 	if err := tic.sendConsensusMessage(ppm); err != nil {
 		tic.logger.Info("LHMSG SEND PREPREPARE FAILED - %s", err)
 	}
+
 }
 
 // update view and reset election trigger
@@ -335,13 +340,17 @@ func (tic *TermInCommittee) onElectedByViewChange(view primitives.View, viewChan
 func (tic *TermInCommittee) sendConsensusMessage(message interfaces.ConsensusMessage) error {
 	tic.logger.Debug("LHMSG SEND sendConsensusMessage() target=ALL, msgType=%v", message.MessageType())
 	rawMessage := interfaces.CreateConsensusRawMessage(message)
-	return tic.communication.SendConsensusMessage(context.TODO(), tic.otherCommitteeMembersMemberIds, rawMessage)
+	err := tic.communication.SendConsensusMessage(context.TODO(), tic.otherCommitteeMembersMemberIds, rawMessage)
+	tic.logger.ConsensusTrace("sent consensus message", err, log.Stringable("message-type", message.MessageType()), log.StringableSlice("recipients", tic.otherCommitteeMembersMemberIds))
+	return err
 }
 
 func (tic *TermInCommittee) sendConsensusMessageToSpecificMember(targetMemberId primitives.MemberId, message interfaces.ConsensusMessage) error {
 	tic.logger.Debug("LHMSG SEND sendConsensusMessageToSpecificMember() target=%s, msgType=%v", Str(targetMemberId), message.MessageType())
 	rawMessage := interfaces.CreateConsensusRawMessage(message)
-	return tic.communication.SendConsensusMessage(context.TODO(), []primitives.MemberId{targetMemberId}, rawMessage)
+	err := tic.communication.SendConsensusMessage(context.TODO(), []primitives.MemberId{targetMemberId}, rawMessage)
+	tic.logger.ConsensusTrace("sent consensus message", err, log.Stringable("message-type", message.MessageType()), log.Stringable("recipients", targetMemberId))
+	return err
 }
 
 func (tic *TermInCommittee) HandlePrePrepare(ppm *interfaces.PreprepareMessage) {
@@ -387,10 +396,14 @@ func (tic *TermInCommittee) validatePreprepare(ppm *interfaces.PreprepareMessage
 	header := ppm.Content().SignedHeader()
 	sender := ppm.Content().Sender()
 	if err := tic.keyManager.VerifyConsensusMessage(header.BlockHeight(), header.Raw(), sender); err != nil {
+		tic.logger.ConsensusTrace("failed to verify preprepare - maybe a committee mismatch?", err, log.Stringable("sender", sender))
+
 		return errors.Wrapf(err, "verification failed for sender %s signature on header", Str(sender.MemberId()))
 	}
 
 	if err := tic.isLeader(sender.MemberId(), ppm.View()); err != nil {
+		tic.logger.ConsensusTrace("failed to verify preprepare - I do not think sender is currently the leader", err, log.Stringable("sender", sender))
+
 		return fmt.Errorf("PREPREPARE sender %s is not leader: %s", Str(sender.MemberId()), err)
 	}
 

@@ -19,6 +19,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/state"
+	"github.com/orbs-network/scribe/log"
 	"math"
 )
 
@@ -27,7 +28,7 @@ type LeanHelixTerm struct {
 	termInCommittee *termincommittee.TermInCommittee
 }
 
-func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfaces.Config, state *state.State, electionTrigger interfaces.ElectionScheduler, onCommit interfaces.OnCommitCallback, prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) *LeanHelixTerm {
+func NewLeanHelixTerm(ctx context.Context, logger logger.LHLogger, config *interfaces.Config, state *state.State, electionTrigger interfaces.ElectionScheduler, onCommit interfaces.OnCommitCallback, prevBlock interfaces.Block, prevBlockProofBytes []byte, canBeFirstLeader bool) *LeanHelixTerm {
 	prevBlockProof := protocol.BlockProofReader(prevBlockProofBytes)
 	randomSeed := randomseed.CalculateRandomSeed(prevBlockProof.RandomSeedSignature())
 	blockHeight := blockheight.GetBlockHeight(prevBlock) + 1
@@ -36,19 +37,20 @@ func NewLeanHelixTerm(ctx context.Context, log logger.LHLogger, config *interfac
 
 	committeeMembers, err := requestOrderedCommittee(state, blockHeight, randomSeed, config)
 	if err != nil {
-		log.Info("OUT OF COMMITTEE WITH ERROR RECEIVING COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, error=%s", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, err)
+		logger.Info("OUT OF COMMITTEE WITH ERROR RECEIVING COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, error=%s", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, err)
 		return termNotInCommittee(randomSeed, config)
 	}
 
 	isParticipating := isParticipatingInCommittee(myMemberId, committeeMembers)
-	log.Debug("RECEIVED COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s, isParticipating=%t", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers), isParticipating)
+	logger.Debug("RECEIVED COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s, isParticipating=%t", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers), isParticipating)
+	logger.ConsensusTrace("got committee for the current consensus round", nil, log.StringableSlice("committee", committeeMembers))
 
 	if !isParticipating {
-		log.Info("OUT OF COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s, isParticipating=%t", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers), isParticipating)
+		logger.Info("OUT OF COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s, isParticipating=%t", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers), isParticipating)
 		return termNotInCommittee(randomSeed, config)
 	}
 
-	termInCommittee := termincommittee.NewTermInCommittee(log, config, state, messageFactory, electionTrigger, committeeMembers, prevBlock, canBeFirstLeader, CommitsToProof(log, config.KeyManager, onCommit))
+	termInCommittee := termincommittee.NewTermInCommittee(logger, config, state, messageFactory, electionTrigger, committeeMembers, prevBlock, canBeFirstLeader, CommitsToProof(logger, config.KeyManager, onCommit))
 	return &LeanHelixTerm{
 		ConsensusMessagesFilter: NewConsensusMessagesFilter(termInCommittee, config.KeyManager, randomSeed),
 		termInCommittee:         termInCommittee,

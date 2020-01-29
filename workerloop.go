@@ -55,8 +55,8 @@ func NewWorkerLoop(
 	filter := rawmessagesfilter.NewConsensusMessageFilter(config.InstanceId, config.Membership.MyMemberId(), logger, state)
 	return &WorkerLoop{
 		MessagesChannel:             make(chan *interfaces.ConsensusRawMessage, 1000), // TODO config.MsgChanBufLen
-		workerUpdateStateChannel:    make(chan *blockWithProof, 1), // must be at least 1 // TODO config.UpdateStateChanBufLen
-		electionChannel:             make(chan *interfaces.ElectionTrigger, 1), // must be at least 1 // TODO config.ElectionChanBufLen
+		workerUpdateStateChannel:    make(chan *blockWithProof, 1),                    // must be at least 1 // TODO config.UpdateStateChanBufLen
+		electionChannel:             make(chan *interfaces.ElectionTrigger, 1),        // must be at least 1 // TODO config.ElectionChanBufLen
 		electionTrigger:             electionTrigger,
 		state:                       state,
 		config:                      config,
@@ -209,8 +209,9 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 func (lh *WorkerLoop) onCommit(ctx context.Context, block interfaces.Block, blockProofBytes []byte) error {
 	height := block.Height()
 	lh.logger.Debug("LHFLOW onCommitCallback START from leanhelix.onCommit() ID=%s H=%d", lh.config.Membership.MyMemberId(), height)
-	
+
 	err := lh.onCommitCallback(ctx, block, blockProofBytes)
+	lh.logger.ConsensusTrace("sent block to commit callback", err)
 	if err != nil {
 		lh.logger.Debug("LHFLOW onCommitCallback FAILED - %s", err.Error())
 		return err
@@ -241,6 +242,9 @@ func (lh *WorkerLoop) onNewConsensusRound(prevBlock interfaces.Block, prevBlockP
 		lh.leanHelixTerm.Dispose()
 		lh.leanHelixTerm = nil
 	}
+
+	lh.logger.ConsensusTrace("starting a new consensus round", nil)
+
 	lh.leanHelixTerm = leanhelixterm.NewLeanHelixTerm(ctx, lh.logger, lh.config, lh.state, lh.electionTrigger, lh.onCommit, prevBlock, prevBlockProofBytes, canBeFirstLeader)
 	lh.logger.Debug("onNewConsensusRound() Calling ConsumeCacheMessages for H=%d", lh.state.Height())
 	lh.filter.ConsumeCacheMessages(lh.leanHelixTerm)
