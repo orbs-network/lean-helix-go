@@ -18,7 +18,7 @@ func TestParticipating(t *testing.T) {
 	memberId2 := primitives.MemberId("Member 2")
 	memberId3 := primitives.MemberId("Member 3")
 	committeeMembers := []primitives.MemberId{myMemberId, memberId1, memberId2, memberId3}
-	actual := isParticipatingInCommittee(myMemberId, committeeMembers)
+	actual := isParticipatingInTerm(myMemberId, committeeMembers)
 	require.True(t, actual)
 }
 
@@ -28,7 +28,7 @@ func TestParticipatingLastInList(t *testing.T) {
 	memberId2 := primitives.MemberId("Member 2")
 	memberId3 := primitives.MemberId("Member 3")
 	committeeMembers := []primitives.MemberId{memberId1, memberId2, memberId3, myMemberId}
-	actual := isParticipatingInCommittee(myMemberId, committeeMembers)
+	actual := isParticipatingInTerm(myMemberId, committeeMembers)
 	require.True(t, actual)
 }
 
@@ -38,6 +38,6 @@ func TestNotParticipating(t *testing.T) {
 	memberId2 := primitives.MemberId("Member 2")
 	memberId3 := primitives.MemberId("Member 3")
 	committeeMembers := []primitives.MemberId{memberId1, memberId2, memberId3}
-	actual := isParticipatingInCommittee(myMemberId, committeeMembers)
+	actual := isParticipatingInTerm(myMemberId, committeeMembers)
 	require.False(t, actual)
 }
