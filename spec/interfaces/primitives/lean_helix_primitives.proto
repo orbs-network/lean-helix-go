@@ -51,3 +51,10 @@ message block_hash {
     bytes value = 1;
     // variable length, typiclly size 32 bytes
 }
+
+message timestamp_seconds {
+    option inline_type = "uint32";
+    uint32 value = 1;
+    // size 4 bytes
+}
+

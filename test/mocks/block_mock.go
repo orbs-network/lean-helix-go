@@ -16,8 +16,9 @@ import (
 // MockBlock
 type MockBlock struct {
 	fmt.Stringer
-	height primitives.BlockHeight
-	body   string
+	height  primitives.BlockHeight
+	refTime primitives.TimestampSeconds
+	body    string
 }
 
 func (b *MockBlock) String() string {
@@ -26,6 +27,10 @@ func (b *MockBlock) String() string {
 
 func (b *MockBlock) Height() primitives.BlockHeight {
 	return b.height
+}
+
+func (b *MockBlock) ReferenceTime() primitives.TimestampSeconds {
+	return b.refTime
 }
 
 func (b *MockBlock) Body() string {
@@ -42,13 +47,15 @@ func ABlock(previousBlock interfaces.Block) interfaces.Block {
 
 	newBlockHeight := prevBlockHeight + 1
 	block := &MockBlock{
-		height: newBlockHeight,
-		body:   genBody(newBlockHeight),
+		height:  newBlockHeight,
+		refTime: primitives.TimestampSeconds(6000 + newBlockHeight*10),
+		body:    genBody(newBlockHeight),
 	}
 	return block
 }
 
 var blocksCounter uint64 = 0
+
 func genBody(height primitives.BlockHeight) string {
 	body := fmt.Sprintf("SN=%d,H=%d", atomic.AddUint64(&blocksCounter, 1), height)
 	if height == 0 {

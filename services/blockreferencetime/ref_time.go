@@ -4,13 +4,17 @@
 // This source code is licensed under the MIT license found in the LICENSE file in the root directory of this source tree.
 // The above notice should be included in all copies or substantial portions of the software.
 
-package interfaces
+package blockreferencetime
 
-import "github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+import (
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+)
 
-var GenesisBlock Block = nil
-
-type Block interface {
-	Height() primitives.BlockHeight
-	ReferenceTime() primitives.TimestampSeconds
+func GetBlockReferenceTime(block interfaces.Block) primitives.TimestampSeconds {
+	if block == interfaces.GenesisBlock {
+		return 0
+	} else {
+		return block.ReferenceTime()
+	}
 }

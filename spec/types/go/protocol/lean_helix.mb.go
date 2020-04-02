@@ -1,10 +1,4 @@
-// Copyright 2019 the lean-helix-go authors
-// This file is part of the lean-helix-go library in the Orbs project.
-//
-// This source code is licensed under the MIT license found in the LICENSE file in the root directory of this source tree.
-// The above notice should be included in all copies or substantial portions of the software.
-
-// AUTO GENERATED FILE (by membufc proto compiler v0.0.21)
+// AUTO GENERATED FILE (by membufc proto compiler v0.0.32)
 package protocol
 
 import (
@@ -716,6 +710,10 @@ func (x *CommitContent) RawShare() []byte {
 	return x._message.RawBufferForField(2, 0)
 }
 
+func (x *CommitContent) RawShareWithHeader() []byte {
+	return x._message.RawBufferWithHeaderForField(2, 0)
+}
+
 func (x *CommitContent) MutateShare(v primitives.RandomSeedSignature) error {
 	return x._message.SetBytes(2, []byte(v))
 }
@@ -1232,6 +1230,10 @@ func (x *SenderSignature) RawMemberId() []byte {
 	return x._message.RawBufferForField(0, 0)
 }
 
+func (x *SenderSignature) RawMemberIdWithHeader() []byte {
+	return x._message.RawBufferWithHeaderForField(0, 0)
+}
+
 func (x *SenderSignature) MutateMemberId(v primitives.MemberId) error {
 	return x._message.SetBytes(0, []byte(v))
 }
@@ -1246,6 +1248,10 @@ func (x *SenderSignature) Signature() primitives.Signature {
 
 func (x *SenderSignature) RawSignature() []byte {
 	return x._message.RawBufferForField(1, 0)
+}
+
+func (x *SenderSignature) RawSignatureWithHeader() []byte {
+	return x._message.RawBufferWithHeaderForField(1, 0)
 }
 
 func (x *SenderSignature) MutateSignature(v primitives.Signature) error {
@@ -1451,6 +1457,10 @@ func (x *BlockRef) BlockHash() primitives.BlockHash {
 
 func (x *BlockRef) RawBlockHash() []byte {
 	return x._message.RawBufferForField(4, 0)
+}
+
+func (x *BlockRef) RawBlockHashWithHeader() []byte {
+	return x._message.RawBufferWithHeaderForField(4, 0)
 }
 
 func (x *BlockRef) MutateBlockHash(v primitives.BlockHash) error {
@@ -2364,6 +2374,10 @@ func (x *BlockProof) RandomSeedSignature() primitives.RandomSeedSignature {
 
 func (x *BlockProof) RawRandomSeedSignature() []byte {
 	return x._message.RawBufferForField(2, 0)
+}
+
+func (x *BlockProof) RawRandomSeedSignatureWithHeader() []byte {
+	return x._message.RawBufferWithHeaderForField(2, 0)
 }
 
 func (x *BlockProof) MutateRandomSeedSignature(v primitives.RandomSeedSignature) error {

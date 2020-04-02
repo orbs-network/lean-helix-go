@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/blockheight"
+	"github.com/orbs-network/lean-helix-go/services/blockreferencetime"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/services/messagesfactory"
@@ -58,7 +59,7 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 
 	prevBlock := myNode.GetLatestBlock()
 	state := mocks.NewMockState().WithHeightView(blockheight.GetBlockHeight(prevBlock)+1, 0)
-	committeeMembers, _ := termConfig.Membership.RequestOrderedCommittee(ctx, state.Height(), uint64(12345))
+	committeeMembers, _ := termConfig.Membership.RequestOrderedCommittee(ctx, state.Height(), uint64(12345), blockreferencetime.GetBlockReferenceTime(prevBlock))
 	messageFactory := messagesfactory.NewMessageFactory(termConfig.InstanceId, termConfig.KeyManager, termConfig.Membership.MyMemberId(), 0)
 	log.Info("NewHarness calling NewTermInCommittee with H=%d", state.Height())
 

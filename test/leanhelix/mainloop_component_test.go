@@ -100,12 +100,12 @@ func TestPreprepareMessageNotSentByLeaderIfRequestNewBlockProposalContextCancell
 		require.Equal(t, nodeCount-1, node0.Communication.CountMessagesSent(protocol.LEAN_HELIX_PREPREPARE, mocks.BLOCK_HEIGHT_DONT_CARE, mocks.VIEW_DONT_CARE, nil), "node0 sent PREPREPARE despite having its worker context cancelled during RequestNewBlockProposal")
 
 		blockToSync, blockProofToSync := bc.BlockAndProofAt(2)
-		_, prevBlockProofToSync := bc.BlockAndProofAt(1)
+		prevBlockToSync, prevBlockProofToSync := bc.BlockAndProofAt(1)
 
 		require.Equal(t, blockToSync.Height(), node0.GetCurrentHeight())
 		node0.SetPauseOnNewConsensusRoundUntilReadingFrom(consensusRoundChan)
 		for _, node := range net.Nodes {
-			if err := node.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync); err != nil { // block2 has H=2 so next block is H=3
+			if err := node.Sync(ctx, blockToSync, blockProofToSync, prevBlockToSync, prevBlockProofToSync); err != nil { // block2 has H=2 so next block is H=3
 				t.Fatalf("Sync failed for node %s - %s", node.MemberId, err)
 			}
 		}
@@ -144,9 +144,9 @@ func TestVerifyWorkerContextNotCancelledIfNodeSyncBlockIsIgnored(t *testing.T) {
 		}
 
 		blockToSync, blockProofToSync := bc.BlockAndProofAt(1)
-		_, prevBlockProofToSync := bc.BlockAndProofAt(0)
+		prevBlockToSync, prevBlockProofToSync := bc.BlockAndProofAt(0)
 
-		if err := node0.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync); err != nil {
+		if err := node0.Sync(ctx, blockToSync, blockProofToSync, prevBlockToSync, prevBlockProofToSync); err != nil {
 			t.Fatalf("Sync failed for node %s - %s", node0.MemberId, err)
 		}
 

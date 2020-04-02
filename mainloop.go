@@ -237,11 +237,11 @@ func GetMemberIdsFromBlockProof(blockProofBytes []byte) ([]primitives.MemberId, 
 	return committeeMembers, nil
 }
 
-func (m *MainLoop) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProofBytes []byte, maybePrevBlockProofBytes []byte) error {
+func (m *MainLoop) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProofBytes []byte, prevBlock interfaces.Block, maybePrevBlockProofBytes []byte) error {
 	if m.worker == nil {
 		panic("ValidateBlockConsensus() worker is nil")
 	}
-	return m.worker.ValidateBlockConsensus(ctx, block, blockProofBytes, maybePrevBlockProofBytes)
+	return m.worker.ValidateBlockConsensus(ctx, block, blockProofBytes, prevBlock, maybePrevBlockProofBytes)
 }
 
 // Called from outside to indicate Node Sync
