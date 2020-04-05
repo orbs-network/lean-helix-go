@@ -30,7 +30,7 @@ func (m *FakeMembership) MyMemberId() primitives.MemberId {
 	return m.myMemberId
 }
 
-func (m *FakeMembership) RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64) ([]primitives.MemberId, error) {
+func (m *FakeMembership) RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64, prevBlockReferenceTime primitives.TimestampSeconds) ([]primitives.MemberId, error) {
 	result := m.discovery.AllCommunicationsMemberIds()
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].KeyForMap() < result[j].KeyForMap()

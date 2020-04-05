@@ -11,6 +11,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/blockheight"
+	"github.com/orbs-network/lean-helix-go/services/blockreferencetime"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/logger"
 	"github.com/orbs-network/lean-helix-go/services/messagesfactory"
@@ -36,10 +37,11 @@ func NewLeanHelixTerm(ctx context.Context, logger logger.LHLogger, config *inter
 	prevBlockProof := protocol.BlockProofReader(prevBlockProofBytes)
 	randomSeed := randomseed.CalculateRandomSeed(prevBlockProof.RandomSeedSignature())
 	blockHeight := blockheight.GetBlockHeight(prevBlock) + 1
+	prevBlockRefTime := blockreferencetime.GetBlockReferenceTime(prevBlock)
 	myMemberId := config.Membership.MyMemberId()
 	messageFactory := messagesfactory.NewMessageFactory(config.InstanceId, config.KeyManager, myMemberId, randomSeed)
 
-	committeeMembers, err := requestOrderedCommitteePersist(state, blockHeight, randomSeed, config, logger)
+	committeeMembers, err := requestOrderedCommitteePersist(state, blockHeight, randomSeed, prevBlockRefTime, config, logger)
 	if err != nil {
 		logger.Info("ERROR RECEIVING COMMITTEE: H=%d, error=%s", blockHeight, err)
 	}
@@ -51,7 +53,7 @@ func NewLeanHelixTerm(ctx context.Context, logger logger.LHLogger, config *inter
 		return termNotInCommittee(randomSeed, config)
 	}
 
-	logger.Debug("RECEIVED COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s, isParticipating=%t", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers), isParticipating)
+	logger.Debug("RECEIVED COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, refTime=%d, members=%s, isParticipating=%t", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, prevBlockRefTime, termincommittee.ToCommitteeMembersStr(committeeMembers), isParticipating)
 	logger.ConsensusTrace("got committee for the current consensus round", nil, log.StringableSlice("committee", committeeMembers))
 
 	termInCommittee := termincommittee.NewTermInCommittee(logger, config, state, messageFactory, electionTrigger, committeeMembers, prevBlock, canBeFirstLeader, CommitsToProof(logger, config.KeyManager, onCommit))
@@ -61,7 +63,7 @@ func NewLeanHelixTerm(ctx context.Context, logger logger.LHLogger, config *inter
 	}
 }
 
-func requestOrderedCommitteePersist(s *state.State, blockHeight primitives.BlockHeight, randomSeed uint64, config *interfaces.Config, logger logger.LHLogger) ([]primitives.MemberId, error) {
+func requestOrderedCommitteePersist(s *state.State, blockHeight primitives.BlockHeight, randomSeed uint64, prevBlockReferenceTime primitives.TimestampSeconds, config *interfaces.Config, logger logger.LHLogger) ([]primitives.MemberId, error) {
 	const maxView = primitives.View(math.MaxUint64)
 	ctx, err := s.Contexts.For(state.NewHeightView(blockHeight, maxView)) // term-level context
 	if err != nil {
@@ -77,7 +79,7 @@ func requestOrderedCommitteePersist(s *state.State, blockHeight primitives.Block
 			return nil, errors.Wrap(ctx.Err(), "requestOrderedCommitteePersist: context terminated")
 		}
 
-		committeeMembers, err := config.Membership.RequestOrderedCommittee(ctx, blockHeight, randomSeed)
+		committeeMembers, err := config.Membership.RequestOrderedCommittee(ctx, blockHeight, randomSeed, prevBlockReferenceTime)
 		if err == nil {
 			return committeeMembers, nil
 		}
@@ -97,7 +99,6 @@ func requestOrderedCommitteePersist(s *state.State, blockHeight primitives.Block
 		attempts++
 	}
 }
-
 
 func termNotInCommittee(randomSeed uint64, config *interfaces.Config) *LeanHelixTerm {
 	return &LeanHelixTerm{
@@ -128,4 +129,3 @@ func printShortBlockProofBytes(b []byte) string {
 	}
 	return fmt.Sprintf("%s..%s", hex.EncodeToString(b[:6]), hex.EncodeToString(b[len(b)-6:]))
 }
-

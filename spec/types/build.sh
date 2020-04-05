@@ -4,7 +4,7 @@ echo "Make sure your membuffers git repo is updated and pulled before building!"
 echo "Current directory: $(pwd)"
 echo ""
 
-MEMBUF_DIR="../../vendor/github.com/orbs-network/membuffers/go/membufc"
+MEMBUF_DIR="../../../membuffers/go/membufc"
 
 if [[ ! -x ${MEMBUF_DIR} ]] ; then
     echo "Missing membuffers directory: ${MEMBUF_DIR}"

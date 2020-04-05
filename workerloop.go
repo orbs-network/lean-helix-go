@@ -9,6 +9,7 @@ package leanhelix
 import (
 	"context"
 	"github.com/orbs-network/lean-helix-go/services/blockheight"
+	"github.com/orbs-network/lean-helix-go/services/blockreferencetime"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/leanhelixterm"
 	L "github.com/orbs-network/lean-helix-go/services/logger"
@@ -124,7 +125,7 @@ func (lh *WorkerLoop) handleUpdateState(receivedBlockWithProof *blockWithProof) 
 	}
 }
 
-func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProofBytes []byte, maybePrevBlockProofBytes []byte) error {
+func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProofBytes []byte, prevBlock interfaces.Block, maybePrevBlockProofBytes []byte) error {
 	if ctx.Err() != nil {
 		return errors.New("context canceled")
 	}
@@ -156,11 +157,11 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 	}
 
 	// note: it is ok to disregard the order of committee here (hence randomSeed is not calculated) - the blockProof only checks for set of quorum COMMITS
-	committeeMembers, err := lh.config.Membership.RequestOrderedCommittee(ctx, blockHeight, 0)
+	committeeMembers, err := lh.config.Membership.RequestOrderedCommittee(ctx, blockHeight, 0, blockreferencetime.GetBlockReferenceTime(prevBlock))
 	if err != nil { // support for failure in committee calculation
 		return err
 	}
-	lh.logger.Debug("ValidateBlockConsensus: RECEIVED COMMITTEE for H=%d, members=%s", blockHeight, termincommittee.ToCommitteeMembersStr(committeeMembers))
+	lh.logger.Debug("ValidateBlockConsensus: RECEIVED COMMITTEE for H=%d, RefTime=%d, members=%s", blockHeight, blockreferencetime.GetBlockReferenceTime(prevBlock), termincommittee.ToCommitteeMembersStr(committeeMembers))
 
 	sendersIterator := blockProof.NodesIterator()
 	set := make(map[storage.MemberIdStr]bool)

@@ -154,24 +154,24 @@ func (node *Node) StartConsensus(ctx context.Context) error {
 	return node.leanHelix.UpdateState(ctx, node.GetLatestBlock(), nil)
 }
 
-func (node *Node) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProof []byte, prevBlockProof []byte) error {
+func (node *Node) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProof []byte, prevBlock interfaces.Block, prevBlockProof []byte) error {
 	if node.leanHelix == nil {
 		panic("ValidateBlockConsensus(): leanhelix is nil")
 	}
-	return node.leanHelix.ValidateBlockConsensus(ctx, block, blockProof, prevBlockProof)
+	return node.leanHelix.ValidateBlockConsensus(ctx, block, blockProof, prevBlock, prevBlockProof)
 }
 
-func (node *Node) Sync(ctx context.Context, prevBlock interfaces.Block, blockProofBytes []byte, prevBlockProofBytes []byte) error {
+func (node *Node) Sync(ctx context.Context, block interfaces.Block, blockProofBytes []byte, prevBlock interfaces.Block, prevBlockProofBytes []byte) error {
 	if node.leanHelix == nil {
 		panic("Sync(): leanhelix is nil")
 	}
-	if err := node.ValidateBlockConsensus(ctx, prevBlock, blockProofBytes, prevBlockProofBytes); err == nil {
-		if err := node.leanHelix.UpdateState(ctx, prevBlock, prevBlockProofBytes); err != nil {
+	if err := node.ValidateBlockConsensus(ctx, block, blockProofBytes, prevBlock, prevBlockProofBytes); err == nil {
+		if err := node.leanHelix.UpdateState(ctx, block, blockProofBytes); err != nil {
 			return err
 		}
 		return nil
 	} else {
-		return errors.Errorf(fmt.Sprintf("ID=%s H=%d B.H=%d NodeSync(): Failed validation: %s", node.MemberId, node.GetCurrentHeight(), prevBlock.Height(), err))
+		return errors.Errorf(fmt.Sprintf("ID=%s H=%d B.H=%d NodeSync(): Failed validation: %s", node.MemberId, node.GetCurrentHeight(), block.Height(), err))
 	}
 }
 

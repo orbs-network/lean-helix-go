@@ -65,7 +65,6 @@ func (net *TestNetwork) AllNodesChainEndsWithABlock(block interfaces.Block) bool
 }
 
 func (net *TestNetwork) WaitUntilNodesEventuallyCommitASpecificBlock(ctx context.Context, t *testing.T, timeout time.Duration, block interfaces.Block, nodes ...*Node) {
-
 	if nodes == nil {
 		nodes = net.Nodes
 	}

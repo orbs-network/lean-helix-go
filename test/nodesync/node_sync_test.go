@@ -54,8 +54,8 @@ func TestNodeSync_AllNodesReachSameHeight(t *testing.T) {
 			return
 		}
 		blockToSync, blockProofToSync := bc.BlockAndProofAt(2)
-		_, prevBlockProofToSync := bc.BlockAndProofAt(1)
-		if err := node3.Sync(ctx, blockToSync, blockProofToSync, prevBlockProofToSync); err != nil {
+		prevBlockToSync, prevBlockProofToSync := bc.BlockAndProofAt(1)
+		if err := node3.Sync(ctx, blockToSync, blockProofToSync, prevBlockToSync, prevBlockProofToSync); err != nil {
 			t.Fatalf("Sync failed for node %s - %s", node3.MemberId, err)
 		}
 		net.WaitUntilNodesEventuallyReachASpecificHeight(ctx, 3, node3)
