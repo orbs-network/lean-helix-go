@@ -46,3 +46,12 @@ func (m *FakeMembership) RequestOrderedCommittee(ctx context.Context, blockHeigh
 
 	return result, nil
 }
+
+func (m *FakeMembership) RequestCommitteeForBlockProof(ctx context.Context, prevBlockReferenceTime primitives.TimestampSeconds) ([]primitives.MemberId, error) {
+	result := m.discovery.AllCommunicationsMemberIds()
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].KeyForMap() < result[j].KeyForMap()
+	})
+
+	return result, nil
+}
