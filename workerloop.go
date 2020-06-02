@@ -157,11 +157,11 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 	}
 
 	// note: it is ok to disregard the order of committee here (hence randomSeed is not calculated) - the blockProof only checks for set of quorum COMMITS
-	committeeMembers, err := lh.config.Membership.RequestOrderedCommittee(ctx, blockHeight, 0, blockreferencetime.GetBlockReferenceTime(prevBlock))
+	committeeMembers, err := lh.config.Membership.RequestCommitteeForBlockProof(ctx, blockreferencetime.GetBlockReferenceTime(prevBlock))
 	if err != nil { // support for failure in committee calculation
 		return err
 	}
-	lh.logger.Debug("ValidateBlockConsensus: RECEIVED COMMITTEE for H=%d, RefTime=%d, members=%s", blockHeight, blockreferencetime.GetBlockReferenceTime(prevBlock), termincommittee.ToCommitteeMembersStr(committeeMembers))
+	lh.logger.Info("ValidateBlockConsensus: RECEIVED COMMITTEE for H=%d, RefTime=%d, members=%s", blockHeight, blockreferencetime.GetBlockReferenceTime(prevBlock), termincommittee.ToCommitteeMembersStr(committeeMembers))
 
 	sendersIterator := blockProof.NodesIterator()
 	set := make(map[storage.MemberIdStr]bool)

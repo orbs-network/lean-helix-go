@@ -48,6 +48,7 @@ type Communication interface {
 type Membership interface {
 	MyMemberId() primitives.MemberId
 	RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64, prevBlockReferenceTime primitives.TimestampSeconds) ([]primitives.MemberId, error)
+	RequestCommitteeForBlockProof(ctx context.Context, prevBlockReferenceTime primitives.TimestampSeconds) ([]primitives.MemberId, error)
 }
 
 type BlockUtils interface {
