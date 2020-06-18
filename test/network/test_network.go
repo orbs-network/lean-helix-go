@@ -19,6 +19,14 @@ import (
 	"time"
 )
 
+func EvenWeights(n int) []uint {
+	weights := make([]uint, n)
+	for i := 0; i < n; i++ {
+		weights[i] = 1
+	}
+	return weights
+}
+
 type TestNetwork struct {
 	InstanceId primitives.InstanceId
 	Nodes      []*Node
@@ -89,8 +97,8 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 }
 
 func (net *TestNetwork) WaitUntilQuorumOfNodesEventuallyReachASpecificHeight(ctx context.Context, height primitives.BlockHeight) {
-	quorum := quorum.CalcQuorumSize(len(net.Nodes))
-	net.WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx, height, quorum, net.Nodes...)
+	quorum := quorum.CalcQuorumWeight(EvenWeights(len(net.Nodes)))
+	net.WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx, height, int(quorum), net.Nodes...)
 }
 func (net *TestNetwork) WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx context.Context, height primitives.BlockHeight, subset int, nodes ...*Node) {
 	if nodes == nil {

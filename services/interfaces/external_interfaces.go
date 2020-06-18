@@ -47,8 +47,8 @@ type Communication interface {
 
 type Membership interface {
 	MyMemberId() primitives.MemberId
-	RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64, prevBlockReferenceTime primitives.TimestampSeconds) ([]primitives.MemberId, error)
-	RequestCommitteeForBlockProof(ctx context.Context, prevBlockReferenceTime primitives.TimestampSeconds) ([]primitives.MemberId, error)
+	RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64, prevBlockReferenceTime primitives.TimestampSeconds) ([]primitives.MemberId, []uint /* Weights (todo primitive) */, error)
+	RequestCommitteeForBlockProof(ctx context.Context, prevBlockReferenceTime primitives.TimestampSeconds) ([]primitives.MemberId, []uint /* Weights (todo primitive) */, error)
 }
 
 type BlockUtils interface {
@@ -90,6 +90,7 @@ type Storage interface {
 
 	StoreCommit(cm *CommitMessage) bool
 	GetCommitMessages(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) ([]*CommitMessage, bool)
+	GetCommitSendersIds(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) []primitives.MemberId
 
 	StoreViewChange(vcm *ViewChangeMessage) bool
 	GetViewChangeMessages(blockHeight primitives.BlockHeight, view primitives.View) ([]*ViewChangeMessage, bool)

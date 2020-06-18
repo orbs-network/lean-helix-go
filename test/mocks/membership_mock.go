@@ -30,11 +30,16 @@ func (m *FakeMembership) MyMemberId() primitives.MemberId {
 	return m.myMemberId
 }
 
-func (m *FakeMembership) RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64, prevBlockReferenceTime primitives.TimestampSeconds) ([]primitives.MemberId, error) {
+func (m *FakeMembership) RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64, prevBlockReferenceTime primitives.TimestampSeconds) ([]primitives.MemberId, []uint /* weights todo primitives */, error) {
 	result := m.discovery.AllCommunicationsMemberIds()
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].KeyForMap() < result[j].KeyForMap()
 	})
+
+	weights := make([]uint, len(result))
+	for i := 0; i < len(weights); i++ {
+		weights[i] = 1 // todo configurable weight
+	}
 
 	// we want to replace the leader every height,
 	// we just shift all the ordered nodes according to the given height
@@ -44,10 +49,16 @@ func (m *FakeMembership) RequestOrderedCommittee(ctx context.Context, blockHeigh
 		}
 	}
 
-	return result, nil
+	return result, weights, nil
 }
 
-func (m *FakeMembership) RequestCommitteeForBlockProof(ctx context.Context, prevBlockReferenceTime primitives.TimestampSeconds) ([]primitives.MemberId, error) {
+func (m *FakeMembership) RequestCommitteeForBlockProof(ctx context.Context, prevBlockReferenceTime primitives.TimestampSeconds) ([]primitives.MemberId, []uint /* weights todo primitives */, error) {
 	result := m.discovery.AllCommunicationsMemberIds()
-	return result, nil
+
+	weights := make([]uint, len(result))
+	for i := 0; i < len(weights); i++ {
+		weights[i] = 1 // todo configurable weight
+	}
+
+	return result, weights, nil
 }

@@ -157,7 +157,7 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 	}
 
 	// note: it is ok to disregard the order of committee here (hence randomSeed is not calculated) - the blockProof only checks for set of quorum COMMITS
-	committeeMembers, err := lh.config.Membership.RequestCommitteeForBlockProof(ctx, blockreferencetime.GetBlockReferenceTime(prevBlock))
+	committeeMembers, committeeWeights, err := lh.config.Membership.RequestCommitteeForBlockProof(ctx, blockreferencetime.GetBlockReferenceTime(prevBlock))
 	if err != nil { // support for failure in committee calculation
 		return err
 	}
@@ -165,7 +165,7 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 
 	sendersIterator := blockProof.NodesIterator()
 	set := make(map[storage.MemberIdStr]bool)
-	var sendersCounter = 0
+	sendersTotalWeight := uint(0)
 	for {
 		if !sendersIterator.HasNext() {
 			break
@@ -186,12 +186,20 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 		}
 
 		set[storage.MemberIdStr(memberId)] = true
-		sendersCounter++
+
+		// todo this logic is repeated
+		for i := 0; i < len(committeeMembers); i++ {
+			if committeeMembers[i].Equal(memberId) {
+				sendersTotalWeight += committeeWeights[i]
+				break
+			}
+		} // todo what if not found?
 	}
 
-	q := quorum.CalcQuorumSize(len(committeeMembers))
-	if sendersCounter < q {
-		return errors.Errorf("ValidateBlockConsensus: sendersCounter=%d is less than quorum=%d (committeeMembersCount=%d)", sendersCounter, q, len(committeeMembers))
+	// todo this logic is repeated
+	q := quorum.CalcQuorumWeight(committeeWeights)
+	if sendersTotalWeight < q {
+		return errors.Errorf("ValidateBlockConsensus: sendersTotalWeight=%d is less than quorum=%d (committeeMembersCount=%d)", sendersTotalWeight, q, len(committeeMembers))
 	}
 
 	if len(blockProof.RandomSeedSignature()) == 0 || blockProof.RandomSeedSignature() == nil {

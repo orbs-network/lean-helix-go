@@ -12,17 +12,17 @@ import (
 	"testing"
 )
 
-func TestCommitteeQuorum(t *testing.T) {
-	require.Equal(t, 3, quorum.CalcQuorumSize(4))
-	require.Equal(t, 4, quorum.CalcQuorumSize(5))
-	require.Equal(t, 5, quorum.CalcQuorumSize(6))
-	require.Equal(t, 5, quorum.CalcQuorumSize(7))
-	require.Equal(t, 6, quorum.CalcQuorumSize(8))
-	require.Equal(t, 7, quorum.CalcQuorumSize(9))
-	require.Equal(t, 7, quorum.CalcQuorumSize(10))
-	require.Equal(t, 8, quorum.CalcQuorumSize(11))
-	require.Equal(t, 9, quorum.CalcQuorumSize(12))
-	require.Equal(t, 15, quorum.CalcQuorumSize(21))
-	require.Equal(t, 15, quorum.CalcQuorumSize(22))
-	require.Equal(t, 67, quorum.CalcQuorumSize(100))
+func TestCommitteeQuorum(t *testing.T) { // todo more comprehensive
+	require.Equal(t, uint(3), quorum.CalcQuorumWeight([]uint{4}))
+	require.Equal(t, uint(4), quorum.CalcQuorumWeight([]uint{5}))
+	require.Equal(t, uint(5), quorum.CalcQuorumWeight([]uint{6}))
+	require.Equal(t, uint(5), quorum.CalcQuorumWeight([]uint{7}))
+	require.Equal(t, uint(6), quorum.CalcQuorumWeight([]uint{8}))
+	require.Equal(t, uint(7), quorum.CalcQuorumWeight([]uint{9}))
+	require.Equal(t, uint(7), quorum.CalcQuorumWeight([]uint{10}))
+	require.Equal(t, uint(8), quorum.CalcQuorumWeight([]uint{11}))
+	require.Equal(t, uint(9), quorum.CalcQuorumWeight([]uint{12}))
+	require.Equal(t, uint(15), quorum.CalcQuorumWeight([]uint{21}))
+	require.Equal(t, uint(15), quorum.CalcQuorumWeight([]uint{22}))
+	require.Equal(t, uint(67), quorum.CalcQuorumWeight([]uint{100}))
 }

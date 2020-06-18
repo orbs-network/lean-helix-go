@@ -16,7 +16,8 @@ type PreparedMessages struct {
 	PrepareMessages   []*interfaces.PrepareMessage
 }
 
-func ExtractPreparedMessages(blockHeight primitives.BlockHeight, latestPreparedView primitives.View, storage interfaces.Storage, q int) *PreparedMessages {
+// TODO are there missing verifications here? verify no repeated addresses
+func ExtractPreparedMessages(blockHeight primitives.BlockHeight, latestPreparedView primitives.View, storage interfaces.Storage, isQuorum func([]primitives.MemberId) bool) *PreparedMessages {
 
 	ppm, ok := storage.GetPreprepareFromView(blockHeight, latestPreparedView)
 	if !ok {
@@ -28,7 +29,14 @@ func ExtractPreparedMessages(blockHeight primitives.BlockHeight, latestPreparedV
 		return nil
 	}
 
-	if len(prepareMessages) < q-1 {
+	senderIds := make([]primitives.MemberId, len(prepareMessages)+1)
+	senderIds[0] = ppm.SenderMemberId()
+	for i := 1; i <= len(prepareMessages); i++ {
+		senderIds[i] = prepareMessages[i-1].SenderMemberId()
+	}
+
+	//if len(preparedMessages) < tic.QuorumSize-1 {
+	if !isQuorum(senderIds) { // todo -1?
 		return nil
 	}
 

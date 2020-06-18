@@ -59,12 +59,12 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 
 	prevBlock := myNode.GetLatestBlock()
 	state := mocks.NewMockState().WithHeightView(blockheight.GetBlockHeight(prevBlock)+1, 0)
-	committeeMembers, _ := termConfig.Membership.RequestOrderedCommittee(ctx, state.Height(), uint64(12345), blockreferencetime.GetBlockReferenceTime(prevBlock))
+	committeeMembers, committeeWeights, _ := termConfig.Membership.RequestOrderedCommittee(ctx, state.Height(), uint64(12345), blockreferencetime.GetBlockReferenceTime(prevBlock))
 	messageFactory := messagesfactory.NewMessageFactory(termConfig.InstanceId, termConfig.KeyManager, termConfig.Membership.MyMemberId(), 0)
 	log.Info("NewHarness calling NewTermInCommittee with H=%d", state.Height())
 
 	// TODO state.State is shadowing state.State and is generally meaninless
-	termInCommittee := termincommittee.NewTermInCommittee(log, termConfig, state.State, messageFactory, myNode.ElectionTrigger, committeeMembers, prevBlock, true, nil)
+	termInCommittee := termincommittee.NewTermInCommittee(log, termConfig, state.State, messageFactory, myNode.ElectionTrigger, committeeMembers, committeeWeights, prevBlock, true, nil)
 
 	return &harness{
 		t:               t,

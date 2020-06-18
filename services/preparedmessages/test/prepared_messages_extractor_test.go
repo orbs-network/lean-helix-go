@@ -52,7 +52,7 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 		xp0 := expectedProof.PrepareMessages[0].Raw()
 		xp1 := expectedProof.PrepareMessages[1].Raw()
 
-		actualProof := preparedmessages.ExtractPreparedMessages(blockHeight, view, s, q)
+		actualProof := preparedmessages.ExtractPreparedMessages(blockHeight, view, s, func(senders []primitives.MemberId) bool { return len(senders) >= q })
 		app := actualProof.PreprepareMessage.Raw()
 		ap0 := actualProof.PrepareMessages[0].Raw()
 		ap1 := actualProof.PrepareMessages[1].Raw()
@@ -98,7 +98,7 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 		xp0 := expectedProof.PrepareMessages[0].Raw()
 		xp1 := expectedProof.PrepareMessages[1].Raw()
 
-		actualProof := preparedmessages.ExtractPreparedMessages(blockHeight, 30, s, q)
+		actualProof := preparedmessages.ExtractPreparedMessages(blockHeight, 30, s, func(senders []primitives.MemberId) bool { return len(senders) >= q })
 		app := actualProof.PreprepareMessage.Raw()
 		ap0 := actualProof.PrepareMessages[0].Raw()
 		ap1 := actualProof.PrepareMessages[1].Raw()
@@ -115,7 +115,7 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 		s.StorePrepare(pm1)
 		s.StorePrepare(pm2)
 		q := 3
-		actualPreparedMessages := preparedmessages.ExtractPreparedMessages(blockHeight, view, s, q)
+		actualPreparedMessages := preparedmessages.ExtractPreparedMessages(blockHeight, view, s, func(senders []primitives.MemberId) bool { return len(senders) >= q })
 		require.Nil(t, actualPreparedMessages, "Don't return PreparedMessages from latest view if no PrePrepare in storage")
 	})
 
@@ -124,7 +124,7 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 		s := storage.NewInMemoryStorage()
 		s.StorePreprepare(ppm)
 		q := 3
-		actualPreparedMessages := preparedmessages.ExtractPreparedMessages(blockHeight, view, s, q)
+		actualPreparedMessages := preparedmessages.ExtractPreparedMessages(blockHeight, view, s, func(senders []primitives.MemberId) bool { return len(senders) >= q })
 		require.Nil(t, actualPreparedMessages, "Don't return PreparedMessages from latest view if no Prepare in storage")
 	})
 
@@ -135,7 +135,7 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 		s.StorePreprepare(ppm)
 		s.StorePrepare(pm1)
 		q := 3
-		actualPreparedMessages := preparedmessages.ExtractPreparedMessages(blockHeight, view, s, q)
+		actualPreparedMessages := preparedmessages.ExtractPreparedMessages(blockHeight, view, s, func(senders []primitives.MemberId) bool { return len(senders) >= q })
 		require.Nil(t, actualPreparedMessages, "Don't return PreparedMessages from latest view if not enough Prepares in storage (# Prepares < 2*f)")
 	})
 }

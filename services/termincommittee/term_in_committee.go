@@ -46,16 +46,17 @@ type TermInCommittee struct {
 	myMemberId                      primitives.MemberId
 	committeeMembersMemberIds       []primitives.MemberId
 	otherCommitteeMembersMemberIds  []primitives.MemberId
+	committeeWeights                []uint /* todo primitive */
 	preparedLocally                 *preparedLocallyProps
 	latestViewThatProcessedVCMOrNVM primitives.View
 	committedBlock                  interfaces.Block
 	logger                          L.LHLogger
 	prevBlock                       interfaces.Block
-	QuorumSize                      int
+	QuorumWeight                    uint // TODO primitive
 	State                           *state.State
 }
 
-func NewTermInCommittee(log L.LHLogger, config *interfaces.Config, state *state.State, messageFactory *messagesfactory.MessageFactory, electionTrigger interfaces.ElectionScheduler, committeeMembers []primitives.MemberId, prevBlock interfaces.Block, canBeFirstLeader bool, onCommit OnInCommitteeCommitCallback) *TermInCommittee {
+func NewTermInCommittee(log L.LHLogger, config *interfaces.Config, state *state.State, messageFactory *messagesfactory.MessageFactory, electionTrigger interfaces.ElectionScheduler, committeeMembers []primitives.MemberId, committeeWeights []uint /* (todo primitive) */, prevBlock interfaces.Block, canBeFirstLeader bool, onCommit OnInCommitteeCommitCallback) *TermInCommittee {
 
 	keyManager := config.KeyManager
 	blockUtils := config.BlockUtils
@@ -88,10 +89,11 @@ func NewTermInCommittee(log L.LHLogger, config *interfaces.Config, state *state.
 		blockUtils:                     blockUtils,
 		committeeMembersMemberIds:      committeeMembers,
 		otherCommitteeMembersMemberIds: otherCommitteeMembers,
+		committeeWeights:               committeeWeights,
 		messageFactory:                 messageFactory,
 		myMemberId:                     myMemberId,
 		logger:                         log,
-		QuorumSize:                     quorum.CalcQuorumSize(len(committeeMembers)),
+		QuorumWeight:                   quorum.CalcQuorumWeight(committeeWeights),
 	}
 
 	result.startTerm(canBeFirstLeader)
@@ -107,6 +109,19 @@ type OnInCommitteeCommitCallback func(ctx context.Context, block interfaces.Bloc
 type preparedLocallyProps struct {
 	isPreparedLocally bool
 	latestView        primitives.View
+}
+
+func (tic *TermInCommittee) isQuorum(ids []primitives.MemberId) bool {
+	sum := uint(0)
+	for i := 0; i < len(ids); i++ {
+		for j := 0; j < len(tic.committeeMembersMemberIds); j++ { // TODO use map instead
+			if tic.committeeMembersMemberIds[j].Equal(ids[i]) {
+				sum += tic.committeeWeights[j]
+				break
+			}
+		} // TODO what if not found?
+	}
+	return sum >= tic.QuorumWeight
 }
 
 func (tic *TermInCommittee) getPreparedLocally() (v primitives.View, ok bool) {
@@ -244,7 +259,7 @@ func (tic *TermInCommittee) moveToNextLeaderByElection(height primitives.BlockHe
 	tic.logger.Debug("LHFLOW moveToNextLeaderByElection() calculated newLeader=%s of V=%d", Str(newLeader), currentHV.View())
 	var preparedMessages *preparedmessages.PreparedMessages
 	if tic.preparedLocally != nil && tic.preparedLocally.isPreparedLocally {
-		preparedMessages = preparedmessages.ExtractPreparedMessages(currentHV.Height(), tic.preparedLocally.latestView, tic.storage, tic.QuorumSize)
+		preparedMessages = preparedmessages.ExtractPreparedMessages(currentHV.Height(), tic.preparedLocally.latestView, tic.storage, func(ids []primitives.MemberId) bool { return tic.isQuorum(ids) })
 	}
 	vcm := tic.messageFactory.CreateViewChangeMessage(currentHV.Height(), currentHV.View(), preparedMessages)
 
@@ -283,19 +298,24 @@ func (tic *TermInCommittee) checkElected(height primitives.BlockHeight, view pri
 		return
 	}
 	vcms, ok := tic.storage.GetViewChangeMessages(height, view)
-	minimumNodes := tic.QuorumSize
 	if !ok {
 		tic.logger.Info("checkElected() could not get stored VIEW_CHANGE messages, skipping")
 		return
 	}
 
-	if len(vcms) < minimumNodes {
-		tic.logger.Debug("checkElected() stored %d of %d VIEW_CHANGE messages", len(vcms), minimumNodes)
+	senderIds := make([]primitives.MemberId, len(vcms))
+	for i := 0; i < len(senderIds); i++ {
+		senderIds[i] = vcms[i].SenderMemberId()
+	}
+
+	if !tic.isQuorum(senderIds) {
+		//tic.logger.Debug("checkElected() stored %d of %d VIEW_CHANGE messages", len(vcms), minimumNodes) // todo log
 		return
 	}
-	tic.logger.Debug("checkElected() stored %d of %d VIEW_CHANGE messages", len(vcms), minimumNodes)
+	//tic.logger.Debug("checkElected() stored %d of %d VIEW_CHANGE messages", len(vcms), minimumNodes) // todo log
 	tic.logger.Debug("checkElected() has enough VIEW_CHANGE messages, proceeding to onElectedByViewChange() with V=%d", view)
-	tic.onElectedByViewChange(view, vcms[:minimumNodes])
+	//tic.onElectedByViewChange(view, vcms[:minimumNodes])
+	tic.onElectedByViewChange(view, vcms) // todo any reason not to pass all vcms?
 }
 
 func (tic *TermInCommittee) onElectedByViewChange(view primitives.View, viewChangeMessages []*interfaces.ViewChangeMessage) {
@@ -473,9 +493,12 @@ func (tic *TermInCommittee) checkPreparedLocally(blockHeight primitives.BlockHei
 		return errors.Wrap(err, "isPreprepared failed")
 	}
 
-	countPrepared := tic.countPrepared(blockHeight, view, blockHash)
-	isPrepared := countPrepared >= tic.QuorumSize-1
-	tic.logger.Debug("LHMSG Check if in PHASE PREPARED: stored %d of %d PREPARE messages", countPrepared, tic.QuorumSize-1)
+	//countPrepared := tic.countPrepared(blockHeight, view, blockHash)
+	//isPrepared := countPrepared >= tic.QuorumSize-1
+	prepareSenderIds := tic.storage.GetPrepareSendersIds(blockHeight, view, blockHash)
+	prepareSenderIds = append(prepareSenderIds, tic.myMemberId)
+	isPrepared := tic.isQuorum(prepareSenderIds)
+	//tic.logger.Debug("LHMSG Check if in PHASE PREPARED: stored %d of %d PREPARE messages", countPrepared, tic.QuorumSize-1) // todo - log
 	if isPrepared {
 		tic.onPreparedLocally(blockHeight, view, blockHash)
 	}
@@ -540,13 +563,13 @@ func (tic *TermInCommittee) checkCommitted(blockHeight primitives.BlockHeight, v
 		tic.logger.Debug("LHMSG RECEIVED COMMIT IGNORE - is not preprepared, err=%v", err)
 		return
 	}
-	commits, ok := tic.storage.GetCommitMessages(blockHeight, view, blockHash)
-	if !ok || len(commits) < tic.QuorumSize {
-		tic.logger.Debug("LHMSG RECEIVED COMMIT - stored %d of %d COMMIT messages", len(commits), tic.QuorumSize)
+	commitSenders := tic.storage.GetCommitSendersIds(blockHeight, view, blockHash) // todo - fetch commit messages here
+	if !tic.isQuorum(commitSenders) {
+		//tic.logger.Debug("LHMSG RECEIVED COMMIT - stored %d of %d COMMIT messages", len(commits), tic.QuorumSize) // todo log
 		return
 	}
 
-	tic.logger.Debug("LHMSG RECEIVED COMMIT - stored %d of %d COMMIT messages", len(commits), tic.QuorumSize)
+	//tic.logger.Debug("LHMSG RECEIVED COMMIT - stored %d of %d COMMIT messages", len(commits), tic.QuorumSize) // todo - log
 
 	ppm, ok := tic.storage.GetPreprepareMessage(blockHeight, view)
 	if !ok {
@@ -561,6 +584,12 @@ func (tic *TermInCommittee) checkCommitted(blockHeight primitives.BlockHeight, v
 	}
 
 	// --- At this point we are convinced that the block needs to be committed ---
+	commits, ok := tic.storage.GetCommitMessages(blockHeight, view, blockHash)
+	if !ok {
+		tic.logger.Debug("LHMSG RECEIVED COMMIT IGNORE - unable to retrieve commit messages from storage")
+		return
+	}
+
 	tic.sendCommitIfNotAlreadySent(commits, blockHeight, view, blockHash)
 	tic.committedBlock = ppm.Block()
 	tic.logger.Debug("LHFLOW LHMSG PHASE COMMITTED CommittedBlock set to H=%d, calling onCommit() with H=%d V=%d block-hash=%s num-commit-messages=%d",
@@ -635,15 +664,20 @@ func (tic *TermInCommittee) isViewChangeValid(expectedLeaderFromNewView primitiv
 		return errors.Wrapf(err, "keyManager.VerifyConsensusMessage failed")
 	}
 
-	if !proofsvalidator.ValidatePreparedProof(tic.State.Height(), vcmView, preparedProof, tic.QuorumSize, tic.keyManager, tic.committeeMembersMemberIds, func(view primitives.View) primitives.MemberId { return tic.calcLeaderMemberId(view) }) {
+	if !proofsvalidator.ValidatePreparedProof(tic.State.Height(), vcmView, preparedProof, func(ids []primitives.MemberId) bool { return tic.isQuorum(ids) }, tic.keyManager, tic.committeeMembersMemberIds, func(view primitives.View) primitives.MemberId { return tic.calcLeaderMemberId(view) }) {
 		return fmt.Errorf("failed ValidatePreparedProof()")
 	}
 	return nil
 }
 
 func (tic *TermInCommittee) validateViewChangeVotes(targetBlockHeight primitives.BlockHeight, targetView primitives.View, confirmations []*protocol.ViewChangeMessageContent) error {
-	if len(confirmations) < tic.QuorumSize {
-		return fmt.Errorf("there are %d confirmations but %d are needed", len(confirmations), tic.QuorumSize)
+	senders := make([]primitives.MemberId, len(confirmations))
+	for i := 0; i < len(senders); i++ {
+		senders[i] = confirmations[i].Sender().MemberId()
+	}
+	if !tic.isQuorum(senders) {
+		//return fmt.Errorf("there are %d confirmations but %d are needed", len(confirmations), tic.QuorumSize)
+		return fmt.Errorf("Not enough confirmations") // todo informative error
 	}
 
 	set := make(map[string]bool)

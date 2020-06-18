@@ -28,11 +28,12 @@ func VerifyBlockRefMessage(blockRef *protocol.BlockRef, sender *protocol.SenderS
 
 type CalcLeaderId = func(view primitives.View) primitives.MemberId
 
+// TODO does this verify no repetition of sender addresses?
 func ValidatePreparedProof(
 	targetHeight primitives.BlockHeight,
 	targetView primitives.View,
 	preparedProof *protocol.PreparedProof,
-	q int,
+	isQuorum func([]primitives.MemberId) bool,
 	keyManager interfaces.KeyManager,
 	membersIds []primitives.MemberId,
 	calcLeaderId CalcLeaderId) bool {
@@ -68,7 +69,14 @@ func ValidatePreparedProof(
 		return false
 	}
 
-	if len(pSenders) < q-1 {
+	pSendersMemberIds := make([]primitives.MemberId, len(pSenders)+1)
+	pSendersMemberIds[0] = ppSender.MemberId()
+	for i := 1; i <= len(pSenders); i++ {
+		pSendersMemberIds[i] = pSenders[i-1].MemberId()
+	}
+
+	//if len(pSenders) < q-1 {
+	if !isQuorum(pSendersMemberIds) { // todo -1?
 		return false
 	}
 

@@ -21,6 +21,14 @@ import (
 	"time"
 )
 
+func EvenWeights(n int) []uint {
+	weights := make([]uint, n)
+	for i := 0; i < n; i++ {
+		weights[i] = 1
+	}
+	return weights
+}
+
 func TestThatWeReachConsensusWhere1of4NodeIsByzantine(t *testing.T) {
 	test.WithContextWithTimeout(t, 15*time.Second, func(ctx context.Context) {
 		block := mocks.ABlock(interfaces.GenesisBlock)
@@ -45,7 +53,7 @@ func TestNetworkReachesConsensusWhen2of7NodesAreByzantine(t *testing.T) {
 
 		//block := mocks.ABlock(interfaces.GenesisBlock)
 		totalNodes := 7
-		honestNodes := quorum.CalcQuorumSize(totalNodes)
+		honestNodes := quorum.CalcQuorumWeight(EvenWeights(totalNodes))
 		net := network.
 			NewTestNetworkBuilder().
 			LogToConsole(t).

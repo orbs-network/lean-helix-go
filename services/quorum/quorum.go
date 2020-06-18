@@ -8,7 +8,18 @@ package quorum
 
 import "math"
 
-func CalcQuorumSize(committeeMembersCount int) int {
-	f := int(math.Floor(float64(committeeMembersCount-1) / 3))
-	return committeeMembersCount - f
+func CalcQuorumWeight(committeeWeights []uint) uint {
+	sum := uint(0)
+	for i := 0; i < len(committeeWeights); i++ {
+		sum += committeeWeights[i]
+	}
+
+	if sum == 0 {
+		return 1
+	}
+
+	return sum - uint(math.Floor(float64(sum-1)/3)) // TODO make this accurate!
+
+	//f := int(math.Floor(float64(committeeMembersCount-1) / 3))
+	//return committeeMembersCount - f
 }
