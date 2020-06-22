@@ -41,12 +41,12 @@ func NewLeanHelixTerm(ctx context.Context, logger logger.LHLogger, config *inter
 	myMemberId := config.Membership.MyMemberId()
 	messageFactory := messagesfactory.NewMessageFactory(config.InstanceId, config.KeyManager, myMemberId, randomSeed)
 
-	committeeMembers, committeeWeights, err := requestOrderedCommitteePersist(state, blockHeight, randomSeed, prevBlockRefTime, config, logger)
+	committeeMembers, err := requestOrderedCommitteePersist(state, blockHeight, randomSeed, prevBlockRefTime, config, logger)
 	if err != nil {
 		logger.Info("ERROR RECEIVING COMMITTEE: H=%d, error=%s", blockHeight, err)
 	}
 	// on ctx terminated requestOrderedCommitteePersist returns nil committee
-	isParticipating := isParticipatingInTerm(myMemberId, committeeMembers)
+	isParticipating := isParticipatingInTerm(myMemberId, termincommittee.GetMemberIds(committeeMembers))
 
 	if !isParticipating {
 		logger.Debug("OUT OF COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s, isParticipating=%t", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers), isParticipating)
@@ -54,20 +54,20 @@ func NewLeanHelixTerm(ctx context.Context, logger logger.LHLogger, config *inter
 	}
 
 	logger.Debug("RECEIVED COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, refTime=%d, members=%s, isParticipating=%t", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, prevBlockRefTime, termincommittee.ToCommitteeMembersStr(committeeMembers), isParticipating)
-	logger.ConsensusTrace("got committee for the current consensus round", nil, log.StringableSlice("committee", committeeMembers))
+	logger.ConsensusTrace("got committee for the current consensus round", nil, log.StringableSlice("committee", termincommittee.GetMemberIds(committeeMembers)))
 
-	termInCommittee := termincommittee.NewTermInCommittee(logger, config, state, messageFactory, electionTrigger, committeeMembers, committeeWeights, prevBlock, canBeFirstLeader, CommitsToProof(logger, config.KeyManager, onCommit))
+	termInCommittee := termincommittee.NewTermInCommittee(logger, config, state, messageFactory, electionTrigger, committeeMembers, prevBlock, canBeFirstLeader, CommitsToProof(logger, config.KeyManager, onCommit))
 	return &LeanHelixTerm{
 		ConsensusMessagesFilter: NewConsensusMessagesFilter(termInCommittee, config.KeyManager, randomSeed),
 		termInCommittee:         termInCommittee,
 	}
 }
 
-func requestOrderedCommitteePersist(s *state.State, blockHeight primitives.BlockHeight, randomSeed uint64, prevBlockReferenceTime primitives.TimestampSeconds, config *interfaces.Config, logger logger.LHLogger) ([]primitives.MemberId, []uint /* Weights (todo primitive) */, error) {
+func requestOrderedCommitteePersist(s *state.State, blockHeight primitives.BlockHeight, randomSeed uint64, prevBlockReferenceTime primitives.TimestampSeconds, config *interfaces.Config, logger logger.LHLogger) ([]interfaces.CommitteeMember, error) {
 	const maxView = primitives.View(math.MaxUint64)
 	ctx, err := s.Contexts.For(state.NewHeightView(blockHeight, maxView)) // term-level context
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	logger.Debug("Polling RequestOrderedCommittee: H=%d, interval-between-attempts=%d", blockHeight, CallCommitteeContractInterval)
 
@@ -76,12 +76,12 @@ func requestOrderedCommitteePersist(s *state.State, blockHeight primitives.Block
 
 		// exit on term update (node sync) or system shutdown
 		if ctx.Err() != nil {
-			return nil, nil, errors.Wrap(ctx.Err(), "requestOrderedCommitteePersist: context terminated")
+			return nil, errors.Wrap(ctx.Err(), "requestOrderedCommitteePersist: context terminated")
 		}
 
-		committeeMembers, committeeWeights, err := config.Membership.RequestOrderedCommittee(ctx, blockHeight, randomSeed, prevBlockReferenceTime)
+		committeeMembers, err := config.Membership.RequestOrderedCommittee(ctx, blockHeight, randomSeed, prevBlockReferenceTime)
 		if err == nil {
-			return committeeMembers, committeeWeights, nil
+			return committeeMembers, nil
 		}
 
 		// log every 500 failures

@@ -7,22 +7,75 @@
 package test
 
 import (
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/quorum"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
-func TestCommitteeQuorum(t *testing.T) { // todo more comprehensive
-	require.Equal(t, uint(3), quorum.CalcQuorumWeight([]uint{4}))
-	require.Equal(t, uint(4), quorum.CalcQuorumWeight([]uint{5}))
-	require.Equal(t, uint(5), quorum.CalcQuorumWeight([]uint{6}))
-	require.Equal(t, uint(5), quorum.CalcQuorumWeight([]uint{7}))
-	require.Equal(t, uint(6), quorum.CalcQuorumWeight([]uint{8}))
-	require.Equal(t, uint(7), quorum.CalcQuorumWeight([]uint{9}))
-	require.Equal(t, uint(7), quorum.CalcQuorumWeight([]uint{10}))
-	require.Equal(t, uint(8), quorum.CalcQuorumWeight([]uint{11}))
-	require.Equal(t, uint(9), quorum.CalcQuorumWeight([]uint{12}))
-	require.Equal(t, uint(15), quorum.CalcQuorumWeight([]uint{21}))
-	require.Equal(t, uint(15), quorum.CalcQuorumWeight([]uint{22}))
-	require.Equal(t, uint(67), quorum.CalcQuorumWeight([]uint{100}))
+func TestCommitteeQuorum(t *testing.T) {
+	require.Equal(t, uint(3), quorum.CalcQuorumWeight([]uint64{4}))
+	require.Equal(t, uint(4), quorum.CalcQuorumWeight([]uint64{5}))
+	require.Equal(t, uint(5), quorum.CalcQuorumWeight([]uint64{6}))
+	require.Equal(t, uint(5), quorum.CalcQuorumWeight([]uint64{7}))
+	require.Equal(t, uint(6), quorum.CalcQuorumWeight([]uint64{8}))
+	require.Equal(t, uint(7), quorum.CalcQuorumWeight([]uint64{9}))
+	require.Equal(t, uint(7), quorum.CalcQuorumWeight([]uint64{10}))
+	require.Equal(t, uint(8), quorum.CalcQuorumWeight([]uint64{11}))
+	require.Equal(t, uint(9), quorum.CalcQuorumWeight([]uint64{12}))
+	require.Equal(t, uint(15), quorum.CalcQuorumWeight([]uint64{21}))
+	require.Equal(t, uint(15), quorum.CalcQuorumWeight([]uint64{22}))
+	require.Equal(t, uint(67), quorum.CalcQuorumWeight([]uint64{100}))
+
+	require.Equal(t, uint(67), quorum.CalcQuorumWeight([]uint64{10, 90}))
+	require.Equal(t, uint(67), quorum.CalcQuorumWeight([]uint64{10, 20, 70}))
+}
+
+func GenCommittee(weights []uint64) []interfaces.CommitteeMember {
+	committee := make([]interfaces.CommitteeMember, len(weights))
+	for i := 0; i < len(weights); i++ {
+		committee[i] = interfaces.CommitteeMember{
+			Id:     []byte{byte(i)},
+			Weight: weights[i],
+		}
+	}
+	return committee
+}
+
+func TestIsQuorum(t *testing.T) {
+	committee := GenCommittee([]uint64{1, 6, 10, 23, 60})
+
+	ids := func(inds []int) []primitives.MemberId {
+		_ids := make([]primitives.MemberId, len(inds))
+		for i := 0; i < len(inds); i++ {
+			_ids[i] = committee[inds[i]].Id
+		}
+		return _ids
+	}
+
+	isQuorum, totalWeights, q := quorum.IsQuorum(ids([]int{0, 1, 2}), committee)
+	require.Equal(t, false, isQuorum)
+	require.Equal(t, uint(67), q)
+	require.Equal(t, uint(17), totalWeights)
+
+	isQuorum, totalWeights, q = quorum.IsQuorum(ids([]int{2, 3, 4}), committee)
+	require.Equal(t, true, isQuorum)
+	require.Equal(t, uint(67), q)
+	require.Equal(t, uint(93), totalWeights)
+
+	isQuorum, totalWeights, q = quorum.IsQuorum(ids([]int{0, 1, 4}), committee)
+	require.Equal(t, true, isQuorum)
+	require.Equal(t, uint(67), q)
+	require.Equal(t, uint(67), totalWeights)
+
+	isQuorum, totalWeights, q = quorum.IsQuorum(ids([]int{1, 4}), committee)
+	require.Equal(t, false, isQuorum)
+	require.Equal(t, uint(67), q)
+	require.Equal(t, uint(66), totalWeights)
+
+	isQuorum, totalWeights, q = quorum.IsQuorum(ids([]int{3, 3}), committee)
+	require.Equal(t, false, isQuorum)
+	require.Equal(t, uint(67), q)
+	require.Equal(t, uint(40), totalWeights)
 }

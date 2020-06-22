@@ -44,9 +44,9 @@ type TermInCommittee struct {
 	onCommit                        OnInCommitteeCommitCallback
 	messageFactory                  *messagesfactory.MessageFactory
 	myMemberId                      primitives.MemberId
-	committeeMembersMemberIds       []primitives.MemberId
-	otherCommitteeMembersMemberIds  []primitives.MemberId
-	committeeWeights                []uint /* todo primitive */
+	committeeMembers                []interfaces.CommitteeMember
+	otherCommitteeMemberIds         []primitives.MemberId
+	idToMember                      map[string]interfaces.CommitteeMember
 	preparedLocally                 *preparedLocallyProps
 	latestViewThatProcessedVCMOrNVM primitives.View
 	committedBlock                  interfaces.Block
@@ -56,7 +56,15 @@ type TermInCommittee struct {
 	State                           *state.State
 }
 
-func NewTermInCommittee(log L.LHLogger, config *interfaces.Config, state *state.State, messageFactory *messagesfactory.MessageFactory, electionTrigger interfaces.ElectionScheduler, committeeMembers []primitives.MemberId, committeeWeights []uint /* (todo primitive) */, prevBlock interfaces.Block, canBeFirstLeader bool, onCommit OnInCommitteeCommitCallback) *TermInCommittee {
+func GetMemberIds(members []interfaces.CommitteeMember) []primitives.MemberId {
+	ids := make([]primitives.MemberId, len(members))
+	for i := 0; i < len(members); i++ {
+		ids[i] = members[i].Id
+	}
+	return ids
+}
+
+func NewTermInCommittee(log L.LHLogger, config *interfaces.Config, state *state.State, messageFactory *messagesfactory.MessageFactory, electionTrigger interfaces.ElectionScheduler, committeeMembers []interfaces.CommitteeMember, prevBlock interfaces.Block, canBeFirstLeader bool, onCommit OnInCommitteeCommitCallback) *TermInCommittee {
 
 	keyManager := config.KeyManager
 	blockUtils := config.BlockUtils
@@ -66,9 +74,11 @@ func NewTermInCommittee(log L.LHLogger, config *interfaces.Config, state *state.
 
 	panicOnLessThanMinimumCommitteeMembers(committeeMembers)
 
-	otherCommitteeMembers := make([]primitives.MemberId, 0)
+	otherCommitteeMembers := make([]interfaces.CommitteeMember, 0)
+	idToMember := make(map[string]interfaces.CommitteeMember)
 	for _, member := range committeeMembers {
-		if !member.Equal(myMemberId) {
+		idToMember[member.Id.String()] = member
+		if !member.Id.Equal(myMemberId) {
 			otherCommitteeMembers = append(otherCommitteeMembers, member)
 		}
 	}
@@ -79,21 +89,20 @@ func NewTermInCommittee(log L.LHLogger, config *interfaces.Config, state *state.
 	log.Debug("NewTermInCommittee: committeeMembersCount=%d members=%s", len(committeeMembers), ToCommitteeMembersStr(committeeMembers))
 
 	result := &TermInCommittee{
-		State:                          state,
-		onCommit:                       onCommit,
-		prevBlock:                      prevBlock,
-		keyManager:                     keyManager,
-		communication:                  comm,
-		storage:                        config.Storage,
-		electionTrigger:                electionTrigger,
-		blockUtils:                     blockUtils,
-		committeeMembersMemberIds:      committeeMembers,
-		otherCommitteeMembersMemberIds: otherCommitteeMembers,
-		committeeWeights:               committeeWeights,
-		messageFactory:                 messageFactory,
-		myMemberId:                     myMemberId,
-		logger:                         log,
-		QuorumWeight:                   quorum.CalcQuorumWeight(committeeWeights),
+		State:                   state,
+		onCommit:                onCommit,
+		prevBlock:               prevBlock,
+		keyManager:              keyManager,
+		communication:           comm,
+		storage:                 config.Storage,
+		electionTrigger:         electionTrigger,
+		blockUtils:              blockUtils,
+		committeeMembers:        committeeMembers,
+		otherCommitteeMemberIds: GetMemberIds(otherCommitteeMembers),
+		idToMember:              idToMember,
+		messageFactory:          messageFactory,
+		myMemberId:              myMemberId,
+		logger:                  log,
 	}
 
 	result.startTerm(canBeFirstLeader)
@@ -111,17 +120,8 @@ type preparedLocallyProps struct {
 	latestView        primitives.View
 }
 
-func (tic *TermInCommittee) isQuorum(ids []primitives.MemberId) bool {
-	sum := uint(0)
-	for i := 0; i < len(ids); i++ {
-		for j := 0; j < len(tic.committeeMembersMemberIds); j++ { // TODO use map instead
-			if tic.committeeMembersMemberIds[j].Equal(ids[i]) {
-				sum += tic.committeeWeights[j]
-				break
-			}
-		} // TODO what if not found?
-	}
-	return sum >= tic.QuorumWeight
+func (tic *TermInCommittee) isQuorum(ids []primitives.MemberId) (bool, uint, uint) {
+	return quorum.IsQuorum(ids, tic.committeeMembers)
 }
 
 func (tic *TermInCommittee) getPreparedLocally() (v primitives.View, ok bool) {
@@ -143,16 +143,15 @@ func (tic *TermInCommittee) setPreparedLocally(v primitives.View) {
 }
 
 // Deprecated; this is only for logging, use log.StringableSlice instead
-func ToCommitteeMembersStr(members []primitives.MemberId) string {
-
+func ToCommitteeMembersStr(members []interfaces.CommitteeMember) string {
 	var strs []string
 	for _, member := range members {
-		strs = append(strs, Str(member))
+		strs = append(strs, Str(member.Id))
 	}
 	return strings.Join(strs, ", ")
 }
 
-func panicOnLessThanMinimumCommitteeMembers(committeeMembers []primitives.MemberId) {
+func panicOnLessThanMinimumCommitteeMembers(committeeMembers []interfaces.CommitteeMember) {
 	if len(committeeMembers) < LeanHelixHardMinimumCommitteeMembers {
 		panic(fmt.Sprintf("LH Received only %d committee members, but the hard minimum is %d", len(committeeMembers), LeanHelixHardMinimumCommitteeMembers))
 	}
@@ -221,7 +220,7 @@ func (tic *TermInCommittee) initView(newView primitives.View) (*state.HeightView
 	tic.electionTrigger.RegisterOnElection(current.Height(), current.View(), tic.moveToNextLeaderByElection)
 	tic.logger.Debug("LHFLOW initView() set leader to %s, incremented view to %d, election-timeout=%s, members=%s, goroutines#=%d",
 		Str(tic.calcLeaderMemberId(current.View())), current.View(), tic.electionTrigger.CalcTimeout(current.View()),
-		ToCommitteeMembersStr(tic.committeeMembersMemberIds), runtime.NumGoroutine())
+		ToCommitteeMembersStr(tic.committeeMembers), runtime.NumGoroutine())
 
 	return current, nil
 }
@@ -234,12 +233,12 @@ func (tic *TermInCommittee) Dispose() {
 }
 
 func (tic *TermInCommittee) calcLeaderMemberId(view primitives.View) primitives.MemberId {
-	return calcLeaderOfViewAndCommittee(view, tic.committeeMembersMemberIds)
+	return calcLeaderOfViewAndCommittee(view, tic.committeeMembers)
 }
 
-func calcLeaderOfViewAndCommittee(view primitives.View, committeeMembersMemberIds []primitives.MemberId) primitives.MemberId {
-	index := int(view) % len(committeeMembersMemberIds)
-	return committeeMembersMemberIds[index]
+func calcLeaderOfViewAndCommittee(view primitives.View, committeeMembers []interfaces.CommitteeMember) primitives.MemberId {
+	index := int(view) % len(committeeMembers)
+	return committeeMembers[index].Id
 }
 
 func (tic *TermInCommittee) moveToNextLeaderByElection(height primitives.BlockHeight, view primitives.View, updateMetrics interfaces.OnElectionCallback) {
@@ -255,11 +254,15 @@ func (tic *TermInCommittee) moveToNextLeaderByElection(height primitives.BlockHe
 		return
 	}
 
-	newLeader := tic.calcLeaderMemberId(currentHV.View())
-	tic.logger.Debug("LHFLOW moveToNextLeaderByElection() calculated newLeader=%s of V=%d", Str(newLeader), currentHV.View())
+	newLeaderId := tic.calcLeaderMemberId(currentHV.View())
+	tic.logger.Debug("LHFLOW moveToNextLeaderByElection() calculated newLeaderId=%s of V=%d", Str(newLeaderId), currentHV.View())
 	var preparedMessages *preparedmessages.PreparedMessages
 	if tic.preparedLocally != nil && tic.preparedLocally.isPreparedLocally {
-		preparedMessages = preparedmessages.ExtractPreparedMessages(currentHV.Height(), tic.preparedLocally.latestView, tic.storage, func(ids []primitives.MemberId) bool { return tic.isQuorum(ids) })
+		isQuorumFunc := func(ids []primitives.MemberId) bool {
+			isQuorum, _, _ := tic.isQuorum(ids)
+			return isQuorum
+		}
+		preparedMessages = preparedmessages.ExtractPreparedMessages(currentHV.Height(), tic.preparedLocally.latestView, tic.storage, isQuorumFunc)
 	}
 	vcm := tic.messageFactory.CreateViewChangeMessage(currentHV.Height(), currentHV.View(), preparedMessages)
 
@@ -269,25 +272,24 @@ func (tic *TermInCommittee) moveToNextLeaderByElection(height primitives.BlockHe
 		tic.checkElected(currentHV.Height(), currentHV.View())
 	} else {
 		tic.logger.Debug("LHFLOW LHMSG SEND VIEW_CHANGE to %s in moveToNextLeader() (I'M NOT LEADER: %s) (msg: H=%d V=%d sender=%s)",
-			newLeader, err, vcm.BlockHeight(), vcm.View(), Str(vcm.SenderMemberId()))
-		if sendErr := tic.sendConsensusMessageToSpecificMember(newLeader, vcm); sendErr != nil {
-			tic.logger.Info("LHMSG SEND VIEW_CHANGE to %s FAILED - %s", newLeader, sendErr)
+			newLeaderId, err, vcm.BlockHeight(), vcm.View(), Str(vcm.SenderMemberId()))
+		if sendErr := tic.sendConsensusMessageToSpecificMember(newLeaderId, vcm); sendErr != nil {
+			tic.logger.Info("LHMSG SEND VIEW_CHANGE to %s FAILED - %s", newLeaderId, sendErr)
 		}
 	}
 	if updateMetrics != nil {
-		updateMetrics(metrics.NewElectionMetrics(newLeader, currentHV.View()))
+		updateMetrics(metrics.NewElectionMetrics(newLeaderId, currentHV.View()))
 	}
 }
 
 func (tic *TermInCommittee) isLeader(memberId primitives.MemberId, v primitives.View) error {
-	return isLeaderOfViewForThisCommittee(memberId, v, tic.committeeMembersMemberIds)
+	return isLeaderOfViewForThisCommittee(memberId, v, tic.committeeMembers)
 }
 
-func isLeaderOfViewForThisCommittee(leaderCandidate primitives.MemberId, v primitives.View, committeeMembersMemberIds []primitives.MemberId) error {
-
-	calculatedLeader := calcLeaderOfViewAndCommittee(v, committeeMembersMemberIds)
-	if !leaderCandidate.Equal(calculatedLeader) {
-		return errors.Errorf("candidate leader is %s but calculated leader for V=%s is %s", Str(leaderCandidate), v, Str(calculatedLeader))
+func isLeaderOfViewForThisCommittee(leaderCandidateId primitives.MemberId, v primitives.View, committeeMembers []interfaces.CommitteeMember) error {
+	calculatedLeaderId := calcLeaderOfViewAndCommittee(v, committeeMembers)
+	if !leaderCandidateId.Equal(calculatedLeaderId) {
+		return errors.Errorf("candidate leader is %s but calculated leader for V=%s is %s", Str(leaderCandidateId), v, Str(calculatedLeaderId))
 	}
 	return nil
 }
@@ -308,11 +310,12 @@ func (tic *TermInCommittee) checkElected(height primitives.BlockHeight, view pri
 		senderIds[i] = vcms[i].SenderMemberId()
 	}
 
-	if !tic.isQuorum(senderIds) {
-		//tic.logger.Debug("checkElected() stored %d of %d VIEW_CHANGE messages", len(vcms), minimumNodes) // todo log
+	isQuorum, totalWeight, q := tic.isQuorum(senderIds)
+	if !isQuorum {
+		tic.logger.Debug("checkElected() stored %d VIEW_CHANGE with total weight of %d out of %d", len(vcms), totalWeight, q)
 		return
 	}
-	//tic.logger.Debug("checkElected() stored %d of %d VIEW_CHANGE messages", len(vcms), minimumNodes) // todo log
+	tic.logger.Debug("checkElected() stored %d VIEW_CHANGE messages with total weight of %d out of %d", len(vcms), totalWeight, q)
 	tic.logger.Debug("checkElected() has enough VIEW_CHANGE messages, proceeding to onElectedByViewChange() with V=%d", view)
 	//tic.onElectedByViewChange(view, vcms[:minimumNodes])
 	tic.onElectedByViewChange(view, vcms) // todo any reason not to pass all vcms?
@@ -360,8 +363,8 @@ func (tic *TermInCommittee) onElectedByViewChange(view primitives.View, viewChan
 func (tic *TermInCommittee) sendConsensusMessage(message interfaces.ConsensusMessage) error {
 	tic.logger.Debug("LHMSG SEND sendConsensusMessage() target=ALL, msgType=%v", message.MessageType())
 	rawMessage := interfaces.CreateConsensusRawMessage(message)
-	err := tic.communication.SendConsensusMessage(context.TODO(), tic.otherCommitteeMembersMemberIds, rawMessage)
-	tic.logger.ConsensusTrace("sent consensus message", err, log.Stringable("message-type", message.MessageType()), log.StringableSlice("recipients", tic.otherCommitteeMembersMemberIds))
+	err := tic.communication.SendConsensusMessage(context.TODO(), tic.otherCommitteeMemberIds, rawMessage)
+	tic.logger.ConsensusTrace("sent consensus message", err, log.Stringable("message-type", message.MessageType()), log.StringableSlice("recipients", tic.otherCommitteeMemberIds))
 	return err
 }
 
@@ -495,10 +498,11 @@ func (tic *TermInCommittee) checkPreparedLocally(blockHeight primitives.BlockHei
 
 	//countPrepared := tic.countPrepared(blockHeight, view, blockHash)
 	//isPrepared := countPrepared >= tic.QuorumSize-1
-	prepareSenderIds := tic.storage.GetPrepareSendersIds(blockHeight, view, blockHash)
-	prepareSenderIds = append(prepareSenderIds, tic.myMemberId)
-	isPrepared := tic.isQuorum(prepareSenderIds)
-	//tic.logger.Debug("LHMSG Check if in PHASE PREPARED: stored %d of %d PREPARE messages", countPrepared, tic.QuorumSize-1) // todo - log
+	quorumIds := tic.storage.GetPrepareSendersIds(blockHeight, view, blockHash)
+	preprepareMessage, _ := tic.storage.GetPreprepareMessage(blockHeight, view)
+	quorumIds = append(quorumIds, preprepareMessage.SenderMemberId())
+	isPrepared, totalWeights, q := tic.isQuorum(quorumIds)
+	tic.logger.Debug("LHMSG Check if in PHASE PREPARED: stored %d PREPARE messages with total weight of %d of %d", len(quorumIds), totalWeights, q) // todo need to be length of unique set of quorumIds
 	if isPrepared {
 		tic.onPreparedLocally(blockHeight, view, blockHash)
 	}
@@ -564,8 +568,9 @@ func (tic *TermInCommittee) checkCommitted(blockHeight primitives.BlockHeight, v
 		return
 	}
 	commitSenders := tic.storage.GetCommitSendersIds(blockHeight, view, blockHash) // todo - fetch commit messages here
-	if !tic.isQuorum(commitSenders) {
-		//tic.logger.Debug("LHMSG RECEIVED COMMIT - stored %d of %d COMMIT messages", len(commits), tic.QuorumSize) // todo log
+	isCommitted, totalWeights, q := tic.isQuorum(commitSenders)
+	if !isCommitted {
+		tic.logger.Debug("LHMSG RECEIVED COMMIT - stored %d COMMIT messages with total weight of %d of %d", len(commitSenders), totalWeights, q)
 		return
 	}
 
@@ -664,7 +669,11 @@ func (tic *TermInCommittee) isViewChangeValid(expectedLeaderFromNewView primitiv
 		return errors.Wrapf(err, "keyManager.VerifyConsensusMessage failed")
 	}
 
-	if !proofsvalidator.ValidatePreparedProof(tic.State.Height(), vcmView, preparedProof, func(ids []primitives.MemberId) bool { return tic.isQuorum(ids) }, tic.keyManager, tic.committeeMembersMemberIds, func(view primitives.View) primitives.MemberId { return tic.calcLeaderMemberId(view) }) {
+	isQuorumFunc := func(ids []primitives.MemberId) bool {
+		isQuorum, _, _ := tic.isQuorum(ids)
+		return isQuorum
+	}
+	if !proofsvalidator.ValidatePreparedProof(tic.State.Height(), vcmView, preparedProof, isQuorumFunc, tic.keyManager, GetMemberIds(tic.committeeMembers), func(view primitives.View) primitives.MemberId { return tic.calcLeaderMemberId(view) }) {
 		return fmt.Errorf("failed ValidatePreparedProof()")
 	}
 	return nil
@@ -675,9 +684,9 @@ func (tic *TermInCommittee) validateViewChangeVotes(targetBlockHeight primitives
 	for i := 0; i < len(senders); i++ {
 		senders[i] = confirmations[i].Sender().MemberId()
 	}
-	if !tic.isQuorum(senders) {
-		//return fmt.Errorf("there are %d confirmations but %d are needed", len(confirmations), tic.QuorumSize)
-		return fmt.Errorf("Not enough confirmations") // todo informative error
+	isQuorum, totalWeights, q := tic.isQuorum(senders)
+	if !isQuorum {
+		return fmt.Errorf("there are %d confirmations with total weight of %d but %d is needed", len(confirmations), totalWeights, q)
 	}
 
 	set := make(map[string]bool)

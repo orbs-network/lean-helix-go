@@ -157,7 +157,7 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 	}
 
 	// note: it is ok to disregard the order of committee here (hence randomSeed is not calculated) - the blockProof only checks for set of quorum COMMITS
-	committeeMembers, committeeWeights, err := lh.config.Membership.RequestCommitteeForBlockProof(ctx, blockreferencetime.GetBlockReferenceTime(prevBlock))
+	committeeMembers, err := lh.config.Membership.RequestCommitteeForBlockProof(ctx, blockreferencetime.GetBlockReferenceTime(prevBlock))
 	if err != nil { // support for failure in committee calculation
 		return err
 	}
@@ -165,7 +165,7 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 
 	sendersIterator := blockProof.NodesIterator()
 	set := make(map[storage.MemberIdStr]bool)
-	sendersTotalWeight := uint(0)
+	senderIds := make([]primitives.MemberId, 0)
 	for {
 		if !sendersIterator.HasNext() {
 			break
@@ -181,24 +181,17 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 			return errors.Errorf("ValidateBlockConsensus: Could not read memberId=%s from set", termincommittee.Str(memberId))
 		}
 
-		if !proofsvalidator.IsInMembers(committeeMembers, memberId) {
+		if !proofsvalidator.IsInMembers(termincommittee.GetMemberIds(committeeMembers), memberId) {
 			return errors.Errorf("ValidateBlockConsensus: Id=%s which signed block with H=%d is not part of committee of that block height. Committee=%s", termincommittee.Str(memberId), blockHeight, termincommittee.ToCommitteeMembersStr(committeeMembers))
 		}
 
 		set[storage.MemberIdStr(memberId)] = true
-
-		// todo this logic is repeated
-		for i := 0; i < len(committeeMembers); i++ {
-			if committeeMembers[i].Equal(memberId) {
-				sendersTotalWeight += committeeWeights[i]
-				break
-			}
-		} // todo what if not found?
+		senderIds = append(senderIds, memberId)
 	}
 
 	// todo this logic is repeated
-	q := quorum.CalcQuorumWeight(committeeWeights)
-	if sendersTotalWeight < q {
+	isQuorum, sendersTotalWeight, q := quorum.IsQuorum(senderIds, committeeMembers)
+	if !isQuorum {
 		return errors.Errorf("ValidateBlockConsensus: sendersTotalWeight=%d is less than quorum=%d (committeeMembersCount=%d)", sendersTotalWeight, q, len(committeeMembers))
 	}
 

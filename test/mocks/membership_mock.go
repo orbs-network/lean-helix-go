@@ -8,6 +8,7 @@ package mocks
 
 import (
 	"context"
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"sort"
 )
@@ -30,35 +31,37 @@ func (m *FakeMembership) MyMemberId() primitives.MemberId {
 	return m.myMemberId
 }
 
-func (m *FakeMembership) RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64, prevBlockReferenceTime primitives.TimestampSeconds) ([]primitives.MemberId, []uint /* weights todo primitives */, error) {
-	result := m.discovery.AllCommunicationsMemberIds()
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].KeyForMap() < result[j].KeyForMap()
+func (m *FakeMembership) RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64, prevBlockReferenceTime primitives.TimestampSeconds) ([]interfaces.CommitteeMember, error) {
+	memberIds := m.discovery.AllCommunicationsMemberIds()
+	sort.Slice(memberIds, func(i, j int) bool {
+		return memberIds[i].KeyForMap() < memberIds[j].KeyForMap()
 	})
 
-	weights := make([]uint, len(result))
-	for i := 0; i < len(weights); i++ {
-		weights[i] = 1 // todo configurable weight
+	committeeMembers := make([]interfaces.CommitteeMember, len(memberIds))
+	for i := 0; i < len(committeeMembers); i++ {
+		committeeMembers[i].Weight = 1 // todo configurable weight
+		committeeMembers[i].Id = memberIds[i]
 	}
 
 	// we want to replace the leader every height,
 	// we just shift all the ordered nodes according to the given height
 	if m.orderCommitteeByHeight {
 		for i := 0; i < int(blockHeight); i++ {
-			result = append(result[1:], result[0]) // shift left (circular)
+			committeeMembers = append(committeeMembers[1:], committeeMembers[0]) // shift left (circular)
 		}
 	}
 
-	return result, weights, nil
+	return committeeMembers, nil
 }
 
-func (m *FakeMembership) RequestCommitteeForBlockProof(ctx context.Context, prevBlockReferenceTime primitives.TimestampSeconds) ([]primitives.MemberId, []uint /* weights todo primitives */, error) {
-	result := m.discovery.AllCommunicationsMemberIds()
+func (m *FakeMembership) RequestCommitteeForBlockProof(ctx context.Context, prevBlockReferenceTime primitives.TimestampSeconds) ([]interfaces.CommitteeMember, error) {
+	memberIds := m.discovery.AllCommunicationsMemberIds()
 
-	weights := make([]uint, len(result))
-	for i := 0; i < len(weights); i++ {
-		weights[i] = 1 // todo configurable weight
+	committeeMembers := make([]interfaces.CommitteeMember, len(memberIds))
+	for i := 0; i < len(committeeMembers); i++ {
+		committeeMembers[i].Weight = 1 // todo configurable weight
+		committeeMembers[i].Id = memberIds[i]
 	}
 
-	return result, weights, nil
+	return committeeMembers, nil
 }

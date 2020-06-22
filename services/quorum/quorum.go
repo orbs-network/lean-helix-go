@@ -6,12 +6,24 @@
 
 package quorum
 
-import "math"
+import (
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"math"
+)
 
-func CalcQuorumWeight(committeeWeights []uint) uint {
+func GetWeights(members []interfaces.CommitteeMember) []uint64 {
+	weights := make([]uint64, len(members))
+	for i := 0; i < len(members); i++ {
+		weights[i] = members[i].Weight
+	}
+	return weights
+}
+
+func CalcQuorumWeight(committeeWeights []uint64) uint {
 	sum := uint(0)
 	for i := 0; i < len(committeeWeights); i++ {
-		sum += committeeWeights[i]
+		sum += uint(committeeWeights[i])
 	}
 
 	if sum == 0 {
@@ -22,4 +34,21 @@ func CalcQuorumWeight(committeeWeights []uint) uint {
 
 	//f := int(math.Floor(float64(committeeMembersCount-1) / 3))
 	//return committeeMembersCount - f
+}
+
+func IsQuorum(committeeSubset []primitives.MemberId, allCommitteeMembers []interfaces.CommitteeMember) (bool, uint, uint) {
+	subsetIdsSet := make(map[string]bool)
+	for i := 0; i < len(committeeSubset); i++ {
+		subsetIdsSet[committeeSubset[i].String()] = true
+	}
+
+	sum := uint(0)
+	for i := 0; i < len(allCommitteeMembers); i++ {
+		if subsetIdsSet[allCommitteeMembers[i].Id.String()] {
+			sum += uint(allCommitteeMembers[i].Weight)
+		}
+	}
+
+	q := CalcQuorumWeight(GetWeights(allCommitteeMembers))
+	return sum >= q, sum, q
 }

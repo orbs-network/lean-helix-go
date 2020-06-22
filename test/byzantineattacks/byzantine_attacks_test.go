@@ -21,8 +21,8 @@ import (
 	"time"
 )
 
-func EvenWeights(n int) []uint {
-	weights := make([]uint, n)
+func EvenWeights(n int) []uint64 {
+	weights := make([]uint64, n)
 	for i := 0; i < n; i++ {
 		weights[i] = 1
 	}

@@ -45,10 +45,15 @@ type Communication interface {
 	SendConsensusMessage(ctx context.Context, recipients []primitives.MemberId, message *ConsensusRawMessage) error
 }
 
+type CommitteeMember struct {
+	Id     primitives.MemberId
+	Weight uint64
+}
+
 type Membership interface {
 	MyMemberId() primitives.MemberId
-	RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64, prevBlockReferenceTime primitives.TimestampSeconds) ([]primitives.MemberId, []uint /* Weights (todo primitive) */, error)
-	RequestCommitteeForBlockProof(ctx context.Context, prevBlockReferenceTime primitives.TimestampSeconds) ([]primitives.MemberId, []uint /* Weights (todo primitive) */, error)
+	RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64, prevBlockReferenceTime primitives.TimestampSeconds) ([]CommitteeMember, error)
+	RequestCommitteeForBlockProof(ctx context.Context, prevBlockReferenceTime primitives.TimestampSeconds) ([]CommitteeMember, error)
 }
 
 type BlockUtils interface {
