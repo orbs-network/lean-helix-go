@@ -30,10 +30,7 @@ func CalcQuorumWeight(committeeWeights []uint64) uint {
 		return 1
 	}
 
-	return sum - uint(math.Floor(float64(sum-1)/3)) // TODO make this accurate!
-
-	//f := int(math.Floor(float64(committeeMembersCount-1) / 3))
-	//return committeeMembersCount - f
+	return sum - uint(math.Floor(float64(sum-1)/3))
 }
 
 func IsQuorum(committeeSubset []primitives.MemberId, allCommitteeMembers []interfaces.CommitteeMember) (bool, uint, uint) {
