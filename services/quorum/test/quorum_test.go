@@ -74,8 +74,8 @@ func TestIsQuorum(t *testing.T) {
 	require.Equal(t, uint(67), q)
 	require.Equal(t, uint(66), totalWeights)
 
-	isQuorum, totalWeights, q = quorum.IsQuorum(ids([]int{3, 3}), committee)
+	isQuorum, totalWeights, q = quorum.IsQuorum(ids([]int{4, 4}), committee)
 	require.Equal(t, false, isQuorum)
 	require.Equal(t, uint(67), q)
-	require.Equal(t, uint(40), totalWeights)
+	require.Equal(t, uint(60), totalWeights)
 }
