@@ -34,10 +34,10 @@ func TestCommitteeQuorum(t *testing.T) {
 
 func genCommittee(weights []uint64) []interfaces.CommitteeMember {
 	committee := make([]interfaces.CommitteeMember, len(weights))
-	for i := 0; i < len(weights); i++ {
+	for i, weight := range weights {
 		committee[i] = interfaces.CommitteeMember{
 			Id:     []byte{byte(i)},
-			Weight: weights[i],
+			Weight: weight,
 		}
 	}
 	return committee
@@ -48,8 +48,8 @@ func TestIsQuorum(t *testing.T) {
 
 	ids := func(inds []int) []primitives.MemberId {
 		_ids := make([]primitives.MemberId, len(inds))
-		for i := 0; i < len(inds); i++ {
-			_ids[i] = committee[inds[i]].Id
+		for i, ind := range inds {
+			_ids[i] = committee[ind].Id
 		}
 		return _ids
 	}

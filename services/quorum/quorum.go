@@ -14,16 +14,16 @@ import (
 
 func GetWeights(members []interfaces.CommitteeMember) []uint64 {
 	weights := make([]uint64, len(members))
-	for i := 0; i < len(members); i++ {
-		weights[i] = members[i].Weight
+	for i, member := range members {
+		weights[i] = member.Weight
 	}
 	return weights
 }
 
 func CalcQuorumWeight(committeeWeights []uint64) uint {
 	sum := uint(0)
-	for i := 0; i < len(committeeWeights); i++ {
-		sum += uint(committeeWeights[i])
+	for _, weight := range committeeWeights {
+		sum += uint(weight)
 	}
 
 	if sum == 0 {
@@ -35,14 +35,14 @@ func CalcQuorumWeight(committeeWeights []uint64) uint {
 
 func IsQuorum(committeeSubset []primitives.MemberId, allCommitteeMembers []interfaces.CommitteeMember) (bool, uint, uint) {
 	subsetIdsSet := make(map[string]bool)
-	for i := 0; i < len(committeeSubset); i++ {
-		subsetIdsSet[committeeSubset[i].String()] = true
+	for _, id := range committeeSubset {
+		subsetIdsSet[id.String()] = true
 	}
 
 	sum := uint(0)
-	for i := 0; i < len(allCommitteeMembers); i++ {
-		if subsetIdsSet[allCommitteeMembers[i].Id.String()] {
-			sum += uint(allCommitteeMembers[i].Weight)
+	for _, member := range allCommitteeMembers {
+		if subsetIdsSet[member.Id.String()] {
+			sum += uint(member.Weight)
 		}
 	}
 
