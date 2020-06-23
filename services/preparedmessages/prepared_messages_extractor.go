@@ -17,7 +17,6 @@ type PreparedMessages struct {
 	PrepareMessages   []*interfaces.PrepareMessage
 }
 
-// TODO are there missing verifications here? verify no repeated addresses
 func ExtractPreparedMessages(blockHeight primitives.BlockHeight, latestPreparedView primitives.View, storage interfaces.Storage, committeeMembers []interfaces.CommitteeMember) *PreparedMessages {
 
 	ppm, ok := storage.GetPreprepareFromView(blockHeight, latestPreparedView)
