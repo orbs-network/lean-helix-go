@@ -69,14 +69,13 @@ func ValidatePreparedProof(
 		return false
 	}
 
-	pSendersMemberIds := make([]primitives.MemberId, len(pSenders)+1)
-	pSendersMemberIds[0] = ppSender.MemberId()
-	for i := 1; i <= len(pSenders); i++ {
-		pSendersMemberIds[i] = pSenders[i-1].MemberId()
+	senderIds := make([]primitives.MemberId, len(pSenders))
+	for i := 0; i < len(pSenders); i++ {
+		senderIds[i] = pSenders[i].MemberId()
 	}
+	senderIds = append(senderIds, ppSender.MemberId())
 
-	//if len(pSenders) < q-1 {
-	if !isQuorum(pSendersMemberIds) { // todo -1?
+	if !isQuorum(senderIds) {
 		return false
 	}
 
