@@ -24,18 +24,14 @@ func ExtractPreparedMessages(blockHeight primitives.BlockHeight, latestPreparedV
 		return nil
 	}
 
-	prepareMessages, ok := storage.GetPrepareMessages(blockHeight, latestPreparedView, ppm.Content().SignedHeader().BlockHash())
-	if !ok {
+	senderIds := storage.GetPrepareSendersIds(blockHeight, latestPreparedView, ppm.Content().SignedHeader().BlockHash())
+	senderIds = append(senderIds, ppm.SenderMemberId())
+	if !isQuorum(senderIds) {
 		return nil
 	}
 
-	senderIds := make([]primitives.MemberId, len(prepareMessages))
-	for i := 0; i < len(prepareMessages); i++ {
-		senderIds[i] = prepareMessages[i].SenderMemberId()
-	}
-	senderIds = append(senderIds, ppm.SenderMemberId())
-
-	if !isQuorum(senderIds) {
+	prepareMessages, ok := storage.GetPrepareMessages(blockHeight, latestPreparedView, ppm.Content().SignedHeader().BlockHash())
+	if !ok {
 		return nil
 	}
 
