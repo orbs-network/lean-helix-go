@@ -69,8 +69,8 @@ func ValidatePreparedProof(
 	}
 
 	senderIds := make([]primitives.MemberId, len(pSenders))
-	for i := 0; i < len(pSenders); i++ {
-		senderIds[i] = pSenders[i].MemberId()
+	for i, pSender := range pSenders {
+		senderIds[i] = pSender.MemberId()
 	}
 	senderIds = append(senderIds, ppSender.MemberId())
 
