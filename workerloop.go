@@ -189,7 +189,6 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 		senderIds = append(senderIds, memberId)
 	}
 
-	// todo this logic is repeated
 	isQuorum, sendersTotalWeight, q := quorum.IsQuorum(senderIds, committeeMembers)
 	if !isQuorum {
 		return errors.Errorf("ValidateBlockConsensus: sendersTotalWeight=%d is less than quorum=%d (committeeMembersCount=%d)", sendersTotalWeight, q, len(committeeMembers))
