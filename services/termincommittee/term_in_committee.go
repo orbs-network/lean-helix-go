@@ -567,7 +567,7 @@ func (tic *TermInCommittee) checkCommitted(blockHeight primitives.BlockHeight, v
 		tic.logger.Debug("LHMSG RECEIVED COMMIT IGNORE - is not preprepared, err=%v", err)
 		return
 	}
-	commitSenders := tic.storage.GetCommitSendersIds(blockHeight, view, blockHash) // todo - fetch commit messages here
+	commitSenders := tic.storage.GetCommitSendersIds(blockHeight, view, blockHash)
 	isCommitted, totalWeights, q := tic.isQuorum(commitSenders)
 	if !isCommitted {
 		tic.logger.Debug("LHMSG RECEIVED COMMIT - stored %d COMMIT messages with total weight of %d of %d", len(commitSenders), totalWeights, q)
