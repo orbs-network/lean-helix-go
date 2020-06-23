@@ -8,14 +8,15 @@ package proofsvalidator
 
 import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/services/quorum"
 	"github.com/orbs-network/lean-helix-go/services/storage"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 )
 
-func IsInMembers(membersIds []primitives.MemberId, memberId primitives.MemberId) bool {
-	for _, currentId := range membersIds {
-		if currentId.Equal(memberId) {
+func IsInMembers(members []interfaces.CommitteeMember, memberId primitives.MemberId) bool {
+	for _, currentMember := range members {
+		if currentMember.Id.Equal(memberId) {
 			return true
 		}
 	}
@@ -32,9 +33,8 @@ func ValidatePreparedProof(
 	targetHeight primitives.BlockHeight,
 	targetView primitives.View,
 	preparedProof *protocol.PreparedProof,
-	isQuorum func([]primitives.MemberId) bool,
 	keyManager interfaces.KeyManager,
-	membersIds []primitives.MemberId,
+	committeeMembers []interfaces.CommitteeMember,
 	calcLeaderId CalcLeaderId) bool {
 	if preparedProof == nil || len(preparedProof.Raw()) == 0 {
 		return true
@@ -74,7 +74,8 @@ func ValidatePreparedProof(
 	}
 	senderIds = append(senderIds, ppSender.MemberId())
 
-	if !isQuorum(senderIds) {
+	isQuorum, _, _ := quorum.IsQuorum(senderIds, committeeMembers)
+	if !isQuorum {
 		return false
 	}
 
@@ -111,7 +112,7 @@ func ValidatePreparedProof(
 			return false
 		}
 
-		if IsInMembers(membersIds, pSenderMemberId) == false {
+		if IsInMembers(committeeMembers, pSenderMemberId) == false {
 			return false
 		}
 

@@ -669,11 +669,7 @@ func (tic *TermInCommittee) isViewChangeValid(expectedLeaderFromNewView primitiv
 		return errors.Wrapf(err, "keyManager.VerifyConsensusMessage failed")
 	}
 
-	isQuorumFunc := func(ids []primitives.MemberId) bool {
-		isQuorum, _, _ := tic.isQuorum(ids)
-		return isQuorum
-	}
-	if !proofsvalidator.ValidatePreparedProof(tic.State.Height(), vcmView, preparedProof, isQuorumFunc, tic.keyManager, GetMemberIds(tic.committeeMembers), func(view primitives.View) primitives.MemberId { return tic.calcLeaderMemberId(view) }) {
+	if !proofsvalidator.ValidatePreparedProof(tic.State.Height(), vcmView, preparedProof, tic.keyManager, tic.committeeMembers, func(view primitives.View) primitives.MemberId { return tic.calcLeaderMemberId(view) }) {
 		return fmt.Errorf("failed ValidatePreparedProof()")
 	}
 	return nil

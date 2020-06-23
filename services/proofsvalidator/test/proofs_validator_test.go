@@ -13,10 +13,20 @@ import (
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/stretchr/testify/require"
-	"math"
 	"math/rand"
 	"testing"
 )
+
+func genMembers(ids []primitives.MemberId) []interfaces.CommitteeMember {
+	members := make([]interfaces.CommitteeMember, len(ids))
+	for i := 0; i < len(ids); i++ {
+		members[i] = interfaces.CommitteeMember{
+			Id:     ids[i],
+			Weight: 1,
+		}
+	}
+	return members
+}
 
 func TestProofsValidator(t *testing.T) {
 	instanceId := primitives.InstanceId(rand.Uint64())
@@ -32,10 +42,8 @@ func TestProofsValidator(t *testing.T) {
 	node3KeyManager := mocks.NewMockKeyManager(node3Id)
 
 	membersIds := []primitives.MemberId{leaderId, node1Id, node2Id, node3Id}
+	committeeMembers := genMembers(membersIds)
 
-	nodeCount := 4
-	f := int(math.Floor(float64(nodeCount) / 3))
-	q := nodeCount - f
 	const blockHeight = 0
 	const view = 0
 	const targetBlockHeight = blockHeight
@@ -56,7 +64,7 @@ func TestProofsValidator(t *testing.T) {
 	}
 
 	t.Run("TestProofsValidatorHappyPath", func(t *testing.T) {
-		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, func(ids []primitives.MemberId) bool { return len(ids) >= q /* todo why -1 */ }, myKeyManager, membersIds, calcLeaderId)
+		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, myKeyManager, committeeMembers, calcLeaderId)
 		require.True(t, result, "Did not approve a well-formed proof")
 	})
 
@@ -67,18 +75,18 @@ func TestProofsValidator(t *testing.T) {
 			{KeyManager: node3KeyManager, MemberId: node3Id},
 		}
 		preparedProofWithoutPP := builders.CreatePreparedProof(instanceId, nil, pSigners, blockHeight, view, blockHash)
-		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithoutPP, func(ids []primitives.MemberId) bool { return len(ids) >= q }, myKeyManager, membersIds, calcLeaderId)
+		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithoutPP, myKeyManager, committeeMembers, calcLeaderId)
 		require.False(t, result, "Did not reject a proof that did not have a preprepare message")
 	})
 
 	t.Run("TestProofsValidatorWithNoPrepares", func(t *testing.T) {
 		preparedProofWithoutP := builders.CreatePreparedProof(instanceId, leaderMessageSigner, nil, blockHeight, view, blockHash)
-		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithoutP, func(ids []primitives.MemberId) bool { return len(ids) >= q }, myKeyManager, membersIds, calcLeaderId)
+		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithoutP, myKeyManager, committeeMembers, calcLeaderId)
 		require.False(t, result, "Did not reject a proof that did not have prepare messages")
 	})
 
 	t.Run("TestProofsValidatorWithNoProof", func(t *testing.T) {
-		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, nil, func(ids []primitives.MemberId) bool { return len(ids) >= q }, myKeyManager, membersIds, calcLeaderId)
+		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, nil, myKeyManager, committeeMembers, calcLeaderId)
 		require.True(t, result, "Did not approve a nil proof")
 	})
 
@@ -87,34 +95,34 @@ func TestProofsValidator(t *testing.T) {
 			{KeyManager: node1KeyManager, MemberId: node1Id},
 		}
 		preparedProofWithNotEnoughP := builders.CreatePreparedProof(instanceId, leaderMessageSigner, pSigners, blockHeight, view, blockHash)
-		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithNotEnoughP, func(ids []primitives.MemberId) bool { return len(ids) >= q }, myKeyManager, membersIds, calcLeaderId)
+		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithNotEnoughP, myKeyManager, committeeMembers, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with not enough prepares")
 	})
 
 	t.Run("TestProofsValidatorWithBadPreprepareSignature", func(t *testing.T) {
 		rejectingKeyManager := mocks.NewMockKeyManager(myMemberId, leaderId)
-		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, func(ids []primitives.MemberId) bool { return len(ids) >= q }, rejectingKeyManager, membersIds, calcLeaderId)
+		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, rejectingKeyManager, committeeMembers, calcLeaderId)
 		require.False(t, result, "Did not reject a proof that did not pass preprepare signature validation")
 	})
 
 	t.Run("TestProofsValidatorWithBadPrepareSignature", func(t *testing.T) {
 		rejectingKeyManager := mocks.NewMockKeyManager(myMemberId, node2Id)
-		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, func(ids []primitives.MemberId) bool { return len(ids) >= q }, rejectingKeyManager, membersIds, calcLeaderId)
+		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, rejectingKeyManager, committeeMembers, calcLeaderId)
 		require.False(t, result, "Did not reject a proof that did not pass prepare signature validation")
 	})
 
 	t.Run("TestProofsValidatorWithMismatchedHeight", func(t *testing.T) {
-		result := proofsvalidator.ValidatePreparedProof(666, targetView, goodPrepareProof, func(ids []primitives.MemberId) bool { return len(ids) >= q }, myKeyManager, membersIds, calcLeaderId)
+		result := proofsvalidator.ValidatePreparedProof(666, targetView, goodPrepareProof, myKeyManager, committeeMembers, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with mismatching blockHeight")
 	})
 
 	t.Run("TestProofsValidatorWithTheSameView", func(t *testing.T) {
-		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, view, goodPrepareProof, func(ids []primitives.MemberId) bool { return len(ids) >= q }, myKeyManager, membersIds, calcLeaderId)
+		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, view, goodPrepareProof, myKeyManager, committeeMembers, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with equal targetView")
 	})
 
 	t.Run("TestProofsValidatorWithTheSmallerView", func(t *testing.T) {
-		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView-1, goodPrepareProof, func(ids []primitives.MemberId) bool { return len(ids) >= q }, myKeyManager, membersIds, calcLeaderId)
+		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView-1, goodPrepareProof, myKeyManager, committeeMembers, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with smaller targetView")
 	})
 
@@ -127,7 +135,7 @@ func TestProofsValidator(t *testing.T) {
 			{KeyManager: nonMemberKeyManager, MemberId: nonMemberId},
 		}
 		preparedProof := builders.CreatePreparedProof(instanceId, leaderMessageSigner, pSigners, blockHeight, view, blockHash)
-		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProof, func(ids []primitives.MemberId) bool { return len(ids) >= q }, myKeyManager, membersIds, calcLeaderId)
+		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProof, myKeyManager, committeeMembers, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with a none member")
 	})
 
@@ -140,7 +148,7 @@ func TestProofsValidator(t *testing.T) {
 		ppSigner := &builders.MessageSigner{KeyManager: node1KeyManager, MemberId: node1Id}
 
 		preparedProofWithPFromLeader := builders.CreatePreparedProof(instanceId, ppSigner, pSigners, blockHeight, view, blockHash)
-		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithPFromLeader, func(ids []primitives.MemberId) bool { return len(ids) >= q }, myKeyManager, membersIds, calcLeaderId)
+		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithPFromLeader, myKeyManager, committeeMembers, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with a prepare from the leader")
 	})
 
@@ -148,7 +156,7 @@ func TestProofsValidator(t *testing.T) {
 		calcLeaderId := func(view primitives.View) primitives.MemberId {
 			return primitives.MemberId("Some other node Id")
 		}
-		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, func(ids []primitives.MemberId) bool { return len(ids) >= q }, myKeyManager, membersIds, calcLeaderId)
+		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, myKeyManager, committeeMembers, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with a mismatching view to leader")
 
 	})
@@ -169,7 +177,7 @@ func TestProofsValidator(t *testing.T) {
 				builders.APrepareMessage(instanceId, node3KeyManager, node3Id, blockHeight, view, block),
 			})
 
-		actualGood := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, func(ids []primitives.MemberId) bool { return len(ids) >= q }, myKeyManager, membersIds, calcLeaderId)
+		actualGood := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, myKeyManager, committeeMembers, calcLeaderId)
 		require.True(t, actualGood, "Did not approve a valid proof")
 
 		// Mismatching blockHeight //
@@ -181,7 +189,7 @@ func TestProofsValidator(t *testing.T) {
 				builders.APrepareMessage(instanceId, node3KeyManager, node3Id, blockHeight, view, block),
 			})
 
-		actualBadHeight := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, badHeightProof, func(ids []primitives.MemberId) bool { return len(ids) >= q }, myKeyManager, membersIds, calcLeaderId)
+		actualBadHeight := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, badHeightProof, myKeyManager, committeeMembers, calcLeaderId)
 		require.False(t, actualBadHeight, "Did not reject mismatching blockHeight")
 
 		// Mismatching view //
@@ -193,7 +201,7 @@ func TestProofsValidator(t *testing.T) {
 				builders.APrepareMessage(instanceId, node3KeyManager, node3Id, blockHeight, view, block),
 			})
 
-		actualBadView := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, badViewProof, func(ids []primitives.MemberId) bool { return len(ids) >= q }, myKeyManager, membersIds, calcLeaderId)
+		actualBadView := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, badViewProof, myKeyManager, committeeMembers, calcLeaderId)
 		require.False(t, actualBadView, "Did not reject mismatching view")
 
 		// Mismatching blockHash //
@@ -206,7 +214,7 @@ func TestProofsValidator(t *testing.T) {
 				builders.APrepareMessage(instanceId, node3KeyManager, node3Id, blockHeight, view, block),
 			})
 
-		actualBadBlockHash := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, badBlockHashProof, func(ids []primitives.MemberId) bool { return len(ids) >= q }, myKeyManager, membersIds, calcLeaderId)
+		actualBadBlockHash := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, badBlockHashProof, myKeyManager, committeeMembers, calcLeaderId)
 		require.False(t, actualBadBlockHash, "Did not reject mismatching block hash")
 	})
 
@@ -217,7 +225,7 @@ func TestProofsValidator(t *testing.T) {
 			{KeyManager: node1KeyManager, MemberId: node1Id},
 		}
 		preparedProofWithDuplicatePSenderId := builders.CreatePreparedProof(instanceId, leaderMessageSigner, pSigners, blockHeight, view, blockHash)
-		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithDuplicatePSenderId, func(ids []primitives.MemberId) bool { return len(ids) >= q }, myKeyManager, membersIds, calcLeaderId)
+		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithDuplicatePSenderId, myKeyManager, committeeMembers, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with duplicate sender Id")
 	})
 }
