@@ -14,6 +14,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
+	"github.com/orbs-network/lean-helix-go/testhelpers"
 	"github.com/stretchr/testify/require"
 	"math/rand"
 	"strconv"
@@ -28,6 +29,8 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	leaderId := primitives.MemberId(strconv.Itoa(rand.Int()))
 	senderId1 := primitives.MemberId(strconv.Itoa(rand.Int()))
 	senderId2 := primitives.MemberId(strconv.Itoa(rand.Int()))
+	otherMemberId := primitives.MemberId(strconv.Itoa(rand.Int()))
+	committeeMembers := testhelpers.GenMembers([]primitives.MemberId{leaderId, senderId1, senderId2, otherMemberId})
 	leaderKeyManager := mocks.NewMockKeyManager(primitives.MemberId(leaderId))
 	sender1KeyManager := mocks.NewMockKeyManager(primitives.MemberId(senderId1))
 	sender2KeyManager := mocks.NewMockKeyManager(primitives.MemberId(senderId2))
@@ -46,13 +49,11 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 			PrepareMessages:   []*interfaces.PrepareMessage{pm1, pm2},
 		}
 
-		q := 3
-
 		xpp := expectedProof.PreprepareMessage.Raw()
 		xp0 := expectedProof.PrepareMessages[0].Raw()
 		xp1 := expectedProof.PrepareMessages[1].Raw()
 
-		actualProof := preparedmessages.ExtractPreparedMessages(blockHeight, view, s, func(senders []primitives.MemberId) bool { return len(senders) >= q })
+		actualProof := preparedmessages.ExtractPreparedMessages(blockHeight, view, s, committeeMembers)
 		app := actualProof.PreprepareMessage.Raw()
 		ap0 := actualProof.PrepareMessages[0].Raw()
 		ap1 := actualProof.PrepareMessages[1].Raw()
@@ -92,13 +93,12 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 			PreprepareMessage: ppm30,
 			PrepareMessages:   []*interfaces.PrepareMessage{pm30a, pm30b},
 		}
-		q := 3
 
 		xpp := expectedProof.PreprepareMessage.Raw()
 		xp0 := expectedProof.PrepareMessages[0].Raw()
 		xp1 := expectedProof.PrepareMessages[1].Raw()
 
-		actualProof := preparedmessages.ExtractPreparedMessages(blockHeight, 30, s, func(senders []primitives.MemberId) bool { return len(senders) >= q })
+		actualProof := preparedmessages.ExtractPreparedMessages(blockHeight, 30, s, committeeMembers)
 		app := actualProof.PreprepareMessage.Raw()
 		ap0 := actualProof.PrepareMessages[0].Raw()
 		ap1 := actualProof.PrepareMessages[1].Raw()
@@ -114,8 +114,7 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 		s := storage.NewInMemoryStorage()
 		s.StorePrepare(pm1)
 		s.StorePrepare(pm2)
-		q := 3
-		actualPreparedMessages := preparedmessages.ExtractPreparedMessages(blockHeight, view, s, func(senders []primitives.MemberId) bool { return len(senders) >= q })
+		actualPreparedMessages := preparedmessages.ExtractPreparedMessages(blockHeight, view, s, committeeMembers)
 		require.Nil(t, actualPreparedMessages, "Don't return PreparedMessages from latest view if no PrePrepare in storage")
 	})
 
@@ -123,8 +122,7 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 		ppm := builders.APreprepareMessage(instanceId, leaderKeyManager, leaderId, blockHeight, view, block)
 		s := storage.NewInMemoryStorage()
 		s.StorePreprepare(ppm)
-		q := 3
-		actualPreparedMessages := preparedmessages.ExtractPreparedMessages(blockHeight, view, s, func(senders []primitives.MemberId) bool { return len(senders) >= q })
+		actualPreparedMessages := preparedmessages.ExtractPreparedMessages(blockHeight, view, s, committeeMembers)
 		require.Nil(t, actualPreparedMessages, "Don't return PreparedMessages from latest view if no Prepare in storage")
 	})
 
@@ -134,8 +132,7 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 		s := storage.NewInMemoryStorage()
 		s.StorePreprepare(ppm)
 		s.StorePrepare(pm1)
-		q := 3
-		actualPreparedMessages := preparedmessages.ExtractPreparedMessages(blockHeight, view, s, func(senders []primitives.MemberId) bool { return len(senders) >= q })
+		actualPreparedMessages := preparedmessages.ExtractPreparedMessages(blockHeight, view, s, committeeMembers)
 		require.Nil(t, actualPreparedMessages, "Don't return PreparedMessages from latest view if not enough Prepares in storage (# Prepares < 2*f)")
 	})
 }

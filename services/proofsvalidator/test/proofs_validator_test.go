@@ -12,21 +12,11 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
+	"github.com/orbs-network/lean-helix-go/testhelpers"
 	"github.com/stretchr/testify/require"
 	"math/rand"
 	"testing"
 )
-
-func genMembers(ids []primitives.MemberId) []interfaces.CommitteeMember {
-	members := make([]interfaces.CommitteeMember, len(ids))
-	for i := 0; i < len(ids); i++ {
-		members[i] = interfaces.CommitteeMember{
-			Id:     ids[i],
-			Weight: 1,
-		}
-	}
-	return members
-}
 
 func TestProofsValidator(t *testing.T) {
 	instanceId := primitives.InstanceId(rand.Uint64())
@@ -42,7 +32,7 @@ func TestProofsValidator(t *testing.T) {
 	node3KeyManager := mocks.NewMockKeyManager(node3Id)
 
 	membersIds := []primitives.MemberId{leaderId, node1Id, node2Id, node3Id}
-	committeeMembers := genMembers(membersIds)
+	committeeMembers := testhelpers.GenMembers(membersIds)
 
 	const blockHeight = 0
 	const view = 0

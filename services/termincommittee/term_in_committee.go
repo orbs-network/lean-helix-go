@@ -258,11 +258,7 @@ func (tic *TermInCommittee) moveToNextLeaderByElection(height primitives.BlockHe
 	tic.logger.Debug("LHFLOW moveToNextLeaderByElection() calculated newLeaderId=%s of V=%d", Str(newLeaderId), currentHV.View())
 	var preparedMessages *preparedmessages.PreparedMessages
 	if tic.preparedLocally != nil && tic.preparedLocally.isPreparedLocally {
-		isQuorumFunc := func(ids []primitives.MemberId) bool {
-			isQuorum, _, _ := tic.isQuorum(ids)
-			return isQuorum
-		}
-		preparedMessages = preparedmessages.ExtractPreparedMessages(currentHV.Height(), tic.preparedLocally.latestView, tic.storage, isQuorumFunc)
+		preparedMessages = preparedmessages.ExtractPreparedMessages(currentHV.Height(), tic.preparedLocally.latestView, tic.storage, tic.committeeMembers)
 	}
 	vcm := tic.messageFactory.CreateViewChangeMessage(currentHV.Height(), currentHV.View(), preparedMessages)
 
