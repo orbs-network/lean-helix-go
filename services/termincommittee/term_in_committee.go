@@ -298,8 +298,8 @@ func (tic *TermInCommittee) checkElected(height primitives.BlockHeight, view pri
 	}
 
 	senderIds := make([]primitives.MemberId, len(vcms))
-	for i := 0; i < len(senderIds); i++ {
-		senderIds[i] = vcms[i].SenderMemberId()
+	for i, vcm := range vcms {
+		senderIds[i] = vcm.SenderMemberId()
 	}
 
 	isQuorum, totalWeight, q := tic.isQuorum(senderIds)
@@ -309,7 +309,7 @@ func (tic *TermInCommittee) checkElected(height primitives.BlockHeight, view pri
 	}
 	tic.logger.Debug("checkElected() stored %d VIEW_CHANGE messages with total weight of %d out of %d", len(vcms), totalWeight, q)
 	tic.logger.Debug("checkElected() has enough VIEW_CHANGE messages, proceeding to onElectedByViewChange() with V=%d", view)
-	//tic.onElectedByViewChange(view, vcms[:minimumNodes])
+
 	tic.onElectedByViewChange(view, vcms) // todo any reason not to pass all vcms?
 }
 
@@ -669,8 +669,8 @@ func (tic *TermInCommittee) isViewChangeValid(expectedLeaderFromNewView primitiv
 
 func (tic *TermInCommittee) validateViewChangeVotes(targetBlockHeight primitives.BlockHeight, targetView primitives.View, confirmations []*protocol.ViewChangeMessageContent) error {
 	senders := make([]primitives.MemberId, len(confirmations))
-	for i := 0; i < len(senders); i++ {
-		senders[i] = confirmations[i].Sender().MemberId()
+	for i, confirmation := range confirmations {
+		senders[i] = confirmation.Sender().MemberId()
 	}
 	isQuorum, totalWeights, q := tic.isQuorum(senders)
 	if !isQuorum {
