@@ -46,7 +46,7 @@ func NewLeanHelixTerm(ctx context.Context, logger logger.LHLogger, config *inter
 		logger.Info("ERROR RECEIVING COMMITTEE: H=%d, error=%s", blockHeight, err)
 	}
 	// on ctx terminated requestOrderedCommitteePersist returns nil committee
-	isParticipating := isParticipatingInTerm(myMemberId, termincommittee.GetMemberIds(committeeMembers))
+	isParticipating := isParticipatingInTerm(myMemberId, committeeMembers)
 
 	if !isParticipating {
 		logger.Debug("OUT OF COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, members=%s, isParticipating=%t", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, termincommittee.ToCommitteeMembersStr(committeeMembers), isParticipating)
@@ -114,9 +114,9 @@ func (lht *LeanHelixTerm) Dispose() {
 	}
 }
 
-func isParticipatingInTerm(myMemberId primitives.MemberId, committeeMembers []primitives.MemberId) bool {
+func isParticipatingInTerm(myMemberId primitives.MemberId, committeeMembers []interfaces.CommitteeMember) bool {
 	for _, committeeMember := range committeeMembers {
-		if myMemberId.Equal(committeeMember) {
+		if myMemberId.Equal(committeeMember.Id) {
 			return true
 		}
 	}
