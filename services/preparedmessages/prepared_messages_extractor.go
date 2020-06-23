@@ -29,14 +29,13 @@ func ExtractPreparedMessages(blockHeight primitives.BlockHeight, latestPreparedV
 		return nil
 	}
 
-	senderIds := make([]primitives.MemberId, len(prepareMessages)+1)
-	senderIds[0] = ppm.SenderMemberId()
-	for i := 1; i <= len(prepareMessages); i++ {
-		senderIds[i] = prepareMessages[i-1].SenderMemberId()
+	senderIds := make([]primitives.MemberId, len(prepareMessages))
+	for i := 0; i <= len(prepareMessages); i++ {
+		senderIds[i] = prepareMessages[i].SenderMemberId()
 	}
+	senderIds = append(senderIds, ppm.SenderMemberId())
 
-	//if len(preparedMessages) < tic.QuorumSize-1 {
-	if !isQuorum(senderIds) { // todo -1?
+	if !isQuorum(senderIds) {
 		return nil
 	}
 
