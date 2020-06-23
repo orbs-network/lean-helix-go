@@ -30,7 +30,7 @@ func ExtractPreparedMessages(blockHeight primitives.BlockHeight, latestPreparedV
 	}
 
 	senderIds := make([]primitives.MemberId, len(prepareMessages))
-	for i := 0; i <= len(prepareMessages); i++ {
+	for i := 0; i < len(prepareMessages); i++ {
 		senderIds[i] = prepareMessages[i].SenderMemberId()
 	}
 	senderIds = append(senderIds, ppm.SenderMemberId())
