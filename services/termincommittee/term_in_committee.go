@@ -73,10 +73,10 @@ func NewTermInCommittee(log L.LHLogger, config *interfaces.Config, state *state.
 
 	panicOnLessThanMinimumCommitteeMembers(committeeMembers)
 
-	otherCommitteeMembers := make([]interfaces.CommitteeMember, 0)
+	otherCommitteeMemberIds := make([]primitives.MemberId, 0)
 	for _, member := range committeeMembers {
 		if !member.Id.Equal(myMemberId) {
-			otherCommitteeMembers = append(otherCommitteeMembers, member)
+			otherCommitteeMemberIds = append(otherCommitteeMemberIds, member.Id)
 		}
 	}
 	if config.Storage == nil {
@@ -95,7 +95,7 @@ func NewTermInCommittee(log L.LHLogger, config *interfaces.Config, state *state.
 		electionTrigger:         electionTrigger,
 		blockUtils:              blockUtils,
 		committeeMembers:        committeeMembers,
-		otherCommitteeMemberIds: GetMemberIds(otherCommitteeMembers),
+		otherCommitteeMemberIds: otherCommitteeMemberIds,
 		messageFactory:          messageFactory,
 		myMemberId:              myMemberId,
 		logger:                  log,
