@@ -28,7 +28,6 @@ func VerifyBlockRefMessage(blockRef *protocol.BlockRef, sender *protocol.SenderS
 
 type CalcLeaderId = func(view primitives.View) primitives.MemberId
 
-// TODO does this verify no repetition of sender addresses?
 func ValidatePreparedProof(
 	targetHeight primitives.BlockHeight,
 	targetView primitives.View,
