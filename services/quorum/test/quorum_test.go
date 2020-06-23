@@ -32,7 +32,7 @@ func TestCommitteeQuorum(t *testing.T) {
 	require.Equal(t, uint(67), quorum.CalcQuorumWeight([]uint64{10, 20, 70}))
 }
 
-func GenCommittee(weights []uint64) []interfaces.CommitteeMember {
+func genCommittee(weights []uint64) []interfaces.CommitteeMember {
 	committee := make([]interfaces.CommitteeMember, len(weights))
 	for i := 0; i < len(weights); i++ {
 		committee[i] = interfaces.CommitteeMember{
@@ -44,7 +44,7 @@ func GenCommittee(weights []uint64) []interfaces.CommitteeMember {
 }
 
 func TestIsQuorum(t *testing.T) {
-	committee := GenCommittee([]uint64{1, 6, 10, 23, 60})
+	committee := genCommittee([]uint64{1, 6, 10, 23, 60})
 
 	ids := func(inds []int) []primitives.MemberId {
 		_ids := make([]primitives.MemberId, len(inds))
