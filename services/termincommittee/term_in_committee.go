@@ -57,8 +57,8 @@ type TermInCommittee struct {
 
 func GetMemberIds(members []interfaces.CommitteeMember) []primitives.MemberId {
 	ids := make([]primitives.MemberId, len(members))
-	for i := 0; i < len(members); i++ {
-		ids[i] = members[i].Id
+	for i, member := range members {
+		ids[i] = member.Id
 	}
 	return ids
 }
