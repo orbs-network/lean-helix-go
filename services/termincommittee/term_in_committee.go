@@ -46,7 +46,6 @@ type TermInCommittee struct {
 	myMemberId                      primitives.MemberId
 	committeeMembers                []interfaces.CommitteeMember
 	otherCommitteeMemberIds         []primitives.MemberId
-	idToMember                      map[string]interfaces.CommitteeMember
 	preparedLocally                 *preparedLocallyProps
 	latestViewThatProcessedVCMOrNVM primitives.View
 	committedBlock                  interfaces.Block
@@ -75,9 +74,7 @@ func NewTermInCommittee(log L.LHLogger, config *interfaces.Config, state *state.
 	panicOnLessThanMinimumCommitteeMembers(committeeMembers)
 
 	otherCommitteeMembers := make([]interfaces.CommitteeMember, 0)
-	idToMember := make(map[string]interfaces.CommitteeMember)
 	for _, member := range committeeMembers {
-		idToMember[member.Id.String()] = member
 		if !member.Id.Equal(myMemberId) {
 			otherCommitteeMembers = append(otherCommitteeMembers, member)
 		}
@@ -99,7 +96,6 @@ func NewTermInCommittee(log L.LHLogger, config *interfaces.Config, state *state.
 		blockUtils:              blockUtils,
 		committeeMembers:        committeeMembers,
 		otherCommitteeMemberIds: GetMemberIds(otherCommitteeMembers),
-		idToMember:              idToMember,
 		messageFactory:          messageFactory,
 		myMemberId:              myMemberId,
 		logger:                  log,
