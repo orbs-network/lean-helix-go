@@ -15,24 +15,24 @@ import (
 )
 
 func TestCommitteeQuorum(t *testing.T) {
-	require.Equal(t, uint(3), quorum.CalcQuorumWeight([]uint64{4}))
-	require.Equal(t, uint(4), quorum.CalcQuorumWeight([]uint64{5}))
-	require.Equal(t, uint(5), quorum.CalcQuorumWeight([]uint64{6}))
-	require.Equal(t, uint(5), quorum.CalcQuorumWeight([]uint64{7}))
-	require.Equal(t, uint(6), quorum.CalcQuorumWeight([]uint64{8}))
-	require.Equal(t, uint(7), quorum.CalcQuorumWeight([]uint64{9}))
-	require.Equal(t, uint(7), quorum.CalcQuorumWeight([]uint64{10}))
-	require.Equal(t, uint(8), quorum.CalcQuorumWeight([]uint64{11}))
-	require.Equal(t, uint(9), quorum.CalcQuorumWeight([]uint64{12}))
-	require.Equal(t, uint(15), quorum.CalcQuorumWeight([]uint64{21}))
-	require.Equal(t, uint(15), quorum.CalcQuorumWeight([]uint64{22}))
-	require.Equal(t, uint(67), quorum.CalcQuorumWeight([]uint64{100}))
+	require.Equal(t, uint(3), quorum.CalcQuorumWeight([]primitives.MemberWeight{4}))
+	require.Equal(t, uint(4), quorum.CalcQuorumWeight([]primitives.MemberWeight{5}))
+	require.Equal(t, uint(5), quorum.CalcQuorumWeight([]primitives.MemberWeight{6}))
+	require.Equal(t, uint(5), quorum.CalcQuorumWeight([]primitives.MemberWeight{7}))
+	require.Equal(t, uint(6), quorum.CalcQuorumWeight([]primitives.MemberWeight{8}))
+	require.Equal(t, uint(7), quorum.CalcQuorumWeight([]primitives.MemberWeight{9}))
+	require.Equal(t, uint(7), quorum.CalcQuorumWeight([]primitives.MemberWeight{10}))
+	require.Equal(t, uint(8), quorum.CalcQuorumWeight([]primitives.MemberWeight{11}))
+	require.Equal(t, uint(9), quorum.CalcQuorumWeight([]primitives.MemberWeight{12}))
+	require.Equal(t, uint(15), quorum.CalcQuorumWeight([]primitives.MemberWeight{21}))
+	require.Equal(t, uint(15), quorum.CalcQuorumWeight([]primitives.MemberWeight{22}))
+	require.Equal(t, uint(67), quorum.CalcQuorumWeight([]primitives.MemberWeight{100}))
 
-	require.Equal(t, uint(67), quorum.CalcQuorumWeight([]uint64{10, 90}))
-	require.Equal(t, uint(67), quorum.CalcQuorumWeight([]uint64{10, 20, 70}))
+	require.Equal(t, uint(67), quorum.CalcQuorumWeight([]primitives.MemberWeight{10, 90}))
+	require.Equal(t, uint(67), quorum.CalcQuorumWeight([]primitives.MemberWeight{10, 20, 70}))
 }
 
-func genCommittee(weights []uint64) []interfaces.CommitteeMember {
+func genCommittee(weights []primitives.MemberWeight) []interfaces.CommitteeMember {
 	committee := make([]interfaces.CommitteeMember, len(weights))
 	for i, weight := range weights {
 		committee[i] = interfaces.CommitteeMember{
@@ -44,7 +44,7 @@ func genCommittee(weights []uint64) []interfaces.CommitteeMember {
 }
 
 func TestIsQuorum(t *testing.T) {
-	committee := genCommittee([]uint64{1, 6, 10, 23, 60})
+	committee := genCommittee([]primitives.MemberWeight{1, 6, 10, 23, 60})
 
 	ids := func(inds []int) []primitives.MemberId {
 		_ids := make([]primitives.MemberId, len(inds))

@@ -15,12 +15,12 @@ import (
 
 type FakeMembership struct {
 	myMemberId             primitives.MemberId
-	memberWeights          map[string]uint64
+	memberWeights          map[string]primitives.MemberWeight
 	discovery              *Discovery
 	orderCommitteeByHeight bool
 }
 
-func NewFakeMembership(myMemberId primitives.MemberId, memberWeights map[string]uint64, discovery *Discovery, orderCommitteeByHeight bool) *FakeMembership {
+func NewFakeMembership(myMemberId primitives.MemberId, memberWeights map[string]primitives.MemberWeight, discovery *Discovery, orderCommitteeByHeight bool) *FakeMembership {
 	return &FakeMembership{
 		myMemberId:             myMemberId,
 		memberWeights:          memberWeights,

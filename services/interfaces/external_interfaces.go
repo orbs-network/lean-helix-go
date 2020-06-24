@@ -47,7 +47,7 @@ type Communication interface {
 
 type CommitteeMember struct {
 	Id     primitives.MemberId
-	Weight uint64
+	Weight primitives.MemberWeight
 }
 
 type Membership interface {

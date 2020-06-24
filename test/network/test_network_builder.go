@@ -22,7 +22,7 @@ import (
 type TestNetworkBuilder struct {
 	instanceId                          primitives.InstanceId
 	NodeCount                           int
-	NodeWeights                         []uint64
+	NodeWeights                         []primitives.MemberWeight
 	logger                              interfaces.Logger
 	upcomingBlocks                      []interfaces.Block
 	keyManager                          interfaces.KeyManager
@@ -40,7 +40,7 @@ func (tb *TestNetworkBuilder) WithNodeCount(nodeCount int) *TestNetworkBuilder {
 	return tb
 }
 
-func (tb *TestNetworkBuilder) WithNodeWeights(weights []uint64) *TestNetworkBuilder {
+func (tb *TestNetworkBuilder) WithNodeWeights(weights []primitives.MemberWeight) *TestNetworkBuilder {
 	tb.NodeWeights = weights
 	return tb
 }
@@ -120,7 +120,7 @@ func (tb *TestNetworkBuilder) buildBlocksPool() *mocks.BlocksPool {
 func (tb *TestNetworkBuilder) buildNode(
 	nodeBuilder *NodeBuilder,
 	memberId primitives.MemberId,
-	memberWeights map[string]uint64,
+	memberWeights map[string]primitives.MemberWeight,
 	discovery *mocks.Discovery,
 	blockUtils interfaces.BlockUtils,
 ) *Node {
@@ -151,7 +151,7 @@ func (tb *TestNetworkBuilder) createNodes(discovery *mocks.Discovery, blocksPool
 
 	buildId := func(i int) primitives.MemberId { return primitives.MemberId(fmt.Sprintf("%03d", i)) }
 
-	memberWeights := make(map[string]uint64)
+	memberWeights := make(map[string]primitives.MemberWeight)
 	for i := 0; i < tb.NodeCount; i++ {
 		memberId := buildId(i)
 		if tb.NodeWeights != nil {
@@ -218,7 +218,7 @@ func ABasicTestNetwork(ctx context.Context) *TestNetwork {
 
 func ABasicTestNetworkWithWeights(ctx context.Context) *TestNetwork {
 	return ATestNetworkBuilder(4).
-		WithNodeWeights([]uint64{1, 2, 3, 4}).
+		WithNodeWeights([]primitives.MemberWeight{1, 2, 3, 4}).
 		Build(ctx)
 }
 

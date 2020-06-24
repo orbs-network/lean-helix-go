@@ -33,7 +33,7 @@ func TestProofsValidator(t *testing.T) {
 	nodeW4KeyManager := mocks.NewMockKeyManager(nodeIdW4)
 
 	membersIds := []primitives.MemberId{leaderIdW1, nodeIdW2, nodeIdW3, nodeIdW4}
-	weights := []uint64{1, 2, 3, 4}
+	weights := []primitives.MemberWeight{1, 2, 3, 4}
 	committeeMembers := testhelpers.GenMembersWithWeights(membersIds, weights)
 
 	require.Equal(t, uint(7), quorum.CalcQuorumWeight(quorum.GetWeights(committeeMembers)))

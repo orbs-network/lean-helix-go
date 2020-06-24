@@ -33,7 +33,7 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	senderIdW4 := primitives.MemberId(strconv.Itoa(rand.Int()))
 
 	ids := []primitives.MemberId{leaderIdW1, senderIdW2, senderIdW3, senderIdW4}
-	weights := []uint64{1, 2, 3, 4}
+	weights := []primitives.MemberWeight{1, 2, 3, 4}
 	committeeMembers := testhelpers.GenMembersWithWeights(ids, weights)
 
 	require.Equal(t, uint(7), quorum.CalcQuorumWeight(quorum.GetWeights(committeeMembers)))

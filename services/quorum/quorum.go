@@ -12,15 +12,15 @@ import (
 	"math"
 )
 
-func GetWeights(members []interfaces.CommitteeMember) []uint64 {
-	weights := make([]uint64, len(members))
+func GetWeights(members []interfaces.CommitteeMember) []primitives.MemberWeight {
+	weights := make([]primitives.MemberWeight, len(members))
 	for i, member := range members {
 		weights[i] = member.Weight
 	}
 	return weights
 }
 
-func CalcQuorumWeight(committeeWeights []uint64) uint {
+func CalcQuorumWeight(committeeWeights []primitives.MemberWeight) uint {
 	sum := uint(0)
 	for _, weight := range committeeWeights {
 		sum += uint(weight)
