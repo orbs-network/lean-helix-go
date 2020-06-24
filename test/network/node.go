@@ -37,6 +37,7 @@ type Node struct {
 	Communication              *mocks.CommunicationMock
 	Membership                 interfaces.Membership
 	MemberId                   primitives.MemberId
+	MemberWeight               uint64
 	CommittedBlockChannel      chan *NodeState
 	OnNewConsensusRoundChannel chan primitives.BlockHeight
 	WriteToStateChannel        bool

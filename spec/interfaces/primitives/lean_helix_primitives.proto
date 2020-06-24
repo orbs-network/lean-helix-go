@@ -10,6 +10,12 @@ message member_id {
     // size 32 bytes
 }
 
+message member_weight {
+    option inline_type = "uint64";
+    uint64 value = 1;
+    // size 8 bytes
+}
+
 message signature {
     option inline_type = "bytes";
     bytes value = 1;

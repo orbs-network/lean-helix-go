@@ -44,6 +44,7 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 	net := network.
 		NewTestNetworkBuilder().
 		WithNodeCount(4).
+		WithNodeWeights([]uint64{1, 2, 3, 4}).
 		WithBlocks(blocksPool...).
 		//LogToConsole().
 		Build(ctx)

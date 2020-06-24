@@ -9,6 +9,7 @@ package test
 import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/proofsvalidator"
+	"github.com/orbs-network/lean-helix-go/services/quorum"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
@@ -21,18 +22,21 @@ import (
 func TestProofsValidator(t *testing.T) {
 	instanceId := primitives.InstanceId(rand.Uint64())
 	myMemberId := primitives.MemberId("My MemberId")
-	leaderId := primitives.MemberId("Leader ID")
-	node1Id := primitives.MemberId("Node 1")
-	node2Id := primitives.MemberId("Node 2")
-	node3Id := primitives.MemberId("Node 3")
+	leaderIdW1 := primitives.MemberId("Leader ID (W1)")
+	nodeIdW2 := primitives.MemberId("Node 1 (W2)")
+	nodeIdW3 := primitives.MemberId("Node 2 (W3)")
+	nodeIdW4 := primitives.MemberId("Node 3 (W4)")
 	myKeyManager := mocks.NewMockKeyManager(myMemberId)
-	leaderKeyManager := mocks.NewMockKeyManager(leaderId)
-	node1KeyManager := mocks.NewMockKeyManager(node1Id)
-	node2KeyManager := mocks.NewMockKeyManager(node2Id)
-	node3KeyManager := mocks.NewMockKeyManager(node3Id)
+	leaderW1KeyManager := mocks.NewMockKeyManager(leaderIdW1)
+	nodeW2KeyManager := mocks.NewMockKeyManager(nodeIdW2)
+	nodeW3KeyManager := mocks.NewMockKeyManager(nodeIdW3)
+	nodeW4KeyManager := mocks.NewMockKeyManager(nodeIdW4)
 
-	membersIds := []primitives.MemberId{leaderId, node1Id, node2Id, node3Id}
-	committeeMembers := testhelpers.GenMembers(membersIds)
+	membersIds := []primitives.MemberId{leaderIdW1, nodeIdW2, nodeIdW3, nodeIdW4}
+	weights := []uint64{1, 2, 3, 4}
+	committeeMembers := testhelpers.GenMembersWithWeights(membersIds, weights)
+
+	require.Equal(t, uint(7), quorum.CalcQuorumWeight(quorum.GetWeights(committeeMembers)))
 
 	const blockHeight = 0
 	const view = 0
@@ -41,11 +45,11 @@ func TestProofsValidator(t *testing.T) {
 	block := mocks.ABlock(interfaces.GenesisBlock)
 	blockHash := mocks.CalculateBlockHash(block)
 
-	leaderMessageSigner := &builders.MessageSigner{KeyManager: leaderKeyManager, MemberId: leaderId}
+	leaderMessageSigner := &builders.MessageSigner{KeyManager: leaderW1KeyManager, MemberId: leaderIdW1}
 	nodesMessageSigners := []*builders.MessageSigner{
-		{KeyManager: node1KeyManager, MemberId: node1Id},
-		{KeyManager: node2KeyManager, MemberId: node2Id},
-		{KeyManager: node3KeyManager, MemberId: node3Id},
+		{KeyManager: nodeW2KeyManager, MemberId: nodeIdW2},
+		{KeyManager: nodeW3KeyManager, MemberId: nodeIdW3},
+		{KeyManager: nodeW4KeyManager, MemberId: nodeIdW4},
 	}
 	goodPrepareProof := builders.CreatePreparedProof(instanceId, leaderMessageSigner, nodesMessageSigners, blockHeight, view, blockHash)
 
@@ -60,9 +64,9 @@ func TestProofsValidator(t *testing.T) {
 
 	t.Run("TestProofsValidatorWithNoPrePrepare", func(t *testing.T) {
 		pSigners := []*builders.MessageSigner{
-			{KeyManager: node1KeyManager, MemberId: node1Id},
-			{KeyManager: node2KeyManager, MemberId: node2Id},
-			{KeyManager: node3KeyManager, MemberId: node3Id},
+			{KeyManager: nodeW2KeyManager, MemberId: nodeIdW2},
+			{KeyManager: nodeW3KeyManager, MemberId: nodeIdW3},
+			{KeyManager: nodeW4KeyManager, MemberId: nodeIdW4},
 		}
 		preparedProofWithoutPP := builders.CreatePreparedProof(instanceId, nil, pSigners, blockHeight, view, blockHash)
 		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithoutPP, myKeyManager, committeeMembers, calcLeaderId)
@@ -80,23 +84,25 @@ func TestProofsValidator(t *testing.T) {
 		require.True(t, result, "Did not approve a nil proof")
 	})
 
-	t.Run("TestProofsValidatorWithNotEnoughPrepareMessages", func(t *testing.T) {
+	t.Run("TestProofsValidatorWithPrepareMessagesThatHaventReachedQuorum", func(t *testing.T) {
 		pSigners := []*builders.MessageSigner{
-			{KeyManager: node1KeyManager, MemberId: node1Id},
+			{KeyManager: nodeW2KeyManager, MemberId: nodeIdW2},
+			{KeyManager: nodeW3KeyManager, MemberId: nodeIdW3},
 		}
+
 		preparedProofWithNotEnoughP := builders.CreatePreparedProof(instanceId, leaderMessageSigner, pSigners, blockHeight, view, blockHash)
 		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithNotEnoughP, myKeyManager, committeeMembers, calcLeaderId)
 		require.False(t, result, "Did not reject a proof with not enough prepares")
 	})
 
 	t.Run("TestProofsValidatorWithBadPreprepareSignature", func(t *testing.T) {
-		rejectingKeyManager := mocks.NewMockKeyManager(myMemberId, leaderId)
+		rejectingKeyManager := mocks.NewMockKeyManager(myMemberId, leaderIdW1)
 		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, rejectingKeyManager, committeeMembers, calcLeaderId)
 		require.False(t, result, "Did not reject a proof that did not pass preprepare signature validation")
 	})
 
 	t.Run("TestProofsValidatorWithBadPrepareSignature", func(t *testing.T) {
-		rejectingKeyManager := mocks.NewMockKeyManager(myMemberId, node2Id)
+		rejectingKeyManager := mocks.NewMockKeyManager(myMemberId, nodeIdW3)
 		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, rejectingKeyManager, committeeMembers, calcLeaderId)
 		require.False(t, result, "Did not reject a proof that did not pass prepare signature validation")
 	})
@@ -120,8 +126,8 @@ func TestProofsValidator(t *testing.T) {
 		nonMemberId := primitives.MemberId("Not in members Ids")
 		nonMemberKeyManager := mocks.NewMockKeyManager(nonMemberId)
 		pSigners := []*builders.MessageSigner{
-			{KeyManager: node1KeyManager, MemberId: node1Id},
-			{KeyManager: node2KeyManager, MemberId: node2Id},
+			{KeyManager: nodeW2KeyManager, MemberId: nodeIdW2},
+			{KeyManager: nodeW3KeyManager, MemberId: nodeIdW3},
 			{KeyManager: nonMemberKeyManager, MemberId: nonMemberId},
 		}
 		preparedProof := builders.CreatePreparedProof(instanceId, leaderMessageSigner, pSigners, blockHeight, view, blockHash)
@@ -131,11 +137,11 @@ func TestProofsValidator(t *testing.T) {
 
 	t.Run("TestProofsValidatorWithPrepareFromTheLeader", func(t *testing.T) {
 		pSigners := []*builders.MessageSigner{
-			{KeyManager: leaderKeyManager, MemberId: leaderId},
-			{KeyManager: node1KeyManager, MemberId: node1Id},
-			{KeyManager: node2KeyManager, MemberId: node2Id},
+			{KeyManager: leaderW1KeyManager, MemberId: leaderIdW1},
+			{KeyManager: nodeW2KeyManager, MemberId: nodeIdW2},
+			{KeyManager: nodeW3KeyManager, MemberId: nodeIdW3},
 		}
-		ppSigner := &builders.MessageSigner{KeyManager: node1KeyManager, MemberId: node1Id}
+		ppSigner := &builders.MessageSigner{KeyManager: nodeW2KeyManager, MemberId: nodeIdW2}
 
 		preparedProofWithPFromLeader := builders.CreatePreparedProof(instanceId, ppSigner, pSigners, blockHeight, view, blockHash)
 		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithPFromLeader, myKeyManager, committeeMembers, calcLeaderId)
@@ -160,11 +166,11 @@ func TestProofsValidator(t *testing.T) {
 		const targetView = view + 1
 
 		goodPrepareProof := builders.APreparedProofByMessages(
-			builders.APreprepareMessage(instanceId, leaderKeyManager, leaderId, blockHeight, view, block),
+			builders.APreprepareMessage(instanceId, leaderW1KeyManager, leaderIdW1, blockHeight, view, block),
 			[]*interfaces.PrepareMessage{
-				builders.APrepareMessage(instanceId, node1KeyManager, node1Id, blockHeight, view, block),
-				builders.APrepareMessage(instanceId, node2KeyManager, node2Id, blockHeight, view, block),
-				builders.APrepareMessage(instanceId, node3KeyManager, node3Id, blockHeight, view, block),
+				builders.APrepareMessage(instanceId, nodeW2KeyManager, nodeIdW2, blockHeight, view, block),
+				builders.APrepareMessage(instanceId, nodeW3KeyManager, nodeIdW3, blockHeight, view, block),
+				builders.APrepareMessage(instanceId, nodeW4KeyManager, nodeIdW4, blockHeight, view, block),
 			})
 
 		actualGood := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, goodPrepareProof, myKeyManager, committeeMembers, calcLeaderId)
@@ -172,11 +178,11 @@ func TestProofsValidator(t *testing.T) {
 
 		// Mismatching blockHeight //
 		badHeightProof := builders.APreparedProofByMessages(
-			builders.APreprepareMessage(instanceId, leaderKeyManager, leaderId, blockHeight, view, block),
+			builders.APreprepareMessage(instanceId, leaderW1KeyManager, leaderIdW1, blockHeight, view, block),
 			[]*interfaces.PrepareMessage{
-				builders.APrepareMessage(instanceId, node1KeyManager, node1Id, blockHeight, view, block),
-				builders.APrepareMessage(instanceId, node2KeyManager, node2Id, 666, view, block),
-				builders.APrepareMessage(instanceId, node3KeyManager, node3Id, blockHeight, view, block),
+				builders.APrepareMessage(instanceId, nodeW2KeyManager, nodeIdW2, blockHeight, view, block),
+				builders.APrepareMessage(instanceId, nodeW3KeyManager, nodeIdW3, 666, view, block),
+				builders.APrepareMessage(instanceId, nodeW4KeyManager, nodeIdW4, blockHeight, view, block),
 			})
 
 		actualBadHeight := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, badHeightProof, myKeyManager, committeeMembers, calcLeaderId)
@@ -184,11 +190,11 @@ func TestProofsValidator(t *testing.T) {
 
 		// Mismatching view //
 		badViewProof := builders.APreparedProofByMessages(
-			builders.APreprepareMessage(instanceId, leaderKeyManager, leaderId, blockHeight, view, block),
+			builders.APreprepareMessage(instanceId, leaderW1KeyManager, leaderIdW1, blockHeight, view, block),
 			[]*interfaces.PrepareMessage{
-				builders.APrepareMessage(instanceId, node1KeyManager, node1Id, blockHeight, view, block),
-				builders.APrepareMessage(instanceId, node2KeyManager, node2Id, blockHeight, 666, block),
-				builders.APrepareMessage(instanceId, node3KeyManager, node3Id, blockHeight, view, block),
+				builders.APrepareMessage(instanceId, nodeW2KeyManager, nodeIdW2, blockHeight, view, block),
+				builders.APrepareMessage(instanceId, nodeW3KeyManager, nodeIdW3, blockHeight, 666, block),
+				builders.APrepareMessage(instanceId, nodeW4KeyManager, nodeIdW4, blockHeight, view, block),
 			})
 
 		actualBadView := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, badViewProof, myKeyManager, committeeMembers, calcLeaderId)
@@ -197,11 +203,11 @@ func TestProofsValidator(t *testing.T) {
 		// Mismatching blockHash //
 		otherBlock := mocks.ABlock(interfaces.GenesisBlock)
 		badBlockHashProof := builders.APreparedProofByMessages(
-			builders.APreprepareMessage(instanceId, leaderKeyManager, leaderId, blockHeight, view, block),
+			builders.APreprepareMessage(instanceId, leaderW1KeyManager, leaderIdW1, blockHeight, view, block),
 			[]*interfaces.PrepareMessage{
-				builders.APrepareMessage(instanceId, node1KeyManager, node1Id, blockHeight, view, block),
-				builders.APrepareMessage(instanceId, node2KeyManager, node2Id, blockHeight, view, otherBlock),
-				builders.APrepareMessage(instanceId, node3KeyManager, node3Id, blockHeight, view, block),
+				builders.APrepareMessage(instanceId, nodeW2KeyManager, nodeIdW2, blockHeight, view, block),
+				builders.APrepareMessage(instanceId, nodeW3KeyManager, nodeIdW3, blockHeight, view, otherBlock),
+				builders.APrepareMessage(instanceId, nodeW4KeyManager, nodeIdW4, blockHeight, view, block),
 			})
 
 		actualBadBlockHash := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, badBlockHashProof, myKeyManager, committeeMembers, calcLeaderId)
@@ -210,9 +216,9 @@ func TestProofsValidator(t *testing.T) {
 
 	t.Run("TestProofsValidatorWithDuplicate prepare sender Id", func(t *testing.T) {
 		pSigners := []*builders.MessageSigner{
-			{KeyManager: node1KeyManager, MemberId: node1Id},
-			{KeyManager: node2KeyManager, MemberId: node2Id},
-			{KeyManager: node1KeyManager, MemberId: node1Id},
+			{KeyManager: nodeW2KeyManager, MemberId: nodeIdW2},
+			{KeyManager: nodeW3KeyManager, MemberId: nodeIdW3},
+			{KeyManager: nodeW2KeyManager, MemberId: nodeIdW2},
 		}
 		preparedProofWithDuplicatePSenderId := builders.CreatePreparedProof(instanceId, leaderMessageSigner, pSigners, blockHeight, view, blockHash)
 		result := proofsvalidator.ValidatePreparedProof(targetBlockHeight, targetView, preparedProofWithDuplicatePSenderId, myKeyManager, committeeMembers, calcLeaderId)

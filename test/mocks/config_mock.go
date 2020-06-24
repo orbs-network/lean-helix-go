@@ -6,7 +6,7 @@ import (
 )
 
 func NewMockConfigSimple() *interfaces.Config {
-	membership := NewFakeMembership([]byte{30, 30, 30}, nil, false)
+	membership := NewFakeMembership([]byte{30, 30, 30}, nil, nil, false)
 	return NewMockConfig(
 		nil,
 		0,

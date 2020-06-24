@@ -264,10 +264,11 @@ func generateSignatures(blockHeight primitives.BlockHeight, blockRef *protocol.B
 
 func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
-		net := network.ABasicTestNetwork(ctx)
+		net := network.ABasicTestNetworkWithWeights(ctx)
 		node0 := net.Nodes[0]
 		node1 := net.Nodes[1]
 		node2 := net.Nodes[2]
+		node3 := net.Nodes[3]
 		outOfNetworkNode := network.ADummyNode()
 
 		net.StartConsensus(ctx)
@@ -291,7 +292,14 @@ func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 		// good proof
 		goodProof := &protocol.BlockProofBuilder{
 			BlockRef:            goodBlockRef,
-			Nodes:               generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node2),
+			Nodes:               generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node3),
+			RandomSeedSignature: goodRSS,
+		}
+
+		// good proof
+		goodProofSmallQuorum := &protocol.BlockProofBuilder{
+			BlockRef:            goodBlockRef,
+			Nodes:               generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node3),
 			RandomSeedSignature: goodRSS,
 		}
 
@@ -299,7 +307,7 @@ func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 		blockRefWithBadBlock := generateACommitBlockRefBuilder(badInstanceId, blockHeight, block3)
 		badBlockRefInstanceIdProof := &protocol.BlockProofBuilder{
 			BlockRef:            blockRefWithBadBlock,
-			Nodes:               generateSignatures(blockHeight, blockRefWithBadBlock.Build(), node0, node1, node2),
+			Nodes:               generateSignatures(blockHeight, blockRefWithBadBlock.Build(), node0, node1, node3),
 			RandomSeedSignature: goodRSS,
 		}
 
@@ -307,21 +315,21 @@ func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 		blockRefWithBadInstanceId := generateACommitBlockRefBuilder(net.InstanceId, 666, block3)
 		badBlockRefBlockHeightProof := &protocol.BlockProofBuilder{
 			BlockRef:            blockRefWithBadInstanceId,
-			Nodes:               generateSignatures(blockHeight, blockRefWithBadInstanceId.Build(), node0, node1, node2),
+			Nodes:               generateSignatures(blockHeight, blockRefWithBadInstanceId.Build(), node0, node1, node3),
 			RandomSeedSignature: goodRSS,
 		}
 
 		// proof with not enough nodes
 		noQuorumProof := &protocol.BlockProofBuilder{
 			BlockRef:            goodBlockRef,
-			Nodes:               generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1),
+			Nodes:               generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node2),
 			RandomSeedSignature: goodRSS,
 		}
 
 		// proof with duplicate nodes
 		duplicateNodesProof := &protocol.BlockProofBuilder{
 			BlockRef:            goodBlockRef,
-			Nodes:               generateSignatures(blockHeight, goodBlockRef.Build(), node0, node1, node1),
+			Nodes:               generateSignatures(blockHeight, goodBlockRef.Build(), node0, node3, node3),
 			RandomSeedSignature: goodRSS,
 		}
 
@@ -333,6 +341,7 @@ func TestCommitsWhenValidatingBlockProof(t *testing.T) {
 		}
 
 		require.Nil(t, node0.ValidateBlockConsensus(ctx, block3, goodProof.Build().Raw(), block2, goodPrevProof.Build().Raw()), "should succeed with good proof")
+		require.Nil(t, node0.ValidateBlockConsensus(ctx, block3, goodProofSmallQuorum.Build().Raw(), block2, goodPrevProof.Build().Raw()), "should succeed with good proof athough quorum is small")
 		require.Error(t, node0.ValidateBlockConsensus(ctx, block3, noQuorumProof.Build().Raw(), block2, goodPrevProof.Build().Raw()), "should fail on not enough nodes in proof")
 		require.Error(t, node0.ValidateBlockConsensus(ctx, block3, badBlockRefBlockHeightProof.Build().Raw(), block2, goodPrevProof.Build().Raw()), "should fail on bad block height in proof")
 		require.Error(t, node0.ValidateBlockConsensus(ctx, block3, badBlockRefInstanceIdProof.Build().Raw(), block2, goodPrevProof.Build().Raw()), "should fail on bad instance ID")

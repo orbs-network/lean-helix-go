@@ -16,18 +16,11 @@ import (
 	"github.com/orbs-network/lean-helix-go/test/matchers"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/orbs-network/lean-helix-go/test/network"
+	"github.com/orbs-network/lean-helix-go/testhelpers"
 	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
-
-func EvenWeights(n int) []uint64 {
-	weights := make([]uint64, n)
-	for i := 0; i < n; i++ {
-		weights[i] = 1
-	}
-	return weights
-}
 
 func TestThatWeReachConsensusWhere1of4NodeIsByzantine(t *testing.T) {
 	test.WithContextWithTimeout(t, 15*time.Second, func(ctx context.Context) {
@@ -53,7 +46,7 @@ func TestNetworkReachesConsensusWhen2of7NodesAreByzantine(t *testing.T) {
 
 		//block := mocks.ABlock(interfaces.GenesisBlock)
 		totalNodes := 7
-		honestNodes := quorum.CalcQuorumWeight(EvenWeights(totalNodes))
+		honestNodes := quorum.CalcQuorumWeight(testhelpers.EvenWeights(totalNodes))
 		net := network.
 			NewTestNetworkBuilder().
 			LogToConsole(t).

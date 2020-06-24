@@ -15,13 +15,15 @@ import (
 
 type FakeMembership struct {
 	myMemberId             primitives.MemberId
+	memberWeights          map[string]uint64
 	discovery              *Discovery
 	orderCommitteeByHeight bool
 }
 
-func NewFakeMembership(myMemberId primitives.MemberId, discovery *Discovery, orderCommitteeByHeight bool) *FakeMembership {
+func NewFakeMembership(myMemberId primitives.MemberId, memberWeights map[string]uint64, discovery *Discovery, orderCommitteeByHeight bool) *FakeMembership {
 	return &FakeMembership{
 		myMemberId:             myMemberId,
+		memberWeights:          memberWeights,
 		discovery:              discovery,
 		orderCommitteeByHeight: orderCommitteeByHeight,
 	}
@@ -39,8 +41,13 @@ func (m *FakeMembership) RequestOrderedCommittee(ctx context.Context, blockHeigh
 
 	committeeMembers := make([]interfaces.CommitteeMember, len(memberIds))
 	for i := 0; i < len(committeeMembers); i++ {
-		committeeMembers[i].Weight = 1 // todo configurable weight
 		committeeMembers[i].Id = memberIds[i]
+		if m.memberWeights != nil {
+			committeeMembers[i].Weight = m.memberWeights[memberIds[i].String()]
+		} else {
+			committeeMembers[i].Weight = 1
+		}
+
 	}
 
 	// we want to replace the leader every height,
@@ -59,8 +66,12 @@ func (m *FakeMembership) RequestCommitteeForBlockProof(ctx context.Context, prev
 
 	committeeMembers := make([]interfaces.CommitteeMember, len(memberIds))
 	for i := 0; i < len(committeeMembers); i++ {
-		committeeMembers[i].Weight = 1 // todo configurable weight
 		committeeMembers[i].Id = memberIds[i]
+		if m.memberWeights != nil {
+			committeeMembers[i].Weight = m.memberWeights[memberIds[i].String()]
+		} else {
+			committeeMembers[i].Weight = 1
+		}
 	}
 
 	return committeeMembers, nil

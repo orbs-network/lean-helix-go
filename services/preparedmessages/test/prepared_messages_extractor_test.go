@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/services/preparedmessages"
+	"github.com/orbs-network/lean-helix-go/services/quorum"
 	"github.com/orbs-network/lean-helix-go/services/storage"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/builders"
@@ -26,19 +27,26 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	blockHeight := primitives.BlockHeight(rand.Uint64())
 	view := primitives.View(rand.Intn(10))
 	block := mocks.ABlock(interfaces.GenesisBlock)
-	leaderId := primitives.MemberId(strconv.Itoa(rand.Int()))
-	senderId1 := primitives.MemberId(strconv.Itoa(rand.Int()))
-	senderId2 := primitives.MemberId(strconv.Itoa(rand.Int()))
-	otherMemberId := primitives.MemberId(strconv.Itoa(rand.Int()))
-	committeeMembers := testhelpers.GenMembers([]primitives.MemberId{leaderId, senderId1, senderId2, otherMemberId})
-	leaderKeyManager := mocks.NewMockKeyManager(primitives.MemberId(leaderId))
-	sender1KeyManager := mocks.NewMockKeyManager(primitives.MemberId(senderId1))
-	sender2KeyManager := mocks.NewMockKeyManager(primitives.MemberId(senderId2))
+	leaderIdW1 := primitives.MemberId(strconv.Itoa(rand.Int()))
+	senderIdW2 := primitives.MemberId(strconv.Itoa(rand.Int()))
+	senderIdW3 := primitives.MemberId(strconv.Itoa(rand.Int()))
+	senderIdW4 := primitives.MemberId(strconv.Itoa(rand.Int()))
+
+	ids := []primitives.MemberId{leaderIdW1, senderIdW2, senderIdW3, senderIdW4}
+	weights := []uint64{1, 2, 3, 4}
+	committeeMembers := testhelpers.GenMembersWithWeights(ids, weights)
+
+	require.Equal(t, uint(7), quorum.CalcQuorumWeight(quorum.GetWeights(committeeMembers)))
+
+	leaderW1KeyManager := mocks.NewMockKeyManager(primitives.MemberId(leaderIdW1))
+	senderW2KeyManager := mocks.NewMockKeyManager(primitives.MemberId(senderIdW2))
+	senderW3KeyManager := mocks.NewMockKeyManager(primitives.MemberId(senderIdW3))
+	senderW4KeyManager := mocks.NewMockKeyManager(primitives.MemberId(senderIdW4))
 
 	t.Run("should return the prepare proof", func(t *testing.T) {
-		ppm := builders.APreprepareMessage(instanceId, leaderKeyManager, leaderId, blockHeight, view, block)
-		pm1 := builders.APrepareMessage(instanceId, sender1KeyManager, senderId1, blockHeight, view, block)
-		pm2 := builders.APrepareMessage(instanceId, sender2KeyManager, senderId2, blockHeight, view, block)
+		ppm := builders.APreprepareMessage(instanceId, leaderW1KeyManager, leaderIdW1, blockHeight, view, block)
+		pm1 := builders.APrepareMessage(instanceId, senderW2KeyManager, senderIdW2, blockHeight, view, block)
+		pm2 := builders.APrepareMessage(instanceId, senderW4KeyManager, senderIdW4, blockHeight, view, block)
 		s := storage.NewInMemoryStorage()
 		s.StorePreprepare(ppm)
 		s.StorePrepare(pm1)
@@ -65,17 +73,17 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 
 	t.Run("should return the latest (highest view) Prepare Proof", func(t *testing.T) {
 		s := storage.NewInMemoryStorage()
-		ppm10 := builders.APreprepareMessage(instanceId, leaderKeyManager, leaderId, blockHeight, 10, block)
-		pm10a := builders.APrepareMessage(instanceId, sender1KeyManager, senderId1, blockHeight, 10, block)
-		pm10b := builders.APrepareMessage(instanceId, sender2KeyManager, senderId2, blockHeight, 10, block)
+		ppm10 := builders.APreprepareMessage(instanceId, leaderW1KeyManager, leaderIdW1, blockHeight, 10, block)
+		pm10a := builders.APrepareMessage(instanceId, senderW2KeyManager, senderIdW2, blockHeight, 10, block)
+		pm10b := builders.APrepareMessage(instanceId, senderW4KeyManager, senderIdW4, blockHeight, 10, block)
 
-		ppm20 := builders.APreprepareMessage(instanceId, leaderKeyManager, leaderId, blockHeight, 20, block)
-		pm20a := builders.APrepareMessage(instanceId, sender1KeyManager, senderId1, blockHeight, 20, block)
-		pm20b := builders.APrepareMessage(instanceId, sender2KeyManager, senderId2, blockHeight, 20, block)
+		ppm20 := builders.APreprepareMessage(instanceId, leaderW1KeyManager, leaderIdW1, blockHeight, 20, block)
+		pm20a := builders.APrepareMessage(instanceId, senderW2KeyManager, senderIdW2, blockHeight, 20, block)
+		pm20b := builders.APrepareMessage(instanceId, senderW4KeyManager, senderIdW4, blockHeight, 20, block)
 
-		ppm30 := builders.APreprepareMessage(instanceId, leaderKeyManager, leaderId, blockHeight, 30, block)
-		pm30a := builders.APrepareMessage(instanceId, sender1KeyManager, senderId1, blockHeight, 30, block)
-		pm30b := builders.APrepareMessage(instanceId, sender2KeyManager, senderId2, blockHeight, 30, block)
+		ppm30 := builders.APreprepareMessage(instanceId, leaderW1KeyManager, leaderIdW1, blockHeight, 30, block)
+		pm30a := builders.APrepareMessage(instanceId, senderW2KeyManager, senderIdW2, blockHeight, 30, block)
+		pm30b := builders.APrepareMessage(instanceId, senderW4KeyManager, senderIdW4, blockHeight, 30, block)
 
 		s.StorePreprepare(ppm10)
 		s.StorePrepare(pm10a)
@@ -109,8 +117,11 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	})
 
 	t.Run("TestReturnNothingIfNoPrePrepare", func(t *testing.T) {
-		pm1 := builders.APrepareMessage(instanceId, sender1KeyManager, senderId1, blockHeight, view, block)
-		pm2 := builders.APrepareMessage(instanceId, sender2KeyManager, senderId2, blockHeight, view, block)
+		pm1 := builders.APrepareMessage(instanceId, senderW2KeyManager, senderIdW3, blockHeight, view, block)
+		pm2 := builders.APrepareMessage(instanceId, senderW4KeyManager, senderIdW4, blockHeight, view, block)
+
+		// Quorum is reached, but no preprepare msg present
+
 		s := storage.NewInMemoryStorage()
 		s.StorePrepare(pm1)
 		s.StorePrepare(pm2)
@@ -119,19 +130,24 @@ func TestPreparedMessagesExtractor(t *testing.T) {
 	})
 
 	t.Run("TestReturnNothingIfNoPrepares", func(t *testing.T) {
-		ppm := builders.APreprepareMessage(instanceId, leaderKeyManager, leaderId, blockHeight, view, block)
+		ppm := builders.APreprepareMessage(instanceId, leaderW1KeyManager, leaderIdW1, blockHeight, view, block)
 		s := storage.NewInMemoryStorage()
 		s.StorePreprepare(ppm)
 		actualPreparedMessages := preparedmessages.ExtractPreparedMessages(blockHeight, view, s, committeeMembers)
 		require.Nil(t, actualPreparedMessages, "Don't return PreparedMessages from latest view if no Prepare in storage")
 	})
 
-	t.Run("TestReturnNothingIfNotEnoughPrepares", func(t *testing.T) {
-		ppm := builders.APreprepareMessage(instanceId, leaderKeyManager, leaderId, blockHeight, view, block)
-		pm1 := builders.APrepareMessage(instanceId, sender1KeyManager, senderId1, blockHeight, view, block)
+	t.Run("TestReturnNothingIfPreparesHaventReachedQuorum", func(t *testing.T) {
+		ppm := builders.APreprepareMessage(instanceId, leaderW1KeyManager, leaderIdW1, blockHeight, view, block)
+		pm1 := builders.APrepareMessage(instanceId, senderW2KeyManager, senderIdW2, blockHeight, view, block)
+		pm2 := builders.APrepareMessage(instanceId, senderW3KeyManager, senderIdW3, blockHeight, view, block)
+
+		// Not reaching the quorum weight - 7
+
 		s := storage.NewInMemoryStorage()
 		s.StorePreprepare(ppm)
 		s.StorePrepare(pm1)
+		s.StorePrepare(pm2)
 		actualPreparedMessages := preparedmessages.ExtractPreparedMessages(blockHeight, view, s, committeeMembers)
 		require.Nil(t, actualPreparedMessages, "Don't return PreparedMessages from latest view if not enough Prepares in storage (# Prepares < 2*f)")
 	})

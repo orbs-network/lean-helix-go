@@ -1,9 +1,3 @@
-// Copyright 2019 the lean-helix-go authors
-// This file is part of the lean-helix-go library in the Orbs project.
-//
-// This source code is licensed under the MIT license found in the LICENSE file in the root directory of this source tree.
-// The above notice should be included in all copies or substantial portions of the software.
-
 // AUTO GENERATED FILE (by membufc proto compiler v0.0.32)
 package primitives
 
@@ -24,6 +18,20 @@ func (x MemberId) Equal(y MemberId) bool {
 
 func (x MemberId) KeyForMap() string {
 	return string(x)
+}
+
+type MemberWeight uint64
+
+func (x MemberWeight) String() string {
+	return fmt.Sprintf("%x", uint64(x))
+}
+
+func (x MemberWeight) Equal(y MemberWeight) bool {
+	return x == y
+}
+
+func (x MemberWeight) KeyForMap() uint64 {
+	return uint64(x)
 }
 
 type Signature []byte
