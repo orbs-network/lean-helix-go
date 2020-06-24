@@ -41,6 +41,10 @@ type harness struct {
 }
 
 func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Block) *harness {
+	return NewHarnessForNodeInd(ctx, 0, t, blocksPool)
+}
+
+func NewHarnessForNodeInd(ctx context.Context, nodeInd int, t *testing.T, blocksPool []interfaces.Block) *harness {
 	net := network.
 		NewTestNetworkBuilder().
 		WithNodeCount(4).
@@ -48,7 +52,7 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 		WithBlocks(blocksPool...).
 		//LogToConsole().
 		Build(ctx)
-	myNode := net.Nodes[0]
+	myNode := net.Nodes[nodeInd]
 	var logOutput interfaces.Logger
 	if TERM_IN_COMMITTEE_HARNESS_LOGS_TO_CONSOLE {
 		logOutput = logger.NewConsoleLogger(test.NameHashPrefix(t, 4))

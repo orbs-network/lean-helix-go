@@ -541,6 +541,52 @@ func TestPrepare2fPlus1ForACommit_smallerQuorumScenario(t *testing.T) {
 	})
 }
 
+func TestViewChange2fPlus1ToBecomeElected_largeQuorumScenario(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		block := mocks.ABlock(interfaces.GenesisBlock)
+
+		h := NewHarnessForNodeInd(ctx, 1, t, []interfaces.Block{block})
+
+		require.False(t, h.hasPreprepare(1, 1, block), "Should not have a preprepare message")
+
+		h.receiveAndHandleViewChange(ctx, 0 /* weight 1 */, 1, 1)
+		// node0 (1)  < 7
+		require.False(t, h.hasPreprepare(1, 1, block), "Should not have a preprepare message")
+
+		h.receiveAndHandleViewChange(ctx, 1 /* weight 2 */, 1, 1)
+		// node0 (1) + node1 (2) = 3 < 7
+		require.False(t, h.hasPreprepare(1, 1, block), "Should not have a preprepare message")
+
+		h.receiveAndHandleViewChange(ctx, 3 /* weight 4 */, 1, 1)
+		// node0 (1) + node1 (2) + node3 (4) = 7, quorum
+		require.True(t, h.hasPreprepare(1, 1, block), "There should be a preprepare message")
+
+		h.receiveAndHandleViewChange(ctx, 2 /* weight 3 */, 1, 1)
+		require.True(t, h.hasPreprepare(1, 1, block), "There should still be a preprepare message")
+	})
+}
+
+func TestViewChange2fPlus1ToBecomeElected_smallerQuorumScenario(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		block := mocks.ABlock(interfaces.GenesisBlock)
+
+		h := NewHarnessForNodeInd(ctx, 1, t, []interfaces.Block{block})
+
+		require.False(t, h.hasPreprepare(1, 1, block), "Should not have a preprepare message")
+
+		h.receiveAndHandleViewChange(ctx, 2 /* weight 3 */, 1, 1)
+		// node2 (3) = 6 < 7
+		require.False(t, h.hasPreprepare(1, 1, block), "Should not have a preprepare message")
+
+		h.receiveAndHandleViewChange(ctx, 3 /* weight 4 */, 1, 1)
+		// node2 (3) + node3(4) = 7, quorum
+		require.True(t, h.hasPreprepare(1, 1, block), "There should be a preprepare message")
+
+		h.receiveAndHandleViewChange(ctx, 0 /* weight 1 */, 1, 1)
+		require.True(t, h.hasPreprepare(1, 1, block), "There should still be a preprepare message")
+	})
+}
+
 func TestDisposingATermInCommitteeStopsTheElectionTrigger(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block := mocks.ABlock(interfaces.GenesisBlock)
