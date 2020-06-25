@@ -15,15 +15,15 @@ import (
 
 type FakeMembership struct {
 	myMemberId             primitives.MemberId
-	memberWeights          map[string]primitives.MemberWeight
+	memberToWeight         map[string]primitives.MemberWeight
 	discovery              *Discovery
 	orderCommitteeByHeight bool
 }
 
-func NewFakeMembership(myMemberId primitives.MemberId, memberWeights map[string]primitives.MemberWeight, discovery *Discovery, orderCommitteeByHeight bool) *FakeMembership {
+func NewFakeMembership(myMemberId primitives.MemberId, memberToWeight map[string]primitives.MemberWeight, discovery *Discovery, orderCommitteeByHeight bool) *FakeMembership {
 	return &FakeMembership{
 		myMemberId:             myMemberId,
-		memberWeights:          memberWeights,
+		memberToWeight:         memberToWeight,
 		discovery:              discovery,
 		orderCommitteeByHeight: orderCommitteeByHeight,
 	}
@@ -42,8 +42,8 @@ func (m *FakeMembership) RequestOrderedCommittee(ctx context.Context, blockHeigh
 	committeeMembers := make([]interfaces.CommitteeMember, len(memberIds))
 	for i := 0; i < len(committeeMembers); i++ {
 		committeeMembers[i].Id = memberIds[i]
-		if m.memberWeights != nil {
-			committeeMembers[i].Weight = m.memberWeights[memberIds[i].String()]
+		if m.memberToWeight != nil {
+			committeeMembers[i].Weight = m.memberToWeight[memberIds[i].String()]
 		} else {
 			committeeMembers[i].Weight = 1
 		}
@@ -67,8 +67,8 @@ func (m *FakeMembership) RequestCommitteeForBlockProof(ctx context.Context, prev
 	committeeMembers := make([]interfaces.CommitteeMember, len(memberIds))
 	for i := 0; i < len(committeeMembers); i++ {
 		committeeMembers[i].Id = memberIds[i]
-		if m.memberWeights != nil {
-			committeeMembers[i].Weight = m.memberWeights[memberIds[i].String()]
+		if m.memberToWeight != nil {
+			committeeMembers[i].Weight = m.memberToWeight[memberIds[i].String()]
 		} else {
 			committeeMembers[i].Weight = 1
 		}

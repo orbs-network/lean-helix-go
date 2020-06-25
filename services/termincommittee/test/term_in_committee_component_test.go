@@ -128,6 +128,53 @@ func TestNewViewIsSentWithTheHighestBlockFromTheViewChangeProofs(t *testing.T) {
 	})
 }
 
+func TestNewViewIsRejectedIfVotesAreNotQuorum(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		h := NewHarness(ctx, t)
+
+		// voting node1 as the new leader (view 5)
+		votes := builders.NewVotesBuilder(h.instanceId).
+			WithVote(h.getMemberKeyManager(0), h.getNodeMemberId(0), 1, 5, nil).
+			WithVote(h.getMemberKeyManager(1), h.getNodeMemberId(1), 1, 5, nil).
+			WithVote(h.getMemberKeyManager(2), h.getNodeMemberId(2), 1, 5, nil).
+			Build()
+
+		// total voting weight is 6 < 7 (quorum weight)
+
+		h.assertView(0)
+
+		nvm := builders.
+			NewNewViewBuilder().
+			LeadBy(h.getMemberKeyManager(1), h.getNodeMemberId(1)).
+			WithViewChangeVotes(votes).
+			OnBlockHeight(1).
+			OnView(5).
+			Build()
+
+		h.handleNewViewMessage(ctx, nvm)
+		h.assertView(0)
+
+		votes = builders.NewVotesBuilder(h.instanceId).
+			WithVote(h.getMemberKeyManager(0), h.getNodeMemberId(0), 1, 5, nil).
+			WithVote(h.getMemberKeyManager(1), h.getNodeMemberId(1), 1, 5, nil).
+			WithVote(h.getMemberKeyManager(3), h.getNodeMemberId(3), 1, 5, nil).
+			Build()
+
+		// total voting weight is 7 (quorum)
+
+		nvm = builders.
+			NewNewViewBuilder().
+			LeadBy(h.getMemberKeyManager(1), h.getNodeMemberId(1)).
+			WithViewChangeVotes(votes).
+			OnBlockHeight(1).
+			OnView(5).
+			Build()
+
+		h.handleNewViewMessage(ctx, nvm)
+		h.assertView(5)
+	})
+}
+
 func TestNewViewWithOlderBlockIsRejected(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		h := NewHarness(ctx, t)
@@ -541,11 +588,75 @@ func TestPrepare2fPlus1ForACommit_smallerQuorumScenario(t *testing.T) {
 	})
 }
 
+func TestCommit2fPlus1_fullCommtteeQuorumScenario(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		block := mocks.ABlock(interfaces.GenesisBlock)
+
+		committed := false
+		onCommit := func(ctx context.Context, block interfaces.Block, commitMessages []*interfaces.CommitMessage) {
+			committed = true
+		}
+
+		h := NewHarnessForNodeInd(ctx, 0, onCommit, t, []interfaces.Block{block})
+		h.setNode1AsTheLeader(ctx, 1, 1, block)
+
+		require.Equal(t, 0, h.countCommits(1, 1, block), "No commits should exist in the storage")
+
+		h.receiveAndHandlePreprepare(ctx, 1, 1, 1, block)
+		h.receiveAndHandlePrepare(ctx, 2, 1, 1, block)
+		h.receiveAndHandlePrepare(ctx, 3, 1, 1, block)
+		require.Equal(t, 1, h.countCommits(1, 1, block), "There should be 1 commit in the storage")
+
+		// Now prepared
+		// node0 (weight 1) already committed
+
+		h.receiveAndHandleCommit(ctx, 1 /* weight 2 */, 1, 1, block, 0)
+		require.False(t, committed, "Should not have committed")
+		h.receiveAndHandleCommit(ctx, 2 /* weight 3 */, 1, 1, block, 0)
+		require.False(t, committed, "Should not have committed")
+
+		// Total committed weight is 6 < 7, no quorum yet
+
+		h.receiveAndHandleCommit(ctx, 3, 1, 1, block, 0)
+		require.True(t, committed, "Should have committed")
+	})
+}
+
+func TestCommit2fPlus1_smallerQuorumScenario(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		block := mocks.ABlock(interfaces.GenesisBlock)
+
+		committed := false
+		onCommit := func(ctx context.Context, block interfaces.Block, commitMessages []*interfaces.CommitMessage) {
+			committed = true
+		}
+
+		h := NewHarnessForNodeInd(ctx, 0, onCommit, t, []interfaces.Block{block})
+		h.setNode1AsTheLeader(ctx, 1, 1, block)
+
+		require.Equal(t, 0, h.countCommits(1, 1, block), "No commits should exist in the storage")
+
+		h.receiveAndHandlePreprepare(ctx, 1, 1, 1, block)
+		h.receiveAndHandlePrepare(ctx, 2, 1, 1, block)
+		h.receiveAndHandlePrepare(ctx, 3, 1, 1, block)
+		require.Equal(t, 1, h.countCommits(1, 1, block), "There should be 1 commit in the storage")
+
+		// Now prepared
+		// node0 (weight 1) already committed
+
+		h.receiveAndHandleCommit(ctx, 1 /* weight 2 */, 1, 1, block, 0)
+		require.False(t, committed, "Should not have committed")
+		h.receiveAndHandleCommit(ctx, 3 /* weight 4 */, 1, 1, block, 0)
+		// Total weight is 7 (1 + 2 + 4), reached quorum
+		require.True(t, committed, "Should have committed")
+	})
+}
+
 func TestViewChange2fPlus1ToBecomeElected_largeQuorumScenario(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block := mocks.ABlock(interfaces.GenesisBlock)
 
-		h := NewHarnessForNodeInd(ctx, 1, t, []interfaces.Block{block})
+		h := NewHarnessForNodeInd(ctx, 1, nil, t, []interfaces.Block{block})
 
 		require.False(t, h.hasPreprepare(1, 1, block), "Should not have a preprepare message")
 
@@ -570,7 +681,7 @@ func TestViewChange2fPlus1ToBecomeElected_smallerQuorumScenario(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block := mocks.ABlock(interfaces.GenesisBlock)
 
-		h := NewHarnessForNodeInd(ctx, 1, t, []interfaces.Block{block})
+		h := NewHarnessForNodeInd(ctx, 1, nil, t, []interfaces.Block{block})
 
 		require.False(t, h.hasPreprepare(1, 1, block), "Should not have a preprepare message")
 
