@@ -165,7 +165,7 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 
 	sendersIterator := blockProof.NodesIterator()
 	set := make(map[storage.MemberIdStr]bool)
-	var sendersCounter = 0
+	senderIds := make([]primitives.MemberId, 0)
 	for {
 		if !sendersIterator.HasNext() {
 			break
@@ -186,12 +186,12 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 		}
 
 		set[storage.MemberIdStr(memberId)] = true
-		sendersCounter++
+		senderIds = append(senderIds, memberId)
 	}
 
-	q := quorum.CalcQuorumSize(len(committeeMembers))
-	if sendersCounter < q {
-		return errors.Errorf("ValidateBlockConsensus: sendersCounter=%d is less than quorum=%d (committeeMembersCount=%d)", sendersCounter, q, len(committeeMembers))
+	isQuorum, sendersTotalWeight, q := quorum.IsQuorum(senderIds, committeeMembers)
+	if !isQuorum {
+		return errors.Errorf("ValidateBlockConsensus: sendersTotalWeight=%d is less than quorum=%d (committeeMembersCount=%d)", sendersTotalWeight, q, len(committeeMembers))
 	}
 
 	if len(blockProof.RandomSeedSignature()) == 0 || blockProof.RandomSeedSignature() == nil {

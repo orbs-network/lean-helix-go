@@ -8,6 +8,7 @@ package preparedmessages
 
 import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/services/quorum"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 )
 
@@ -16,19 +17,23 @@ type PreparedMessages struct {
 	PrepareMessages   []*interfaces.PrepareMessage
 }
 
-func ExtractPreparedMessages(blockHeight primitives.BlockHeight, latestPreparedView primitives.View, storage interfaces.Storage, q int) *PreparedMessages {
+func ExtractPreparedMessages(blockHeight primitives.BlockHeight, latestPreparedView primitives.View, storage interfaces.Storage, committeeMembers []interfaces.CommitteeMember) *PreparedMessages {
 
 	ppm, ok := storage.GetPreprepareFromView(blockHeight, latestPreparedView)
 	if !ok {
 		return nil
 	}
 
-	prepareMessages, ok := storage.GetPrepareMessages(blockHeight, latestPreparedView, ppm.Content().SignedHeader().BlockHash())
-	if !ok {
+	senderIds := storage.GetPrepareSendersIds(blockHeight, latestPreparedView, ppm.Content().SignedHeader().BlockHash())
+	senderIds = append(senderIds, ppm.SenderMemberId())
+
+	isQuorum, _, _ := quorum.IsQuorum(senderIds, committeeMembers)
+	if !isQuorum {
 		return nil
 	}
 
-	if len(prepareMessages) < q-1 {
+	prepareMessages, ok := storage.GetPrepareMessages(blockHeight, latestPreparedView, ppm.Content().SignedHeader().BlockHash())
+	if !ok {
 		return nil
 	}
 

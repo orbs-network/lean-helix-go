@@ -255,6 +255,23 @@ func (storage *InMemoryStorage) GetCommitMessages(blockHeight primitives.BlockHe
 	return values, true
 }
 
+func (storage *InMemoryStorage) GetCommitSendersIds(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) []primitives.MemberId {
+	storage.mutext.Lock()
+	defer storage.mutext.Unlock()
+
+	senders, ok := storage.getCommit(blockHeight, view, blockHash)
+	if !ok {
+		return []primitives.MemberId{}
+	}
+	keys := make([]primitives.MemberId, len(senders))
+	i := 0
+	for k := range senders {
+		keys[i] = primitives.MemberId(k)
+		i++
+	}
+	return keys
+}
+
 // primitives.View Change
 func (storage *InMemoryStorage) StoreViewChange(vcm *interfaces.ViewChangeMessage) bool {
 	storage.mutext.Lock()

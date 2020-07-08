@@ -6,9 +6,46 @@
 
 package quorum
 
-import "math"
+import (
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"math"
+)
 
-func CalcQuorumSize(committeeMembersCount int) int {
-	f := int(math.Floor(float64(committeeMembersCount-1) / 3))
-	return committeeMembersCount - f
+func GetWeights(members []interfaces.CommitteeMember) []primitives.MemberWeight {
+	weights := make([]primitives.MemberWeight, len(members))
+	for i, member := range members {
+		weights[i] = member.Weight
+	}
+	return weights
+}
+
+func CalcQuorumWeight(committeeWeights []primitives.MemberWeight) uint {
+	sum := uint(0)
+	for _, weight := range committeeWeights {
+		sum += uint(weight)
+	}
+
+	if sum == 0 {
+		return 1
+	}
+
+	return sum - uint(math.Floor(float64(sum-1)/3))
+}
+
+func IsQuorum(committeeSubset []primitives.MemberId, allCommitteeMembers []interfaces.CommitteeMember) (bool, uint, uint) {
+	subsetIdsSet := make(map[string]bool)
+	for _, id := range committeeSubset {
+		subsetIdsSet[id.String()] = true
+	}
+
+	sum := uint(0)
+	for _, member := range allCommitteeMembers {
+		if subsetIdsSet[member.Id.String()] {
+			sum += uint(member.Weight)
+		}
+	}
+
+	q := CalcQuorumWeight(GetWeights(allCommitteeMembers))
+	return sum >= q, sum, q
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/test/matchers"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
 	"github.com/orbs-network/lean-helix-go/test/network"
+	"github.com/orbs-network/lean-helix-go/testhelpers"
 	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
@@ -45,7 +46,7 @@ func TestNetworkReachesConsensusWhen2of7NodesAreByzantine(t *testing.T) {
 
 		//block := mocks.ABlock(interfaces.GenesisBlock)
 		totalNodes := 7
-		honestNodes := quorum.CalcQuorumSize(totalNodes)
+		honestNodes := quorum.CalcQuorumWeight(testhelpers.EvenWeights(totalNodes))
 		net := network.
 			NewTestNetworkBuilder().
 			LogToConsole(t).

@@ -14,6 +14,7 @@ import (
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"github.com/orbs-network/lean-helix-go/test/matchers"
 	"github.com/orbs-network/lean-helix-go/test/mocks"
+	"github.com/orbs-network/lean-helix-go/testhelpers"
 	"math"
 	"testing"
 	"time"
@@ -89,8 +90,8 @@ func (net *TestNetwork) WaitUntilNodesEventuallyReachASpecificHeight(ctx context
 }
 
 func (net *TestNetwork) WaitUntilQuorumOfNodesEventuallyReachASpecificHeight(ctx context.Context, height primitives.BlockHeight) {
-	quorum := quorum.CalcQuorumSize(len(net.Nodes))
-	net.WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx, height, quorum, net.Nodes...)
+	quorum := quorum.CalcQuorumWeight(testhelpers.EvenWeights(len(net.Nodes)))
+	net.WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx, height, int(quorum), net.Nodes...)
 }
 func (net *TestNetwork) WaitUntilSubsetOfNodesEventuallyReachASpecificHeight(ctx context.Context, height primitives.BlockHeight, subset int, nodes ...*Node) {
 	if nodes == nil {

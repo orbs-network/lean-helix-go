@@ -8,19 +8,22 @@ package mocks
 
 import (
 	"context"
+	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
 	"sort"
 )
 
 type FakeMembership struct {
 	myMemberId             primitives.MemberId
+	memberToWeight         map[string]primitives.MemberWeight
 	discovery              *Discovery
 	orderCommitteeByHeight bool
 }
 
-func NewFakeMembership(myMemberId primitives.MemberId, discovery *Discovery, orderCommitteeByHeight bool) *FakeMembership {
+func NewFakeMembership(myMemberId primitives.MemberId, memberToWeight map[string]primitives.MemberWeight, discovery *Discovery, orderCommitteeByHeight bool) *FakeMembership {
 	return &FakeMembership{
 		myMemberId:             myMemberId,
+		memberToWeight:         memberToWeight,
 		discovery:              discovery,
 		orderCommitteeByHeight: orderCommitteeByHeight,
 	}
@@ -30,24 +33,46 @@ func (m *FakeMembership) MyMemberId() primitives.MemberId {
 	return m.myMemberId
 }
 
-func (m *FakeMembership) RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64, prevBlockReferenceTime primitives.TimestampSeconds) ([]primitives.MemberId, error) {
-	result := m.discovery.AllCommunicationsMemberIds()
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].KeyForMap() < result[j].KeyForMap()
+func (m *FakeMembership) RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64, prevBlockReferenceTime primitives.TimestampSeconds) ([]interfaces.CommitteeMember, error) {
+	memberIds := m.discovery.AllCommunicationsMemberIds()
+	sort.Slice(memberIds, func(i, j int) bool {
+		return memberIds[i].KeyForMap() < memberIds[j].KeyForMap()
 	})
+
+	committeeMembers := make([]interfaces.CommitteeMember, len(memberIds))
+	for i := 0; i < len(committeeMembers); i++ {
+		committeeMembers[i].Id = memberIds[i]
+		if m.memberToWeight != nil {
+			committeeMembers[i].Weight = m.memberToWeight[memberIds[i].String()]
+		} else {
+			committeeMembers[i].Weight = 1
+		}
+
+	}
 
 	// we want to replace the leader every height,
 	// we just shift all the ordered nodes according to the given height
 	if m.orderCommitteeByHeight {
 		for i := 0; i < int(blockHeight); i++ {
-			result = append(result[1:], result[0]) // shift left (circular)
+			committeeMembers = append(committeeMembers[1:], committeeMembers[0]) // shift left (circular)
 		}
 	}
 
-	return result, nil
+	return committeeMembers, nil
 }
 
-func (m *FakeMembership) RequestCommitteeForBlockProof(ctx context.Context, prevBlockReferenceTime primitives.TimestampSeconds) ([]primitives.MemberId, error) {
-	result := m.discovery.AllCommunicationsMemberIds()
-	return result, nil
+func (m *FakeMembership) RequestCommitteeForBlockProof(ctx context.Context, prevBlockReferenceTime primitives.TimestampSeconds) ([]interfaces.CommitteeMember, error) {
+	memberIds := m.discovery.AllCommunicationsMemberIds()
+
+	committeeMembers := make([]interfaces.CommitteeMember, len(memberIds))
+	for i := 0; i < len(committeeMembers); i++ {
+		committeeMembers[i].Id = memberIds[i]
+		if m.memberToWeight != nil {
+			committeeMembers[i].Weight = m.memberToWeight[memberIds[i].String()]
+		} else {
+			committeeMembers[i].Weight = 1
+		}
+	}
+
+	return committeeMembers, nil
 }

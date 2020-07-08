@@ -22,6 +22,7 @@ import (
 type TestNetworkBuilder struct {
 	instanceId                          primitives.InstanceId
 	NodeCount                           int
+	NodeWeights                         []primitives.MemberWeight
 	logger                              interfaces.Logger
 	upcomingBlocks                      []interfaces.Block
 	keyManager                          interfaces.KeyManager
@@ -36,6 +37,11 @@ type TestNetworkBuilder struct {
 
 func (tb *TestNetworkBuilder) WithNodeCount(nodeCount int) *TestNetworkBuilder {
 	tb.NodeCount = nodeCount
+	return tb
+}
+
+func (tb *TestNetworkBuilder) WithNodeWeights(weights []primitives.MemberWeight) *TestNetworkBuilder {
+	tb.NodeWeights = weights
 	return tb
 }
 
@@ -114,6 +120,7 @@ func (tb *TestNetworkBuilder) buildBlocksPool() *mocks.BlocksPool {
 func (tb *TestNetworkBuilder) buildNode(
 	nodeBuilder *NodeBuilder,
 	memberId primitives.MemberId,
+	memberWeights map[string]primitives.MemberWeight,
 	discovery *mocks.Discovery,
 	blockUtils interfaces.BlockUtils,
 ) *Node {
@@ -123,7 +130,7 @@ func (tb *TestNetworkBuilder) buildNode(
 		communicationInstance.SetMessagesMaxDelay(tb.communicationMaxDelay)
 	}
 	discovery.RegisterCommunication(memberId, communicationInstance)
-	membership := mocks.NewFakeMembership(memberId, discovery, tb.orderCommitteeByHeight)
+	membership := mocks.NewFakeMembership(memberId, memberWeights, discovery, tb.orderCommitteeByHeight)
 
 	b := nodeBuilder.
 		AsInstanceId(tb.instanceId).
@@ -141,10 +148,22 @@ func (tb *TestNetworkBuilder) buildNode(
 }
 
 func (tb *TestNetworkBuilder) createNodes(discovery *mocks.Discovery, blocksPool *mocks.BlocksPool) []*Node {
+
+	buildId := func(i int) primitives.MemberId { return primitives.MemberId(fmt.Sprintf("%03d", i)) }
+
+	memberWeights := make(map[string]primitives.MemberWeight)
+	for i := 0; i < tb.NodeCount; i++ {
+		memberId := buildId(i)
+		if tb.NodeWeights != nil {
+			memberWeights[memberId.String()] = tb.NodeWeights[i]
+		} else {
+			memberWeights[memberId.String()] = 1
+		}
+	}
+
 	var nodes []*Node
 	for i := 0; i < tb.NodeCount; i++ {
-
-		memberId := primitives.MemberId(fmt.Sprintf("%03d", i))
+		memberId := buildId(i)
 		var blockUtils interfaces.BlockUtils
 		if i < len(tb.blockUtils) {
 			blockUtils = tb.blockUtils[i]
@@ -157,7 +176,7 @@ func (tb *TestNetworkBuilder) createNodes(discovery *mocks.Discovery, blocksPool
 		}
 
 		nodeBuilder := NewNodeBuilder()
-		node := tb.buildNode(nodeBuilder, memberId, discovery, blockUtils)
+		node := tb.buildNode(nodeBuilder, memberId, memberWeights, discovery, blockUtils)
 		nodes = append(nodes, node)
 	}
 
@@ -194,6 +213,12 @@ func NewTestNetworkBuilder() *TestNetworkBuilder {
 
 func ABasicTestNetwork(ctx context.Context) *TestNetwork {
 	return ATestNetworkBuilder(4).
+		Build(ctx)
+}
+
+func ABasicTestNetworkWithWeights(ctx context.Context) *TestNetwork {
+	return ATestNetworkBuilder(4).
+		WithNodeWeights([]primitives.MemberWeight{1, 2, 3, 4}).
 		Build(ctx)
 }
 

@@ -54,7 +54,7 @@ func NewLeanHelixTerm(ctx context.Context, logger logger.LHLogger, config *inter
 	}
 
 	logger.Debug("RECEIVED COMMITTEE: H=%d, prevBlockProof=%s, randomSeed=%d, refTime=%d, members=%s, isParticipating=%t", blockHeight, printShortBlockProofBytes(prevBlockProofBytes), randomSeed, prevBlockRefTime, termincommittee.ToCommitteeMembersStr(committeeMembers), isParticipating)
-	logger.ConsensusTrace("got committee for the current consensus round", nil, log.StringableSlice("committee", committeeMembers))
+	logger.ConsensusTrace("got committee for the current consensus round", nil, log.StringableSlice("committee", termincommittee.GetMemberIds(committeeMembers)))
 
 	termInCommittee := termincommittee.NewTermInCommittee(logger, config, state, messageFactory, electionTrigger, committeeMembers, prevBlock, canBeFirstLeader, CommitsToProof(logger, config.KeyManager, onCommit))
 	return &LeanHelixTerm{
@@ -63,7 +63,7 @@ func NewLeanHelixTerm(ctx context.Context, logger logger.LHLogger, config *inter
 	}
 }
 
-func requestOrderedCommitteePersist(s *state.State, blockHeight primitives.BlockHeight, randomSeed uint64, prevBlockReferenceTime primitives.TimestampSeconds, config *interfaces.Config, logger logger.LHLogger) ([]primitives.MemberId, error) {
+func requestOrderedCommitteePersist(s *state.State, blockHeight primitives.BlockHeight, randomSeed uint64, prevBlockReferenceTime primitives.TimestampSeconds, config *interfaces.Config, logger logger.LHLogger) ([]interfaces.CommitteeMember, error) {
 	const maxView = primitives.View(math.MaxUint64)
 	ctx, err := s.Contexts.For(state.NewHeightView(blockHeight, maxView)) // term-level context
 	if err != nil {
@@ -114,9 +114,9 @@ func (lht *LeanHelixTerm) Dispose() {
 	}
 }
 
-func isParticipatingInTerm(myMemberId primitives.MemberId, committeeMembers []primitives.MemberId) bool {
+func isParticipatingInTerm(myMemberId primitives.MemberId, committeeMembers []interfaces.CommitteeMember) bool {
 	for _, committeeMember := range committeeMembers {
-		if myMemberId.Equal(committeeMember) {
+		if myMemberId.Equal(committeeMember.Id) {
 			return true
 		}
 	}

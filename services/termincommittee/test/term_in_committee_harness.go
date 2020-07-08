@@ -41,13 +41,18 @@ type harness struct {
 }
 
 func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Block) *harness {
+	return NewHarnessForNodeInd(ctx, 0, nil, t, blocksPool)
+}
+
+func NewHarnessForNodeInd(ctx context.Context, nodeInd int, ticCommitCallback termincommittee.OnInCommitteeCommitCallback, t *testing.T, blocksPool []interfaces.Block) *harness {
 	net := network.
 		NewTestNetworkBuilder().
 		WithNodeCount(4).
+		WithNodeWeights([]primitives.MemberWeight{1, 2, 3, 4}).
 		WithBlocks(blocksPool...).
 		//LogToConsole().
 		Build(ctx)
-	myNode := net.Nodes[0]
+	myNode := net.Nodes[nodeInd]
 	var logOutput interfaces.Logger
 	if TERM_IN_COMMITTEE_HARNESS_LOGS_TO_CONSOLE {
 		logOutput = logger.NewConsoleLogger(test.NameHashPrefix(t, 4))
@@ -64,7 +69,7 @@ func NewHarness(ctx context.Context, t *testing.T, blocksPool ...interfaces.Bloc
 	log.Info("NewHarness calling NewTermInCommittee with H=%d", state.Height())
 
 	// TODO state.State is shadowing state.State and is generally meaninless
-	termInCommittee := termincommittee.NewTermInCommittee(log, termConfig, state.State, messageFactory, myNode.ElectionTrigger, committeeMembers, prevBlock, true, nil)
+	termInCommittee := termincommittee.NewTermInCommittee(log, termConfig, state.State, messageFactory, myNode.ElectionTrigger, committeeMembers, prevBlock, true, ticCommitCallback)
 
 	return &harness{
 		t:               t,
@@ -161,6 +166,12 @@ func (h *harness) receiveAndHandleViewChange(ctx context.Context, fromNodeIdx in
 	sender := h.net.Nodes[fromNodeIdx]
 	vc := builders.AViewChangeMessage(h.instanceId, sender.KeyManager, sender.MemberId, blockHeight, view, nil)
 	h.termInCommittee.HandleViewChange(vc)
+}
+
+func (h *harness) receiveAndHandleCommit(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block, randomSeed uint64) {
+	sender := h.net.Nodes[fromNodeIdx]
+	cm := builders.ACommitMessage(h.instanceId, sender.KeyManager, sender.MemberId, blockHeight, view, block, randomSeed)
+	h.termInCommittee.HandleCommit(cm)
 }
 
 func (h *harness) receiveAndHandleNewView(ctx context.Context, fromNodeIdx int, blockHeight primitives.BlockHeight, view primitives.View, block interfaces.Block) {

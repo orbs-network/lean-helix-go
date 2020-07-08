@@ -48,7 +48,7 @@ func newDriver(logger interfaces.Logger, becomeLeaderInView byte, totalMembers b
 	currentMemberId := leadersByView[becomeLeaderInView]
 	currentMemberCommunication := communications[becomeLeaderInView]
 
-	membership := mocks.NewFakeMembership(currentMemberId, discoveryMock, false)
+	membership := mocks.NewFakeMembership(currentMemberId, nil, discoveryMock, false)
 
 	keyManager := mocks.NewMockKeyManager(currentMemberId)
 	keyManager.DisableConsensusMessageVerification()
