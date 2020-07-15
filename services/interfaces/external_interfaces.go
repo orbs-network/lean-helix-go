@@ -53,7 +53,7 @@ type CommitteeMember struct {
 type Membership interface {
 	MyMemberId() primitives.MemberId
 	RequestOrderedCommittee(ctx context.Context, blockHeight primitives.BlockHeight, randomSeed uint64, prevBlockReferenceTime primitives.TimestampSeconds) ([]CommitteeMember, error)
-	RequestCommitteeForBlockProof(ctx context.Context, prevBlockReferenceTime primitives.TimestampSeconds) ([]CommitteeMember, error)
+	RequestCommitteeForBlockProof(ctx context.Context, blockHeight primitives.BlockHeight, prevBlockReferenceTime primitives.TimestampSeconds) ([]CommitteeMember, error)
 }
 
 type BlockUtils interface {
