@@ -61,7 +61,7 @@ func (m *FakeMembership) RequestOrderedCommittee(ctx context.Context, blockHeigh
 	return committeeMembers, nil
 }
 
-func (m *FakeMembership) RequestCommitteeForBlockProof(ctx context.Context, prevBlockReferenceTime primitives.TimestampSeconds) ([]interfaces.CommitteeMember, error) {
+func (m *FakeMembership) RequestCommitteeForBlockProof(ctx context.Context, blockHeight primitives.BlockHeight, prevBlockReferenceTime primitives.TimestampSeconds) ([]interfaces.CommitteeMember, error) {
 	memberIds := m.discovery.AllCommunicationsMemberIds()
 
 	committeeMembers := make([]interfaces.CommitteeMember, len(memberIds))
