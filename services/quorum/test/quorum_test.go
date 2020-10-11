@@ -32,6 +32,24 @@ func TestCommitteeQuorum(t *testing.T) {
 	require.Equal(t, uint(67), quorum.CalcQuorumWeight([]primitives.MemberWeight{10, 20, 70}))
 }
 
+func TestCommitteeByzMaxWeight(t *testing.T) {
+	require.Equal(t, uint(1), quorum.CalcByzMaxWeight([]primitives.MemberWeight{4}))
+	require.Equal(t, uint(1), quorum.CalcByzMaxWeight([]primitives.MemberWeight{5}))
+	require.Equal(t, uint(1), quorum.CalcByzMaxWeight([]primitives.MemberWeight{6}))
+	require.Equal(t, uint(2), quorum.CalcByzMaxWeight([]primitives.MemberWeight{7}))
+	require.Equal(t, uint(2), quorum.CalcByzMaxWeight([]primitives.MemberWeight{8}))
+	require.Equal(t, uint(2), quorum.CalcByzMaxWeight([]primitives.MemberWeight{9}))
+	require.Equal(t, uint(3), quorum.CalcByzMaxWeight([]primitives.MemberWeight{10}))
+	require.Equal(t, uint(3), quorum.CalcByzMaxWeight([]primitives.MemberWeight{11}))
+	require.Equal(t, uint(3), quorum.CalcByzMaxWeight([]primitives.MemberWeight{12}))
+	require.Equal(t, uint(6), quorum.CalcByzMaxWeight([]primitives.MemberWeight{21}))
+	require.Equal(t, uint(7), quorum.CalcByzMaxWeight([]primitives.MemberWeight{22}))
+	require.Equal(t, uint(33), quorum.CalcByzMaxWeight([]primitives.MemberWeight{100}))
+
+	require.Equal(t, uint(33), quorum.CalcByzMaxWeight([]primitives.MemberWeight{10, 90}))
+	require.Equal(t, uint(33), quorum.CalcByzMaxWeight([]primitives.MemberWeight{10, 20, 70}))
+}
+
 func genCommittee(weights []primitives.MemberWeight) []interfaces.CommitteeMember {
 	committee := make([]interfaces.CommitteeMember, len(weights))
 	for i, weight := range weights {
@@ -78,4 +96,47 @@ func TestIsQuorum(t *testing.T) {
 	require.Equal(t, false, isQuorum)
 	require.Equal(t, uint(67), q)
 	require.Equal(t, uint(60), totalWeights)
+}
+
+func TestHasHonest(t *testing.T) {
+	committee := genCommittee([]primitives.MemberWeight{1, 6, 10, 23, 60})
+
+	ids := func(inds []int) []primitives.MemberId {
+		_ids := make([]primitives.MemberId, len(inds))
+		for i, ind := range inds {
+			_ids[i] = committee[ind].Id
+		}
+		return _ids
+	}
+
+	hasHonest, totalWeights, b := quorum.HasHonest(ids([]int{0, 1, 2}), committee)
+	require.Equal(t, false, hasHonest)
+	require.Equal(t, uint(33), b)
+	require.Equal(t, uint(17), totalWeights)
+
+	hasHonest, totalWeights, b = quorum.HasHonest(ids([]int{2, 3}), committee)
+	require.Equal(t, false, hasHonest)
+	require.Equal(t, uint(33), b)
+	require.Equal(t, uint(33), totalWeights)
+
+	hasHonest, totalWeights, b = quorum.HasHonest(ids([]int{3, 3}), committee)
+	require.Equal(t, false, hasHonest)
+	require.Equal(t, uint(33), b)
+	require.Equal(t, uint(23), totalWeights)
+
+	hasHonest, totalWeights, b = quorum.HasHonest(ids([]int{0, 2, 3}), committee)
+	require.Equal(t, true, hasHonest)
+	require.Equal(t, uint(33), b)
+	require.Equal(t, uint(34), totalWeights)
+
+	hasHonest, totalWeights, b = quorum.HasHonest(ids([]int{2, 3, 4}), committee)
+	require.Equal(t, true, hasHonest)
+	require.Equal(t, uint(33), b)
+	require.Equal(t, uint(93), totalWeights)
+
+	hasHonest, totalWeights, b = quorum.HasHonest(ids([]int{4, 4}), committee)
+	require.Equal(t, true, hasHonest)
+	require.Equal(t, uint(33), b)
+	require.Equal(t, uint(60), totalWeights)
+
 }

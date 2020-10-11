@@ -33,7 +33,34 @@ func CalcQuorumWeight(committeeWeights []primitives.MemberWeight) uint {
 	return sum - uint(math.Floor(float64(sum-1)/3))
 }
 
+func CalcByzMaxWeight(committeeWeights []primitives.MemberWeight) uint {
+	sum := uint(0)
+	for _, weight := range committeeWeights {
+		sum += uint(weight)
+	}
+
+	if sum == 0 {
+		return sum
+	}
+
+	return uint(math.Floor(float64(sum-1) / 3))
+}
+
 func IsQuorum(committeeSubset []primitives.MemberId, allCommitteeMembers []interfaces.CommitteeMember) (bool, uint, uint) {
+	weight := getCommitteeSubsetWeight(committeeSubset, allCommitteeMembers)
+
+	q := CalcQuorumWeight(GetWeights(allCommitteeMembers))
+	return weight >= q, weight, q
+}
+
+func HasHonest(committeeSubset []primitives.MemberId, allCommitteeMembers []interfaces.CommitteeMember) (bool, uint, uint) {
+	weight := getCommitteeSubsetWeight(committeeSubset, allCommitteeMembers)
+
+	b := CalcByzMaxWeight(GetWeights(allCommitteeMembers))
+	return weight > b, weight, b
+}
+
+func getCommitteeSubsetWeight(committeeSubset []primitives.MemberId, allCommitteeMembers []interfaces.CommitteeMember) uint {
 	subsetIdsSet := make(map[string]bool)
 	for _, id := range committeeSubset {
 		subsetIdsSet[id.String()] = true
@@ -45,7 +72,5 @@ func IsQuorum(committeeSubset []primitives.MemberId, allCommitteeMembers []inter
 			sum += uint(member.Weight)
 		}
 	}
-
-	q := CalcQuorumWeight(GetWeights(allCommitteeMembers))
-	return sum >= q, sum, q
+	return sum
 }

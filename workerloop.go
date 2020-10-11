@@ -125,7 +125,7 @@ func (lh *WorkerLoop) handleUpdateState(receivedBlockWithProof *blockWithProof) 
 	}
 }
 
-func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProofBytes []byte, prevBlock interfaces.Block, maybePrevBlockProofBytes []byte) error {
+func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfaces.Block, blockProofBytes []byte, prevBlock interfaces.Block, maybePrevBlockProofBytes []byte, softVerify bool) error {
 	if ctx.Err() != nil {
 		return errors.New("context canceled")
 	}
@@ -189,9 +189,16 @@ func (lh *WorkerLoop) ValidateBlockConsensus(ctx context.Context, block interfac
 		senderIds = append(senderIds, memberId)
 	}
 
-	isQuorum, sendersTotalWeight, q := quorum.IsQuorum(senderIds, committeeMembers)
-	if !isQuorum {
-		return errors.Errorf("ValidateBlockConsensus: sendersTotalWeight=%d is less than quorum=%d (committeeMembersCount=%d)", sendersTotalWeight, q, len(committeeMembers))
+	if softVerify {
+		hasHonest, sendersTotalWeight, b := quorum.HasHonest(senderIds, committeeMembers)
+		if !hasHonest { // not guaranteed (under f assumption) to have honest
+			return errors.Errorf("ValidateBlockConsensus: sendersTotalWeight=%d is not more than byz weight=%d (committeeMembersCount=%d)", sendersTotalWeight, b, len(committeeMembers))
+		}
+	} else {
+		isQuorum, sendersTotalWeight, q := quorum.IsQuorum(senderIds, committeeMembers)
+		if !isQuorum {
+			return errors.Errorf("ValidateBlockConsensus: sendersTotalWeight=%d is less than quorum=%d (committeeMembersCount=%d)", sendersTotalWeight, q, len(committeeMembers))
+		}
 	}
 
 	if len(blockProof.RandomSeedSignature()) == 0 || blockProof.RandomSeedSignature() == nil {

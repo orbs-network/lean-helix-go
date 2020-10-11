@@ -159,7 +159,14 @@ func (node *Node) ValidateBlockConsensus(ctx context.Context, block interfaces.B
 	if node.leanHelix == nil {
 		panic("ValidateBlockConsensus(): leanhelix is nil")
 	}
-	return node.leanHelix.ValidateBlockConsensus(ctx, block, blockProof, prevBlock, prevBlockProof)
+	return node.leanHelix.ValidateBlockConsensus(ctx, block, blockProof, prevBlock, prevBlockProof, false)
+}
+
+func (node *Node) ValidateBlockConsensusSoft(ctx context.Context, block interfaces.Block, blockProof []byte, prevBlock interfaces.Block, prevBlockProof []byte) error {
+	if node.leanHelix == nil {
+		panic("ValidateBlockConsensus(): leanhelix is nil")
+	}
+	return node.leanHelix.ValidateBlockConsensus(ctx, block, blockProof, prevBlock, prevBlockProof, true)
 }
 
 func (node *Node) Sync(ctx context.Context, block interfaces.Block, blockProofBytes []byte, prevBlock interfaces.Block, prevBlockProofBytes []byte) error {
