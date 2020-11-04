@@ -30,7 +30,7 @@ func CalcQuorumWeight(committeeWeights []primitives.MemberWeight) uint {
 		return 1
 	}
 
-	return sum - uint(math.Floor(float64(sum-1)/3))
+	return sum - calcF(sum)
 }
 
 func CalcByzMaxWeight(committeeWeights []primitives.MemberWeight) uint {
@@ -43,7 +43,11 @@ func CalcByzMaxWeight(committeeWeights []primitives.MemberWeight) uint {
 		return sum
 	}
 
-	return uint(math.Floor(float64(sum-1) / 3))
+	return calcF(sum)
+}
+
+func calcF(totalWeight uint) uint {
+	return uint(math.Floor(float64(totalWeight-1) / 3))
 }
 
 func IsQuorum(committeeSubset []primitives.MemberId, allCommitteeMembers []interfaces.CommitteeMember) (bool, uint, uint) {
