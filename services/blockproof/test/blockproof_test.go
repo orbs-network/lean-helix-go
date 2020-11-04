@@ -119,6 +119,29 @@ func TestAValidBlockProof(t *testing.T) {
 	})
 }
 
+func TestAValidBlockProofSoft(t *testing.T) {
+	test.WithContext(func(ctx context.Context) {
+		block1 := mocks.ABlock(interfaces.GenesisBlock)
+		block2 := mocks.ABlock(block1)
+		block3 := mocks.ABlock(block2)
+
+		net := network.ABasicTestNetwork(ctx)
+		net.StartConsensus(ctx)
+
+		node0 := net.Nodes[0]
+		node1 := net.Nodes[1]
+		node2 := net.Nodes[2]
+		node3 := net.Nodes[3]
+
+		blockProof := genBlockProofMessages(net.InstanceId, block3, 6, 0, node1).Raw()
+		prevBlockProof := genBlockProofMessages(net.InstanceId, block2, 3, 0, node1, node2, node3).Raw()
+		require.Error(t, node0.ValidateBlockConsensusSoft(ctx, block3, blockProof, block2, prevBlockProof))
+		blockProof = genBlockProofMessages(net.InstanceId, block3, 6, 0, node1, node2).Raw()
+		require.Nil(t, node0.ValidateBlockConsensusSoft(ctx, block3, blockProof, block2, prevBlockProof))
+		require.Error(t, node0.ValidateBlockConsensus(ctx, nil, blockProof, nil, prevBlockProof))
+	})
+}
+
 func TestAValidBlockProofWithNilPrevBlockProof(t *testing.T) {
 	test.WithContext(func(ctx context.Context) {
 		block1 := mocks.ABlock(interfaces.GenesisBlock)
