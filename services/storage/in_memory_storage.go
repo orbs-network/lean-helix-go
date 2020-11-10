@@ -358,10 +358,63 @@ func (storage *InMemoryStorage) resetCommitStorage(blockHeight primitives.BlockH
 	storage.commitStorage[blockHeight] = views
 	return views
 }
+
 func (storage *InMemoryStorage) resetViewChangeStorage(blockHeight primitives.BlockHeight) map[primitives.View]map[MemberIdStr]*interfaces.ViewChangeMessage {
 	views := make(map[primitives.View]map[MemberIdStr]*interfaces.ViewChangeMessage)
 	storage.viewChangeStorage[blockHeight] = views
 	return views
+}
+
+func (storage *InMemoryStorage) GetMessagesLogs(blockHeight primitives.BlockHeight, view primitives.View) []interfaces.MemberMessagesLog {
+	memberMessages := make(map[MemberIdStr][]interfaces.ConsensusMessage)
+	// get preprepare
+	if ppm, exists := storage.GetPreprepareFromView(blockHeight, view); exists {
+		memberIdStr := MemberIdStr(ppm.Content().Sender().MemberId())
+		msgs, _ := memberMessages[memberIdStr]
+		msgs = append(msgs, ppm)
+		memberMessages[memberIdStr] = msgs
+	}
+	// get prepares
+	if views, ok := storage.prepareStorage[blockHeight]; ok {
+		if blockHashes, ok := views[view]; ok {
+			for _, membersPm := range blockHashes {
+				for memberIdStr, msg := range membersPm {
+					msgs, _ := memberMessages[memberIdStr]
+					msgs = append(msgs, msg)
+					memberMessages[memberIdStr] = msgs
+				}
+			}
+		}
+	}
+
+	// get commits
+	if views, ok := storage.commitStorage[blockHeight]; ok {
+		if blockHashes, ok := views[view]; ok {
+			for _, membersCm := range blockHashes {
+				for memberIdStr, msg := range membersCm {
+					msgs, _ := memberMessages[memberIdStr]
+					msgs = append(msgs, msg)
+					memberMessages[memberIdStr] = msgs
+				}
+			}
+		}
+	}
+
+	// get vcs
+	if vcs, exists := storage.GetViewChangeMessages(blockHeight, view); exists {
+		for _, msg := range vcs {
+			memberIdStr := MemberIdStr(msg.Content().Sender().MemberId())
+			msgs, _ := memberMessages[memberIdStr]
+			msgs = append(msgs, msg)
+			memberMessages[memberIdStr] = msgs
+		}
+	}
+
+	membersMessagesLogs := make([]interfaces.MemberMessagesLog, len(memberMessages))
+	for memberIdStr, messages := range memberMessages {
+		membersMessagesLogs = append(membersMessagesLogs, interfaces.MemberMessagesLog{MemberId: string(memberIdStr), Messages: messages})
+	}
+	return membersMessagesLogs
 }
 
 func NewInMemoryStorage() *InMemoryStorage {

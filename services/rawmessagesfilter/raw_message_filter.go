@@ -102,7 +102,7 @@ func (f *RawMessageFilter) processConsensusMessage(message interfaces.ConsensusM
 		return
 	}
 
-	f.logger.ConsensusTrace("received consensus message", nil, log.Stringable("message-type", message.MessageType()), log.Stringable("sender", message.SenderMemberId()))
+	f.logger.Debug("received consensus message", log.Stringable("message-type", message.MessageType()), log.Stringable("sender", message.SenderMemberId()))
 	if err := f.consensusMessagesHandler.HandleConsensusMessage(message); err != nil {
 		f.logger.Info("LHFILTER LHMSG Failed in HandleConsensusMessage(): %s", err)
 	}

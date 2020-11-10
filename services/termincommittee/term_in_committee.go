@@ -244,6 +244,8 @@ func (tic *TermInCommittee) moveToNextLeaderByElection(height primitives.BlockHe
 		return
 	}
 	tic.logger.Debug("LHFLOW moveToNextLeaderByElection() calling initView(), will increment view to V=%d", currentHV.View()+1)
+	transitionMessage := fmt.Sprintf(" transition to new view %d by moveToNextLeaderByElection ", uint(currentHV.View()+1))
+	tic.logViewMessages(transitionMessage)
 	currentHV, err := tic.initView(currentHV.View() + 1)
 	if err != nil {
 		tic.logger.Info("LHFLOW moveToNextLeaderByElection() initView() failed, cannot continue: %s", err)
@@ -316,6 +318,11 @@ func (tic *TermInCommittee) checkElected(height primitives.BlockHeight, view pri
 func (tic *TermInCommittee) onElectedByViewChange(view primitives.View, viewChangeMessages []*interfaces.ViewChangeMessage) {
 	tic.latestViewThatProcessedVCMOrNVM = view
 	tic.logger.Debug("LHFLOW onElectedByViewChange() I AM THE LEADER BY VIEW CHANGE for V=%d, now calling initView()", view)
+	currentHeightView := tic.State.HeightView()
+	if currentHeightView.View() < view { // hadn't logged yet
+		transitionMessage := fmt.Sprintf(" transition to new view %d by onElectedByViewChange ", uint(view))
+		tic.logViewMessages(transitionMessage)
+	}
 	currentHeightView, err := tic.initView(view)
 	if err != nil {
 		tic.logger.Debug("LHFLOW onElectedByViewChange() failed: %s", err)
@@ -710,6 +717,13 @@ func (tic *TermInCommittee) HandleNewView(nvm *interfaces.NewViewMessage) {
 	ppMessageContent := nvm.Content().Message()
 	viewChangeConfirmationsIter := nvmHeader.ViewChangeConfirmationsIterator()
 	viewChangeConfirmations := make([]*protocol.ViewChangeMessageContent, 0, 1)
+
+	if tic.State.View() > nvmHeader.View() {
+		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", view is from the past` });
+		tic.logger.Info("LHMSG RECEIVED NEW_VIEW IGNORE - current view %d is higher than message view %d", tic.State.View(), nvmHeader.View())
+		return
+	}
+
 	for {
 		if !viewChangeConfirmationsIter.HasNext() {
 			break
@@ -733,12 +747,6 @@ func (tic *TermInCommittee) HandleNewView(nvm *interfaces.NewViewMessage) {
 	if err := tic.validateViewChangeVotes(nvmHeader.BlockHeight(), nvmHeader.View(), viewChangeConfirmations); err != nil {
 		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", votes is invalid` });
 		tic.logger.Info("LHMSG RECEIVED NEW_VIEW IGNORE - validateViewChangeVotes failed: %s", err)
-		return
-	}
-
-	if tic.State.View() > nvmHeader.View() {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", view is from the past` });
-		tic.logger.Info("LHMSG RECEIVED NEW_VIEW IGNORE - current view %d is higher than message view %d", tic.State.View(), nvmHeader.View())
 		return
 	}
 
@@ -810,6 +818,8 @@ func (tic *TermInCommittee) HandleNewView(nvm *interfaces.NewViewMessage) {
 	if err := tic.validatePreprepare(ppm); err == nil {
 		tic.latestViewThatProcessedVCMOrNVM = nvmHeader.View()
 		tic.logger.Debug("LHFLOW LHMSG RECEIVED NEW_VIEW OK - calling initView(). latestViewThatProcessedVCMOrNVM set to V=%d", tic.latestViewThatProcessedVCMOrNVM)
+		transitionMessage := fmt.Sprintf(" transition to new view %d by NVM ", uint(nvmHeader.View()))
+		tic.logViewMessages(transitionMessage)
 		if _, err := tic.initView(nvmHeader.View()); err != nil {
 			tic.logger.Debug("LHFLOW LHMSG HandleNewView() - initView() failed: %s", err)
 			return
@@ -837,4 +847,20 @@ func (tic *TermInCommittee) latestViewChangeVote(confirmations []*protocol.ViewC
 	} else {
 		return nil
 	}
+}
+
+func (tic *TermInCommittee) logViewMessages(viewTransitionMsg string) {
+	currentHeightView := tic.State.HeightView()
+	height := currentHeightView.Height()
+	view := currentHeightView.View()
+	membersMessagesLog := tic.storage.GetMessagesLogs(height, view)
+	var fields []*log.Field
+	for _, mml := range membersMessagesLog {
+		fields = append(fields, log.String("member-messages memberId", mml.MemberId))
+		for _, message := range mml.Messages {
+			fields = append(fields, log.Stringable("message-type", message.MessageType()))
+		}
+	}
+	tic.logger.ConsensusTrace(fmt.Sprintf("LH MessagesLogs: view transition %s; leaderId=%s", viewTransitionMsg, Str(tic.calcLeaderMemberId(view))), nil, fields...)
+
 }

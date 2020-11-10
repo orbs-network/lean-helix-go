@@ -82,6 +82,11 @@ type ElectionScheduler interface {
 	Stop()
 }
 
+type MemberMessagesLog struct {
+	MemberId string
+	Messages []ConsensusMessage
+}
+
 type Storage interface {
 	StorePreprepare(ppm *PreprepareMessage) bool
 	GetPreprepareMessage(blockHeight primitives.BlockHeight, view primitives.View) (*PreprepareMessage, bool)
@@ -101,6 +106,7 @@ type Storage interface {
 	GetViewChangeMessages(blockHeight primitives.BlockHeight, view primitives.View) ([]*ViewChangeMessage, bool)
 
 	ClearBlockHeightLogs(blockHeight primitives.BlockHeight)
+	GetMessagesLogs(blockHeight primitives.BlockHeight, view primitives.View) []MemberMessagesLog
 }
 
 type Logger interface {
