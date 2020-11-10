@@ -128,10 +128,14 @@ func NewLhLogger(config *interfaces.Config, state *state.State) LHLogger {
 }
 
 func MemberIdToStr(memberId primitives.MemberId) string {
-	if memberId == nil {
+	return BytesPrimitivesToStr(memberId)
+}
+
+func BytesPrimitivesToStr(input []byte) string {
+	if input == nil {
 		return ""
 	}
-	memberIdStr := hex.EncodeToString(memberId)
+	memberIdStr := hex.EncodeToString(input)
 	if len(memberIdStr) < 6 {
 		return memberIdStr
 	}

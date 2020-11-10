@@ -9,6 +9,7 @@ package storage
 import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"sort"
 	"sync"
 )
@@ -366,12 +367,18 @@ func (storage *InMemoryStorage) resetViewChangeStorage(blockHeight primitives.Bl
 }
 
 func (storage *InMemoryStorage) GetMessagesLogs(blockHeight primitives.BlockHeight, view primitives.View) []interfaces.MemberMessagesLog {
-	memberMessages := make(map[MemberIdStr][]interfaces.ConsensusMessage)
+	memberMessages := make(map[MemberIdStr][]*protocol.BlockRef)
 	// get preprepare
-	if ppm, exists := storage.GetPreprepareFromView(blockHeight, view); exists {
-		memberIdStr := MemberIdStr(ppm.Content().Sender().MemberId())
+	if msg, exists := storage.GetPreprepareFromView(blockHeight, view); exists {
+		memberIdStr := MemberIdStr(msg.Content().Sender().MemberId())
 		msgs, _ := memberMessages[memberIdStr]
-		msgs = append(msgs, ppm)
+		msgs = append(msgs, (&protocol.BlockRefBuilder{
+			MessageType: msg.MessageType(),
+			InstanceId:  msg.InstanceId(),
+			BlockHeight: msg.BlockHeight(),
+			View:        msg.View(),
+			BlockHash:   msg.Content().SignedHeader().BlockHash(),
+		}).Build())
 		memberMessages[memberIdStr] = msgs
 	}
 	// get prepares
@@ -380,7 +387,14 @@ func (storage *InMemoryStorage) GetMessagesLogs(blockHeight primitives.BlockHeig
 			for _, membersPm := range blockHashes {
 				for memberIdStr, msg := range membersPm {
 					msgs, _ := memberMessages[memberIdStr]
-					msgs = append(msgs, msg)
+					msgs = append(msgs,
+						(&protocol.BlockRefBuilder{
+							MessageType: msg.MessageType(),
+							InstanceId:  msg.InstanceId(),
+							BlockHeight: msg.BlockHeight(),
+							View:        msg.View(),
+							BlockHash:   msg.Content().SignedHeader().BlockHash(),
+						}).Build())
 					memberMessages[memberIdStr] = msgs
 				}
 			}
@@ -393,7 +407,14 @@ func (storage *InMemoryStorage) GetMessagesLogs(blockHeight primitives.BlockHeig
 			for _, membersCm := range blockHashes {
 				for memberIdStr, msg := range membersCm {
 					msgs, _ := memberMessages[memberIdStr]
-					msgs = append(msgs, msg)
+					msgs = append(msgs,
+						(&protocol.BlockRefBuilder{
+							MessageType: msg.MessageType(),
+							InstanceId:  msg.InstanceId(),
+							BlockHeight: msg.BlockHeight(),
+							View:        msg.View(),
+							BlockHash:   msg.Content().SignedHeader().BlockHash(),
+						}).Build())
 					memberMessages[memberIdStr] = msgs
 				}
 			}
@@ -405,14 +426,26 @@ func (storage *InMemoryStorage) GetMessagesLogs(blockHeight primitives.BlockHeig
 		for _, msg := range vcs {
 			memberIdStr := MemberIdStr(msg.Content().Sender().MemberId())
 			msgs, _ := memberMessages[memberIdStr]
-			msgs = append(msgs, msg)
+			var blockHash primitives.BlockHash
+			if msg.Block() != nil {
+				blockHash = msg.Content().SignedHeader().PreparedProof().PrepareBlockRef().BlockHash()
+			}
+			msgs = append(msgs,
+				(&protocol.BlockRefBuilder{
+					MessageType: msg.MessageType(),
+					InstanceId:  msg.InstanceId(),
+					BlockHeight: msg.BlockHeight(),
+					View:        msg.View(),
+					BlockHash:   blockHash,
+				}).Build())
+
 			memberMessages[memberIdStr] = msgs
 		}
 	}
 
 	membersMessagesLogs := make([]interfaces.MemberMessagesLog, len(memberMessages))
 	for memberIdStr, messages := range memberMessages {
-		membersMessagesLogs = append(membersMessagesLogs, interfaces.MemberMessagesLog{MemberId: string(memberIdStr), Messages: messages})
+		membersMessagesLogs = append(membersMessagesLogs, interfaces.MemberMessagesLog{MemberId: primitives.MemberId(memberIdStr), Messages: messages})
 	}
 	return membersMessagesLogs
 }

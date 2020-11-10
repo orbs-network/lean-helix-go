@@ -83,8 +83,8 @@ type ElectionScheduler interface {
 }
 
 type MemberMessagesLog struct {
-	MemberId string
-	Messages []ConsensusMessage
+	MemberId primitives.MemberId
+	Messages []*protocol.BlockRef
 }
 
 type Storage interface {

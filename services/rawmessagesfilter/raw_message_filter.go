@@ -52,7 +52,7 @@ func (f *RawMessageFilter) HandleConsensusRawMessage(rawMessage *interfaces.Cons
 	}
 
 	if message.InstanceId() != f.instanceId {
-		f.logger.Debug("LHFILTER IGNORING RECEIVED %s with H=%d V=%d sender=%s IGNORING message from different instanceID=%s because my instanceID==%s", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()), message.InstanceId(), f.instanceId)
+		f.logger.Info("LHFILTER IGNORING RECEIVED %s with H=%d V=%d sender=%s IGNORING message from different instanceID=%s because my instanceID==%s", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()), message.InstanceId(), f.instanceId)
 		return
 	}
 
