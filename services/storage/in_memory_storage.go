@@ -176,6 +176,27 @@ func (storage *InMemoryStorage) GetPrepareMessages(blockHeight primitives.BlockH
 	return values, true
 }
 
+func (storage *InMemoryStorage) GetPrepareMessagesFromView(blockHeight primitives.BlockHeight, view primitives.View) ([]*interfaces.PrepareMessage, bool) {
+	storage.mutext.Lock()
+	defer storage.mutext.Unlock()
+
+	var messages []*interfaces.PrepareMessage
+
+	if views, ok := storage.prepareStorage[blockHeight]; ok {
+		if blockHashes, ok := views[view]; ok {
+			for _, membersPm := range blockHashes {
+				for _, msg := range membersPm {
+					messages = append(messages, msg)
+				}
+			}
+		}
+	}
+	if len(messages) == 0 {
+		return nil, false
+	}
+	return messages, true
+}
+
 func (storage *InMemoryStorage) GetPrepareSendersIds(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) []primitives.MemberId {
 	storage.mutext.Lock()
 	defer storage.mutext.Unlock()
@@ -253,6 +274,27 @@ func (storage *InMemoryStorage) GetCommitMessages(blockHeight primitives.BlockHe
 		values = append(values, v)
 	}
 	return values, true
+}
+
+func (storage *InMemoryStorage) GetCommitMessagesFromView(blockHeight primitives.BlockHeight, view primitives.View) ([]*interfaces.CommitMessage, bool) {
+	storage.mutext.Lock()
+	defer storage.mutext.Unlock()
+
+	var messages []*interfaces.CommitMessage
+
+	if views, ok := storage.commitStorage[blockHeight]; ok {
+		if blockHashes, ok := views[view]; ok {
+			for _, membersCm := range blockHashes {
+				for _, msg := range membersCm {
+					messages = append(messages, msg)
+				}
+			}
+		}
+	}
+	if len(messages) == 0 {
+		return nil, false
+	}
+	return messages, true
 }
 
 func (storage *InMemoryStorage) GetCommitSendersIds(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) []primitives.MemberId {
@@ -358,10 +400,40 @@ func (storage *InMemoryStorage) resetCommitStorage(blockHeight primitives.BlockH
 	storage.commitStorage[blockHeight] = views
 	return views
 }
+
 func (storage *InMemoryStorage) resetViewChangeStorage(blockHeight primitives.BlockHeight) map[primitives.View]map[MemberIdStr]*interfaces.ViewChangeMessage {
 	views := make(map[primitives.View]map[MemberIdStr]*interfaces.ViewChangeMessage)
 	storage.viewChangeStorage[blockHeight] = views
 	return views
+}
+
+func (storage *InMemoryStorage) GetAllMessagesFromView(blockHeight primitives.BlockHeight, view primitives.View) []interface{} {
+	var messages []interface{}
+
+	// get preprepare
+	if msg, exists := storage.GetPreprepareFromView(blockHeight, view); exists {
+		messages = append(messages, &msg)
+	}
+
+	// get prepares
+	pms, _ := storage.GetPrepareMessagesFromView(blockHeight, view)
+	for _, msg := range pms {
+		messages = append(messages, msg)
+	}
+
+	// get commits
+	cms, _ := storage.GetCommitMessagesFromView(blockHeight, view)
+	for _, msg := range cms {
+		messages = append(messages, msg)
+	}
+
+	// get vcs
+	vcs, _ := storage.GetViewChangeMessages(blockHeight, view)
+	for _, msg := range vcs {
+		messages = append(messages, msg)
+	}
+
+	return messages
 }
 
 func NewInMemoryStorage() *InMemoryStorage {

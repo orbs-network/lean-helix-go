@@ -92,14 +92,17 @@ type Storage interface {
 	StorePrepare(pp *PrepareMessage) bool
 	GetPrepareMessages(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) ([]*PrepareMessage, bool)
 	GetPrepareSendersIds(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) []primitives.MemberId
+	GetPrepareMessagesFromView(blockHeight primitives.BlockHeight, view primitives.View) ([]*PrepareMessage, bool)
 
 	StoreCommit(cm *CommitMessage) bool
 	GetCommitMessages(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) ([]*CommitMessage, bool)
 	GetCommitSendersIds(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) []primitives.MemberId
+	GetCommitMessagesFromView(blockHeight primitives.BlockHeight, view primitives.View) ([]*CommitMessage, bool)
 
 	StoreViewChange(vcm *ViewChangeMessage) bool
 	GetViewChangeMessages(blockHeight primitives.BlockHeight, view primitives.View) ([]*ViewChangeMessage, bool)
 
+	GetAllMessagesFromView(blockHeight primitives.BlockHeight, view primitives.View) []interface{}
 	ClearBlockHeightLogs(blockHeight primitives.BlockHeight)
 }
 

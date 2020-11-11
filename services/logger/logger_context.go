@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
+	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"github.com/orbs-network/lean-helix-go/state"
 	"github.com/orbs-network/scribe/log"
 	"math"
@@ -151,5 +152,98 @@ func LC(h primitives.BlockHeight, v primitives.View, id primitives.MemberId) *_L
 		h:  h,
 		v:  v,
 		id: id,
+	}
+}
+
+type MessageLog struct {
+	MessageType protocol.MessageType
+	BlockHash   primitives.BlockHash
+}
+
+func blockHashToStr(blockHash primitives.BlockHash) string {
+	if blockHash == nil {
+		return "none"
+	}
+	blockHashStr := hex.EncodeToString(blockHash)
+	if len(blockHashStr) < 6 {
+		return blockHashStr
+	}
+	return blockHashStr[:6]
+}
+
+type MemberMessagesLog struct {
+	MemberId primitives.MemberId
+	Messages []MessageLog
+}
+
+func (mml *MemberMessagesLog) String() string {
+	memberMessages := fmt.Sprintf("[ memberId=%s,  member-messages::", MemberIdToStr(mml.MemberId))
+	for _, message := range mml.Messages {
+		memberMessages += fmt.Sprintf(" (message-type=%s; block-hash=%s)", message.MessageType, blockHashToStr(message.BlockHash))
+	}
+	memberMessages += "] "
+
+	return memberMessages
+}
+
+type MemberIdStr string
+
+func ConvertMessagesToMemberMessagesLogs(messages []interface{}) string {
+
+	memberMessages := make(map[MemberIdStr][]MessageLog)
+
+	for _, message := range messages {
+		var blockHash primitives.BlockHash
+		var memberId primitives.MemberId
+		var messageType protocol.MessageType
+
+		switch message := message.(type) {
+		case *interfaces.PreprepareMessage:
+			messageType = message.MessageType()
+			memberId = message.Content().Sender().MemberId()
+			blockHash = message.Content().SignedHeader().BlockHash()
+
+		case *interfaces.PrepareMessage:
+			messageType = message.MessageType()
+			memberId = message.Content().Sender().MemberId()
+			blockHash = message.Content().SignedHeader().BlockHash()
+
+		case *interfaces.CommitMessage:
+			messageType = message.MessageType()
+			memberId = message.Content().Sender().MemberId()
+			blockHash = message.Content().SignedHeader().BlockHash()
+
+		case *interfaces.ViewChangeMessage:
+			messageType = message.MessageType()
+			memberId = message.Content().Sender().MemberId()
+			blockHash = nil
+			if message.Block() != nil {
+				blockHash = message.Content().SignedHeader().PreparedProof().PrepareBlockRef().BlockHash()
+			}
+
+		default:
+			continue
+		}
+		memberIdStr := MemberIdStr(memberId)
+		memberMessages[memberIdStr] = append(memberMessages[memberIdStr],
+			MessageLog{
+				MessageType: messageType,
+				BlockHash:   blockHash,
+			})
+	}
+
+	if len(memberMessages) > 0 {
+		output := ""
+		for memberIdStr, messages := range memberMessages {
+			memberMessagesStr := fmt.Sprintf("[ memberId=%s,  member-messages::", MemberIdToStr(primitives.MemberId(memberIdStr)))
+			for _, message := range messages {
+				memberMessagesStr += fmt.Sprintf(" (message-type=%s; block-hash=%s)", message.MessageType, blockHashToStr(message.BlockHash))
+			}
+			memberMessagesStr += "] "
+			output += memberMessagesStr
+		}
+		return output
+	} else {
+		return "No messages"
 	}
 }

@@ -38,6 +38,7 @@ func NewConsensusMessageFilter(instanceId primitives.InstanceId, myMemberId prim
 }
 
 // TODO Consider passing ConsensusMessage instead of *interfaces.ConsensusRawMessage
+// TODO: consider adding timestamp to message upon arrival
 func (f *RawMessageFilter) HandleConsensusRawMessage(rawMessage *interfaces.ConsensusRawMessage) {
 	message := interfaces.ToConsensusMessage(rawMessage)
 
@@ -52,7 +53,7 @@ func (f *RawMessageFilter) HandleConsensusRawMessage(rawMessage *interfaces.Cons
 	}
 
 	if message.InstanceId() != f.instanceId {
-		f.logger.Debug("LHFILTER IGNORING RECEIVED %s with H=%d V=%d sender=%s IGNORING message from different instanceID=%s because my instanceID==%s", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()), message.InstanceId(), f.instanceId)
+		f.logger.Info("LHFILTER IGNORING RECEIVED %s with H=%d V=%d sender=%s IGNORING message from different instanceID=%s because my instanceID==%s", message.MessageType(), message.BlockHeight(), message.View(), termincommittee.Str(message.SenderMemberId()), message.InstanceId(), f.instanceId)
 		return
 	}
 
@@ -102,7 +103,7 @@ func (f *RawMessageFilter) processConsensusMessage(message interfaces.ConsensusM
 		return
 	}
 
-	f.logger.ConsensusTrace("received consensus message", nil, log.Stringable("message-type", message.MessageType()), log.Stringable("sender", message.SenderMemberId()))
+	f.logger.Debug("received consensus message", log.Stringable("message-type", message.MessageType()), log.Stringable("sender", message.SenderMemberId()))
 	if err := f.consensusMessagesHandler.HandleConsensusMessage(message); err != nil {
 		f.logger.Info("LHFILTER LHMSG Failed in HandleConsensusMessage(): %s", err)
 	}
