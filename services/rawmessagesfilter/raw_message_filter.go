@@ -38,6 +38,7 @@ func NewConsensusMessageFilter(instanceId primitives.InstanceId, myMemberId prim
 }
 
 // TODO Consider passing ConsensusMessage instead of *interfaces.ConsensusRawMessage
+// TODO: consider adding timestamp to message upon arrival
 func (f *RawMessageFilter) HandleConsensusRawMessage(rawMessage *interfaces.ConsensusRawMessage) {
 	message := interfaces.ToConsensusMessage(rawMessage)
 

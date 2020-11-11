@@ -9,7 +9,6 @@ package storage
 import (
 	"github.com/orbs-network/lean-helix-go/services/interfaces"
 	"github.com/orbs-network/lean-helix-go/spec/types/go/primitives"
-	"github.com/orbs-network/lean-helix-go/spec/types/go/protocol"
 	"sort"
 	"sync"
 )
@@ -177,6 +176,27 @@ func (storage *InMemoryStorage) GetPrepareMessages(blockHeight primitives.BlockH
 	return values, true
 }
 
+func (storage *InMemoryStorage) GetPrepareMessagesFromView(blockHeight primitives.BlockHeight, view primitives.View) ([]*interfaces.PrepareMessage, bool) {
+	storage.mutext.Lock()
+	defer storage.mutext.Unlock()
+
+	var messages []*interfaces.PrepareMessage
+
+	if views, ok := storage.prepareStorage[blockHeight]; ok {
+		if blockHashes, ok := views[view]; ok {
+			for _, membersPm := range blockHashes {
+				for _, msg := range membersPm {
+					messages = append(messages, msg)
+				}
+			}
+		}
+	}
+	if len(messages) == 0 {
+		return nil, false
+	}
+	return messages, true
+}
+
 func (storage *InMemoryStorage) GetPrepareSendersIds(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) []primitives.MemberId {
 	storage.mutext.Lock()
 	defer storage.mutext.Unlock()
@@ -254,6 +274,27 @@ func (storage *InMemoryStorage) GetCommitMessages(blockHeight primitives.BlockHe
 		values = append(values, v)
 	}
 	return values, true
+}
+
+func (storage *InMemoryStorage) GetCommitMessagesFromView(blockHeight primitives.BlockHeight, view primitives.View) ([]*interfaces.CommitMessage, bool) {
+	storage.mutext.Lock()
+	defer storage.mutext.Unlock()
+
+	var messages []*interfaces.CommitMessage
+
+	if views, ok := storage.commitStorage[blockHeight]; ok {
+		if blockHashes, ok := views[view]; ok {
+			for _, membersCm := range blockHashes {
+				for _, msg := range membersCm {
+					messages = append(messages, msg)
+				}
+			}
+		}
+	}
+	if len(messages) == 0 {
+		return nil, false
+	}
+	return messages, true
 }
 
 func (storage *InMemoryStorage) GetCommitSendersIds(blockHeight primitives.BlockHeight, view primitives.View, blockHash primitives.BlockHash) []primitives.MemberId {
@@ -366,88 +407,33 @@ func (storage *InMemoryStorage) resetViewChangeStorage(blockHeight primitives.Bl
 	return views
 }
 
-func (storage *InMemoryStorage) GetMessagesLogs(blockHeight primitives.BlockHeight, view primitives.View) []interfaces.MemberMessagesLog {
-	memberMessages := make(map[MemberIdStr][]*protocol.BlockRef)
+func (storage *InMemoryStorage) GetAllMessagesFromView(blockHeight primitives.BlockHeight, view primitives.View) []interface{} {
+	var messages []interface{}
+
 	// get preprepare
 	if msg, exists := storage.GetPreprepareFromView(blockHeight, view); exists {
-		memberIdStr := MemberIdStr(msg.Content().Sender().MemberId())
-		msgs, _ := memberMessages[memberIdStr]
-		msgs = append(msgs, (&protocol.BlockRefBuilder{
-			MessageType: msg.MessageType(),
-			InstanceId:  msg.InstanceId(),
-			BlockHeight: msg.BlockHeight(),
-			View:        msg.View(),
-			BlockHash:   msg.Content().SignedHeader().BlockHash(),
-		}).Build())
-		memberMessages[memberIdStr] = msgs
+		messages = append(messages, &msg)
 	}
+
 	// get prepares
-	if views, ok := storage.prepareStorage[blockHeight]; ok {
-		if blockHashes, ok := views[view]; ok {
-			for _, membersPm := range blockHashes {
-				for memberIdStr, msg := range membersPm {
-					msgs, _ := memberMessages[memberIdStr]
-					msgs = append(msgs,
-						(&protocol.BlockRefBuilder{
-							MessageType: msg.MessageType(),
-							InstanceId:  msg.InstanceId(),
-							BlockHeight: msg.BlockHeight(),
-							View:        msg.View(),
-							BlockHash:   msg.Content().SignedHeader().BlockHash(),
-						}).Build())
-					memberMessages[memberIdStr] = msgs
-				}
-			}
-		}
+	pms, _ := storage.GetPrepareMessagesFromView(blockHeight, view)
+	for _, msg := range pms {
+		messages = append(messages, msg)
 	}
 
 	// get commits
-	if views, ok := storage.commitStorage[blockHeight]; ok {
-		if blockHashes, ok := views[view]; ok {
-			for _, membersCm := range blockHashes {
-				for memberIdStr, msg := range membersCm {
-					msgs, _ := memberMessages[memberIdStr]
-					msgs = append(msgs,
-						(&protocol.BlockRefBuilder{
-							MessageType: msg.MessageType(),
-							InstanceId:  msg.InstanceId(),
-							BlockHeight: msg.BlockHeight(),
-							View:        msg.View(),
-							BlockHash:   msg.Content().SignedHeader().BlockHash(),
-						}).Build())
-					memberMessages[memberIdStr] = msgs
-				}
-			}
-		}
+	cms, _ := storage.GetCommitMessagesFromView(blockHeight, view)
+	for _, msg := range cms {
+		messages = append(messages, msg)
 	}
 
 	// get vcs
-	if vcs, exists := storage.GetViewChangeMessages(blockHeight, view); exists {
-		for _, msg := range vcs {
-			memberIdStr := MemberIdStr(msg.Content().Sender().MemberId())
-			msgs, _ := memberMessages[memberIdStr]
-			var blockHash primitives.BlockHash
-			if msg.Block() != nil {
-				blockHash = msg.Content().SignedHeader().PreparedProof().PrepareBlockRef().BlockHash()
-			}
-			msgs = append(msgs,
-				(&protocol.BlockRefBuilder{
-					MessageType: msg.MessageType(),
-					InstanceId:  msg.InstanceId(),
-					BlockHeight: msg.BlockHeight(),
-					View:        msg.View(),
-					BlockHash:   blockHash,
-				}).Build())
-
-			memberMessages[memberIdStr] = msgs
-		}
+	vcs, _ := storage.GetViewChangeMessages(blockHeight, view)
+	for _, msg := range vcs {
+		messages = append(messages, msg)
 	}
 
-	membersMessagesLogs := make([]interfaces.MemberMessagesLog, len(memberMessages))
-	for memberIdStr, messages := range memberMessages {
-		membersMessagesLogs = append(membersMessagesLogs, interfaces.MemberMessagesLog{MemberId: primitives.MemberId(memberIdStr), Messages: messages})
-	}
-	return membersMessagesLogs
+	return messages
 }
 
 func NewInMemoryStorage() *InMemoryStorage {

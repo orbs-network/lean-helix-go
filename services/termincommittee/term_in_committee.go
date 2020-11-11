@@ -106,15 +106,7 @@ func NewTermInCommittee(log L.LHLogger, config *interfaces.Config, state *state.
 }
 
 func Str(memberId primitives.MemberId) string {
-	return L.BytesPrimitivesToStr(memberId)
-}
-
-func BlockHashStr(blockHash primitives.BlockHash) string {
-	blockHashStr := L.BytesPrimitivesToStr(blockHash)
-	if len(blockHashStr) == 0 {
-		blockHashStr = "none"
-	}
-	return blockHashStr
+	return L.MemberIdToStr(memberId)
 }
 
 type OnInCommitteeCommitCallback func(ctx context.Context, block interfaces.Block, commitMessages []*interfaces.CommitMessage)
@@ -252,8 +244,7 @@ func (tic *TermInCommittee) moveToNextLeaderByElection(height primitives.BlockHe
 		return
 	}
 	tic.logger.Debug("LHFLOW moveToNextLeaderByElection() calling initView(), will increment view to V=%d", currentHV.View()+1)
-	transitionMessage := fmt.Sprintf(" transition from view (%d) to view (%d) by moveToNextLeaderByElection", uint(currentHV.View()), uint(currentHV.View()+1))
-	tic.logViewMessages(transitionMessage)
+	tic.logViewMessages(" transition from view (%d) to view (%d) by moveToNextLeaderByElection", uint(currentHV.View()), uint(currentHV.View()+1))
 	currentHV, err := tic.initView(currentHV.View() + 1)
 	if err != nil {
 		tic.logger.Info("LHFLOW moveToNextLeaderByElection() initView() failed, cannot continue: %s", err)
@@ -328,8 +319,7 @@ func (tic *TermInCommittee) onElectedByViewChange(view primitives.View, viewChan
 	tic.logger.Debug("LHFLOW onElectedByViewChange() I AM THE LEADER BY VIEW CHANGE for V=%d, now calling initView()", view)
 	currentHeightView := tic.State.HeightView()
 	if currentHeightView.View() < view { // hadn't logged yet
-		transitionMessage := fmt.Sprintf(" transition from view (%d) to view (%d) by onElectedByViewChange", uint(currentHeightView.View()), uint(view))
-		tic.logViewMessages(transitionMessage)
+		tic.logViewMessages(" transition from view (%d) to view (%d) by onElectedByViewChange", uint(currentHeightView.View()), uint(view))
 	}
 	currentHeightView, err := tic.initView(view)
 	if err != nil {
@@ -727,7 +717,6 @@ func (tic *TermInCommittee) HandleNewView(nvm *interfaces.NewViewMessage) {
 	viewChangeConfirmations := make([]*protocol.ViewChangeMessageContent, 0, 1)
 
 	if tic.State.View() > nvmHeader.View() {
-		//this.logger.log({ subject: "Warning", message: `blockHeight:[${blockHeight}], view:[${view}], HandleNewView from "${senderId}", view is from the past` });
 		tic.logger.Info("LHMSG RECEIVED NEW_VIEW IGNORE - current view %d is higher than message view %d", tic.State.View(), nvmHeader.View())
 		return
 	}
@@ -828,8 +817,7 @@ func (tic *TermInCommittee) HandleNewView(nvm *interfaces.NewViewMessage) {
 		tic.logger.Debug("LHFLOW LHMSG RECEIVED NEW_VIEW OK - calling initView(). latestViewThatProcessedVCMOrNVM set to V=%d", tic.latestViewThatProcessedVCMOrNVM)
 		currentHeightView := tic.State.HeightView()
 		if currentHeightView.View() < nvmHeader.View() { // hadn't logged yet
-			transitionMessage := fmt.Sprintf(" transition from view (%d) to view (%d) by NewViewMessage", uint(currentHeightView.View()), uint(nvmHeader.View()))
-			tic.logViewMessages(transitionMessage)
+			tic.logViewMessages(" transition from view (%d) to view (%d) by NewViewMessage", uint(currentHeightView.View()), uint(nvmHeader.View()))
 		}
 		if _, err := tic.initView(nvmHeader.View()); err != nil {
 			tic.logger.Debug("LHFLOW LHMSG HandleNewView() - initView() failed: %s", err)
@@ -860,24 +848,20 @@ func (tic *TermInCommittee) latestViewChangeVote(confirmations []*protocol.ViewC
 	}
 }
 
-func (tic *TermInCommittee) logViewMessages(info string) {
+func (tic *TermInCommittee) logViewMessages(format string, a ...interface{}) {
 	currentHeightView := tic.State.HeightView()
 	height := currentHeightView.Height()
 	view := currentHeightView.View()
-	membersMessagesLog := tic.storage.GetMessagesLogs(height, view)
-	var membersStoredMessages string
-	for _, mml := range membersMessagesLog {
-		if mml.MemberId == nil {
-			continue
-		}
-		memberMessages := fmt.Sprintf("[ memberId=%s,  member-messages::", Str(mml.MemberId))
-		for _, message := range mml.Messages {
-			memberMessages += fmt.Sprintf(" (message-type=%s; block-hash=%s)", message.MessageType(), BlockHashStr(message.BlockHash()))
-		}
-		memberMessages += "] "
-		membersStoredMessages += memberMessages
-	}
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				tic.logger.Error(fmt.Sprintf("logViewMessages failed: height %d, view %d, error: %s", uint(height), uint(view), r))
+			}
+		}()
+		membersMessagesLogs := L.ConvertMessagesToMemberMessagesLogs(tic.storage.GetAllMessagesFromView(height, view))
+		logInfo := fmt.Sprintf(format, a...)
+		tic.logger.ConsensusTrace(fmt.Sprintf("LH MessagesLogs for view (%d); view leaderId=%s; extra-info=%s; messages-stored on old view: %s ",
+			uint(view), Str(tic.calcLeaderMemberId(view)), logInfo, membersMessagesLogs), nil)
 
-	tic.logger.ConsensusTrace(fmt.Sprintf("LH MessagesLogs for view (%d); view leaderId=%s; extra-info=%s; messages-stored on old view: %s ",
-		uint(view), Str(tic.calcLeaderMemberId(view)), info, membersStoredMessages), nil)
+	}()
 }
