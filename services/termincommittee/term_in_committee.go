@@ -361,7 +361,7 @@ func (tic *TermInCommittee) sendConsensusMessage(message interfaces.ConsensusMes
 	tic.logger.Debug("LHMSG SEND sendConsensusMessage() target=ALL, msgType=%v", message.MessageType())
 	rawMessage := interfaces.CreateConsensusRawMessage(message)
 	err := tic.communication.SendConsensusMessage(context.TODO(), tic.otherCommitteeMemberIds, rawMessage)
-	tic.logger.ConsensusTrace("sent consensus message", err, log.Stringable("message-type", message.MessageType()), log.StringableSlice("recipients", tic.otherCommitteeMemberIds))
+	tic.logger.ConsensusTrace("sent consensus message to all other members", err, log.Stringable("message-type", message.MessageType()))
 	return err
 }
 
